@@ -136,6 +136,7 @@ usage() {
     echo "  sec unlock                               Unlock Bitwarden vault and save session"
     echo "  sec rotate                               Keep-alive / rotate Bitwarden session key"
     echo "  sec setup-keychain                       Store master password in Keychain for auto-rotation"
+    echo "  sec completion {zsh|bash|ps1}            Generate shell autocompletion scripts"
     echo ""
     echo "Flags:"
     echo "  -h, --help     Display this help menu"
@@ -157,6 +158,103 @@ case "$cmd" in
         echo "sec-cli version $VERSION"
         exit 0
         ;;
+    completion)
+        shell="${1:-zsh}"
+        case "$shell" in
+            zsh)
+                cat <<'EOF'
+#compdef sec
+
+_sec() {
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    local -a tenants=(bitwarden bw 1pass op bws vault infisical keychain)
+    local -a subcommands=(
+        'get:Retrieve secret value from vault'
+        'set:Store / create a new secret in vault'
+        'run:Execute command with vault secrets injected into memory'
+        'housekeep:Intelligent ML categorization, plan/apply, & instant rollback'
+        'migrate:Zero-plaintext vault-to-vault migration engine'
+        'unlock:Unlock Bitwarden vault and save session'
+        'rotate:Keep-alive / rotate Bitwarden session key'
+        'setup-keychain:Store master password in Keychain for auto-rotation'
+        'completion:Generate shell autocompletion script'
+    )
+
+    _arguments -C \
+        '(-h --help)'{-h,--help}'[Display help menu]' \
+        '(-v --version)'{-v,--version}'[Display version]' \
+        '1:subcommand or tenant:->cmd_or_tenant' \
+        '*::arg:->args'
+
+    case $state in
+        cmd_or_tenant)
+            _describe -t subcommands 'sec commands' subcommands
+            _describe -t tenants 'vault tenants' tenants
+            ;;
+        args)
+            case $words[1] in
+                housekeep|organize)
+                    local -a hk_cmds=('plan:Generate ML categorization plan' 'apply:Execute organization with pre-apply backup' 'revert:Rollback last housekeeping operation')
+                    _describe -t hk_cmds 'housekeep commands' hk_cmds
+                    ;;
+                migrate)
+                    _arguments \
+                        '--from[Source vault backend]:backend:(bitwarden 1password bws vault infisical)' \
+                        '--to[Target vault backend]:backend:(bitwarden 1password bws vault infisical)' \
+                        '--plan[Generate migration plan]' \
+                        '--apply[Execute vault migration]' \
+                        '--undo[Rollback partially migrated items]'
+                    ;;
+                completion)
+                    local -a shells=('zsh:Zsh completion' 'bash:Bash completion' 'ps1:PowerShell completion')
+                    _describe -t shells 'shells' shells
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_sec "$@"
+EOF
+                exit 0
+                ;;
+            bash)
+                cat <<'EOF'
+_sec_bash_completion() {
+    local cur prev subcmds tenants
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    subcmds="get set run housekeep migrate unlock rotate setup-keychain completion --help -h --version -v"
+    tenants="bitwarden bw 1pass op bws vault infisical keychain"
+
+    if [[ ${COMP_CWORD} -eq 1 ]]; then
+        COMPREPLY=( $(compgen -W "${subcmds} ${tenants}" -- ${cur}) )
+        return 0
+    fi
+
+    case "${COMP_WORDS[1]}" in
+        housekeep|organize)
+            COMPREPLY=( $(compgen -W "plan apply revert" -- ${cur}) )
+            ;;
+        migrate)
+            COMPREPLY=( $(compgen -W "--from --to --plan --apply --undo" -- ${cur}) )
+            ;;
+        completion)
+            COMPREPLY=( $(compgen -W "zsh bash ps1" -- ${cur}) )
+            ;;
+    esac
+}
+complete -F _sec_bash_completion sec
+EOF
+                exit 0
+                ;;
+        esac
+        ;;
+
     get)
         if [[ $# -lt 1 ]]; then usage; fi
         key="$1"
