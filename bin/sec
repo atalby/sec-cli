@@ -332,7 +332,7 @@ EOF
         case "$TARGET_TENANT" in
             bitwarden|bw)
                 if command -v bw >/dev/null 2>&1; then
-                    # 1. First check for exact item name match $key
+                    # 1. Check for exact item name match $key
                     items_json="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$key" 2>/dev/null || true)"
                     count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
                     if [[ "$count" -ge 1 ]]; then
@@ -341,6 +341,15 @@ EOF
                             res="$(echo "$item" | jq -r '.notes // .login.password // .card.number // .identity.ssn // .identity.email // empty')"
                             if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
                         fi
+
+                        # Check if $key matches a custom field on any searched item
+                        cf_res="$(echo "$items_json" | jq -r --arg f "$key" '[.[] | .fields[]? | select(.name == $f).value // empty][0] // empty')"
+                        if [[ -n "$cf_res" && "$cf_res" != "null" ]]; then echo "$cf_res"; exit 0; fi
+                    else
+                        # Fallback: Search custom fields across all vault items
+                        all_items="$(BW_SESSION="${BW_SESSION:-}" bw list items 2>/dev/null || true)"
+                        cf_res="$(echo "$all_items" | jq -r --arg f "$key" '[.[] | .fields[]? | select(.name == $f).value // empty][0] // empty')"
+                        if [[ -n "$cf_res" && "$cf_res" != "null" ]]; then echo "$cf_res"; exit 0; fi
                     fi
 
                     # 2. If exact match not found and key contains slash, treat as <item_name>/<field_name>
@@ -361,17 +370,9 @@ EOF
                         items_json="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$item_name" 2>/dev/null || true)"
                         count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
                         if [[ "$count" -ge 1 ]]; then
-                            item="$(echo "$items_json" | jq --arg name "$item_name" '[.[] | select(.name == $name)][0] // .[0]')"
-                            if [[ -n "$item" && "$item" != "null" ]]; then
-                                item_id="$(echo "$item" | jq -r '.id')"
-
-                                # Dynamic TOTP generation if requested
-                                if [[ "$field_name" =~ ^(totp|2fa|authenticator)$ ]]; then
-                                    totp_val="$(BW_SESSION="${BW_SESSION:-}" bw get totp "$item_id" 2>/dev/null || true)"
-                                    if [[ -n "$totp_val" ]]; then echo "$totp_val"; exit 0; fi
-                                fi
-
-                                res="$(echo "$item" | jq -r --arg f "$field_name" '
+                            # Extract field across all items matching item_name
+                            res="$(echo "$items_json" | jq -r --arg n "$item_name" --arg f "$field_name" '
+                                [.[] | select(.name == $n)] | map(
                                     if $f == "password" or $f == "pass" then .login.password
                                     elif $f == "username" or $f == "user" then .login.username
                                     elif $f == "notes" or $f == "note" then .notes
@@ -392,9 +393,9 @@ EOF
                                     elif $f == "license" or $f == "licenseNumber" then .identity.licenseNumber
                                     else (.fields[]? | select(.name == $f).value // empty)
                                     end // empty
-                                ')"
-                                if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
-                            fi
+                                ) | map(select(. != null and . != "")) | .[0] // empty
+                            ')"
+                            if [[ -n "$res" && "$res" != "null" ]]; then echo "$res"; exit 0; fi
                         fi
                     fi
                 fi
