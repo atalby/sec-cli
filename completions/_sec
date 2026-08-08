@@ -51,4 +51,4 @@ _sec() {
     esac
 }
 
-_sec "$@"
+compdef _sec sec
