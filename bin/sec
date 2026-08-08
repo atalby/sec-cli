@@ -338,7 +338,7 @@ EOF
                     if [[ "$count" -ge 1 ]]; then
                         item="$(echo "$items_json" | jq --arg name "$key" '[.[] | select(.name == $name)][0] // empty')"
                         if [[ -n "$item" && "$item" != "null" ]]; then
-                            res="$(echo "$item" | jq -r '.notes // .login.password // empty')"
+                            res="$(echo "$item" | jq -r '.notes // .login.password // .card.number // .identity.ssn // .identity.email // empty')"
                             if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
                         fi
                     fi
@@ -347,15 +347,49 @@ EOF
                     if [[ "$key" == *"/"* ]]; then
                         item_name="${key%/*}"
                         field_name="${key##*/}"
+
+                        # Check for attachment subpath: e.g. <item_name>/attachment/<filename>
+                        if [[ "$item_name" == *"/"* ]] && [[ "${item_name##*/}" == "attachment" ]]; then
+                            real_item_name="${item_name%/*}"
+                            attachment_file="$field_name"
+                            item_id="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$real_item_name" 2>/dev/null | jq -r --arg n "$real_item_name" '[.[] | select(.name == $n)][0].id // empty')"
+                            if [[ -n "$item_id" ]]; then
+                                BW_SESSION="${BW_SESSION:-}" bw get attachment "$attachment_file" --itemid "$item_id" --raw 2>/dev/null && exit 0
+                            fi
+                        fi
+
                         items_json="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$item_name" 2>/dev/null || true)"
                         count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
                         if [[ "$count" -ge 1 ]]; then
                             item="$(echo "$items_json" | jq --arg name "$item_name" '[.[] | select(.name == $name)][0] // .[0]')"
                             if [[ -n "$item" && "$item" != "null" ]]; then
+                                item_id="$(echo "$item" | jq -r '.id')"
+
+                                # Dynamic TOTP generation if requested
+                                if [[ "$field_name" =~ ^(totp|2fa|authenticator)$ ]]; then
+                                    totp_val="$(BW_SESSION="${BW_SESSION:-}" bw get totp "$item_id" 2>/dev/null || true)"
+                                    if [[ -n "$totp_val" ]]; then echo "$totp_val"; exit 0; fi
+                                fi
+
                                 res="$(echo "$item" | jq -r --arg f "$field_name" '
-                                    if $f == "password" then .login.password
-                                    elif $f == "username" then .login.username
-                                    elif $f == "notes" then .notes
+                                    if $f == "password" or $f == "pass" then .login.password
+                                    elif $f == "username" or $f == "user" then .login.username
+                                    elif $f == "notes" or $f == "note" then .notes
+                                    elif $f == "totp" or $f == "2fa" then .login.totp
+                                    elif $f == "uri" or $f == "url" then (.login.uris[0].uri // empty)
+                                    elif $f == "number" or $f == "card_number" or $f == "card" then .card.number
+                                    elif $f == "code" or $f == "cvv" or $f == "cvc" then .card.code
+                                    elif $f == "cardholder" or $f == "cardholderName" then .card.cardholderName
+                                    elif $f == "expMonth" or $f == "exp_month" then .card.expMonth
+                                    elif $f == "expYear" or $f == "exp_year" then .card.expYear
+                                    elif $f == "brand" then .card.brand
+                                    elif $f == "ssn" then .identity.ssn
+                                    elif $f == "email" then .identity.email
+                                    elif $f == "phone" then .identity.phone
+                                    elif $f == "firstName" or $f == "first_name" then .identity.firstName
+                                    elif $f == "lastName" or $f == "last_name" then .identity.lastName
+                                    elif $f == "passport" or $f == "passportNumber" then .identity.passportNumber
+                                    elif $f == "license" or $f == "licenseNumber" then .identity.licenseNumber
                                     else (.fields[]? | select(.name == $f).value // empty)
                                     end // empty
                                 ')"
@@ -404,6 +438,19 @@ EOF
 
     set|create)
         if [[ $# -lt 1 ]]; then usage; fi
+
+        ITEM_TYPE="1" # Default: Login (1), SecureNote (2), Card (3), Identity (4)
+        if [[ "$1" == "--type" ]]; then
+            type_str="$2"; shift 2
+            case "$type_str" in
+                note|securenote|2) ITEM_TYPE="2" ;;
+                card|creditcard|3) ITEM_TYPE="3" ;;
+                identity|4)        ITEM_TYPE="4" ;;
+                login|1|*)         ITEM_TYPE="1" ;;
+            esac
+        fi
+
+        if [[ $# -lt 1 ]]; then usage; fi
         key="$1"; shift || true
         value="${1:-}"
         ensure_tenant_auth "$TARGET_TENANT"
@@ -415,13 +462,47 @@ EOF
 
         case "$TARGET_TENANT" in
             bitwarden|bw)
-                # Check if item with exact name $key already exists to update it
-                items_json="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$key" 2>/dev/null || true)"
-                existing_id="$(echo "$items_json" | jq -r --arg name "$key" '[.[] | select(.name == $name)][0].id // empty' 2>/dev/null || true)"
+                target_item_name="$key"
+                update_field=""
+
+                # Check if $key specifies <item_name>/<field_name> for a field-level update
+                if [[ "$key" == *"/"* ]]; then
+                    check_item="${key%/*}"
+                    check_field="${key##*/}"
+                    items_check="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$check_item" 2>/dev/null || true)"
+                    has_item="$(echo "$items_check" | jq -r --arg n "$check_item" '[.[] | select(.name == $n)][0].id // empty' 2>/dev/null || true)"
+                    if [[ -n "$has_item" && "$has_item" != "null" ]]; then
+                        target_item_name="$check_item"
+                        update_field="$check_field"
+                    fi
+                fi
+
+                # Check if target item already exists
+                items_json="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$target_item_name" 2>/dev/null || true)"
+                existing_id="$(echo "$items_json" | jq -r --arg name "$target_item_name" '[.[] | select(.name == $name)][0].id // empty' 2>/dev/null || true)"
                 if [[ -n "$existing_id" && "$existing_id" != "null" ]]; then
                     existing_item="$(BW_SESSION="${BW_SESSION:-}" bw get item "$existing_id" 2>/dev/null || true)"
                     if [[ -n "$existing_item" ]]; then
-                        encoded="$(echo "$existing_item" | jq --arg val "$value" '.notes=$val | .login.password=$val' | bw encode 2>/dev/null || true)"
+                        if [[ -n "$update_field" ]]; then
+                            encoded="$(echo "$existing_item" | jq --arg f "$update_field" --arg val "$value" '
+                                if $f == "username" or $f == "user" then .login.username = $val
+                                elif $f == "password" or $f == "pass" then .login.password = $val
+                                elif $f == "totp" or $f == "2fa" then .login.totp = $val
+                                elif $f == "notes" or $f == "note" then .notes = $val
+                                else
+                                    .fields = (
+                                        if (.fields | map(select(.name == $f)) | length) > 0 then
+                                            .fields | map(if .name == $f then .value = $val else . end)
+                                        else
+                                            .fields + [{"type": 0, "name": $f, "value": $val}]
+                                        end
+                                    )
+                                end
+                            ' | bw encode 2>/dev/null || true)"
+                        else
+                            encoded="$(echo "$existing_item" | jq --arg val "$value" '.notes=$val | .login.password=$val' | bw encode 2>/dev/null || true)"
+                        fi
+
                         if [[ -n "$encoded" ]] && BW_SESSION="${BW_SESSION:-}" bw edit item "$existing_id" "$encoded" >/dev/null 2>&1; then
                             echo "[sec] Secret '$key' updated in Bitwarden Vault."
                             exit 0
@@ -429,7 +510,15 @@ EOF
                     fi
                 fi
 
-                encoded="$(BW_SESSION="${BW_SESSION:-}" bw get template item 2>/dev/null | jq --arg name "$key" --arg val "$value" '.name=$name | .type=1 | .notes=$val | .login.password=$val' | bw encode 2>/dev/null || true)"
+                # Create new item with specified type
+                encoded="$(BW_SESSION="${BW_SESSION:-}" bw get template item 2>/dev/null | jq --arg name "$key" --arg val "$value" --argjson type "$ITEM_TYPE" '
+                    .name=$name | .type=$type | .notes=$val |
+                    if $type == 1 then .login.password=$val
+                    elif $type == 3 then .card.number=$val
+                    elif $type == 4 then .identity.ssn=$val
+                    else .
+                    end
+                ' | bw encode 2>/dev/null || true)"
                 if [[ -n "$encoded" ]]; then
                     if BW_SESSION="${BW_SESSION:-}" bw create item "$encoded" >/dev/null 2>&1; then
                         echo "[sec] Secret '$key' saved to Bitwarden Vault."

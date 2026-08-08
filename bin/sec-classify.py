@@ -83,8 +83,19 @@ def infer_suggested_name(item: dict) -> tuple[str, bool]:
 def classify_item(item: dict) -> dict:
     name = item.get("name", "")
     notes = item.get("notes", "")
-    uris = [u.get("uri", "") for u in item.get("login", {}).get("uris", []) if isinstance(u, dict)]
-    full_text = f"{name} {notes} {' '.join(uris)}"
+    login_dict = item.get("login", {}) if isinstance(item.get("login"), dict) else {}
+    uris = [u.get("uri", "") for u in login_dict.get("uris", []) if isinstance(u, dict)]
+
+    card_dict = item.get("card", {}) if isinstance(item.get("card"), dict) else {}
+    card_info = f"{card_dict.get('cardholderName', '')} {card_dict.get('brand', '')}"
+
+    ident_dict = item.get("identity", {}) if isinstance(item.get("identity"), dict) else {}
+    identity_info = f"{ident_dict.get('email', '')} {ident_dict.get('company', '')} {ident_dict.get('username', '')}"
+
+    fields = item.get("fields", []) if isinstance(item.get("fields"), list) else []
+    fields_info = " ".join([f"{f.get('name', '')} {f.get('value', '')}" for f in fields if isinstance(f, dict)])
+
+    full_text = f"{name} {notes} {' '.join(uris)} {card_info} {identity_info} {fields_info}"
     tokens = tokenize(full_text)
 
     scores = {}
