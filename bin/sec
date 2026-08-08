@@ -244,11 +244,69 @@ _sec_bash_completion() {
             COMPREPLY=( $(compgen -W "--from --to --plan --apply --undo" -- ${cur}) )
             ;;
         completion)
-            COMPREPLY=( $(compgen -W "zsh bash ps1" -- ${cur}) )
+            COMPREPLY=( $(compgen -W "zsh bash fish ps1" -- ${cur}) )
             ;;
     esac
 }
 complete -F _sec_bash_completion sec
+EOF
+                exit 0
+                ;;
+            fish)
+                cat <<'EOF'
+# Fish completion for sec-cli
+function __fish_sec_needs_command
+    set cmd (commandline -opc)
+    if [ (count $cmd) -eq 1 ]
+        return 0
+    end
+    return 1
+end
+
+complete -f -c sec -n '__fish_sec_needs_command' -a 'get' -d 'Retrieve secret value from vault'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'set' -d 'Store / create a new secret in vault'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'run' -d 'Execute command with vault secrets injected'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'housekeep' -d 'Intelligent ML categorization plan/apply/revert'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'migrate' -d 'Zero-plaintext vault-to-vault migration engine'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'unlock' -d 'Unlock Bitwarden vault and save session'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'rotate' -d 'Keep-alive / rotate Bitwarden session key'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'setup-keychain' -d 'Store master password in Keychain'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'completion' -d 'Generate shell autocompletion script'
+
+complete -f -c sec -n '__fish_seen_subcommand_from housekeep' -a 'plan apply revert'
+complete -f -c sec -n '__fish_seen_subcommand_from migrate' -a '--from --to --plan --apply --undo'
+complete -f -c sec -n '__fish_seen_subcommand_from completion' -a 'zsh bash fish ps1'
+EOF
+                exit 0
+                ;;
+            ps1|powershell)
+                cat <<'EOF'
+# PowerShell completion for sec-cli
+Register-ArgumentCompleter -Native -CommandName 'sec', 'sec.exe', 'sec.ps1' -ScriptBlock {
+    param($wordToComplete, $commandAst, $cursorPosition)
+
+    $subcommands = @('get', 'set', 'run', 'housekeep', 'migrate', 'unlock', 'rotate', 'setup-keychain', 'completion')
+    $tenants = @('bitwarden', 'bw', '1pass', 'op', 'bws', 'vault', 'infisical', 'keychain')
+
+    $elements = $commandAst.ArgumentElements
+    if ($elements.Count -le 1) {
+        $subcommands + $tenants | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+        }
+    } elseif ($elements[1].Value -in @('housekeep', 'organize')) {
+        @('plan', 'apply', 'revert') | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+        }
+    } elseif ($elements[1].Value -eq 'migrate') {
+        @('--from', '--to', '--plan', '--apply', '--undo') | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+        }
+    } elseif ($elements[1].Value -eq 'completion') {
+        @('zsh', 'bash', 'fish', 'ps1') | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+        }
+    }
+}
 EOF
                 exit 0
                 ;;
