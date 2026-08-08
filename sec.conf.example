@@ -1,0 +1,24 @@
+# ~/.sec/sec.conf: Fleet Multi-Tenant Secret Manager Configuration
+[global]
+default_backend = bitwarden
+auto_rotate = true
+
+[bitwarden]
+cli = bw
+auto_rotate = true
+
+[1pass]
+cli = op
+auto_rotate = false
+
+[bws]
+cli = bws
+auto_rotate = true
+
+[vault]
+cli = vault
+auto_rotate = false
+
+[infisical]
+cli = infisical
+auto_rotate = false

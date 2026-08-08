@@ -1,0 +1,207 @@
+#!/usr/bin/env bash
+# bin/sec-migrator: Universal Fault-Tolerant Vault-to-Vault Secret Migration Engine with Transaction State & Undo
+set -euo pipefail
+
+CACHE_DIR="$HOME/.cache/bitwarden"
+TX_FILE="$CACHE_DIR/migration_transaction.json"
+mkdir -p "$CACHE_DIR"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Ensure BW_SESSION is populated
+if [[ -z "${BW_SESSION:-}" ]]; then
+    if [[ -f "$HOME/.cache/bitwarden/session" ]] && [[ -s "$HOME/.cache/bitwarden/session" ]]; then
+        export BW_SESSION="$(cat "$HOME/.cache/bitwarden/session")"
+    fi
+fi
+
+usage() {
+    echo "Fleet Secret Manager Migration Engine (sec migrate)"
+    echo ""
+    echo "Usage:"
+    echo "  sec migrate --from <src_backend> --to <dst_backend> [--dry-run|--apply]"
+    echo "  sec migrate --undo                                    Rollback partially migrated items"
+    echo ""
+    echo "Supported Migration Source / Target Backends:"
+    echo "  bitwarden (bw) | bws | 1password (op) | infisical | vault"
+    exit 1
+}
+
+# Handle Undo/Rollback
+if [[ "${1:-}" == "--undo" || "${1:-}" == "undo" || "${1:-}" == "revert" ]]; then
+    echo "=== 🔄 Reverting Last Secret Migration Operation ==="
+    if [[ ! -f "$TX_FILE" ]]; then
+        echo "[sec-migrator] Error: No active migration transaction log found ($TX_FILE)." >&2
+        exit 1
+    fi
+
+    dst="$(jq -r '.dstBackend // "op"' "$TX_FILE")"
+    created_items="$(jq -c '.createdItems[]' "$TX_FILE" 2>/dev/null || echo "")"
+
+    if [[ -z "$created_items" ]]; then
+        echo "[sec-migrator] Transaction log contains zero created items."
+        exit 0
+    fi
+
+    while read -r item; do
+        if [[ -z "$item" ]]; then continue; fi
+        id="$(echo "$item" | jq -r '.id // empty')"
+        name="$(echo "$item" | jq -r '.name // empty')"
+
+        echo "[sec-migrator] Removing migrated item \"$name\" ($id) from target vault '$dst'..."
+        case "$dst" in
+            1password|op)  op item delete "$id" --archive 2>/dev/null || true ;;
+            bitwarden|bw)  bw delete item "$id" 2>/dev/null || true ;;
+            bws)           bws secret delete "$id" 2>/dev/null || true ;;
+        esac
+    done <<< "$created_items"
+
+    rm -f "$TX_FILE"
+    echo "=== ✨ Secret Migration Rollback Successfully Completed ==="
+    exit 0
+fi
+
+SRC=""
+DST=""
+MODE="plan"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --from) SRC="$2"; shift 2 ;;
+        --to) DST="$2"; shift 2 ;;
+        --apply) MODE="apply"; shift ;;
+        --dry-run|--plan) MODE="plan"; shift ;;
+        *) usage ;;
+    esac
+done
+
+if [[ -z "$SRC" || -z "$DST" ]]; then
+    usage
+fi
+
+echo "=== 🚀 Fleet Secret Vault Migration ($SRC -> $DST, Mode: $MODE) ==="
+
+# 1. Fetch Source Items into Memory
+fetch_source_items() {
+    case "$SRC" in
+        bitwarden|bw)
+            if ! BW_SESSION="${BW_SESSION:-}" bw sync --nostatus >/dev/null 2>&1; then
+                echo "[sec-migrator] Error: Bitwarden vault is locked. Run 'sec unlock' first." >&2
+                exit 1
+            fi
+            bw list items 2>/dev/null || echo "[]"
+            ;;
+        1password|op)
+            op item list --format=json 2>/dev/null || echo "[]"
+            ;;
+        bws)
+            bws secret list 2>/dev/null || echo "[]"
+            ;;
+        *)
+            echo "[sec-migrator] Error: Source backend '$SRC' not supported for bulk migration." >&2
+            exit 1
+            ;;
+    esac
+}
+
+items_json="$(fetch_source_items)"
+count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
+
+if [[ "$count" -eq 0 ]]; then
+    echo "[sec-migrator] Zero items found in source backend '$SRC'."
+    exit 0
+fi
+
+echo "Discovered $count secret items in source vault '$SRC'."
+echo ""
+
+# 2. Plan or Apply Migration
+migrated_count=0
+created_log="[]"
+
+# Trap errors during apply
+trap_error() {
+    local failed_item="$1"
+    echo "" >&2
+    echo "[sec-migrator] ERROR: Migration failed while transferring item \"$failed_item\"." >&2
+    echo "[sec-migrator] SOURCE VAULT '$SRC' REMAINS 100% INTACT & UNTOUCHED." >&2
+    
+    # Save transaction log up to failure point
+    jq -n --arg src "$SRC" --arg dst "$DST" --argjson items "$created_log" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      '{srcBackend: $src, dstBackend: $dst, timestamp: $ts, createdItems: $items}' > "$TX_FILE"
+    chmod 600 "$TX_FILE" 2>/dev/null || true
+
+    echo "[sec-migrator] Saved migration transaction state log to $TX_FILE." >&2
+    echo "[sec-migrator] To rollback created items from '$DST', run 'sec migrate --undo'." >&2
+    exit 1
+}
+
+while read -r item; do
+    if [[ -z "$item" ]]; then continue; fi
+    name="$(echo "$item" | jq -r '.name // .title // .key // empty')"
+    if [[ -z "$name" ]]; then continue; fi
+
+    val="$(echo "$item" | jq -r '.notes // .login.password // .value // empty')"
+
+    if [[ "$MODE" == "plan" ]]; then
+        echo "  [PLAN MIGRATE] \"$name\" -> Target: $DST"
+        migrated_count=$((migrated_count + 1))
+    elif [[ "$MODE" == "apply" ]]; then
+        echo "  [MIGRATING] \"$name\" -> Target: $DST..."
+        created_id=""
+
+        case "$DST" in
+            1password|op)
+                res="$(op item create --category=password --title="$name" "password=$val" --format=json 2>/dev/null || true)"
+                created_id="$(echo "$res" | jq -r '.id // empty')"
+                if [[ -z "$created_id" ]]; then trap_error "$name"; fi
+                ;;
+            bitwarden|bw)
+                encoded="$(bw get template item 2>/dev/null | jq --arg name "$name" --arg val "$val" '.name=$name | .type=1 | .login.password=$val' | bw encode 2>/dev/null || true)"
+                if [[ -n "$encoded" ]]; then
+                    res="$(bw create item "$encoded" 2>/dev/null || true)"
+                    created_id="$(echo "$res" | jq -r '.id // empty')"
+                fi
+                if [[ -z "$created_id" ]]; then trap_error "$name"; fi
+                ;;
+            bws)
+                proj_id="$(bws project list 2>/dev/null | jq -r '.[0].id // empty')"
+                if [[ -n "$proj_id" && -n "$val" ]]; then
+                    res="$(bws secret create "$name" "$val" "$proj_id" 2>/dev/null || true)"
+                    created_id="$(echo "$res" | jq -r '.id // empty')"
+                fi
+                if [[ -z "$created_id" ]]; then trap_error "$name"; fi
+                ;;
+            infisical)
+                if [[ -n "$val" ]]; then
+                    infisical secrets set "$name=$val" >/dev/null 2>&1 || trap_error "$name"
+                    created_id="$name"
+                fi
+                ;;
+            vault)
+                if [[ -n "$val" ]]; then
+                    vault kv put "secret/data/$name" "value=$val" >/dev/null 2>&1 || trap_error "$name"
+                    created_id="$name"
+                fi
+                ;;
+        esac
+
+        created_log="$(echo "$created_log" | jq --arg id "$created_id" --arg name "$name" '. + [{"id": $id, "name": $name}]')"
+        migrated_count=$((migrated_count + 1))
+    fi
+done < <(echo "$items_json" | jq -c '.[]')
+
+echo ""
+if [[ "$MODE" == "plan" ]]; then
+    echo "Migration Plan Summary: Ready to migrate $migrated_count secrets from $SRC -> $DST."
+    echo "Run 'sec migrate --from $SRC --to $DST --apply' to execute migration."
+else
+    # Save final completed transaction log
+    jq -n --arg src "$SRC" --arg dst "$DST" --argjson items "$created_log" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      '{srcBackend: $src, dstBackend: $dst, timestamp: $ts, createdItems: $items}' > "$TX_FILE"
+    chmod 600 "$TX_FILE" 2>/dev/null || true
+
+    echo "=== ✨ Vault Migration Successfully Completed ($migrated_count items migrated) ==="
+    echo "Migration transaction log saved to $TX_FILE."
+    echo "If needed, run 'sec migrate --undo' to revert created items in '$DST'."
+fi

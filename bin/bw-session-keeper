@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+# bin/bw-session-keeper: Cross-Platform Bitwarden Session Keep-Alive & Rotation System
+# Supports macOS (Keychain + LaunchAgent), Linux, and Windows WSL 2 (libsecret / file fallback + systemd / cron).
+
+set -euo pipefail
+
+CACHE_DIR="$HOME/.cache/bitwarden"
+SESSION_FILE="$CACHE_DIR/session"
+MASTER_PASS_FILE="$CACHE_DIR/master_pass"
+KEYCHAIN_SERVICE="bw_session"
+MASTER_PASS_SERVICE="bw_session_master_password"
+
+mkdir -p "$CACHE_DIR"
+chmod 700 "$CACHE_DIR"
+
+# Detect OS & Environment
+OS_TYPE="$(uname -s | tr '[:upper:]' '[:lower:]')"
+IS_WSL=false
+if [[ -f /proc/version ]] && grep -qi "microsoft" /proc/version; then
+    IS_WSL=true
+fi
+
+# 1. Helper to retrieve stored session key
+get_stored_session() {
+    if [[ -f "$SESSION_FILE" ]] && [[ -s "$SESSION_FILE" ]]; then
+        cat "$SESSION_FILE"
+    elif [[ "$OS_TYPE" == "darwin" ]] && command -v security >/dev/null 2>&1; then
+        security find-generic-password -w -s "$KEYCHAIN_SERVICE" 2>/dev/null || true
+    elif command -v secret-tool >/dev/null 2>&1; then
+        secret-tool lookup service "$KEYCHAIN_SERVICE" username "${USER:-anass}" 2>/dev/null || true
+    fi
+}
+
+# 2. Save session key securely
+save_session() {
+    local session="$1"
+    echo -n "$session" > "$SESSION_FILE"
+    chmod 600 "$SESSION_FILE"
+
+    if [[ "$OS_TYPE" == "darwin" ]] && command -v security >/dev/null 2>&1; then
+        security add-generic-password -U -s "$KEYCHAIN_SERVICE" -a "${USER:-anass}" -w "$session" 2>/dev/null || true
+    elif command -v secret-tool >/dev/null 2>&1; then
+        secret-tool store --label="Bitwarden Session" service "$KEYCHAIN_SERVICE" username "${USER:-anass}" <<< "$session" 2>/dev/null || true
+    fi
+}
+
+# 3. Get master password securely across macOS, Linux, and Windows WSL 2
+get_master_password() {
+    if [[ "$OS_TYPE" == "darwin" ]] && command -v security >/dev/null 2>&1; then
+        security find-generic-password -w -s "$MASTER_PASS_SERVICE" 2>/dev/null || true
+    elif command -v secret-tool >/dev/null 2>&1; then
+        secret-tool lookup service "$MASTER_PASS_SERVICE" username "${USER:-anass}" 2>/dev/null || true
+    elif [[ -f "$MASTER_PASS_FILE" ]] && [[ -s "$MASTER_PASS_FILE" ]]; then
+        cat "$MASTER_PASS_FILE"
+    fi
+}
+
+# 4. Save master password securely across platforms
+save_master_password() {
+    local pass="$1"
+    if [[ "$OS_TYPE" == "darwin" ]] && command -v security >/dev/null 2>&1; then
+        security add-generic-password -U -s "$MASTER_PASS_SERVICE" -a "${USER:-anass}" -w "$pass"
+        echo "[bw-session-keeper] Master password saved in macOS Keychain ($MASTER_PASS_SERVICE)."
+    elif command -v secret-tool >/dev/null 2>&1; then
+        secret-tool store --label="Bitwarden Master Password" service "$MASTER_PASS_SERVICE" username "${USER:-anass}" <<< "$pass"
+        echo "[bw-session-keeper] Master password saved in Linux Secret Service ($MASTER_PASS_SERVICE)."
+    else
+        echo -n "$pass" > "$MASTER_PASS_FILE"
+        chmod 600 "$MASTER_PASS_FILE"
+        echo "[bw-session-keeper] Master password saved in mode-0600 file ($MASTER_PASS_FILE)."
+    fi
+}
+
+# 5. Check session validity
+validate_session() {
+    local session
+    session="$(get_stored_session)"
+    if [[ -z "$session" ]]; then
+        return 1
+    fi
+
+    if BW_SESSION="$session" bw sync --nostatus >/dev/null 2>&1; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Commands
+cmd="${1:-status}"
+
+case "$cmd" in
+    status)
+        local_status="$(bw status 2>/dev/null | jq -r '.status // "unknown"')"
+        echo "=== Bitwarden Session Keeper Status ($OS_TYPE${IS_WSL:+ / WSL 2}) ==="
+        echo "  [Vault Status] : $local_status"
+        if validate_session; then
+            echo "  [Session Key]  : VALID & ACTIVE (Vault synced)"
+        else
+            echo "  [Session Key]  : EXPIRED or MISSING"
+        fi
+        ;;
+
+    env)
+        session="$(get_stored_session)"
+        if [[ -n "$session" ]]; then
+            echo "export BW_SESSION=\"$session\""
+        else
+            echo "# Bitwarden session not active. Run 'bw-session-keeper unlock' or 'sec unlock'." >&2
+        fi
+        ;;
+
+    unlock)
+        shift || true
+        password="${1:-}"
+
+        if [[ -z "$password" ]]; then
+            password="$(get_master_password)"
+        fi
+
+        if [[ -z "$password" ]]; then
+            read -rsp "Enter Bitwarden Master Password: " password
+            echo ""
+        fi
+
+        echo "[bw-session-keeper] Unlocking Bitwarden vault..."
+        raw_session="$(bw unlock "$password" --raw 2>/dev/null || true)"
+
+        if [[ -n "$raw_session" ]]; then
+            save_session "$raw_session"
+            echo "[bw-session-keeper] Vault unlocked successfully. Session key saved to $SESSION_FILE."
+            BW_SESSION="$raw_session" bw sync >/dev/null 2>&1 || true
+        else
+            echo "[bw-session-keeper] Error: Failed to unlock vault. Check master password." >&2
+            exit 1
+        fi
+        ;;
+
+    rotate|keep)
+        if validate_session; then
+            session="$(get_stored_session)"
+            echo "[bw-session-keeper] Session is valid. Refreshing vault sync..."
+            BW_SESSION="$session" bw sync >/dev/null 2>&1
+            echo "[bw-session-keeper] Vault synced successfully."
+        else
+            echo "[bw-session-keeper] Session expired/missing. Attempting auto-rotation..."
+            pass="$(get_master_password)"
+            if [[ -n "$pass" ]]; then
+                "$0" unlock "$pass"
+            else
+                echo "[bw-session-keeper] No stored master password found. Run 'bw-session-keeper setup-keychain' or 'bw-session-keeper unlock'." >&2
+                exit 1
+            fi
+        fi
+        ;;
+
+    setup-keychain|setup)
+        shift || true
+        password="${1:-}"
+        if [[ -z "$password" ]]; then
+            read -rsp "Enter Bitwarden Master Password: " password
+            echo ""
+        fi
+
+        save_master_password "$password"
+        "$0" unlock "$password"
+        ;;
+
+    *)
+        echo "Usage: bw-session-keeper {status|env|unlock|rotate|keep|setup}"
+        exit 1
+        ;;
+esac

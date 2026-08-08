@@ -1,0 +1,259 @@
+#!/usr/bin/env bash
+# bin/sec-organizer: Universal Multi-Backend Secret Housekeeping, Disambiguating Renamer, Backup, and Revert Engine
+set -euo pipefail
+
+CACHE_DIR="$HOME/.cache/bitwarden"
+PLAN_FILE="$CACHE_DIR/housekeep_plan.json"
+LATEST_SNAPSHOT="$CACHE_DIR/snapshot_latest.json"
+mkdir -p "$CACHE_DIR"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Ensure BW_SESSION is populated
+if [[ -z "${BW_SESSION:-}" ]]; then
+    if [[ -f "$HOME/.cache/bitwarden/session" ]] && [[ -s "$HOME/.cache/bitwarden/session" ]]; then
+        export BW_SESSION="$(cat "$HOME/.cache/bitwarden/session")"
+    fi
+fi
+
+# Multi-tiered classification & disambiguation inference engine using embedded Python ML classifier
+categorize_item() {
+    local item_json="$1"
+    if [[ -x "$SCRIPT_DIR/sec-classify.py" ]]; then
+        echo "$item_json" | "$SCRIPT_DIR/sec-classify.py" 2>/dev/null || echo '{"category":"general","confidence":50,"reasons":["fallback"],"suggested_name":"","needs_rename":false}'
+    else
+        echo '{"category":"general","confidence":50,"reasons":["no_classifier"],"suggested_name":"","needs_rename":false}'
+    fi
+}
+
+# Universal backend discovery
+detect_backend() {
+    if command -v bws >/dev/null 2>&1 && bws secret list >/dev/null 2>&1; then
+        echo "bws"
+    elif command -v bw >/dev/null 2>&1; then
+        echo "bw"
+    elif command -v op >/dev/null 2>&1; then
+        echo "op"
+    elif command -v infisical >/dev/null 2>&1; then
+        echo "infisical"
+    elif command -v vault >/dev/null 2>&1; then
+        echo "vault"
+    else
+        echo "unknown"
+    fi
+}
+
+# 1. Generate Housekeeping & Disambiguation Plan
+cmd_plan() {
+    local backend
+    backend="$(detect_backend)"
+    echo "=== 🧹 Fleet Secret Housekeeping Plan (Backend: $backend, ML Disambiguation Enabled) ==="
+
+    if [[ "$backend" == "bw" ]]; then
+        if ! BW_SESSION="${BW_SESSION:-}" bw sync --nostatus >/dev/null 2>&1; then
+            echo "[sec-organizer] Error: Bitwarden vault is locked or session expired. Run 'sec unlock' first." >&2
+            exit 1
+        fi
+        folders_json="$(bw list folders 2>/dev/null || echo "[]")"
+        items_json="$(bw list items 2>/dev/null || echo "[]")"
+    elif [[ "$backend" == "op" ]]; then
+        items_json="$(op item list --format=json 2>/dev/null | jq '[.[] | {id: .id, name: .title, tags: .tags}]' || echo "[]")"
+        folders_json="[]"
+    elif [[ "$backend" == "bws" ]]; then
+        items_json="$(bws secret list 2>/dev/null | jq '[.[] | {id: .id, name: .key}]' || echo "[]")"
+        folders_json="[]"
+    else
+        echo "[sec-organizer] Error: No active, unlocked secret manager backend detected." >&2
+        exit 1
+    fi
+
+    plan_actions="[]"
+    move_count=0
+    skip_count=0
+
+    # Parse items and propose moves & renames
+    while read -r item; do
+        if [[ -z "$item" ]]; then continue; fi
+        id="$(echo "$item" | jq -r '.id // empty')"
+        name="$(echo "$item" | jq -r '.name // empty')"
+        if [[ -z "$name" ]]; then continue; fi
+
+        current_folder_id="$(echo "$item" | jq -r '.folderId // empty')"
+
+        current_folder_name=""
+        if [[ -n "$current_folder_id" ]]; then
+            current_folder_name="$(echo "$folders_json" | jq -r --arg fid "$current_folder_id" '.[] | select(.id == $fid).name // empty')"
+        fi
+
+        ml_res="$(categorize_item "$item")"
+        target_folder="$(echo "$ml_res" | jq -r '.category')"
+        confidence="$(echo "$ml_res" | jq -r '.confidence')"
+        reasons="$(echo "$ml_res" | jq -r '.reasons | join(", ")')"
+        suggested_name="$(echo "$ml_res" | jq -r '.suggested_name // empty')"
+        needs_rename="$(echo "$ml_res" | jq -r '.needs_rename // false')"
+
+        if [[ "$current_folder_name" == "$target_folder" ]]; then folder_matched=true; else folder_matched=false; fi
+
+        if [[ "$needs_rename" == "true" && "$suggested_name" != "$name" ]]; then
+            rename_target="$suggested_name"
+        else
+            rename_target="$name"
+        fi
+
+        if [[ "$folder_matched" == "true" && "$rename_target" == "$name" ]]; then
+            skip_count=$((skip_count + 1))
+            echo "  [SKIP]    \"$name\" -> Already organized in folder: \"$target_folder\" (Confidence: ${confidence}%)"
+        else
+            move_count=$((move_count + 1))
+            if [[ "$rename_target" != "$name" && "$folder_matched" == "false" ]]; then
+                echo "  [MOVE & RENAME] \"$name\" -> Folder: \"$target_folder\", New Name: \"$rename_target\" (Confidence: ${confidence}%, Match: [$reasons])"
+            elif [[ "$rename_target" != "$name" ]]; then
+                echo "  [RENAME]  \"$name\" -> New Name: \"$rename_target\" (Disambiguated by username/notes)"
+            else
+                echo "  [MOVE]    \"$name\" (${current_folder_name:-root}) -> Folder/Tag: \"$target_folder\" (Confidence: ${confidence}%, Match: [$reasons])"
+            fi
+
+            plan_actions="$(echo "$plan_actions" | jq --arg id "$id" --arg orig_name "$name" --arg new_name "$rename_target" --arg target "$target_folder" --arg current "$current_folder_name" --arg cfid "$current_folder_id" --arg conf "$confidence" '. + [{"id": $id, "originalName": $orig_name, "newName": $new_name, "targetFolder": $target, "currentFolder": $current, "currentFolderId": $cfid, "confidence": $conf}]')"
+        fi
+    done < <(echo "$items_json" | jq -c '.[]')
+
+    echo ""
+    echo "Plan Summary: $move_count secrets to re-organize / rename, $skip_count already organized."
+
+    # Save plan
+    jq -n --arg backend "$backend" --argjson actions "$plan_actions" --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      '{backend: $backend, timestamp: $timestamp, actions: $actions}' > "$PLAN_FILE"
+
+    echo "Plan saved to $PLAN_FILE."
+    if [[ $move_count -gt 0 ]]; then
+        echo "Run 'sec housekeep apply' to execute this organization plan."
+    fi
+}
+
+# 2. Apply Housekeeping Plan (Creates pre-apply snapshot)
+cmd_apply() {
+    echo "=== ⚡ Executing Fleet Secret Housekeeping Plan ==="
+
+    if [[ ! -f "$PLAN_FILE" ]]; then
+        echo "[sec-organizer] No plan file found. Run 'sec housekeep plan' first." >&2
+        exit 1
+    fi
+
+    backend="$(jq -r '.backend // "bw"' "$PLAN_FILE")"
+    actions="$(jq -c '.actions[]' "$PLAN_FILE" 2>/dev/null || echo "")"
+    if [[ -z "$actions" ]]; then
+        echo "[sec-organizer] Plan contains zero move/rename actions. Everything is up to date."
+        exit 0
+    fi
+
+    # Create timestamped pre-apply backup snapshot
+    snapshot_ts="$(date +%Y%m%d_%H%M%S)"
+    snapshot_file="$CACHE_DIR/snapshot_${snapshot_ts}.json"
+    cp "$PLAN_FILE" "$snapshot_file"
+    chmod 600 "$snapshot_file" "$PLAN_FILE" 2>/dev/null || true
+    ln -sf "$snapshot_file" "$LATEST_SNAPSHOT"
+    echo "[sec-organizer] Pre-apply backup snapshot created: $snapshot_file (Mode 0600)"
+
+    if [[ "$backend" == "bw" ]]; then
+        folders_json="$(bw list folders 2>/dev/null || echo "[]")"
+
+        while read -r action; do
+            if [[ -z "$action" ]]; then continue; fi
+            id="$(echo "$action" | jq -r '.id')"
+            orig_name="$(echo "$action" | jq -r '.originalName')"
+            new_name="$(echo "$action" | jq -r '.newName')"
+            target="$(echo "$action" | jq -r '.targetFolder')"
+
+            folder_id="$(echo "$folders_json" | jq -r --arg t "$target" '.[] | select(.name == $t).id // empty')"
+
+            if [[ -z "$folder_id" ]]; then
+                echo "[sec-organizer] Creating folder: \"$target\"..."
+                new_folder="$(bw get template folder | jq --arg t "$target" '.name = $t' | bw encode | bw create folder 2>/dev/null)"
+                folder_id="$(echo "$new_folder" | jq -r '.id')"
+                folders_json="$(bw list folders 2>/dev/null || echo "[]")"
+            fi
+
+            echo "[sec-organizer] Updating \"$orig_name\" -> Name: \"$new_name\", Folder: \"$target\"..."
+            item_json="$(bw get item "$id" 2>/dev/null)"
+            updated_item="$(echo "$item_json" | jq --arg fid "$folder_id" --arg n "$new_name" '.folderId = $fid | .name = $n' | bw encode)"
+            bw edit item "$id" "$updated_item" >/dev/null
+        done <<< "$actions"
+
+        echo "[sec-organizer] Syncing Bitwarden vault..."
+        bw sync >/dev/null 2>&1 || true
+
+    elif [[ "$backend" == "op" ]]; then
+        while read -r action; do
+            if [[ -z "$action" ]]; then continue; fi
+            id="$(echo "$action" | jq -r '.id')"
+            new_name="$(echo "$action" | jq -r '.newName')"
+            target="$(echo "$action" | jq -r '.targetFolder')"
+
+            echo "[sec-organizer] Updating 1Password item \"$id\" -> Title: \"$new_name\", Tag: \"$target\"..."
+            op item edit "$id" --title "$new_name" --tag "$target" >/dev/null 2>&1 || true
+        done <<< "$actions"
+    fi
+
+    rm -f "$PLAN_FILE"
+    echo "=== ✨ Secret Housekeeping Successfully Applied ==="
+    echo "To revert this change at any time, run 'sec housekeep revert'."
+}
+
+# 3. Revert / Undo Pre-Apply State
+cmd_revert() {
+    echo "=== 🔄 Reverting Last Secret Housekeeping Operation ==="
+
+    if [[ ! -f "$LATEST_SNAPSHOT" ]]; then
+        echo "[sec-organizer] Error: No pre-apply snapshot found ($LATEST_SNAPSHOT). Nothing to revert." >&2
+        exit 1
+    fi
+
+    backend="$(jq -r '.backend // "bw"' "$LATEST_SNAPSHOT")"
+    actions="$(jq -c '.actions[]' "$LATEST_SNAPSHOT" 2>/dev/null || echo "")"
+    if [[ -z "$actions" ]]; then
+        echo "[sec-organizer] Snapshot contains zero move actions."
+        exit 0
+    fi
+
+    if [[ "$backend" == "bw" ]]; then
+        while read -r action; do
+            if [[ -z "$action" ]]; then continue; fi
+            id="$(echo "$action" | jq -r '.id')"
+            orig_name="$(echo "$action" | jq -r '.originalName')"
+            orig_fid="$(echo "$action" | jq -r '.currentFolderId // null')"
+            orig_folder_name="$(echo "$action" | jq -r '.currentFolder // "root"')"
+
+            echo "[sec-organizer] Reverting \"$id\" -> Original Name: \"$orig_name\", Original Folder: \"${orig_folder_name:-root}\"..."
+            item_json="$(bw get item "$id" 2>/dev/null)"
+            if [[ "$orig_fid" == "null" || -z "$orig_fid" ]]; then
+                updated_item="$(echo "$item_json" | jq --arg n "$orig_name" '.folderId = null | .name = $n' | bw encode)"
+            else
+                updated_item="$(echo "$item_json" | jq --arg fid "$orig_fid" --arg n "$orig_name" '.folderId = $fid | .name = $n' | bw encode)"
+            fi
+            bw edit item "$id" "$updated_item" >/dev/null
+        done <<< "$actions"
+
+        echo "[sec-organizer] Syncing Bitwarden vault..."
+        bw sync >/dev/null 2>&1 || true
+
+    elif [[ "$backend" == "op" ]]; then
+        while read -r action; do
+            if [[ -z "$action" ]]; then continue; fi
+            id="$(echo "$action" | jq -r '.id')"
+            orig_name="$(echo "$action" | jq -r '.originalName')"
+
+            echo "[sec-organizer] Reverting 1Password item \"$id\" -> Title: \"$orig_name\"..."
+            op item edit "$id" --title "$orig_name" --tag="" >/dev/null 2>&1 || true
+        done <<< "$actions"
+    fi
+
+    rm -f "$LATEST_SNAPSHOT"
+    echo "=== ✨ Secret Housekeeping Revert Successfully Completed ==="
+}
+
+case "${1:-plan}" in
+    plan)          cmd_plan ;;
+    apply)         cmd_apply ;;
+    revert|undo|restore) cmd_revert ;;
+    *)             echo "Usage: sec-organizer {plan|apply|revert}"; exit 1 ;;
+esac

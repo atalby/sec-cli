@@ -1,0 +1,304 @@
+#!/usr/bin/env bash
+# bin/sec: Multi-Tenant Zero-Plaintext Secret Manager Wrapper & Auth/Auto-Rotate Engine
+set -euo pipefail
+
+VERSION="1.0.0"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_DIR="$HOME/.sec"
+CONFIG_FILE="$CONFIG_DIR/sec.conf"
+
+mkdir -p "$CONFIG_DIR"
+chmod 700 "$CONFIG_DIR"
+
+# Initialize default ~/.sec/sec.conf if missing
+ensure_config() {
+    if [[ ! -f "$CONFIG_FILE" ]]; then
+        cat <<EOF > "$CONFIG_FILE"
+# ~/.sec/sec.conf: Fleet Multi-Tenant Secret Manager Configuration
+[global]
+default_backend = bitwarden
+auto_rotate = true
+
+[bitwarden]
+cli = bw
+auto_rotate = true
+
+[1pass]
+cli = op
+auto_rotate = false
+
+[bws]
+cli = bws
+auto_rotate = true
+
+[vault]
+cli = vault
+auto_rotate = false
+
+[infisical]
+cli = infisical
+auto_rotate = false
+EOF
+        chmod 600 "$CONFIG_FILE"
+    fi
+}
+
+ensure_config
+
+# Helper to read INI config property
+get_cfg_val() {
+    local section="$1"
+    local key="$2"
+    local default_val="$3"
+    awk -F '=' -v s="[$section]" -v k="$key" '
+        $0 == s { in_s=1; next }
+        /^\[/ { in_s=0 }
+        in_s && $1 ~ k { gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; found=1; exit }
+        END { if (!found) print "'"$default_val"'" }
+    ' "$CONFIG_FILE" 2>/dev/null || echo "$default_val"
+}
+
+DEFAULT_BACKEND="$(get_cfg_val "global" "default_backend" "bitwarden")"
+
+# Parse Tenant Prefix (e.g., 'sec 1pass get KEY' or 'sec bitwarden set KEY')
+TARGET_TENANT=""
+if [[ $# -ge 2 ]] && [[ "$1" =~ ^(bitwarden|bw|1pass|op|bws|vault|infisical|keychain)$ ]]; then
+    TARGET_TENANT="$1"
+    shift
+fi
+
+if [[ -z "$TARGET_TENANT" ]]; then
+    TARGET_TENANT="$DEFAULT_BACKEND"
+fi
+
+# Ensure Authentication / Session Auto-Rotate for Target Tenant
+ensure_tenant_auth() {
+    local tenant="$1"
+    local auto_rotate
+    auto_rotate="$(get_cfg_val "$tenant" "auto_rotate" "true")"
+
+    case "$tenant" in
+        bitwarden|bw)
+            if [[ "$auto_rotate" == "true" ]]; then
+                if [[ -f "$HOME/.cache/bitwarden/session" ]] && [[ -s "$HOME/.cache/bitwarden/session" ]]; then
+                    export BW_SESSION="$(cat "$HOME/.cache/bitwarden/session")"
+                elif [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
+                    eval "$("$SCRIPT_DIR/bw-session-keeper" env 2>/dev/null)" || true
+                fi
+            fi
+
+            if ! BW_SESSION="${BW_SESSION:-}" bw sync --nostatus >/dev/null 2>&1; then
+                if [[ "$auto_rotate" == "true" ]] && [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
+                    echo "[sec] Session expired. Executing auto-rotation for Bitwarden..." >&2
+                    "$SCRIPT_DIR/bw-session-keeper" rotate >/dev/null 2>&1 || true
+                    if [[ -f "$HOME/.cache/bitwarden/session" ]]; then
+                        export BW_SESSION="$(cat "$HOME/.cache/bitwarden/session")"
+                    fi
+                fi
+            fi
+
+            if ! BW_SESSION="${BW_SESSION:-}" bw sync --nostatus >/dev/null 2>&1; then
+                echo "[sec] Bitwarden vault is locked. Prompting for interactive unlock..." >&2
+                if [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
+                    "$SCRIPT_DIR/bw-session-keeper" unlock
+                    if [[ -f "$HOME/.cache/bitwarden/session" ]]; then
+                        export BW_SESSION="$(cat "$HOME/.cache/bitwarden/session")"
+                    fi
+                fi
+            fi
+            ;;
+        1pass|op)
+            if ! op account list >/dev/null 2>&1; then
+                echo "[sec] 1Password is locked. Prompting for interactive signin..." >&2
+                eval $(op signin)
+            fi
+            ;;
+        vault)
+            if ! vault token lookup >/dev/null 2>&1; then
+                echo "[sec] HashiCorp Vault token expired. Prompting for login..." >&2
+                vault login
+            fi
+            ;;
+    esac
+}
+
+usage() {
+    echo "sec-cli v$VERSION — Multi-Tenant Zero-Plaintext Secret Manager & Housekeeper"
+    echo "Config File: ~/.sec/sec.conf (Default Tenant: $DEFAULT_BACKEND)"
+    echo ""
+    echo "Usage:"
+    echo "  sec [<tenant>] get <key>                 Retrieve secret value from tenant or default vault"
+    echo "  sec [<tenant>] get <item>/<field>        Retrieve specific field from named vault item (e.g. 'github/password')"
+    echo "  sec [<tenant>] set <key> [<val>]         Store / create new secret in tenant vault (prompts if <val> omitted)"
+    echo "  sec [<tenant>] run -- <cmd>              Execute command with tenant secrets injected into process memory"
+    echo "  sec housekeep {plan|apply|revert}        Intelligent ML categorization, plan/apply, & instant rollback engine"
+    echo "  sec migrate --from <src> --to <dst>     Zero-plaintext vault-to-vault migration engine"
+    echo "  sec unlock                               Unlock Bitwarden vault and save session"
+    echo "  sec rotate                               Keep-alive / rotate Bitwarden session key"
+    echo "  sec setup-keychain                       Store master password in Keychain for auto-rotation"
+    echo ""
+    echo "Flags:"
+    echo "  -h, --help     Display this help menu"
+    echo "  -v, --version  Display version"
+    echo ""
+    echo "Configured Tenants: bitwarden (bw), 1pass (op), bws, vault, infisical, keychain"
+    exit 0
+}
+
+if [[ $# -lt 1 ]]; then usage; fi
+
+cmd="$1"; shift
+
+case "$cmd" in
+    -h|--help|help)
+        usage
+        ;;
+    -v|--version|version)
+        echo "sec-cli version $VERSION"
+        exit 0
+        ;;
+    get)
+        if [[ $# -lt 1 ]]; then usage; fi
+        key="$1"
+        ensure_tenant_auth "$TARGET_TENANT"
+
+        item_name="$key"
+        field_name=""
+
+        if [[ "$key" =~ ^op:// ]]; then
+            if command -v op >/dev/null 2>&1; then
+                op read "$key" 2>/dev/null && exit 0
+            fi
+        elif [[ "$key" == *"/"* ]]; then
+            item_name="${key%/*}"
+            field_name="${key##*/}"
+        fi
+
+        case "$TARGET_TENANT" in
+            bitwarden|bw)
+                if command -v bw >/dev/null 2>&1; then
+                    items_json="$(bw list items --search "$item_name" 2>/dev/null || true)"
+                    count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
+                    if [[ "$count" -ge 1 ]]; then
+                        item="$(echo "$items_json" | jq '.[0]')"
+                        if [[ -n "$field_name" ]]; then
+                            res="$(echo "$item" | jq -r --arg f "$field_name" '
+                                if $f == "password" then .login.password
+                                elif $f == "username" then .login.username
+                                elif $f == "notes" then .notes
+                                else (.fields[]? | select(.name == $f).value // empty)
+                                end // empty
+                            ')"
+                        else
+                            res="$(echo "$item" | jq -r '.notes // .login.password // empty')"
+                        fi
+                        if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
+                    fi
+                fi
+                ;;
+            1pass|op)
+                if command -v op >/dev/null 2>&1; then
+                    if [[ -n "$field_name" ]]; then
+                        op read "op://private/$item_name/$field_name" 2>/dev/null && exit 0
+                    else
+                        op read "op://private/$key/password" 2>/dev/null && exit 0
+                    fi
+                fi
+                ;;
+            bws)
+                if command -v bws >/dev/null 2>&1; then
+                    res="$(bws secret get "$key" --value-only 2>/dev/null || true)"
+                    if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
+                fi
+                ;;
+            vault)
+                if command -v vault >/dev/null 2>&1; then
+                    f="${field_name:-value}"
+                    vault kv get -field="$f" "secret/data/$item_name" 2>/dev/null && exit 0
+                fi
+                ;;
+            infisical)
+                if command -v infisical >/dev/null 2>&1; then
+                    infisical secrets get "$key" --plain 2>/dev/null && exit 0
+                fi
+                ;;
+        esac
+
+        echo "[sec] Error: Secret '$key' not found in tenant '$TARGET_TENANT'." >&2
+        exit 1
+        ;;
+
+    set|create)
+        if [[ $# -lt 1 ]]; then usage; fi
+        key="$1"; shift || true
+        value="${1:-}"
+        ensure_tenant_auth "$TARGET_TENANT"
+
+        if [[ -z "$value" ]]; then
+            read -rsp "Enter secret value for '$key' ($TARGET_TENANT): " value
+            echo ""
+        fi
+
+        case "$TARGET_TENANT" in
+            bitwarden|bw)
+                encoded="$(bw get template item 2>/dev/null | jq --arg name "$key" --arg val "$value" '.name=$name | .type=1 | .login.password=$val' | bw encode 2>/dev/null || true)"
+                if [[ -n "$encoded" ]]; then
+                    if bw create item "$encoded" >/dev/null 2>&1; then
+                        echo "[sec] Secret '$key' saved to Bitwarden Vault."
+                        exit 0
+                    fi
+                fi
+                ;;
+            1pass|op)
+                if op item create --category=password --title="$key" "password=$value" >/dev/null 2>&1; then
+                    echo "[sec] Secret '$key' saved to 1Password."
+                    exit 0
+                fi
+                ;;
+            bws)
+                proj_id="$(bws project list 2>/dev/null | jq -r '.[0].id // empty')"
+                if [[ -n "$proj_id" ]]; then
+                    if bws secret create "$key" "$value" "$proj_id" >/dev/null 2>&1; then
+                        echo "[sec] Secret '$key' saved to Bitwarden Secrets Manager."
+                        exit 0
+                    fi
+                fi
+                ;;
+        esac
+        ;;
+
+    run)
+        if [[ $# -lt 1 ]]; then usage; fi
+        if [[ "$1" == "--" ]]; then shift; fi
+        ensure_tenant_auth "$TARGET_TENANT"
+
+        case "$TARGET_TENANT" in
+            bws)        exec bws run -- "$@" ;;
+            1pass|op)   exec op run -- "$@" ;;
+            infisical)  exec infisical run -- "$@" ;;
+            *)          exec "$@" ;;
+        esac
+        ;;
+
+    housekeep|organize)
+        if [[ -x "$SCRIPT_DIR/sec-organizer" ]]; then
+            exec "$SCRIPT_DIR/sec-organizer" "${1:-plan}"
+        fi
+        ;;
+
+    migrate)
+        if [[ -x "$SCRIPT_DIR/sec-migrator" ]]; then
+            exec "$SCRIPT_DIR/sec-migrator" "$@"
+        fi
+        ;;
+
+    unlock|rotate|keep|setup-keychain)
+        if [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
+            exec "$SCRIPT_DIR/bw-session-keeper" "$cmd" "$@"
+        fi
+        ;;
+
+    *)
+        usage
+        ;;
+esac

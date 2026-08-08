@@ -1,0 +1,8 @@
+# sec-cli .gitignore
+.DS_Store
+*.log
+.cache/
+~/.sec/
+housekeep_plan.json
+snapshot_*.json
+migration_transaction.json
