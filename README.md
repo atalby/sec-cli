@@ -88,10 +88,29 @@ Usage:
   sec unlock                               Unlock Bitwarden vault and save session
   sec rotate                               Keep-alive / rotate Bitwarden session key
   sec setup-keychain                       Store master password in Keychain for auto-rotation
+  sec completion {zsh|bash|fish|ps1}        Generate shell autocompletion scripts
 
 Flags:
   -h, --help     Display this help menu
   -v, --version  Display version
+```
+
+---
+
+### ⌨️ Shell Autocompletion Setup
+
+```bash
+# Zsh (macOS / Linux / WSL):
+source <(sec completion zsh)
+
+# Bash (Linux / Git Bash):
+source <(sec completion bash)
+
+# Fish Shell:
+sec completion fish | source
+
+# PowerShell (Windows Native):
+sec completion ps1 | Invoke-Expression
 ```
 
 ---
