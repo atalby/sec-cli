@@ -82,12 +82,13 @@ ensure_tenant_auth() {
             if [[ "$auto_rotate" == "true" ]]; then
                 if [[ -f "$HOME/.cache/bitwarden/session" ]] && [[ -s "$HOME/.cache/bitwarden/session" ]]; then
                     export BW_SESSION="$(cat "$HOME/.cache/bitwarden/session")"
-                elif [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
-                    eval "$("$SCRIPT_DIR/bw-session-keeper" env 2>/dev/null)" || true
                 fi
             fi
 
-            if ! BW_SESSION="${BW_SESSION:-}" bw sync --nostatus >/dev/null 2>&1; then
+            local status_val
+            status_val="$(BW_SESSION="${BW_SESSION:-}" bw status 2>/dev/null | jq -r '.status // "unauthenticated"')"
+
+            if [[ "$status_val" != "unlocked" ]]; then
                 if [[ "$auto_rotate" == "true" ]] && [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
                     echo "[sec] Session expired. Executing auto-rotation for Bitwarden..." >&2
                     "$SCRIPT_DIR/bw-session-keeper" rotate >/dev/null 2>&1 || true
@@ -97,7 +98,11 @@ ensure_tenant_auth() {
                 fi
             fi
 
-            if ! BW_SESSION="${BW_SESSION:-}" bw sync --nostatus >/dev/null 2>&1; then
+            status_val="$(BW_SESSION="${BW_SESSION:-}" bw status 2>/dev/null | jq -r '.status // "unauthenticated"')"
+            if [[ "$status_val" != "unlocked" ]]; then
+                if [[ "${SEC_NONINTERACTIVE:-0}" == "1" ]]; then
+                    return 1
+                fi
                 echo "[sec] Bitwarden vault is locked. Prompting for interactive unlock..." >&2
                 if [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
                     "$SCRIPT_DIR/bw-session-keeper" unlock
@@ -318,46 +323,59 @@ EOF
         key="$1"
         ensure_tenant_auth "$TARGET_TENANT"
 
-        item_name="$key"
-        field_name=""
-
         if [[ "$key" =~ ^op:// ]]; then
             if command -v op >/dev/null 2>&1; then
                 op read "$key" 2>/dev/null && exit 0
             fi
-        elif [[ "$key" == *"/"* ]]; then
-            item_name="${key%/*}"
-            field_name="${key##*/}"
         fi
 
         case "$TARGET_TENANT" in
             bitwarden|bw)
                 if command -v bw >/dev/null 2>&1; then
-                    items_json="$(bw list items --search "$item_name" 2>/dev/null || true)"
+                    # 1. First check for exact item name match $key
+                    items_json="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$key" 2>/dev/null || true)"
                     count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
                     if [[ "$count" -ge 1 ]]; then
-                        item="$(echo "$items_json" | jq '.[0]')"
-                        if [[ -n "$field_name" ]]; then
-                            res="$(echo "$item" | jq -r --arg f "$field_name" '
-                                if $f == "password" then .login.password
-                                elif $f == "username" then .login.username
-                                elif $f == "notes" then .notes
-                                else (.fields[]? | select(.name == $f).value // empty)
-                                end // empty
-                            ')"
-                        else
+                        item="$(echo "$items_json" | jq --arg name "$key" '[.[] | select(.name == $name)][0] // empty')"
+                        if [[ -n "$item" && "$item" != "null" ]]; then
                             res="$(echo "$item" | jq -r '.notes // .login.password // empty')"
+                            if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
                         fi
-                        if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
+                    fi
+
+                    # 2. If exact match not found and key contains slash, treat as <item_name>/<field_name>
+                    if [[ "$key" == *"/"* ]]; then
+                        item_name="${key%/*}"
+                        field_name="${key##*/}"
+                        items_json="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$item_name" 2>/dev/null || true)"
+                        count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
+                        if [[ "$count" -ge 1 ]]; then
+                            item="$(echo "$items_json" | jq --arg name "$item_name" '[.[] | select(.name == $name)][0] // .[0]')"
+                            if [[ -n "$item" && "$item" != "null" ]]; then
+                                res="$(echo "$item" | jq -r --arg f "$field_name" '
+                                    if $f == "password" then .login.password
+                                    elif $f == "username" then .login.username
+                                    elif $f == "notes" then .notes
+                                    else (.fields[]? | select(.name == $f).value // empty)
+                                    end // empty
+                                ')"
+                                if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
+                            fi
+                        fi
                     fi
                 fi
                 ;;
             1pass|op)
                 if command -v op >/dev/null 2>&1; then
-                    if [[ -n "$field_name" ]]; then
-                        op read "op://private/$item_name/$field_name" 2>/dev/null && exit 0
-                    else
-                        op read "op://private/$key/password" 2>/dev/null && exit 0
+                    if res="$(op read "op://private/$key/password" 2>/dev/null || op read "op://private/$key/notes" 2>/dev/null)"; then
+                        if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
+                    fi
+                    if [[ "$key" == *"/"* ]]; then
+                        item_name="${key%/*}"
+                        field_name="${key##*/}"
+                        if res="$(op read "op://private/$item_name/$field_name" 2>/dev/null)"; then
+                            if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
+                        fi
                     fi
                 fi
                 ;;
@@ -397,9 +415,23 @@ EOF
 
         case "$TARGET_TENANT" in
             bitwarden|bw)
-                encoded="$(bw get template item 2>/dev/null | jq --arg name "$key" --arg val "$value" '.name=$name | .type=1 | .login.password=$val' | bw encode 2>/dev/null || true)"
+                # Check if item with exact name $key already exists to update it
+                items_json="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$key" 2>/dev/null || true)"
+                existing_id="$(echo "$items_json" | jq -r --arg name "$key" '[.[] | select(.name == $name)][0].id // empty' 2>/dev/null || true)"
+                if [[ -n "$existing_id" && "$existing_id" != "null" ]]; then
+                    existing_item="$(BW_SESSION="${BW_SESSION:-}" bw get item "$existing_id" 2>/dev/null || true)"
+                    if [[ -n "$existing_item" ]]; then
+                        encoded="$(echo "$existing_item" | jq --arg val "$value" '.notes=$val | .login.password=$val' | bw encode 2>/dev/null || true)"
+                        if [[ -n "$encoded" ]] && BW_SESSION="${BW_SESSION:-}" bw edit item "$existing_id" "$encoded" >/dev/null 2>&1; then
+                            echo "[sec] Secret '$key' updated in Bitwarden Vault."
+                            exit 0
+                        fi
+                    fi
+                fi
+
+                encoded="$(BW_SESSION="${BW_SESSION:-}" bw get template item 2>/dev/null | jq --arg name "$key" --arg val "$value" '.name=$name | .type=1 | .notes=$val | .login.password=$val' | bw encode 2>/dev/null || true)"
                 if [[ -n "$encoded" ]]; then
-                    if bw create item "$encoded" >/dev/null 2>&1; then
+                    if BW_SESSION="${BW_SESSION:-}" bw create item "$encoded" >/dev/null 2>&1; then
                         echo "[sec] Secret '$key' saved to Bitwarden Vault."
                         exit 0
                     fi
