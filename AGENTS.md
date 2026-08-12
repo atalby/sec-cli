@@ -97,7 +97,12 @@ architecture doc? a test suite? a deploy pipeline?) rather than asserting
 a tier from memory.
 
 **Cost Circuit-Breakers & Spend Safety**:
-- **Golden Rule — $0.00 / Minimum Spend Mandate**: Every architectural design, hosting selection, DNS routing, and infrastructure decision MUST strictly prioritize $0.00 out-of-pocket solutions (utilizing Cloudflare Free Tier, GCP Cloud Run scale-to-zero free tier, GitHub/GitLab free CI minutes, Bitwarden free tier, and open-source tooling). Any proposed solution that introduces a paid recurring cost MUST be explicitly flagged and requires explicit Human Systems Architect authorization.
+- **Inviolable Zero-Cost ($0) Idle Auto-Scaling Policy**: All infrastructure manifests (Cloud Run, Cloudflare Workers, Vercel Serverless, AWS Lambda/Fargate) MUST configure scale-to-zero auto-scaling (`min_instances = 0`) to guarantee $0 spend when idle.
+- **Free-Tier Tiering Primacy**:
+  - Compute: GCP Cloud Run (`min_instances = 0`, max=10, 2M free reqs/mo) or Vercel Serverless Hobby tier ($0).
+  - Edge Routing & DNS: Cloudflare Free Tier / Workers (100k free reqs/day).
+  - Storage & DB: SQLite / Cloudflare R2 / GCP GCS Free Tier (5 GB/mo).
+  - Paid Add-ons: Opt-in only (`enable_redis = false`, zero compute allocation when unutilized).
 - **Budget Threshold**: No agent session or automated swarm may incur
   >$50/day in external cloud infrastructure spend or >1,000,000
   tokens/session without explicit Human Systems Architect authorization.
@@ -115,6 +120,11 @@ a tier from memory.
   transmit proprietary codebase logic, internal skills, or prompt library
   assets to external third-party training pipelines, public pastebins, or
   untrusted endpoints.
+
+**Mandatory Role-Based Access Control (RBAC) & Zero-Trust Mandate**:
+- **Capabilities Scoping as a Non-Negotiable**: All tool execution gateways, REST/WebSocket API endpoints, and background worker processes MUST enforce Role-Based Access Control (RBAC) and least-privilege capability scoping (`admin`, `engineer`, `viewer`, or vertical persona capability bounds).
+- **Human-in-the-Loop (HITL) Safety Gates**: Operations classified as `HIGH_RISK` (e.g. database schema migrations, cloud IAM policy changes, deployment promotions, financial webhooks) MUST enforce an explicit Human-in-the-Loop (`approved=True`) gate prior to execution.
+- **Fail-Closed Default Posture**: If an incoming request or tool invocation lacks explicit role claims, tenant claims, or valid session JWT signatures, the system MUST fail closed (reject with `HTTP 401/403 Forbidden`) rather than falling back to permissive access.
 
 **Zero-File Communication Mandate**:
 - **No files for inter-agent/inter-session communication.** Scratch
@@ -631,3 +641,35 @@ See `METHODOLOGY.md` in the central methodology repository for the
 reasoning and real incidents behind each of these rules, and this
 project's own issue/merge-request templates for how this gets enforced
 day to day.
+
+---
+
+## 10. Agent Self-Learning & Continuous Skill Synthesis Architecture
+
+To transform agents from static instruction followers into self-evolving engineering workers that continuously learn from experience, corrections, and resolved incidents:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                          AGENT SELF-LEARNING FEEDBACK LOOP                                  │
+├─────────────────┬─────────────────┬─────────────────────────┬───────────────────────────────┤
+│  1. OBSERVE     │   2. REFLECT    │  3. SYNTHESIZE SKILL    │  4. PERSIST & HOT-RELOAD      │
+│  Incident /     │   Root-Cause &  │  `SKILL.md` / SOP       │  Knowledge Graph MCP &        │
+│  User Correction│   Abstraction   │  Executable Pattern     │  `~/.gemini/config/skills/`   │
+└─────────────────┴─────────────────┴─────────────────────────┴───────────────────────────────┘
+```
+
+### 10.1 The 4 Core Directives of Agent Self-Learning
+
+1. 🔄 **Empirical Triggering (Learn from Real Incidents Only)**:
+   - Self-learning is triggered whenever an agent resolves a non-trivial bug, receives an explicit user correction, or overcomes an un-documented API/build hurdle. Agents MUST NOT invent hypothetical skills without empirical runtime proof.
+
+2. 🧠 **Procedural Skill Synthesis (`SKILL.md`)**:
+   - Upon discovering a new reusable solution, the agent automatically synthesizes a structured skill package under `.gemini/skills/<skill-name>/SKILL.md` (or globally at `~/.gemini/config/skills/<skill-name>/SKILL.md`).
+   - Each skill MUST contain YAML metadata (`name`, `description`), a step-by-step SOP, edge-case warnings, and optional automated verification scripts.
+
+3. 💾 **Centralized Memory Persistence over Ad Hoc Files**:
+   - In accordance with §0's Zero-File Communication Mandate, learned observations, gotchas, and architectural insights MUST be written to the canonical Knowledge Graph / Memory MCP server (`claude-mem` / `memory` / `graphify`).
+
+4. ⚡ **Zero-Restart Dynamic Skill Hot-Reloading**:
+   - During Step 2 (Boot Sequence), active agent sessions query the central memory store and active skills directory to hot-reload freshly learned patterns into their working memory without requiring process restarts.
+
