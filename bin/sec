@@ -558,6 +558,12 @@ EOF
         esac
         ;;
 
+    sync)
+        if [[ -x "$SCRIPT_DIR/sec-sync-controller.py" ]]; then
+            exec python3 "$SCRIPT_DIR/sec-sync-controller.py" "$@"
+        fi
+        ;;
+
     housekeep|organize)
         if [[ -x "$SCRIPT_DIR/sec-organizer" ]]; then
             exec "$SCRIPT_DIR/sec-organizer" "${1:-plan}"

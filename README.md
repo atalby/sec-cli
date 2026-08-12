@@ -83,6 +83,7 @@ Usage:
   sec [<tenant>] get <item>/<field>        Retrieve specific field from named vault item (e.g. 'github/password')
   sec [<tenant>] set <key> [<val>]         Store / create new secret in tenant vault (prompts if <val> omitted)
   sec [<tenant>] run -- <cmd>              Execute command with tenant secrets injected into process memory
+  sec sync                                 Central Secret Sync Engine: Sync Bitwarden secrets to GCP & GitLab
   sec housekeep {plan|apply|revert}        Intelligent ML categorization, plan/apply, & instant rollback engine
   sec migrate --from <src> --to <dst>     Zero-plaintext vault-to-vault migration engine
   sec unlock                               Unlock Bitwarden vault and save session
