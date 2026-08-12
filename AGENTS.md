@@ -97,6 +97,7 @@ architecture doc? a test suite? a deploy pipeline?) rather than asserting
 a tier from memory.
 
 **Cost Circuit-Breakers & Spend Safety**:
+- **Golden Rule — $0.00 / Minimum Spend Mandate**: Every architectural design, hosting selection, DNS routing, and infrastructure decision MUST strictly prioritize $0.00 out-of-pocket solutions (utilizing Cloudflare Free Tier, GCP Cloud Run scale-to-zero free tier, GitHub/GitLab free CI minutes, Bitwarden free tier, and open-source tooling). Any proposed solution that introduces a paid recurring cost MUST be explicitly flagged and requires explicit Human Systems Architect authorization.
 - **Budget Threshold**: No agent session or automated swarm may incur
   >$50/day in external cloud infrastructure spend or >1,000,000
   tokens/session without explicit Human Systems Architect authorization.
