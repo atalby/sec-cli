@@ -51,6 +51,30 @@ adopts it. That only works because of the split above: this repo owns
   adopted an earlier version. Adopting a new version into a given
   project is that project's own explicit act (§7's Definition of Done
   still applies to *that* change).
+- **The `stable` git tag**: a floating pointer, moved (not recreated
+  fresh) to the newest reviewed release commit every time a new version
+  is cut — the one deliberate exception to git tags otherwise being
+  treated as immutable in this repo. Exists so the Methodology MCP
+  Server's `get_methodology` tool can be called with `version: "stable"`
+  instead of a version number that goes stale the moment the next
+  release ships — the current version then lives in exactly one place
+  (this repo's own `stable` tag), not duplicated into server config or
+  agent instructions. To move it on a new release:
+  `git tag -d stable && git push origin :refs/tags/stable && git tag -a
+  stable <new-tag>^{} -m "..." && git push origin stable` — tag the
+  peeled commit (`^{}`), not the release tag object itself, or `stable`
+  becomes a nested tag pointing at a tag instead of a commit. **Manual-copy
+  adopters should also fetch at `stable`, not a hardcoded version
+  number** — `git show stable:AGENTS.md` in every sync instruction/script,
+  never `git show v4.3.0:AGENTS.md`. The point of `stable` is that no
+  instruction anywhere has to be updated when a new version ships; typing
+  a version number into a sync command defeats that the same way typing
+  it into server config would. A manual copy is still a point-in-time
+  snapshot regardless of which ref name fetched it — there is no way to
+  make a copied file "always current" without an actual re-sync — so the
+  receiving repo should log the *resolved* commit/version (`git
+  rev-parse stable` at copy time) in its own docs for its own audit
+  trail, even though the fetch instruction itself never names a version.
 - **This is the actual boundary line** the "where should the methodology
   stop" question resolves to: this repo stops at *how work gets done*;
   it never grows into *what exists*. The moment a change here would only
@@ -61,7 +85,7 @@ adopts it. That only works because of the split above: this repo owns
 ## 1. Identity & Philosophy
 
 This project defines the **Human-Driven Intra-Agent Software Engineering
-Methodology (HIAE Protocol v4.1.0)** — a general-purpose process contract
+Methodology (HIAE Protocol v5.1.0)** — a general-purpose process contract
 for how an AI agent (or a human following the same discipline) works on
 any project that adopts it. Which specific repos have adopted it, and
 what each one is, is ecosystem-specific fact and does not belong in this
@@ -88,7 +112,12 @@ triggers) should apply by tier, not uniformly:
   planning, documenting, small commits), not literally — no TDD coverage
   gate, no architecture-doc/deployment-trigger requirement. Such a repo's
   own durable-state doc (e.g. `STATE.md` + `HISTORY.md`) stands in for the
-  3-Way Sync structure in §5.
+  3-Way Sync structure in §5. This carve-out from the 3-file structure is
+  not license to skip every doc but the narrative history: if the repo
+  maintains other docs a human or agent would realistically consult
+  instead of reading source for its current commands/behavior (a
+  cheatsheet tool, an ops wiki, a README quick-reference), update those
+  too, in the same unit of work as the change.
 
 Which concrete repos are which tier is ecosystem-specific fact — record
 that mapping in your ecosystem's wiki doc, not here. When classifying a
@@ -97,29 +126,35 @@ architecture doc? a test suite? a deploy pipeline?) rather than asserting
 a tier from memory.
 
 **Cost Circuit-Breakers & Spend Safety**:
-- **Inviolable Zero-Cost ($0) Idle Auto-Scaling Policy**: All infrastructure manifests (Cloud Run, Cloudflare Workers, Vercel Serverless, AWS Lambda/Fargate) MUST configure scale-to-zero auto-scaling (`min_instances = 0`) to guarantee $0 spend when idle.
-- **Free-Tier Tiering Primacy**:
-  - Compute: GCP Cloud Run (`min_instances = 0`, max=10, 2M free reqs/mo) or Vercel Serverless Hobby tier ($0).
-  - Edge Routing & DNS: Cloudflare Free Tier / Workers (100k free reqs/day).
-  - Storage & DB: SQLite / Cloudflare R2 / GCP GCS Free Tier (5 GB/mo).
-  - Paid Add-ons: Opt-in only (`enable_redis = false`, zero compute allocation when unutilized).
-- **Budget Threshold**: No agent session or automated swarm may incur
-  >$50/day in external cloud infrastructure spend or >1,000,000
-  tokens/session without explicit Human Systems Architect authorization.
-- **Breach Protocol**: Upon hitting any budget or rate threshold,
-  execution must pause immediately and escalate to the Human Systems
-  Architect.
-
-**Intellectual Property & Proprietary Governance**:
-- **Sole Founder IP Ownership**: All methodology specifications, source
-  code, agent taxonomies, custom skills, prompt architectures, and
-  multi-agent operating systems developed under `[ORG_NAMESPACE]/` are
-  the exclusive intellectual property of the Solo Founder / Human Systems
-  Architect.
-- **Zero Data Leakage Mandate**: Agents MUST NOT upload, exfiltrate, or
-  transmit proprietary codebase logic, internal skills, or prompt library
-  assets to external third-party training pipelines, public pastebins, or
-  untrusted endpoints.
+- **Cost-Aware Infrastructure Defaults**: Prefer free-tier
+  infrastructure and scale-to-zero idle behavior where it genuinely
+  meets the need, to keep spend predictable. The concrete vendor
+  stack and specific thresholds are project-specific fact, not a
+  universal default — see your project's `ADAPTERS.md` for an
+  opted-in cost/infra pack (e.g. `packs/zero-cost-infra-defaults`), if
+  any. This file defines no vendor defaults of its own.
+- **Session Scoping**: one discrete task = one fresh session. A session
+  that picks up a second, unrelated top-level request must be treated
+  as a new session — start a fresh one rather than continuing to
+  accumulate history under the old one. Verified 2026-08-17: a
+  1,023-turn antigravity-cli session spanning three unrelated tasks
+  (an MCP pydantic-error debug, a one-line tag update, then fleet-health
+  diagnostics) reported 1.36M cumulative input tokens for what was
+  individually a ~15-turn, cheap piece of work. This is a tool-agnostic
+  gap, not specific to the tool that happened to surface it first.
+- **Breach Protocol**: real spend/rate limits (a cloud billing budget
+  alert, a provider's own rate limit) are each project's own concern,
+  built and enforced at the infrastructure layer that can actually act
+  on them — not a dollar or token figure restated in this file, which
+  nothing here enforces. A number here was removed in v4.7.0 for
+  exactly that reason: it only ever made sense for whichever specific
+  project has real variable infra-cost shape, which is project-aware
+  fact out of scope for this file per §0, and it was never wired to
+  anything that could actually stop a session from exceeding it — see
+  `CHANGELOG.md`. Upon a project's own real alert firing, or a session
+  visibly running far outside its intended scope, pause and escalate to
+  the project's designated approver (see `ADAPTERS.md` / an opted-in
+  governance pack for who that is) rather than continuing.
 
 **Mandatory Role-Based Access Control (RBAC) & Zero-Trust Mandate**:
 - **Capabilities Scoping as a Non-Negotiable**: All tool execution gateways, REST/WebSocket API endpoints, and background worker processes MUST enforce Role-Based Access Control (RBAC) and least-privilege capability scoping (`admin`, `engineer`, `viewer`, or vertical persona capability bounds).
@@ -160,77 +195,15 @@ a tier from memory.
 
 ## 1.1 Vertical Intra-Agent Persona Taxonomy
 
-Agents adopt vertical personas suited to their domain. The persona
-*types* below are generic role templates; which concrete repo(s) each
-maps to in a given ecosystem is project-specific fact recorded in that
-ecosystem's own wiki doc, not here.
+Agents adopt vertical personas suited to their domain — the concrete
+personas, their domain mapping, and who holds final approval authority
+are project-specific fact, not process. This file defines no personas
+by default. See your project's `ADAPTERS.md` for an opted-in
+governance pack (e.g. `packs/solo-founder-governance`), if any.
 
-1. **`Persona: Human Systems Architect (Solo Founder / Lead Engineer)`**:
-   - **Role**: Defines high-level domain boundaries, interfaces,
-     non-negotiables, and grants final deployment authorization.
-   - **Domain Mapping**: Ecosystem-wide governance across whichever repos
-     have adopted this methodology — see the ecosystem's own wiki doc for
-     the current list.
-   - **Responsibilities**: Approves architectural plans, reviews breaking
-     changes, sets cost circuit-breaker limits, and directs agent swarms.
-
-2. **`Persona: Environment & Workstation Specialist`**:
-   - **Role**: Manages local developer workstation setups, firewalls,
-     local hardware probing, and remote SSH fleet servers.
-   - **Domain Mapping**: Whichever repo(s) hold personal-infra-tier
-     workstation/dotfiles configuration.
-   - **Responsibilities**: Ensures workstation reproducibility, manages
-     package manifests, and maintains fleet node health.
-
-3. **`Persona: InfraAgent (DevOps, IaC & Account Auto-Provisioner)`**:
-   - **Role**: Manages IaC manifests, cloud services, DNS/SSL, secrets
-     management, and account auto-provisioners.
-   - **Domain Mapping**: Whichever repo(s) hold platform-tier
-     infrastructure-as-code and cloud resource provisioning.
-   - **Responsibilities**: Executes multi-environment deployments
-     (`dev`, `staging`, `production`), configures HTTPS/DNS records, and
-     injects secrets safely.
-
-4. **`Persona: Multi-Project Product & Security Auditor`**:
-   - **Role**: Conducts deep multi-repo forensic audits across code
-     quality, TDD coverage, security headers, and security tooling.
-   - **Domain Mapping**: Whichever product- and platform-tier repos need
-     cross-repo quality/security auditing.
-   - **Responsibilities**: Detects bugs across shared state/APIs,
-     enforces TDD coverage gates, and guarantees clean test passes
-     before release.
-
-5. **`Persona: Claude Code Master Auto-Moderator (Automated Supervisor)`**:
-   - **Role**: Acts as an informal, advisory supervisor over active agent
-     sessions and code proposals via a CLI-driven review pass (e.g.
-     `claude -p`).
-   - **Domain Mapping**: Ecosystem-wide, advisory only.
-   - **Responsibilities**: Audits PRs, verifies 3-Way Sync compliance,
-     validates zero-secret scanner patterns, and flags task-execution
-     concerns — **advisory input, not binding approval** (§3), unless a
-     real CI gate exists that enforces it and fails the pipeline on a
-     negative finding. Don't claim binding authority a repo's actual CI
-     doesn't back up — verify before asserting it.
-
-6. **`Persona: Documentation Curator`** — cross-project documentation
-   responsibility, not automation that necessarily exists yet:
-   - **Role**: Responsible for each repo's durable documentation (§5)
-     actually being current, and — if the ecosystem has adopted an
-     external documentation hub (e.g. Confluence, Notion, an internal
-     wiki) — for that documentation being mirrored there, one-way, not
-     re-authored there. Per-repo durable docs remain the source of truth;
-     an external hub is an aggregation/rollup layer, never the other way
-     around.
-   - **Domain Mapping**: Ecosystem-wide, documentation only — does not
-     touch code, infra, or the issue tracker.
-   - **Responsibilities**: Flags stale/drifted durable docs (the same
-     staleness problem §5 already warns about); once real automation
-     exists, pushes them to the external hub as a one-way mirror.
-   - **Before wiring any external hub in**: research its actual API/auth
-     surface per §3 step 2 — don't infer behavior from what a product
-     page promises. Until that's done and something is actually built,
-     this persona is a responsibility assignment, not a standing claim of
-     running automation.
+Wherever the rest of this file refers to "the project's designated
+approver," that identity comes from whichever governance pack (if any)
+a project has opted into — never a name hardcoded here.
 
 ---
 
@@ -243,11 +216,27 @@ inviolable operational baseline:
    - Stay deeply anchored to the assigned goal. Do not wander into
      unrequested refactors, unnecessary rewrites, or tangential code
      changes that introduce risk without value.
+   - **Characterizing a blocker's scope is itself a checkpoint.** Surface
+     findings the moment a blocker is understood, before doing fix work
+     on it — let the human set the boundary from the full picture, not
+     from a partial fix already in flight. This still drifts if each
+     individual check-in is scoped only to the next immediate step: if
+     you've already had two check-ins on what started as one task and
+     are about to ask for a third, that itself is the signal the task's
+     shape has changed — name the new total scope explicitly as its own
+     decision, don't just keep extending check-in by check-in.
 2. 🔨 **Definitive "100% Done" Mindset (Zero Rework)**:
    - Execute every task so thoroughly, correctly, and elegantly that it
      NEVER has to be reopened or redone. Address underlying root causes
      completely — no Band-Aids, no superficial symptom masking, and no
      half-baked fixes.
+   - **A fixed bug may be one instance of a pattern, not a one-off.**
+     Before calling a bug fix done, ask the general question — would this
+     identical fix (same diff) apply verbatim somewhere else in the
+     repo? — and check it with one targeted search. This is a test to
+     apply to every bug, not a checklist of bug categories to match
+     against; a bug that doesn't look like past examples of "a pattern"
+     is not thereby exempt.
 3. 🧪 **Empirical Test Verification**:
    - Never assume code works because it "looks right". Always execute
      test suites, inspect actual runtime log outputs, and confirm 100%
@@ -273,12 +262,12 @@ change behind it, that's the signal to stop and ship something instead.
 
 Choosing a language/tool should be a deliberate decision, not a default:
 
-- **Shell (`bash`/`zsh`) is for thin orchestration only**: stringing
-  together a handful of existing CLI calls, simple conditionals,
-  file/path glue. If a script needs structured data parsing (JSON/YAML
-  beyond a one-line `jq`), retries with backoff, non-trivial branching,
-  or anything the TDD gate (§7) should cover with real unit tests, it
-  does not belong in shell.
+- **Shell scripting (`bash`/`zsh` on POSIX, PowerShell on Windows) is for
+  thin orchestration only**: stringing together a handful of existing CLI
+  calls, simple conditionals, file/path glue. If a script needs structured
+  data parsing (JSON/YAML beyond a one-line `jq`), retries with backoff,
+  non-trivial branching, or anything the TDD gate (§7) should cover with
+  real unit tests, it does not belong in shell.
 - **Reach for a real language (Python, Go, etc.) once a script needs
   tests.** A script that can't practically be unit-tested is a script
   that can't practically satisfy §7 — that's the concrete signal to
@@ -295,18 +284,48 @@ Choosing a language/tool should be a deliberate decision, not a default:
 
 Before touching anything:
 
-1. Read the durable-knowledge doc (architecture / current-state / known
+1. Check for an `ADAPTERS.md` file at the project root, sibling to this
+   one. If it exists, it names this project's or workstation's concrete
+   tool bindings — a local tooling-discovery command, secrets manager,
+   git host, issue tracker, docs mirror, and similar — that this
+   contract deliberately leaves generic (§0's own boundary: this file
+   owns *how things get done*, never *which specific tool*). Prefer
+   whatever it names over guessing or assuming a specific tool. If it
+   names a discovery/memo command, run that command before assuming
+   what tooling is or isn't available, rather than falling back to
+   training-data defaults. **Also check it for an "Opted-in Policy
+   Packs" section** — if present, read each named `packs/<name>/PACK.md`
+   at the listed version; those become part of your operating contract
+   for this session, alongside this file. No section, or no
+   `ADAPTERS.md` at all, means zero packs apply. If `ADAPTERS.md`
+   doesn't exist, fall back to this file's own generic guidance (e.g.
+   §6's secret-management principles) without inventing project-specific
+   tool names here — and treat its absence as a gap worth flagging, not
+   silently working around with a guessed tool.
+2. Read the durable-knowledge doc (architecture / current-state / known
    gaps — whatever this project calls it) to understand what's actually
    true about the system right now.
-2. Check the issue tracker — not prose in a markdown file — for what's
+3. Check the issue tracker — not prose in a markdown file — for what's
    currently open.
-3. Read the narrative-history doc's **current-state summary** (if one
+4. Read the narrative-history doc's **current-state summary** (if one
    exists) for recent context on *why* things are the way they are —
    not the full file. Only open a dated archive entry if this task
    specifically needs older history the summary doesn't cover.
-4. Run the existing test suite. Confirm you're building on a known-good
+5. Run the existing test suite. Confirm you're building on a known-good
    baseline before changing anything. If it's not green, that's the
    first thing to report, not something to work around.
+
+**Re-check specific facts, don't re-read whole docs, mid-session.**
+"I checked at boot" is valid only for facts that can't have changed
+since — treat these as separate, both cheap:
+- **Event-triggered**: re-verify `ADAPTERS.md`'s tool bindings and
+  tracker state whenever a new category of blocker appears that doesn't
+  match anything you already checked, and at a session handoff.
+- **Unconditional but cheap**: a session can run long with no blocker
+  event to trigger anything, and this project's own version banner can
+  silently age regardless — re-check it (a single grep against `stable`)
+  at least every 5 commits or roughly every hour of session time,
+  whichever comes first, not only when something else prompts it.
 
 ### Dynamic In-Session Hot-Reloading (Zero-Restart Protocol)
 
@@ -338,11 +357,39 @@ For any non-trivial change, in order:
    being used. Don't infer behavior from what a README promises or what
    seems reasonable — this is the single highest-leverage step for
    avoiding integration bugs that only show up later, in production.
+   - **Verify identity via the package registry's own publisher/maintainer
+     metadata, not a search result's summary or the package's own
+     description.** A package description can be written specifically to
+     get an agent to install it — this is a real, observed pattern, not
+     hypothetical, and it doesn't require touching any tool output to
+     land, just showing up in ordinary research. An implausibly high star
+     count for how young a repo is is a second, independent tell worth
+     checking alongside the registry's own metadata.
+   - **Check for CLI binary-name collision as its own risk**, separate
+     from whether a package is malicious. An unofficial package claiming
+     the same command name as a real, already-adopted tool can silently
+     shadow it depending on `PATH` order — verify the name is actually
+     unique before installing anything that provides a CLI entry point.
 3. **Plan.** For anything non-trivial, write a concrete design to a
    durable, reviewable location before implementing. Get explicit
    approval before proceeding. Calibrate the ceremony to the *risk*, not
    the line count — a one-line change to shared infrastructure deserves
    more care than a hundred-line change to an isolated module.
+   **The moment of noticing is the checkpoint, not the moment of
+   finishing.** Stop and surface *before* continuing, the moment any of
+   these becomes true — these are mechanical tripwires, not judgment
+   calls, precisely because "does this feel risky" is the judgment that
+   failed in each real incident behind this rule:
+   - about to create or modify anything that will act again later
+     without a human re-approving each occurrence (a schedule, webhook,
+     cron entry, CI trigger, queue consumer, retry loop, or similar) —
+     named by the property, not by a closed list of examples, since the
+     next one won't always look like the last one
+   - about to call a production system or use a live (non-test)
+     credential
+   - about to take an action beyond what you've heard an explicit yes to
+     in this conversation — not what could be argued as implied by a
+     broader ask
 4. **Implement** in small, independently coherent units — not one batch
    at the end.
 5. **Verify.** In order of cost, cheapest first, but don't stop at the
@@ -397,10 +444,20 @@ For any non-trivial change, in order:
   meaningful.
 - **Issue Tracker, Not Prose**: Open work lives in a real issue tracker
   (GitLab/GitHub/Linear/Jira — whichever this project has adopted), not
-  in prose bullets inside markdown files. If you find yourself writing
-  "still open: X, Y, Z" as a list in a doc, that's a signal those should
-  be real, closeable, queryable issues instead. Query the tracker during
-  the Boot Sequence (§2), don't assume its state from memory.
+  in prose bullets inside markdown files. Query the tracker during the
+  Boot Sequence (§2), don't assume its state from memory.
+  - **File it the moment you write it, not after.** The moment you type
+    "TODO," "FIXME," "still open," "known issue," or similar into any
+    file, stop and open a real issue before continuing to write — a
+    grep for these keywords outside the tracker (`grep -rn
+    "TODO\|FIXME"`) finding a hit is itself evidence this was skipped.
+  - This keyword check is a floor, not the whole rule — it's easy to
+    describe an unresolved question in prose without using any of those
+    words. The actual trigger is broader: **finishing an investigation
+    with a question you raised still unresolved is itself the moment to
+    file it, regardless of the words used to describe it** — including
+    when a different, adjacent bug got fixed in the same pass. An
+    adjacent fix is not evidence the original question is answered.
 
 A project-specific feedback-ingestion pipeline, notification protocol, or
 similar product feature belongs in *that project's own* docs — not in
@@ -496,35 +553,41 @@ exists.
 
 - If a live credential appears in a conversation, a log, or a file,
   store it securely the moment you see it and never redisplay it.
-- **Consolidated 2-Tool Zero-Cost Secret Architecture**: Raw API keys and
-  database passwords are strictly forbidden in committed configuration
-  files or `.env` files. Secret management is consolidated onto **two
-  zero-cost, durable tools** to eliminate maintenance overhead and
-  migration friction:
+- **Two-Tier Secret Architecture**: Raw API keys and database passwords
+  are strictly forbidden in committed configuration files or `.env`
+  files. Secret management follows a **two-tier pattern**; the
+  concrete tools are project-specific fact — see your project's
+  `ADAPTERS.md` for what's actually used, or an opted-in cost/infra
+  pack (e.g. `packs/zero-cost-infra-defaults`) for one real-world
+  instantiation:
   - **In Plain English**: Laptops and cloud servers have totally
-    different jobs. Laptops use a fast, free keycard tool (e.g.
-    `infisical run --` or `bws run --`) so developers never write
-    passwords on sticky notes (`.env` files). Cloud servers and
-    automated deployment pipelines use the cloud provider's native
-    workload identity federation to automatically prove who they are
-    without ever holding a physical master key that could be stolen.
-  - **Tool 1 — Local Developer Workstations (Free CLI Launcher)**:
-    Process memory injection via a CLI secrets tool. Eliminates local
-    `.env` files on disk without cloud authentication friction.
-  - **Tool 2 — CI/CD, Cloud Production & GitOps (Native Cloud Suite)**:
-    - **CI/CD Pipelines**: Free OIDC Workload Identity Federation for
-      keyless CI authentication.
+    different jobs. Laptops use a local secrets-injection CLI so
+    developers never write passwords on sticky notes (`.env` files).
+    Cloud servers and automated deployment pipelines use the cloud
+    provider's native workload identity federation to automatically
+    prove who they are without ever holding a physical master key that
+    could be stolen.
+  - **Tier 1 — Local Developer Workstations**: Process memory
+    injection via a CLI secrets tool. Eliminates local `.env` files on
+    disk without cloud authentication friction.
+  - **Tier 2 — CI/CD, Cloud Production & GitOps**:
+    - **CI/CD Pipelines**: Keyless workload identity federation (OIDC)
+      for CI authentication, where the CI provider and cloud both
+      support it.
     - **Production Workloads**: A native cloud secret manager with
       envelope encryption and IAM RBAC.
     - **IaC & GitOps Bootstrap**: Envelope-encrypted secret manifests
-      (e.g. SOPS + KMS) for git-diff auditability.
+      for git-diff auditability.
 - **Group vs Project Variable Governance**: Shared API tokens should be
   managed centrally at the organization level or synced via secrets
   automation to prevent per-repository duplication.
 - **Multi-Platform Target Discipline**: Projects vary by deployment
-  target — static/serverless UIs typically deploy to a platform like
-  Vercel; containerized/stateful services typically deploy to a cloud
-  provider via IaC, managed centrally in a dedicated infra repo. During
+  target — static/serverless UIs typically deploy to a serverless
+  hosting platform; containerized/stateful services typically deploy to
+  a cloud provider via IaC, managed centrally in a dedicated infra
+  repo. Which platform this project actually uses is project-specific
+  fact — see your project's `ADAPTERS.md` for what's configured, or an
+  opted-in cost/infra pack for one real-world instantiation. During
   the Boot Sequence (§2), confirm which applies to *this* project from
   its own `README.md`/`docs/` rather than assuming.
 - **UI & Frontend Deployment Protocols** (where applicable):
@@ -534,13 +597,15 @@ exists.
     preview URL to verify visual layout and zero browser console errors
     before declaring completion.
   - **Production UI Promotions**: Promoting a build to production or
-    updating production DNS routing explicitly requires Human Systems
-    Architect sign-off.
+    updating production DNS routing explicitly requires sign-off from
+    the project's designated approver (see `ADAPTERS.md` / an
+    opted-in governance pack for who that is).
 - **Deployment Authorization Triggers**:
   - `dev` & `staging` deployments are auto-authorized upon passing 100%
     of unit & smoke test suites.
-  - `production` deployments explicitly require Human Systems Architect
-    sign-off.
+  - `production` deployments explicitly require sign-off from the
+    project's designated approver (see `ADAPTERS.md` / an opted-in
+    governance pack for who that is).
 
 - If a blocker would require a broader scope, a higher-risk action, or a
   bigger blast radius than what was actually approved, **stop and ask.**
@@ -653,8 +718,8 @@ To transform agents from static instruction followers into self-evolving enginee
 │                          AGENT SELF-LEARNING FEEDBACK LOOP                                  │
 ├─────────────────┬─────────────────┬─────────────────────────┬───────────────────────────────┤
 │  1. OBSERVE     │   2. REFLECT    │  3. SYNTHESIZE SKILL    │  4. PERSIST & HOT-RELOAD      │
-│  Incident /     │   Root-Cause &  │  `SKILL.md` / SOP       │  Knowledge Graph MCP &        │
-│  User Correction│   Abstraction   │  Executable Pattern     │  `~/.gemini/config/skills/`   │
+│  Incident /     │   Root-Cause &  │  Reusable SOP /         │  Whichever memory/skill       │
+│  User Correction│   Abstraction   │  Executable Pattern     │  store this tool provides     │
 └─────────────────┴─────────────────┴─────────────────────────┴───────────────────────────────┘
 ```
 
@@ -663,13 +728,12 @@ To transform agents from static instruction followers into self-evolving enginee
 1. 🔄 **Empirical Triggering (Learn from Real Incidents Only)**:
    - Self-learning is triggered whenever an agent resolves a non-trivial bug, receives an explicit user correction, or overcomes an un-documented API/build hurdle. Agents MUST NOT invent hypothetical skills without empirical runtime proof.
 
-2. 🧠 **Procedural Skill Synthesis (`SKILL.md`)**:
-   - Upon discovering a new reusable solution, the agent automatically synthesizes a structured skill package under `.gemini/skills/<skill-name>/SKILL.md` (or globally at `~/.gemini/config/skills/<skill-name>/SKILL.md`).
-   - Each skill MUST contain YAML metadata (`name`, `description`), a step-by-step SOP, edge-case warnings, and optional automated verification scripts.
+2. 🧠 **Procedural Skill Synthesis**:
+   - Upon discovering a new reusable solution, the agent synthesizes a structured, reusable procedure — a step-by-step SOP, edge-case warnings, and optional verification steps — in whichever skill/procedure format and location this tool and project use (per `ADAPTERS.md`, §2). This file deliberately does not name a specific format or path — that's a concrete tool binding, out of scope here per §0.
 
 3. 💾 **Centralized Memory Persistence over Ad Hoc Files**:
-   - In accordance with §0's Zero-File Communication Mandate, learned observations, gotchas, and architectural insights MUST be written to the canonical Knowledge Graph / Memory MCP server (`claude-mem` / `memory` / `graphify`).
+   - In accordance with §1.0's Zero-File Communication Mandate, learned observations, gotchas, and architectural insights MUST be written to whichever centralized, persisted knowledge-graph or memory store is already configured for the project (per `ADAPTERS.md`) — never to scattered ad hoc files.
 
 4. ⚡ **Zero-Restart Dynamic Skill Hot-Reloading**:
-   - During Step 2 (Boot Sequence), active agent sessions query the central memory store and active skills directory to hot-reload freshly learned patterns into their working memory without requiring process restarts.
+   - During Step 2 (Boot Sequence), active agent sessions query the project's configured memory store and skill/procedure location to hot-reload freshly learned patterns into their working memory without requiring process restarts.
 
