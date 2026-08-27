@@ -38,6 +38,16 @@ adopts it. That only works because of the split above: this repo owns
   editing `AGENTS.md` to describe a specific project, that's the signal
   the content belongs in that project's own docs instead, not a reason
   to edit this file.
+  Copying `AGENTS.md` in also means copying `skills/` (the
+  adopter-distributable set) and `skills/REGISTRY.md` — adopting the
+  methodology means the full payload, not a hand-picked subset of it;
+  `.claude/skills/` stays hub-internal and is never copied out. A
+  version bump into an existing adopter follows the same rule: don't
+  re-sync `AGENTS.md` alone and leave `skills/` behind at an older
+  state — corrected 2026-08-25 after an earlier draft of this section
+  phrased the skills registry as elective ("if the project wants"),
+  which produced real adopters treating a core payload as something to
+  cherry-pick; see `CHANGELOG.md`.
 - **A project's own facts** — its tier (§1.0), its persona-to-repo
   mapping, its brand name if it has one, any product-specific pipeline
   — live in that project's own durable docs (`STATE.md`/`docs/ARCHITECTURE.md`),
@@ -51,30 +61,17 @@ adopts it. That only works because of the split above: this repo owns
   adopted an earlier version. Adopting a new version into a given
   project is that project's own explicit act (§7's Definition of Done
   still applies to *that* change).
-- **The `stable` git tag**: a floating pointer, moved (not recreated
-  fresh) to the newest reviewed release commit every time a new version
-  is cut — the one deliberate exception to git tags otherwise being
-  treated as immutable in this repo. Exists so the Methodology MCP
-  Server's `get_methodology` tool can be called with `version: "stable"`
-  instead of a version number that goes stale the moment the next
-  release ships — the current version then lives in exactly one place
-  (this repo's own `stable` tag), not duplicated into server config or
-  agent instructions. To move it on a new release:
-  `git tag -d stable && git push origin :refs/tags/stable && git tag -a
-  stable <new-tag>^{} -m "..." && git push origin stable` — tag the
-  peeled commit (`^{}`), not the release tag object itself, or `stable`
-  becomes a nested tag pointing at a tag instead of a commit. **Manual-copy
-  adopters should also fetch at `stable`, not a hardcoded version
-  number** — `git show stable:AGENTS.md` in every sync instruction/script,
-  never `git show v4.3.0:AGENTS.md`. The point of `stable` is that no
-  instruction anywhere has to be updated when a new version ships; typing
-  a version number into a sync command defeats that the same way typing
-  it into server config would. A manual copy is still a point-in-time
-  snapshot regardless of which ref name fetched it — there is no way to
-  make a copied file "always current" without an actual re-sync — so the
-  receiving repo should log the *resolved* commit/version (`git
-  rev-parse stable` at copy time) in its own docs for its own audit
-  trail, even though the fetch instruction itself never names a version.
+- **The `stable` git tag**: a floating pointer to the newest reviewed
+  release commit, moved (not recreated) on every release — see the
+  `moving-stable-tag` skill (hub-internal — §2 step 2 for how to fetch
+  its content from outside this repo) for the exact command and why
+  manual-copy adopters must fetch at `stable`, never a hardcoded
+  version.
+- **Staying in sync**: this hub detects adopter drift from its own
+  side (`scripts/check_methodology_sync.py`), but that only helps if
+  someone reads its output — an adopter's own CI can gate on its own
+  drift instead; see the `adopter-drift-self-check` skill (hub-internal
+  — §2 step 2 for how to fetch its content from outside this repo).
 - **This is the actual boundary line** the "where should the methodology
   stop" question resolves to: this repo stops at *how work gets done*;
   it never grows into *what exists*. The moment a change here would only
@@ -84,10 +81,22 @@ adopts it. That only works because of the split above: this repo owns
 
 ## 1. Identity & Philosophy
 
-This project defines the **Human-Driven Intra-Agent Software Engineering
-Methodology (HIAE Protocol v5.1.0)** — a general-purpose process contract
-for how an AI agent (or a human following the same discipline) works on
-any project that adopts it. Which specific repos have adopted it, and
+This project defines **Hyer** — the working name for the
+**Human-Driven, Intra-Agent Software Engineering Methodology
+(HIAE Protocol v5.21.2)** — a general-purpose process contract
+for how an AI agent (or a human following the same discipline)
+works on any project that adopts it. "Hyer" is the name to
+actually say out loud; "HIAE Protocol" is the formal/spec name,
+used when precision or citation matters (e.g. "this project
+adopts the HIAE Protocol"). The two aren't competing names —
+Hyer names the thing, HIAE Protocol is what the name expands
+to, the same relationship "radar" (the word everyone says) has to
+RADAR (RAdio Detection And Ranging, the acronym it came from). Adopted
+2026-08-26 (see `CHANGELOG.md` v5.20.0, patched same day as v5.20.1
+after the naming edit's own line-wrap broke `pre-commit-hiae.sh`'s
+version parsing fleet-wide) specifically so the acronym
+alone wouldn't be the only handle for this open-sourced later. Which
+specific repos have adopted it, and
 what each one is, is ecosystem-specific fact and does not belong in this
 file — see your ecosystem's own wiki/knowledge-base doc for that map.
 
@@ -185,6 +194,19 @@ a tier from memory.
   nodes on a schedule rather than letting the store grow forever; treat
   sustained growth past roughly 10MB as the concrete signal to prune, not
   a number to hit before worrying.
+- **Never persist a specific agent/session reference as a fact to
+  reuse later.** A session's identity (which instance is "the X
+  session," a socket path, a display name) is ephemeral — a new
+  session can start sharing an old one's display name, an old session
+  can go unattended without closing, and neither is visible from the
+  outside without checking. Always re-run live agent discovery
+  immediately before addressing another agent, not from a remembered
+  reference from an earlier turn or a prior session. Found 2026-08-25:
+  an agent addressed "the methodology session" from memory and reached
+  a different, unattended session sharing that same display name —
+  its messages queued indefinitely with no one able to see them,
+  purely because the reference was stale rather than freshly
+  discovered.
 - Any further "next-era" features beyond this (AST-aware read guards, a
   reactive event bus, automatic tool-call rejection) belong in a separate
   proposal doc, explicitly labeled proposed-not-adopted, until they are
@@ -301,17 +323,58 @@ Before touching anything:
    doesn't exist, fall back to this file's own generic guidance (e.g.
    §6's secret-management principles) without inventing project-specific
    tool names here — and treat its absence as a gap worth flagging, not
-   silently working around with a guessed tool.
-2. Read the durable-knowledge doc (architecture / current-state / known
+   silently working around with a guessed tool. **If it names a live
+   methodology-sync tool** (e.g. an MCP server exposing a
+   version-check call), use that to confirm the current methodology
+   version and what changed, rather than manually reading or cloning
+   the methodology hub's repo — a tool a project has already wired in
+   for exactly this purpose is being built and left unused otherwise,
+   which defeats the point of building it. Fall back to reading the
+   hub repo directly only when `ADAPTERS.md` names no such tool.
+   **A local git pre-commit hook must never be a hand-copied or
+   hand-typed fork of an enforcement script.** `.git/hooks/` is never
+   tracked by git, so a hook installed by pasting a script's contents
+   in once silently stops receiving every fix made to that script
+   afterward — found as a real, fleet-wide incident, not a
+   hypothetical: 8 adopter repos were found running a hand-typed
+   fork frozen 4+ major versions stale, with zero warning, including
+   two repos this same session had just committed to without
+   noticing. It must instead be a thin wrapper that execs the current
+   script from disk on every commit — see the
+   `self-refreshing-pre-commit-hook` skill (hub-internal — §2 step 2,
+   next, for how to fetch its content from outside this repo) for the
+   install pattern and how to verify an existing hook isn't a frozen
+   fork.
+2. Check for `skills/REGISTRY.md` at the project root. If present,
+   scan its Trigger column for anything matching the current task and
+   open the matching skill's file before proceeding — this is how any
+   agent tool, not only one with native skill auto-loading, discovers
+   on-demand procedures. `.claude/skills/` entries are this hub's own
+   internal release-engineering skills; an adopting project's own copy
+   of the registry (if any) won't include those files locally, by
+   design (§0). **That does not mean their content is unreachable.**
+   Several of *this file's own* cross-references below point at a
+   hub-internal skill by name — if you're reading this outside the hub
+   repo itself and the named file isn't in your local `skills/`, fetch
+   its body via whichever MCP server `ADAPTERS.md` names for this
+   purpose, calling its `list_skills` tool (`skill: "<name>"` argument)
+   — the same server named there for `get_methodology`/`sync_status`.
+   Confirmed 2026-08-26: this
+   already works end-to-end against the hub's real GitLab repo — the
+   tool applies no distribution-based filtering, it was simply never
+   documented as the retrieval path. Verify your own project's
+   `ADAPTERS.md` actually wires this server before assuming it's
+   available (§2 step 1's own tool-binding caveat applies here too).
+3. Read the durable-knowledge doc (architecture / current-state / known
    gaps — whatever this project calls it) to understand what's actually
    true about the system right now.
-3. Check the issue tracker — not prose in a markdown file — for what's
+4. Check the issue tracker — not prose in a markdown file — for what's
    currently open.
-4. Read the narrative-history doc's **current-state summary** (if one
+5. Read the narrative-history doc's **current-state summary** (if one
    exists) for recent context on *why* things are the way they are —
    not the full file. Only open a dated archive entry if this task
    specifically needs older history the summary doesn't cover.
-5. Run the existing test suite. Confirm you're building on a known-good
+6. Run the existing test suite. Confirm you're building on a known-good
    baseline before changing anything. If it's not green, that's the
    first thing to report, not something to work around.
 
@@ -323,7 +386,8 @@ since — treat these as separate, both cheap:
   match anything you already checked, and at a session handoff.
 - **Unconditional but cheap**: a session can run long with no blocker
   event to trigger anything, and this project's own version banner can
-  silently age regardless — re-check it (a single grep against `stable`)
+  silently age regardless — re-check it (via the live sync tool if
+  `ADAPTERS.md` names one, otherwise a single grep against `stable`)
   at least every 5 commits or roughly every hour of session time,
   whichever comes first, not only when something else prompts it.
 
@@ -350,26 +414,19 @@ For any non-trivial change, in order:
 1. **Ground.** Verify current-state facts with real citations — exact
    file and line, not memory, not assumption, not what a doc *claims* is
    true. If an investigation is large, delegate it, but insist on
-   citations back.
+   citations back. **A negative claim ("this doesn't exist," "this
+   feature is fabricated") needs its own, different verification than a
+   positive one** — see the `verifying-negative-existence-claims` skill
+   (hub-internal — §2 step 2 for how to fetch its content from outside
+   this repo) for why a filename/pattern grep finding nothing doesn't
+   prove absence, and what a real check looks like, before writing the
+   claim into a durable doc or filed issue.
 2. **Research third-party tools before configuring them.** Before wiring
    an external CLI tool, library, or service into the project, read its
    actual source, CLI reference, or config schema for the exact surface
-   being used. Don't infer behavior from what a README promises or what
-   seems reasonable — this is the single highest-leverage step for
-   avoiding integration bugs that only show up later, in production.
-   - **Verify identity via the package registry's own publisher/maintainer
-     metadata, not a search result's summary or the package's own
-     description.** A package description can be written specifically to
-     get an agent to install it — this is a real, observed pattern, not
-     hypothetical, and it doesn't require touching any tool output to
-     land, just showing up in ordinary research. An implausibly high star
-     count for how young a repo is is a second, independent tell worth
-     checking alongside the registry's own metadata.
-   - **Check for CLI binary-name collision as its own risk**, separate
-     from whether a package is malicious. An unofficial package claiming
-     the same command name as a real, already-adopted tool can silently
-     shadow it depending on `PATH` order — verify the name is actually
-     unique before installing anything that provides a CLI entry point.
+   being used — see the `vet-third-party-tool` skill (hub-internal —
+   §2 step 2 for how to fetch its content from outside this repo) for
+   the registry-identity and CLI-collision checks.
 3. **Plan.** For anything non-trivial, write a concrete design to a
    durable, reviewable location before implementing. Get explicit
    approval before proceeding. Calibrate the ceremony to the *risk*, not
@@ -390,6 +447,23 @@ For any non-trivial change, in order:
    - about to take an action beyond what you've heard an explicit yes to
      in this conversation — not what could be argued as implied by a
      broader ask
+   - about to do substantial work spanning more than one domain a
+     configured persona taxonomy defines (e.g. infra work *and* a
+     security/quality audit *and* documentation currency in the same
+     pass), where this project has an opted-in governance pack (see
+     `ADAPTERS.md`) — surface that as part of the plan and consider
+     dispatching per `skills/adopt-persona/SKILL.md` rather than
+     defaulting to doing it all inline. Checked once at session boot
+     against whatever the task looked like at the time is not enough —
+     cross-domain shape often only becomes clear once work is already
+     underway, so this is a per-task check at the moment scope is
+     actually decided, not a one-time registry scan
+
+   These tripwires are also mechanically re-surfaced mid-session — not
+   only readable once at session start — by the `~/.hyer/` hook layer
+   (issue #26; see `docs/superpowers/specs/2026-08-26-hyer-hook-layer-design.md`).
+   Prose alone had already failed to hold twice in this repo's own
+   history before this existed.
 4. **Implement** in small, independently coherent units — not one batch
    at the end.
 5. **Verify.** In order of cost, cheapest first, but don't stop at the
@@ -421,6 +495,20 @@ For any non-trivial change, in order:
    independently coherent unit of work, not a whole phase batched into
    one. Never `--amend` a previous commit for follow-up work — a new
    commit, always.
+   - **"Push immediately" describes a trunk with no second human
+     reviewing it** — the coherent default for a solo operator working
+     through AI agents directly on trunk. **In a multi-contributor
+     setting, gate merge on review before this step applies**: most
+     real engineering teams require human (or required-bot) review,
+     CODEOWNERS, or branch protection before a change lands on the
+     shared trunk. This file does not prescribe a specific tool,
+     reviewer count, or branch-protection config — calibrate the gate
+     to this project's own rules (see `ADAPTERS.md` if the project has
+     one). The broader mechanics of how a multi-human team coordinates
+     with each other and with concurrent agent sessions — pairing,
+     on-call, postmortems, resolving conflicting concurrent work — is
+     a separate, opted-in concern (e.g. `packs/human-team-coordination`),
+     not part of this step's own review-gate scope.
 
 ### Auto-Moderation Protocol (Claude Code Supervision) — Advisory, Not Binding
 
@@ -543,9 +631,12 @@ projects' documentation for human readers: that hub **mirrors** each
 project's durable docs one-way — it is never the place new decisions get
 authored, and per-repo docs remain the actual source of truth. Two-way
 sync (or worse, writing there first) creates exactly the two-sources-of-
-truth problem this section exists to prevent. See §1.1's Documentation
-Curator persona for who is responsible for this once real automation
-exists.
+truth problem this section exists to prevent. §1.1 core defines no
+personas of its own; a project that has opted into a governance pack
+naming a Documentation Curator persona (see e.g.
+`packs/solo-founder-governance/PACK.md`, if adopted) uses that binding
+for who is responsible for this once real automation exists — absent
+that, it's an open responsibility, not assigned anywhere by core.
 
 ---
 
@@ -611,6 +702,12 @@ exists.
   bigger blast radius than what was actually approved, **stop and ask.**
   Never silently substitute something riskier to route around an
   obstacle, even if it would technically work.
+- If this project has real compliance obligations (SOC2, GDPR, HIPAA,
+  or similar), see an opted-in compliance pack (e.g.
+  `packs/compliance-baseline`) for a starting engineering-process
+  checklist — not built into core, since requirements vary by
+  jurisdiction and industry and must be verified with real
+  legal/compliance counsel, never inferred generically from this file.
 - **Adopting this methodology into an existing project is additive, not
   a restructuring.** Before moving, renaming, or relocating any existing
   file to match this template's suggested layout (including `AGENTS.md`
@@ -622,6 +719,22 @@ exists.
   tooling. Bridge-file import mechanisms generally support arbitrary
   relative paths, not just root-level files — use that instead of
   relocating anything.
+- **Never run `git init` inside a directory without first checking
+  whether it's already a linked worktree.** `git init` there silently
+  overwrites the worktree's `.git` file (normally a one-line `gitdir:
+  ...` pointer back at the parent repo) with a brand-new, independent
+  `.git` directory — no error, no confirmation prompt, and the break
+  isn't discovered until much later when commit SHAs referenced in the
+  directory's own docs turn out not to exist in its own `git log`.
+  Check first: `cat .git` — a one-line `gitdir: ...` pointer means it's
+  a worktree link; a directory means it's already a real repo. If
+  extracting a worktree's content into a genuinely standalone repo is
+  the actual goal, use `git worktree remove` first, or a
+  history-preserving extraction (`git subtree split`, `git
+  filter-repo`) — never `git init`, which discards history instead of
+  migrating it. Found 2026-08-20: a worktree turned standalone repo
+  this way had its own `CHANGELOG.md`/`HISTORY.md` referencing commits
+  that had silently ceased to exist.
 
 ---
 
@@ -697,6 +810,11 @@ interoperability:
      helper scripts) loaded strictly on-demand into prompt context
      windows when specific domain tasks trigger them. Prevents root
      system prompt bloat and maximizes prompt caching efficiency.
+   - A skill is trusted prose by default — nothing verifies its
+     instructions still produce the right behavior after an edit. For
+     any skill where following it wrong would matter, add regression
+     eval cases; see the `testing-skills-with-evals` skill (hub-internal
+     — §2 step 2 for how to fetch its content from outside this repo).
 3. **Plugins — Namespaced Capability Bundles**:
    - Higher-level self-contained packages that bundle MCP servers,
      Skills, Sidecars, and Hooks into namespaced, shareable units for
@@ -709,31 +827,13 @@ day to day.
 
 ---
 
-## 10. Agent Self-Learning & Continuous Skill Synthesis Architecture
+## 10. Agent Self-Learning & Continuous Skill Synthesis
 
-To transform agents from static instruction followers into self-evolving engineering workers that continuously learn from experience, corrections, and resolved incidents:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│                          AGENT SELF-LEARNING FEEDBACK LOOP                                  │
-├─────────────────┬─────────────────┬─────────────────────────┬───────────────────────────────┤
-│  1. OBSERVE     │   2. REFLECT    │  3. SYNTHESIZE SKILL    │  4. PERSIST & HOT-RELOAD      │
-│  Incident /     │   Root-Cause &  │  Reusable SOP /         │  Whichever memory/skill       │
-│  User Correction│   Abstraction   │  Executable Pattern     │  store this tool provides     │
-└─────────────────┴─────────────────┴─────────────────────────┴───────────────────────────────┘
-```
-
-### 10.1 The 4 Core Directives of Agent Self-Learning
-
-1. 🔄 **Empirical Triggering (Learn from Real Incidents Only)**:
-   - Self-learning is triggered whenever an agent resolves a non-trivial bug, receives an explicit user correction, or overcomes an un-documented API/build hurdle. Agents MUST NOT invent hypothetical skills without empirical runtime proof.
-
-2. 🧠 **Procedural Skill Synthesis**:
-   - Upon discovering a new reusable solution, the agent synthesizes a structured, reusable procedure — a step-by-step SOP, edge-case warnings, and optional verification steps — in whichever skill/procedure format and location this tool and project use (per `ADAPTERS.md`, §2). This file deliberately does not name a specific format or path — that's a concrete tool binding, out of scope here per §0.
-
-3. 💾 **Centralized Memory Persistence over Ad Hoc Files**:
-   - In accordance with §1.0's Zero-File Communication Mandate, learned observations, gotchas, and architectural insights MUST be written to whichever centralized, persisted knowledge-graph or memory store is already configured for the project (per `ADAPTERS.md`) — never to scattered ad hoc files.
-
-4. ⚡ **Zero-Restart Dynamic Skill Hot-Reloading**:
-   - During Step 2 (Boot Sequence), active agent sessions query the project's configured memory store and skill/procedure location to hot-reload freshly learned patterns into their working memory without requiring process restarts.
+After resolving a non-trivial bug, receiving an explicit correction, or
+overcoming an undocumented API/build hurdle, synthesize a reusable
+procedure and persist it to the project's configured memory/skill store
+— see the `self-learning-skill-synthesis` skill (hub-internal — §2
+step 2 for how to fetch its content from outside this repo) for the
+4-phase loop (Observe → Reflect → Synthesize → Persist & Hot-Reload)
+and the empirical-triggering rule (no hypothetical skills).
 
