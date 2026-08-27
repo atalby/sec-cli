@@ -69,11 +69,11 @@ itself (dev/test), the same `at-tech-io` fleet convention applies:
 ## Hyer version sync
 
 Per `AGENTS.md` §2 step 1 — use this instead of manually reading or
-cloning `engineering-methodology`.
+cloning Hyer directly.
 
 - **Tool**: `hyer` MCP server, wired in `.mcp.json`
   (`hyer-mcp/dist/stdio-server.js` from the hub checkout at
-  `~/sandbox/engineering-methodology`, `GITLAB_TOKEN` injected via
+  `~/sandbox/hyer`, `GITLAB_TOKEN` injected via
   `sec get engineering-methodology-gitlab-pat` — the hub itself lives
   on GitLab even though this repo doesn't).
 - **Check current/latest version**: `sync_status` with this repo's
