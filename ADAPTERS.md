@@ -74,7 +74,7 @@ cloning Hyer directly.
 - **Tool**: `hyer` MCP server, wired in `.mcp.json`
   (`hyer-mcp/dist/stdio-server.js` from the hub checkout at
   `~/sandbox/hyer`, `GITLAB_TOKEN` injected via
-  `sec get engineering-methodology-gitlab-pat` — the hub itself lives
+  `sec get hyer-gitlab-pat` — the hub itself lives
   on GitLab even though this repo doesn't).
 - **Check current/latest version**: `sync_status` with this repo's
   current `AGENTS.md` version as `current_version`.
