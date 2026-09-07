@@ -25,12 +25,14 @@ reason to skip the skill.
 |---|---|---|---|
 | engineering-loop | `skills/engineering-loop/SKILL.md` | any non-trivial implementation task | adopter |
 | fleet-agent-coordination | `skills/fleet-agent-coordination/SKILL.md` | multiple concurrent agent sessions need to coordinate | adopter |
+| hyer-session-currency | `skills/hyer-session-currency/SKILL.md` | session start | adopter |
 | reuse-before-build | `skills/reuse-before-build/SKILL.md` | before implementing new tooling from scratch | adopter |
 | roadmap-reconciliation | `skills/roadmap-reconciliation/SKILL.md` | auditing docs/history for ideas never filed as issues | adopter |
 | self-diagnose-and-plan | `skills/self-diagnose-and-plan/SKILL.md` | session start, or "what's next" | adopter |
 | adopt-persona | `skills/adopt-persona/SKILL.md` | dividing cross-domain work across an opted-in persona taxonomy | adopter |
 | targeted-code-reading | `skills/targeted-code-reading/SKILL.md` | reading a file over ~200 lines | adopter |
 | session-restart-handoff | `skills/session-restart-handoff/SKILL.md` | a session has sprawled, hit a clean boundary, or needs to hand off to another session/repo | adopter |
+| stale-branch-merge-audit | `skills/stale-branch-merge-audit/SKILL.md` | rebasing/merging a branch that sat unmerged while main kept moving | adopter |
 | adopter-drift-self-check | `.claude/skills/adopter-drift-self-check/SKILL.md` | wiring drift-check CI into an adopting repo | hub-internal |
 | diagnosing-hook-context-corruption | `.claude/skills/diagnosing-hook-context-corruption/SKILL.md` | a git hook's test/build step behaves differently than running it directly, or unstaged content shows up committed | hub-internal |
 | moving-stable-tag | `.claude/skills/moving-stable-tag/SKILL.md` | cutting a new methodology release | hub-internal |

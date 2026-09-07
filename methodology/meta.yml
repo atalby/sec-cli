@@ -1,0 +1,9 @@
+# methodology/meta.yml — single source of truth for the HIAE Protocol
+# version banner. Bump `version` here, run `scripts/stamp_banners.py`,
+# then commit — never hand-edit a banner in AGENTS.md/WIKI.md/
+# docs/ARCHITECTURE.md directly. Kept minimal deliberately: no
+# tier_matrix/pack_list fields, since nothing reads them yet and a
+# second hand-maintained copy of facts that already live correctly in
+# AGENTS.md §1.0 / each adopter's own WIKI.md is the problem this file
+# exists to avoid, not a hedge worth taking.
+version: "5.28.0"

@@ -17,6 +17,21 @@ migrated legacy text as those repos' pre-sync copies: a `bws`/
 
 ---
 
+## Repo ownership
+
+Per `AGENTS.md` §1.0's Cross-Repo Ownership & Ask-Don't-Read Mandate
+(added v5.28.0). Any session outside this repo should check this field
+before reading or editing anything here — and ask rather than reach in
+directly. This applies with extra weight here: `sec-cli` is the fleet's
+own secrets tool, not just another repo.
+
+- **Owner**: Persona: Human Systems Architect (Solo Founder / Lead
+  Engineer) — this repo's opted-in `packs/solo-founder-governance`
+  names a single final approver, and no other opted-in pack or doc here
+  names a different owner.
+- **Last updated**: 2026-09-07 (mandate's own introduction, synced from
+  hub v5.28.0).
+
 ## Opted-in Policy Packs
 
 Which of the central methodology repo's optional policy packs

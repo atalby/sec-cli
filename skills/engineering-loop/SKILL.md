@@ -7,7 +7,7 @@ description: "Use for any non-trivial implementation task — a new feature, a b
 
 The reusable procedure behind `AGENTS.md`'s §3 "Core Development Loop" —
 extracted so it's invoked consistently instead of re-derived from
-reading prose each time. See the `engineering-methodology` repo's
+reading prose each time. See Hyer's (the methodology hub's)
 `METHODOLOGY.md` and wiki `Retrospective` page for the real incidents
 that produced each step; this file is the "what to do," those are the
 "why."
