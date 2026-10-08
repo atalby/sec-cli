@@ -1,6 +1,6 @@
 ---
 name: engineering-loop
-description: "Use for any non-trivial implementation task — a new feature, a bug fix touching more than a couple files, wiring in a third-party tool or service, or anything where being wrong costs real rework. Walks ground → research → plan → implement → verify → document → commit as an explicit sequence instead of jumping straight to code. If the project has an AGENTS.md, that file's Identity/Philosophy and Documentation Structure sections take precedence over this skill's generic placeholders — this skill is the loop, AGENTS.md is the project-specific content that fills it."
+description: "Use for any non-trivial implementation task — a new feature, a bug fix touching more than a couple files, wiring in a third-party tool or service, or anything where being wrong costs real rework. Walks ground -> research -> plan -> implement -> verify -> document -> commit as an explicit sequence instead of jumping straight to code. If the project has an AGENTS.md, that file's Identity/Philosophy and Documentation Structure sections take precedence over this skill's generic placeholders — this skill is the loop, AGENTS.md is the project-specific content that fills it."
 ---
 
 # Engineering Loop
@@ -104,7 +104,7 @@ commit for follow-up work.
 ## Before calling it done
 
 - [ ] Full suite green, not just touched files
-- [ ] Any trigger→consequence relationship independently verified
+- [ ] Any trigger->consequence relationship independently verified
 - [ ] Real target system exercised at least once, if applicable
 - [ ] Durable-knowledge docs updated if state changed
 - [ ] Committed in small units, already pushed

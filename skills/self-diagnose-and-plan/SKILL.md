@@ -31,6 +31,11 @@ equivalent onboarding doc):
   remember it being.
 - Run the existing test suite. Confirm you're building on a
   known-good baseline before touching anything.
+- If `skills/hyer-session-currency/SKILL.md` is present in this
+  project's own `skills/` directory, invoke it now — it covers
+  Hyer-specific version-currency and fleet-inbox checks this generic
+  skill doesn't know how to do itself. Its absence is not an error;
+  skip this bullet cleanly and move on.
 
 ## 2. Diagnose
 

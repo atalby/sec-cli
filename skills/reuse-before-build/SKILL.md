@@ -117,8 +117,8 @@ step 3) — it's an input to that decision, not a replacement for it.
 
 ## Configuring this skill in `ADAPTERS.md`
 
-Add a section like this to a project's own `ADAPTERS.md` (see
-`templates/ADAPTERS_TEMPLATE.md`) to configure or disable this skill —
+Add a section like this to a project's own `ADAPTERS.md` to configure or
+disable this skill —
 absent entirely, it runs with this file's own defaults, as described
 in step 0:
 

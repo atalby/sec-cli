@@ -48,7 +48,7 @@ Either way, make it *discoverable without being named* — see step 5.
 Dangling subagents, monitors, or watches are session-level state, not
 conversation-level — clearing the conversation doesn't stop them.
 Before or immediately after restarting, enumerate what's still running
-(a `ListAgents`-equivalent call) and stop anything no longer needed.
+(a session-listing call) and stop anything no longer needed.
 Idle isn't free forever, and a dangling agent nobody remembers spawning
 is its own future confusion.
 
@@ -58,9 +58,9 @@ Whatever your tool's equivalent of "clear this conversation's context"
 is, that's the right move — not the equivalent of "reload a specific
 past conversation's full transcript," which is the opposite of fresh
 and will pull the exact sprawl you're trying to leave behind right
-back in. (Claude Code specifically: `/clear`, never `/resume` on the
-session you're trying to get away from — `/resume` is for the
-deliberate case of wanting a specific past conversation back in full.)
+back in — use your tool's equivalent of clearing the current context,
+never the equivalent of reloading a specific past conversation in full
+(the latter brings back the exact sprawl you're leaving).
 
 ## 5. The agent finds the resume point — never require the human to name it
 
@@ -106,6 +106,6 @@ session is a new process as far as the fleet is concerned, and a stale
 reference silently reaching an unattended session (or a *different*
 session that picked up the same display name) is a real, already-seen
 failure mode — see this project's own fleet-coordination discipline
-(`AGENTS.md` §1's Zero-File Communication Mandate, and
+(the Zero-File Communication Mandate in `methodology/tiers.md`, and
 `fleet-agent-coordination` if this project runs a multi-session fleet)
 for why a remembered reference is never trusted over a fresh lookup.

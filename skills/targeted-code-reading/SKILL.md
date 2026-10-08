@@ -26,8 +26,8 @@ Before reading a file over ~200 lines in full:
 
 This skill documents the convention; it does not itself enforce it.
 A project that wants this mechanically enforced for a specific tool
-(e.g. a Claude Code `PreToolUse` hook rejecting an oversized full-file
-read without a prior symbol search) should wire that in via its own
+(e.g. a hook or enforcement rule rejecting an oversized full-file read
+without a prior symbol search) should wire that in via its own
 `ADAPTERS.md`, scoped to that tool — never assume every adopting
 project's tool supports the same enforcement mechanism, and never bake
 a single tool's hook mechanism into this skill or into core

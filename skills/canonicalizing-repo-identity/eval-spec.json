@@ -1,0 +1,41 @@
+{
+  "kind": "eval-spec",
+  "status": "inert",
+  "reason": "Each case needs a credentialed agent runtime to produce the output under test, and no such runtime ships with this payload, so these cases are recorded acceptance criteria rather than a runnable suite. Knowledge the skill asserts is checked deterministically by the adopting repo's own tests.",
+  "cases": [
+    {
+      "id": "worktree-splits-per-repo-state",
+      "prompt": "A pre-commit hook writes a denial log, tagging each record with the repository it came from. The tag is currently basename($REPO_ROOT). When the same repo is used from a git worktree, denials land under the worktree's directory name and the main repo's row stays at zero. What key should the recorder use, and how do I prove the fix?",
+      "assertions": [
+        {
+          "type": "text_contains",
+          "value": "common dir"
+        },
+        {
+          "type": "quality",
+          "value": "derives the repo identity from the git common dir shared by all worktrees, states that reader and writer must compute the identical key, and proposes asserting the fix from a real worktree rather than only reasoning in the abstract"
+        }
+      ]
+    },
+    {
+      "id": "retry-burst-double-counts",
+      "prompt": "A denial meter reports a higher rate than reality: a blocked commit is retried a few seconds later, and the recorder writes a second near-identical record, so one denied commit counts twice in the numerator. What's wrong and how should the recorder handle the retry?",
+      "assertions": [
+        {
+          "type": "quality",
+          "value": "identifies a retried-until-success event writing duplicate records within a short window as the cause, and fixes it by coalescing identical (repo, step) records within a short window or a stable event id upserted in place, not by raising the threshold"
+        }
+      ]
+    },
+    {
+      "id": "tiny-denominator-false-flag",
+      "prompt": "A repo with three landed commits and one denied commit shows a 25% denial rate and the reporter flags it. The repo is new and small. Should the flag stand?",
+      "assertions": [
+        {
+          "type": "quality",
+          "value": "does not accept the percentage on a tiny sample, requires a minimum-sample floor before threshold judgment, floors on total attempts (committed plus denied) rather than committed alone, and allows small rows to print unjudged"
+        }
+      ]
+    }
+  ]
+}

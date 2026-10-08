@@ -59,10 +59,10 @@ rather than leaving it indistinguishable from any other commit.
 ## 5. Report anything worth learning back
 
 `AGENTS.md` §10's self-learning mandate (resolve a non-trivial bug,
-receive an explicit correction, work around an undocumented hurdle →
+receive an explicit correction, work around an undocumented hurdle ->
 synthesize a reusable procedure and persist it via
 `self-learning-skill-synthesis`) applies to every agent operating
-under this methodology, not just the dispatching session — but a
+under Hyer, not just the dispatching session — but a
 freshly-dispatched persona subagent's context starts empty and won't
 necessarily surface a whole-file mandate buried in `AGENTS.md` §10 on
 its own. Don't leave it to chance:

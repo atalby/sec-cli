@@ -8,7 +8,7 @@ description: "Use when auditing existing docs, git history, or prior conversatio
 The reusable procedure for turning "we probably talked about this
 somewhere but it's not tracked" into a decision, applied consistently
 instead of re-derived ad hoc each time this comes up. Extracted from a
-real run (Adopter-Product-1, 2026-08-23) that improvised this twice in one
+real run (a Product-tier adopter, 2026-08-23) that improvised this twice in one
 session — once for the search, once for the vetting — with no
 checklist to follow either time.
 
@@ -48,7 +48,7 @@ one:
 2. **Laser Task Focus actionability** (§1.2) — is this a closeable,
    issue-shaped unit right now, or a vague aspiration that needs a Plan
    (§3) before it's even issue-shaped?
-3. **Cost-awareness** (§1 circuit-breakers, and any opted-in
+3. **Cost-awareness** (circuit-breakers in `methodology/tiers.md`, and any opted-in
    cost/infra pack per `ADAPTERS.md`) — does building this introduce a
    new paid API, always-on infra, or anything that breaks
    scale-to-zero?

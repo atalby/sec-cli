@@ -6,12 +6,11 @@ description: "Use before rebasing or merging any branch that has sat unmerged wh
 # Stale Branch Merge Audit
 
 Grounded in a real case (2026-09-06): two branches forked before this
-repo's Phase 2 methodology-storage-restructure and its subspace/
-neural-memory pack saga were both resolved. A naive `git diff main
-<branch>` made both look like they were reverting the restructure and
-colliding on ~28 files. Neither was true — both artifacts came from
-comparing against main's *current tip* instead of each branch's actual
-fork point.
+repo's Phase 2 methodology-storage-restructure were both resolved. A
+naive `git diff main <branch>` made both look like they were reverting
+the restructure and colliding on ~28 files. Neither was true — both
+artifacts came from comparing against main's *current tip* instead of
+each branch's actual fork point.
 
 ## 1. Diff against merge-base, never against main's tip
 
@@ -25,9 +24,9 @@ Always compute the branch's real footprint like this instead:
 
 ```
 base=$(git merge-base main <branch>)
-git log main..<branch> --oneline          # the branch's own unique commits
-git diff --stat "$base" <branch>          # what those commits actually touch
-git diff --stat "$base" main              # what main gained that the branch is missing
+git log main..<branch> --oneline # the branch's own unique commits
+git diff --stat "$base" <branch> # what those commits actually touch
+git diff --stat "$base" main # what main gained that the branch is missing
 ```
 
 Two branches can look like they collide on dozens of files by the
