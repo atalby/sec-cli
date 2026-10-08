@@ -1,5 +1,7 @@
 # sec-cli .gitignore
 .DS_Store
+._*
+.agents/
 *.log
 .cache/
 ~/.sec/
