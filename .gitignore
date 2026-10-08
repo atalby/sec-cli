@@ -2,6 +2,7 @@
 .DS_Store
 ._*
 .agents/
+__pycache__/
 *.log
 .cache/
 ~/.sec/

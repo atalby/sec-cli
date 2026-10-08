@@ -138,7 +138,7 @@ usage() {
     echo "  sec [<tenant>] run -- <cmd>              Execute command with tenant secrets injected into process memory"
     echo "  sec housekeep {plan|apply|revert}        Intelligent ML categorization, plan/apply, & instant rollback engine"
     echo "  sec migrate --from <src> --to <dst>     Zero-plaintext vault-to-vault migration engine"
-    echo "  sec sync                                Push Bitwarden-canonical secrets to GCP Secret Manager / GitLab group variables"
+    echo "  sec sync [--dry-run|--yes]              Push Bitwarden-canonical secrets to GCP Secret Manager / GitLab group variables (--dry-run previews, --yes confirms non-interactively)"
     echo "  sec unlock                               Unlock Bitwarden vault and save session"
     echo "  sec rotate                               Keep-alive / rotate Bitwarden session key"
     echo "  sec setup-keychain                       Store master password in Keychain for auto-rotation"

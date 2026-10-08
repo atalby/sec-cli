@@ -11,7 +11,7 @@
 - `bin/sec-classify.py`: Intelligent secret classifier categorizing environment variables.
 - `bin/sec-migrator`: Automated migration engine moving secrets between backends.
 - `bin/sec-organizer`: Housekeeping engine (`sec housekeep plan`/`apply`/`revert`) — classify, move, disambiguating-rename, snapshot.
-- `bin/sec-sync-controller.py`: Central Secret Sync Controller (`sec sync`) — Bitwarden/bws source of truth pushed to GCP Secret Manager, GitLab group CI/CD variables, Vercel projects.
+- `bin/sec-sync-controller.py`: Central Secret Sync Controller (`sec sync`) — Bitwarden/bws source of truth pushed to GCP Secret Manager, GitLab group CI/CD variables, Vercel projects. Guarded against accidental prod pushes (issue #3): `--dry-run` previews key names and target endpoints with zero backend calls; a real push requires an interactive `y/N` on a TTY or an explicit `--yes` (non-interactive without it: exit 2, nothing written); zero keys present: exit 1; unknown flags: exit 2 before any work; secret values are never printed.
 - `bin/sec.ps1`: Native Windows PowerShell wrapper for the same subcommand surface.
 - `completions/_sec`: shell completion for `sec`.
 
