@@ -1,9 +1,9 @@
 # Credentials & Blast Radius
 
-> Detail module for `AGENTS.md` §6. Loaded on demand — see the module
-> table in `AGENTS.md` §0. This file is part of the adopter payload
-> (§0: "adopting Hyer means the full payload, not a hand-picked
-> subset"), copied alongside `AGENTS.md` and `skills/`. Load this
+> Detail module for `AGENTS.md` §6. Loaded on demand — see the Module
+> Table at the top of `AGENTS.md`. This file is part of the adopter payload
+> (`methodology/adoption.md`: "adopting Hyer means the full payload, not
+> a hand-picked subset"), copied alongside `AGENTS.md` and `skills/`. Load this
 > before any infra, secrets, deployment, or credential-touching work —
 > `AGENTS.md` §6 core keeps only the headline "stop and ask" rule.
 
@@ -34,30 +34,30 @@
 - **Multi-Platform Target Discipline**: Projects vary by deployment
   target — static/serverless UIs typically deploy to a serverless
   hosting platform; containerized/stateful services typically deploy to
-  a cloud provider via IaC, managed centrally in a dedicated infra
-  repo. Which platform this project actually uses is project-specific
+  a cloud provider via IaC. Which platform this project actually uses
+  is project-specific
   fact — see your project's `ADAPTERS.md` for what's configured, or an
   opted-in cost/infra pack for one real-world instantiation. During
   the Boot Sequence (§2), confirm which applies to *this* project from
   its own `README.md`/`docs/` rather than assuming.
 - **Centralized Cloud Identity & Infrastructure Ownership** (added
   v5.22.2): cloud login and any modification to live cloud
-  infrastructure or IAM route through the infrastructure/IaC repo, not
-  ad hoc from whichever project happens to need it. Concretely:
+  infrastructure or IAM route through whichever owner declares that
+  domain in its own `ADAPTERS.md`, not ad hoc from whichever project
+  happens to need it. Concretely:
   - **No automation authenticates as a human.** Any script, CI job, or
     agent-invoked tool that calls a cloud provider MUST use a service
     account / workload identity provisioned for that specific purpose
     — never a developer's own `gcloud`/`aws` login (see
     `METHODOLOGY.md#found-2026-08-28-human-account-cloud-lockout`).
-  - **The infrastructure/IaC repo provisions and owns every service
-    account / workload identity binding** used by other projects for
-    cloud calls, the same way it already owns IaC and deployment
-    targets (Multi-Platform Target Discipline, above). A project
-    needing new cloud access requests it there rather than creating
-    its own credential.
+  - **The owner of that domain provisions every service account /
+    workload identity binding** used by other projects for cloud calls,
+    the same way it owns IaC and deployment targets (Multi-Platform
+    Target Discipline, above). A project needing new cloud access
+    requests it there rather than creating its own credential.
   - **Any other repo/session that finds itself about to run a cloud
     provider's own CLI/console to change live infrastructure, IAM, or
-    credentials stops and hands that to the infrastructure/IaC repo**
+    credentials stops and hands that to that domain's declared owner**
     instead — this is the same "bigger blast radius than approved,
     stop and ask" boundary this section already draws for individual
     actions, applied to which repo owns the action at all.
@@ -76,7 +76,7 @@
   internal-only sidecar — is deployed without TLS; a cleartext listener
   is a defect, never a deferrable "internal/temporary" shortcut.
   Enforcement (CI gate, TLS-defaulting IaC) and remediation of existing
-  deployments are the infrastructure/IaC repo's to build and keep true;
+  deployments belong to whichever owner declares the deployment domain;
   this contract states the rule.
 - **Deployment Authorization Triggers**: `dev`/`staging` are
   auto-authorized on 100% test-suite pass; `production` explicitly

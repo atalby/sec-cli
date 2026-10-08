@@ -1,9 +1,9 @@
 # The Core Development Loop — full detail
 
-> Detail module for `AGENTS.md` §3. Loaded on demand — see the module
-> table in `AGENTS.md` §0. This file is part of the adopter payload
-> (§0: "adopting Hyer means the full payload, not a hand-picked
-> subset"), copied alongside `AGENTS.md` and `skills/`.
+> Detail module for `AGENTS.md` §3. Loaded on demand — see the Module
+> Table at the top of `AGENTS.md`. This file is part of the adopter payload
+> (`methodology/adoption.md`: "adopting Hyer means the full payload, not
+> a hand-picked subset"), copied alongside `AGENTS.md` and `skills/`.
 >
 > `AGENTS.md` §3 itself keeps the one-line skeleton for all 7 steps
 > **and** the full step-3 tripwire list verbatim (mechanical,
@@ -86,11 +86,11 @@ For any non-trivial change, in order:
      a separate, opted-in concern (e.g. `packs/human-team-coordination`),
      not part of this step's own review-gate scope.
 
-## Auto-Moderation Protocol (Claude Code Supervision) — Advisory, Not Binding
+## Auto-Moderation Protocol (Advisory Supervision) — Advisory, Not Binding
 
 - **Advisory Supervision**: Major architectural plans, code refactors, or
-  quality gate checks may be spot-audited by an agent CLI (e.g.
-  `claude -p`) as an informal second reviewer.
+  quality gate checks may be spot-audited by a second agent session or
+  CLI-driven review pass as an informal second reviewer.
 - **Not Binding by default**: These audits are advisory input, not a
   binding gate, unless a real CI job exists in this repo that runs it and
   fails the pipeline on a negative finding — verify that before claiming

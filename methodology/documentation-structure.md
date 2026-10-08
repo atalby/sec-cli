@@ -1,12 +1,41 @@
 # Documentation Structure — full detail
 
-> Detail module for `AGENTS.md` §5. Loaded on demand — see the module
-> table in `AGENTS.md` §0. This file is part of the adopter payload
-> (§0: "adopting Hyer means the full payload, not a hand-picked
-> subset"), copied alongside `AGENTS.md` and `skills/`.
+> Detail module for `AGENTS.md` §5. Loaded on demand — see the Module
+> Table at the top of `AGENTS.md`. This file is part of the adopter payload
+> (`methodology/adoption.md`: "adopting Hyer means the full payload, not
+> a hand-picked subset"), copied alongside `AGENTS.md` and `skills/`.
 >
 > `AGENTS.md` §5 core keeps the top-level "three kinds of knowledge"
 > framing. This module carries the concrete mechanics for each kind.
+
+## Rationale never shares a file with rule
+
+There is a fourth kind of knowledge alongside the three `AGENTS.md` §5
+names, and it is the one that quietly bloats a contract: **rationale**.
+Why a rule exists, which incident produced it, what was tried first.
+
+A human wants it. An agent pays for it on every read, in every adopting
+repo, forever. So it lives in its own file and is never adopter payload:
+in this hub that file is `METHODOLOGY.md`, "Why Hyer looks the way it
+does", and it is the human companion to `AGENTS.md`. The contract states
+the rule; that file carries the reasoning. Neither is generated from the
+other, because rationale is not derivable from a rule and a rule is not
+derivable from rationale. They are disjoint content, not two views of
+the same content, which is why they cannot drift apart the way two
+copies of one fact do.
+
+**The test, so this stays checkable rather than a matter of taste**:
+delete the paragraph and ask whether any agent behaviour changes. If
+nothing changes, it is rationale and belongs in the companion file. If
+behaviour changes, it is a rule and stays in the contract, in exactly
+one wording that both audiences read.
+
+Do not write a "human edition" and an "agent edition" of the same rule.
+Two editions of one rule are two rules, and they will disagree. This
+repo has been bitten by hand-maintained duplication repeatedly (frozen
+pre-commit forks, one regex living in two files, adopters at stale
+versions); the answer is one copy of each rule plus a separate file for
+the reasoning, not a second copy of everything.
 
 ## The narrative-history file, concretely
 
@@ -40,21 +69,41 @@ Three things make it actually happen instead of silently rotting:
    documentation step, don't work around it and leave it stale for the
    next session too.
 
-## The 3-Way Synchronized Release Rule (Product & Platform tiers)
+## The Declared Doc Set Rule (Product & Platform tiers)
 
 For any non-trivial feature or architectural change in a Product- or
-Platform-tier repo (§1.0), documentation and implementation must be
-updated simultaneously in the exact same unit of work:
-1. **Implementation Code**: Source code files under `src/` or core
-   modules.
-2. **Technical Architecture Doc**: System layout and contracts.
-3. **Master Wiki / Knowledge Base**: Higher-level domain documentation.
+Platform-tier repo (§1.0), implementation and the repo's companion
+documents must be updated in the same unit of work.
 
-No PR or release is complete if code changes drift from the architecture
-doc or the wiki.
+**Which documents is a per-project fact**, declared in `ADAPTERS.md`
+under "Declared doc set": the code scope that triggers the rule, and the
+companion documents that must move with it. A repo that declares nothing
+gets the historical pair, a technical architecture doc and a wiki, so
+declaring is only needed to change the set. This rule was formerly
+"3-Way Sync", which hardcoded those two filenames into a contract that
+carries no project-specific fact; some repos need a fourth document, and
+some have neither.
+
+**A document belongs in the set only if a commit could plausibly change
+code without touching it.** A file that changes on nearly every commit
+discharges the rule for free. This stays a judgment on purpose: it is a
+counterfactual, and the one mechanical proxy tried -- how much of a
+document is duplicated elsewhere -- ranked a healthy architecture doc as
+worse than a 37 KB narrative blob.
+
+**An update must name what changed.** A companion-doc edit discharges the
+rule only if one of its added lines names something the commit changed,
+such as a changed file. Before this, any byte in a qualifying file
+satisfied the gate, and a single wiki cell grew to 37 KB one appended
+clause at a time. This is a floor, not a grader: a lazy but truthful line
+naming the file still passes.
+
+A document that does not exist is not required unless the set declares
+it; declaring a document is the assertion that it should exist.
 
 Personal-infra tier repos use their own equivalent (a durable-state doc +
-narrative history) per §1.0, not this 3-file structure.
+narrative history) per §1.0, and should say so in `ADAPTERS.md` with
+`_Not applicable: <reason>_` rather than leaving the section blank.
 
 ## Cross-Project Documentation Mirror (optional)
 

@@ -1,9 +1,9 @@
 # The MCP / Skills / Plugins Triad Architecture
 
-> Detail module for `AGENTS.md` §9. Loaded on demand — see the module
-> table in `AGENTS.md` §0. This file is part of the adopter payload
-> (§0: "adopting Hyer means the full payload, not a hand-picked
-> subset"), copied alongside `AGENTS.md` and `skills/`.
+> Detail module for `AGENTS.md` §9. Loaded on demand — see the Module
+> Table at the top of `AGENTS.md`. This file is part of the adopter payload
+> (`methodology/adoption.md`: "adopting Hyer means the full payload, not
+> a hand-picked subset"), copied alongside `AGENTS.md` and `skills/`.
 
 To standardize agent capabilities, knowledge organization, and tool
 interoperability:

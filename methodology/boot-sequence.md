@@ -1,16 +1,42 @@
 # Boot Sequence For A New Session
 
-> Detail module for `AGENTS.md` §2. Loaded on demand — see the module
-> table in `AGENTS.md` §0. This file is part of the adopter payload
-> (§0: "adopting Hyer means the full payload, not a hand-picked
-> subset"), copied alongside `AGENTS.md` and `skills/`. Read this in
+> Detail module for `AGENTS.md` §2. Loaded on demand — see the Module
+> Table at the top of `AGENTS.md`. This file is part of the adopter payload
+> (`methodology/adoption.md`: "adopting Hyer means the full payload, not
+> a hand-picked subset"), copied alongside `AGENTS.md` and `skills/`. Read this in
 > full before doing anything else in a new session — it is not
 > optional detail just because it lives in a module.
 
-Before touching anything:
+What boot reads in full, and nothing more, is declared here and held to a
+budget by `scripts/check_boot_budget.py`. Everything else in this sequence
+is a targeted lookup. Files boot touches each session without reading in
+full are declared the same way and counted against the same budget.
+
+```boot-read-budget
+budget_bytes: 30000
+full_reads:
+  - AGENTS.md
+  - methodology/boot-sequence.md
+declared_reads:
+  - path: skills/REGISTRY.md
+    reason: scanned by keyword at boot, not read in full; counted so its growth stays inside the boot budget
+```
+
+Before touching anything, look things up rather than reading whole files.
+If your harness has already put `AGENTS.md` in your context (a bridge file
+that imports it, or workspace bootstrap injection), it is loaded: do not
+read it again.
+
+**One precondition precedes step 1, because the moment of noticing is
+the checkpoint.** If the task names any repository, service, or path
+outside this session's working directory, settle its owner first: that
+repo's own `ADAPTERS.md` ownership field, and whether a session for it is
+live. Access is never authority to decide, and this binds your subagents
+identically (`methodology/tiers.md` §1.0).
 
 1. Check for an `ADAPTERS.md` file at the project root, sibling to this
-   one. If it exists, it names this project's or workstation's concrete
+   one. Do not read it whole: list its headings (`grep -n '^## '`) and
+   read only the sections this task needs. If it exists, it names this project's or workstation's concrete
    tool bindings — a local tooling-discovery command, secrets manager,
    git host, issue tracker, docs mirror, and similar — that this
    contract deliberately leaves generic (§0's own boundary: this file
@@ -58,11 +84,12 @@ Before touching anything:
    Ansible, whatever this project uses), if any, as an idempotent
    per-machine step.
 2. Check for `skills/REGISTRY.md` at the project root. If present,
-   scan its Trigger column for anything matching the current task and
-   open the matching skill's file before proceeding — this is how any
+   scan its Trigger column for anything matching the current task, with a
+   keyword search rather than a full read, and open the matching skill's file before proceeding — this is how any
    agent tool, not only one with native skill auto-loading, discovers
-   on-demand procedures. `.claude/skills/` entries are this hub's own
-   internal release-engineering skills; an adopting project's own copy
+   on-demand procedures. Hub-internal registry entries are this hub's
+   own release-engineering skills (issue #159 tracks their still
+   harness-branded directory prefix); an adopting project's own copy
    of the registry (if any) won't include those files locally, by
    design (§0). **That does not mean their content is unreachable.**
    Several of *this file's own* cross-references below point at a
@@ -76,13 +103,15 @@ Before touching anything:
    Verify your own project's `ADAPTERS.md` actually wires this server
    before assuming it's available (§2 step 1's own tool-binding caveat
    applies here too).
-3. Read the durable-knowledge doc (architecture / current-state / known
-   gaps — whatever this project calls it) to understand what's actually
-   true about the system right now.
+3. Query the durable-knowledge doc (architecture / current-state / known
+   gaps — whatever this project calls it) for what is true about the parts
+   of the system this task touches. Use the query tool `ADAPTERS.md`
+   declares for this when one is connected, otherwise `grep -n` for the
+   files, functions and terms involved, and read only the matching entries.
 4. Check the issue tracker — not prose in a markdown file — for what's
    currently open.
-5. Read the narrative-history doc's **current-state summary** (if one
-   exists) for recent context on *why* things are the way they are —
+5. Read only the first entry of the narrative-history doc's
+   **current-state summary** (if one exists) for recent context on *why* things are the way they are —
    not the full file. Only open a dated archive entry if this task
    specifically needs older history the summary doesn't cover.
 6. Run the existing test suite. Confirm you're building on a known-good
@@ -111,16 +140,34 @@ a `git worktree`, `<repo>-<task>`.
   `stable` grep) at least every 5 commits or every hour, whichever
   first — a long session with no triggering blocker can still drift.
 
-## Dynamic In-Session Hot-Reloading (Zero-Restart Protocol)
+## In-Session Contract Staleness (there is no auto-reload)
 
-To update active AI agent sessions without restarting or losing
-conversation context:
-- **No Session Restart Required**: When `AGENTS.md` or bridge files
-  (`CLAUDE.md`, `.gemini/settings.json`) are updated on disk, active
-  agents do NOT need to be killed or restarted.
-- **Instant Rule Refresh**: An active agent can instantly adopt updated
-  rules mid-session simply by re-reading the updated section of
-  `AGENTS.md` or upon receiving a `@AGENTS.md` / `refresh` user prompt.
-- **Context Preservation**: The agent preserves its active task history
-  and working memory while overriding its operational constraints with
-  the freshly read `AGENTS.md` rules.
+A session's copy of `AGENTS.md` is loaded once, at launch. **When the
+file changes on disk, nothing tells the session.** There is no watcher,
+no signal, and no error. An agent that keeps answering from its
+in-context copy will cite rules that no longer exist and will look
+exactly as confident as one reading the current file.
+
+This was observed, not theorised (issue #81). During a mid-session
+restructure a subagent reported carrying the pre-restructure section 0
+text while the on-disk file no longer had it, and caught the divergence
+only because it independently read the file.
+
+So the honest rule, replacing an earlier claim that agents "instantly
+adopt updated rules":
+
+- **A restart is not required, but a deliberate re-read is.** Rules
+  refresh only when someone re-reads the changed section. Nothing
+  triggers that.
+- **Re-read before relying on the contract if**: this session has edited
+  `AGENTS.md` or a module, someone has told you it changed, or you are
+  dispatching a subagent after either.
+- **Seed a subagent explicitly** when the contract has moved during the
+  session. Its context is fixed at dispatch and it has no conversational
+  history that would hint the ground shifted.
+- **Working memory survives a re-read.** Task history and progress are
+  unaffected; only the operational constraints are refreshed.
+
+This is a hand-triggered mechanism, and `methodology/execution-traits.md`
+says plainly that a hand-triggered mechanism is broken. Recorded here as
+a known gap rather than dressed up as automation.

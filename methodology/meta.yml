@@ -1,9 +1,29 @@
 # methodology/meta.yml — single source of truth for the HIAE Protocol
-# version banner. Bump `version` here, run `scripts/stamp_banners.py`,
-# then commit — never hand-edit a banner in AGENTS.md/WIKI.md/
-# docs/ARCHITECTURE.md directly. Kept minimal deliberately: no
-# tier_matrix/pack_list fields, since nothing reads them yet and a
-# second hand-maintained copy of facts that already live correctly in
-# AGENTS.md §1.0 / each adopter's own WIKI.md is the problem this file
-# exists to avoid, not a hedge worth taking.
-version: "5.28.0"
+# version banner. Kept minimal deliberately: no tier_matrix/pack_list
+# fields, since nothing reads them yet and a second hand-maintained
+# copy of facts that already live correctly in AGENTS.md §1.0 / each
+# adopter's own WIKI.md is the problem this file exists to avoid, not a
+# hedge worth taking.
+#
+# FOR THE HUB, on a release: bump `version` here, run
+# `scripts/stamp_banners.py`, then commit — never hand-edit a banner in
+# AGENTS.md/WIKI.md/docs/ARCHITECTURE.md directly. `stamp_banners.py`
+# is hub-internal: this payload ships AGENTS.md, methodology/ and
+# skills/, and no path under scripts/ is among them, so the tool is not
+# reachable by an adopter and the rule above binds the hub alone.
+#
+# FOR AN ADOPTER, on adopting a new version: nothing here. `version` is
+# this hub's release stamp and an adopter does not bump it — it takes
+# `AGENTS.md` already stamped, and that file is the version every other
+# banner is checked against.
+#
+# The named deviation, stated rather than left implicit: WIKI.md and
+# docs/ARCHITECTURE.md are NOT payload. They are the adopting project's
+# own durable docs, so adopting a new version leaves their banners one
+# version behind AGENTS.md's, and the adopter must update them. With no
+# sanctioned tool, that update is by hand — which the hub-only rule
+# above forbids and which is nonetheless correct here, because the
+# prohibition exists to stop this hub's release commit from drifting out
+# of agreement with itself, and an adopter editing its own docs cannot
+# cause that.
+version: "5.39.1"

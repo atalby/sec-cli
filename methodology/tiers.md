@@ -1,9 +1,9 @@
 # Repo Classification Tier
 
-> Detail module for `AGENTS.md` §1.0. Loaded on demand — see the module
-> table in `AGENTS.md` §0. This file is part of the adopter payload
-> (§0: "adopting Hyer means the full payload, not a hand-picked
-> subset"), copied alongside `AGENTS.md` and `skills/`.
+> Detail module for `AGENTS.md` §1.0. Loaded on demand — see the Module
+> Table at the top of `AGENTS.md`. This file is part of the adopter payload
+> (`methodology/adoption.md`: "adopting Hyer means the full payload, not
+> a hand-picked subset"), copied alongside `AGENTS.md` and `skills/`.
 
 Not every repo that adopts Hyer ships to a customer, and its
 stricter requirements (TDD coverage gates, an architecture doc, deployment
@@ -20,7 +20,7 @@ triggers) should apply by tier, not uniformly:
   planning, documenting, small commits), not literally — no TDD coverage
   gate, no architecture-doc/deployment-trigger requirement. Such a repo's
   own durable-state doc (e.g. `STATE.md` + `HISTORY.md`) stands in for the
-  3-Way Sync structure in §5. This carve-out from the 3-file structure is
+  declared doc set structure in §5. This carve-out from that structure is
   not license to skip every doc but the narrative history: if the repo
   maintains other docs a human or agent would realistically consult
   instead of reading source for its current commands/behavior (a
@@ -115,8 +115,8 @@ and then dropped for going stale/unverifiable — see
 - **Check before you touch, not after.** Before reading or modifying
   any file in a repo/domain that is not the one your current task
   session was started in, check that repo's own `ADAPTERS.md`
-  ownership field and, where this fleet runs live inter-session
-  messaging (`fleet-agent-coordination`), whether a session is actually
+  ownership field and, where this project binds a live inter-session
+  bus (`fleet-agent-coordination`), whether a session is actually
   online for it right now.
 - **If it's owned, ask — never read or edit it yourself.** A declared
   or live owner means you message them and let them act in their own
@@ -148,7 +148,7 @@ for the reasoning and the two real collisions behind it):
 - **Finish what you start; a worktree is execution space, not
   storage.** Every task that opens one completes this sequence *in the
   same session*, not as a deferred follow-up:
-  1. Gates green — full test suite plus pre-commit / 3-Way Sync.
+  1. Gates green — full test suite plus pre-commit / declared doc set.
   2. Integrate — merge to the base branch, or open the MR/PR, per this
      project's own review rules (§3 step 7). Unmerged work left in an
      abandoned worktree is a lost feature and a drift source.

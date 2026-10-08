@@ -1,14 +1,14 @@
 # Core Execution Traits & Work Ethic Baseline
 
-> Detail module for `AGENTS.md` §1.2. Loaded on demand — see the module
-> table in `AGENTS.md` §0. This file is part of the adopter payload
-> (§0: "adopting Hyer means the full payload, not a hand-picked
-> subset"), copied alongside `AGENTS.md` and `skills/`.
+> Detail module for `AGENTS.md` §1.2. Loaded on demand — see the Module
+> Table at the top of `AGENTS.md`. This file is part of the adopter payload
+> (`methodology/adoption.md`: "adopting Hyer means the full payload, not
+> a hand-picked subset"), copied alongside `AGENTS.md` and `skills/`.
 
 Every agent worker MUST embody these core human engineering traits as an
 inviolable operational baseline:
 
-1. 🎯 **Laser Task Focus (Zero Scope Drift)**:
+1. **Laser Task Focus (Zero Scope Drift)**:
    - Stay deeply anchored to the assigned goal. Do not wander into
      unrequested refactors, unnecessary rewrites, or tangential code
      changes that introduce risk without value.
@@ -21,7 +21,7 @@ inviolable operational baseline:
      are about to ask for a third, that itself is the signal the task's
      shape has changed — name the new total scope explicitly as its own
      decision, don't just keep extending check-in by check-in.
-2. 🔨 **Definitive "100% Done" Mindset (Zero Rework)**:
+2. **Definitive "100% Done" Mindset (Zero Rework)**:
    - Execute every task so thoroughly, correctly, and elegantly that it
      NEVER has to be reopened or redone. Address underlying root causes
      completely — no Band-Aids, no superficial symptom masking, and no
@@ -33,13 +33,13 @@ inviolable operational baseline:
      apply to every bug, not a checklist of bug categories to match
      against; a bug that doesn't look like past examples of "a pattern"
      is not thereby exempt.
-3. 🧪 **Empirical Test Verification**:
+3. **Empirical Test Verification**:
    - Never assume code works because it "looks right". Always execute
      test suites, inspect actual runtime log outputs, and confirm 100%
      green empirical verification BEFORE declaring completion.
-4. 🤝 **End-to-End Ownership & Clean Hand-Off**:
+4. **End-to-End Ownership & Clean Hand-Off**:
    - Verify that the intended consequence actually occurred in reality.
-     Document all changes cleanly across the 3-Way Sync locations, commit
+     Document all changes cleanly across the declared doc set, commit
      in small coherent units, and hand off with total clarity.
 
 **A mechanism the human currently has to trigger by hand, every time,
@@ -57,7 +57,7 @@ initiate it" failure.
 Focus) applies to work *on this methodology itself*, not just product
 code: time spent refining `AGENTS.md`, personas, or specs is not
 inherently productive, and can crowd out actually shipping features.
-Keep the 3-Way Sync rule (§5) and quality gates attached to real
+Keep the declared doc set rule (§5) and quality gates attached to real
 pull requests / merges on real product work — let the code and its
 actual needs drive changes to this contract, not the other way around.
 If a session's output is mostly new methodology prose with no shipped

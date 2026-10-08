@@ -1,0 +1,95 @@
+# rules.yml -- the rules index, phase 0 (GitLab #83)
+#
+# WHAT THIS IS
+# A sidecar index of AGENTS.md's normative rules, carrying structure only:
+# where a rule lives, how binding it is, and what enforces it. It holds NO
+# rule text. AGENTS.md remains the source of truth for what the rules say;
+# this file records what is true ABOUT them.
+#
+# THE SAFETY PROPERTY, and it is the whole design
+# An unregistered rule is an absence of a name, NEVER an error, and never a
+# pass. This file does not claim to be complete and nothing may read it as
+# if it were. Seven separate defects were found in this repo on 2026-09-11
+# where absence was indistinguishable from success; a rules index that
+# repeated that mistake would be worse than none, because it would be the
+# artifact everyone trusted.
+#
+# COVERAGE: partial, and deliberately so.
+# Registered here: only rules with a BLOCKING gate, because those are the
+# only ones whose entry can be checked against reality today. A wrong entry
+# for a gated rule is caught by running the gate. A wrong entry for a
+# judgment rule is caught by nobody.
+#
+# HOW IT GROWS: on touch. A rule gets an entry in the same commit that edits
+# the rule or writes its gate. There is no big-bang extraction pass, because
+# two independent extraction passes on 2026-09-11 agreed exactly on
+# checklist-shaped sections and diverged by a quarter on narrative ones
+# (docs/hyer/rnd/extraction-pass-a.md and -b.md). Eleven of fourteen
+# sections are narrative.
+#
+# CITATIONS: `section N step M` addressing is permanent. Slugs are added
+# alongside, never as a replacement. Never renumber.
+
+schema: 1
+coverage: partial
+covers: rules with a blocking pre-commit gate only
+
+rules:
+  - slug: done.no-plaintext-secrets
+    anchor: "AGENTS.md section 7, checklist item 2"
+    locator: "Zero raw secrets, API keys, or plaintext passwords"
+    modality: absolute
+    applicability: universal
+    scope: any committed file or log
+    enforcement:
+      kind: blocking
+      script: scripts/scan_secrets.py
+      step: pre-commit step 1
+      also: .gitlab-ci.yml secret-scan job
+
+  - slug: done.test-suite-green
+    anchor: "AGENTS.md section 7, checklist item 1"
+    locator: "The full test suite is green"
+    modality: absolute
+    applicability: universal
+    scope: the repo's own suite
+    enforcement:
+      kind: blocking
+      script: null
+      runner: "pytest, invoked directly by pre-commit step 5"
+      step: pre-commit step 5
+      also: .gitlab-ci.yml python-tests job
+      caveat: >-
+        The coverage clause in the same sentence is tier-conditional and is
+        delegated to each repo's own --cov-fail-under. In a repo with no
+        coverage plugin configured it does not bind. Registered as a
+        separate concern rather than folded in here.
+
+  - slug: docs.declared-doc-set
+    anchor: "AGENTS.md section 7, checklist item 5"
+    locator: "the declared doc set if architecture"
+    modality: absolute
+    applicability: tier-conditional
+    scope: Product and Platform tier repos
+    enforcement:
+      kind: blocking
+      script: scripts/validate_doc_set.py
+      step: pre-commit step 2
+      also: .gitlab-ci.yml validate-doc-set job
+
+  - slug: docs.quotations-resolve
+    anchor: "AGENTS.md section 5"
+    locator: "never append a correction, replace the outdated statement"
+    modality: absolute
+    applicability: universal
+    scope: any attributed quotation in the payload
+    enforcement:
+      kind: blocking
+      script: scripts/check_quote_resolution.py
+      step: pre-commit step 15
+      caveat: >-
+        The gate covers citation INTEGRITY, that a quotation still resolves.
+        It does not cover citation PRESENCE. A prose pointer carrying no
+        quotation is out of scope by the checker's own design, and one such
+        pointer broke undetected during the 2026-09-11 roster rotation.
+
