@@ -26,14 +26,14 @@
 ### One-Line Curl Installer
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/at-tech-io/sec-cli/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/atalby/sec-cli/main/install.sh | bash
 ```
 
 ### Manual Clone
 
 ```bash
-git clone https://github.com/at-tech-io/sec-cli.git ~/.sec-cli
-./~/.sec-cli/install.sh
+git clone https://github.com/atalby/sec-cli.git ~/.sec-cli
+~/.sec-cli/install.sh
 ```
 
 Ensure `$HOME/.local/bin` is in your shell `$PATH`:
