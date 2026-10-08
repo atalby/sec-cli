@@ -29,8 +29,10 @@ own secrets tool, not just another repo.
   Engineer) — this repo's opted-in `packs/solo-founder-governance`
   names a single final approver, and no other opted-in pack or doc here
   names a different owner.
-- **Last updated**: 2026-09-07 (mandate's own introduction, synced from
-  hub v5.28.0).
+- **Last updated**: 2026-10-08 (truth-up pass: dead GitLab CI removed,
+  test suite documented, pre-commit re-verified, stale hub-bug section
+  resolved, template gaps filled; the mandate itself arrived
+  2026-09-07 with hub v5.28.0).
 
 ## Opted-in Policy Packs
 
@@ -50,6 +52,15 @@ Cost Circuit-Breaker threshold, migrated verbatim from the pre-v5.1.0
 v4.7.0 specifically because it was never wired to anything that could
 actually enforce it — restating it here contradicted the current
 file's own text.
+
+## Local tooling discovery
+
+- **Discovery command**: `sec --help` (same as `sec` with no args) —
+  the dispatcher's own usage screen lists every subcommand
+  (get/set/run/housekeep/migrate/sync/unlock/rotate/setup-keychain/
+  completion), the config file location, and the configured tenants.
+- **When to run it**: at session start before any secrets-touching
+  task, instead of guessing subcommand names from README memory.
 
 ## Secrets
 
@@ -72,86 +83,135 @@ itself (dev/test), the same `at-tech-io` fleet convention applies:
 - **Host**: **GitHub** (github.com) — not GitLab, unlike the rest of
   the `at-tech-io` fleet. `git@github.com:atalby/sec-cli.git`.
 - **CLI**: `gh`, confirmed authenticated (`atalby`).
-- **Note**: this repo also carries a `.gitlab-ci.yml` despite having no
-  GitLab remote — pre-existing, not investigated or touched in this
-  sync (out of scope; flag if it turns out to be dead weight).
+- **Note**: the legacy `.gitlab-ci.yml` and `.gitlab/` (issue/MR
+  templates) were removed 2026-10-08 — no GitLab remote exists here,
+  every pipeline step was an `|| true` no-op against a Python project
+  layout this repo doesn't have (no requirements.txt/pyproject), and
+  GitHub's native `.github/` conventions are what `gh` actually uses.
+  (Confirmed dead first: their only in-repo reference was this
+  file's own earlier "flag if dead weight" note.)
 
 ## Issue tracker
 
 - **Tracker**: GitHub Issues
 - **Project**: `atalby/sec-cli`
 
-## Hyer version sync
+## Persisted memory / knowledge-graph store
+
+- **Tool**: `HISTORY.md` (this repo's durable narrative per AGENTS.md
+  §5) as the in-repo store, plus host-level knowledge-graph MCP
+  servers (graft, codebase-memory) that index this checkout — no
+  in-repo graph output directory exists.
+- **Where it lives**: in-repo at `HISTORY.md`; graph data lives in
+  each MCP server's own storage outside the checkout.
+- **Pruning policy**: `HISTORY.md` follows AGENTS.md §5's
+  rotation/archival rule once it starts dominating session-load cost;
+  the graphs are still small, no pruning needed yet.
+
+## Methodology version sync (Hyer)
 
 Per `AGENTS.md` §2 step 1 — use this instead of manually reading or
 cloning Hyer directly.
 
-- **Tool**: `hyer` MCP server, wired in `.mcp.json`
-  (`hyer-mcp/dist/stdio-server.js` from the hub checkout at
-  `~/sandbox/hyer`, `GITLAB_TOKEN` injected via
-  `sec get hyer-gitlab-pat` — the hub itself lives
+- **Hub location**: filesystem-local checkout `~/sandbox/hyer`, remote
+  `git@gitlab.com:at-tech-io/infrastructure/hyer.git` (the hub lives
   on GitLab even though this repo doesn't).
+- **Tool**: `hyer` MCP server, wired in `.mcp.json`
+  (`hyer-mcp/dist/stdio-server.js` from that checkout, `GITLAB_TOKEN`
+  injected via `sec get hyer-gitlab-pat`).
 - **Check current/latest version**: `sync_status` with this repo's
   current `AGENTS.md` version as `current_version`.
 - **Fetch latest content**: `get_methodology` with `version: "stable"`.
 - **Known fragility**: `.mcp.json`'s path tracks the hub checkout's
-  disk, not a git ref — the hub renamed `mcp-server/` → `hyer-mcp/` and
-  server name `methodology-local` → `hyer` (now in `stable` as of
-  v5.21.1). This repo's `.mcp.json` uses the current on-disk path from
-  the start.
-- **Note on `stable` moving fast**: this repo's sync landed at
-  `stable` = `cf7804c` (v5.21.2) — the hub shipped v5.21.0 → v5.21.1 →
-  v5.21.2 within roughly an hour of this same fleet-sync task starting.
-  Per the hub's own `moving-stable-tag` skill: a manual copy is a
-  point-in-time snapshot regardless of which ref fetched it; this is
-  the resolved commit at copy time, not an expectation of staying
-  perpetually current without a future re-sync.
+  disk, not a git ref — and until 2026-10-08 it pointed at a foreign
+  machine's path (`/Users/anass/...`, never valid on this host);
+  corrected to `/home/opc/sandbox/hyer/...` then, with the boot of the
+  server script verified against the new path.
+- **Current payload state**: this repo's `AGENTS.md` declares HIAE
+  Protocol v5.28.0 (last payload sync 2026-08-27 era); hub `stable` was
+  already at v5.39.1 on 2026-10-08 — the re-sync is tracked in issue
+  #1. Per the hub's own `moving-stable-tag` skill: a manual copy is a
+  point-in-time snapshot regardless of which ref fetched it, not an
+  expectation of staying perpetually current without a future re-sync.
 
 ## Skills registry
 
 - **Registry file**: `skills/REGISTRY.md`
-- **Contents**: the 9 adopter-distributable skills, copied from the
-  hub's `stable` tag in this sync (this repo had no `skills/` before).
+- **Contents**: 10 adopter-distributable skills under `skills/`,
+  copied from the hub's `stable` tag in the 2026-08-27 fleet sync
+  (this repo had no `skills/` before). 2026-10-08: the 9 hub-internal
+  registry rows were repointed from the renamed `.claude/skills/` to
+  `.hyer/skills/` (commit 06f129a).
 
 ## Local pre-commit hook
 
 - **Install/verify command**: from the hub repo,
-  `scripts/install-hooks.sh ~/sandbox/sec-cli` — installs a thin
+  `scripts/install-hooks.sh --apply ~/sandbox/sec-cli` — installs a thin
   wrapper that execs the hub's current `scripts/pre-commit-hiae.sh` by
   absolute path.
-- **Last verified not-a-frozen-fork**: 2026-08-27 (installed for the
-  first time in this sync). Note: the hub's own `scripts/pre-commit-hiae.sh`
-  had a real bug fixed the same day (v5.21.2, issue #39) — steps 2/3/5/6
-  silently no-op'd for any adopter using this exact wrapper pattern,
-  due to those steps resolving their hub-internal `.py` scripts against
-  the *committing repo's* cwd instead of the script's own directory.
-  Since the wrapper always execs the hub's current script by absolute
-  path, this repo picked up the fix automatically with zero action
-  needed here.
+- **Last verified not-a-frozen-fork**: 2026-10-08. At that session's
+  boot the hook was found to *be* a frozen fork — a full byte-copy of
+  the hub script with none of the hub's `.py` helpers beside it, so
+  steps 3/5/6 silently no-op'd while still printing their banners
+  (exactly what AGENTS.md's boot sequence forbids). Reinstalled with
+  the command above; the forked copy was kept at
+  `.git/hooks/pre-commit.hyer-backup-20261008134704`. The live gate
+  then ran its full ~22 steps green end-to-end, commit-msg hook
+  included. The earlier v5.21.2 issue #39 wrapper bug (fixed upstream)
+  stays fixed automatically, since the wrapper always execs the hub's
+  current script.
 
-## Known hub-side bug affecting this repo's pre-commit gate
+## Known hub-side bug affecting this repo's pre-commit gate (resolved)
 
-`scripts/check_version_banners.py` (hub-side, invoked as step 3 of the
-shared `pre-commit-hiae.sh`) hardcodes checking `docs/ARCHITECTURE.md`
-and `WIKI.md` with no existence guard — written and only ever exercised
-against `engineering-methodology`'s own repo, which has both. The
-v5.21.2 fix (issue #39) made steps 2/3/5/6 actually run for adopters
-using the `install-hooks.sh` wrapper pattern for the first time — which
-means this hardcoded, unguarded two-file check now unconditionally
-applies fleet-wide, not just to the hub. This repo has
-`docs/ARCHITECTURE.md` (banner added, above) but no `WIKI.md` at all —
-a real gap in the wiring, not something to paper over by fabricating an
-empty `WIKI.md` just to satisfy the check. Reported upstream 2026-08-27
-via `fleet-agent-swarm` to the `methodology` session.
+None currently. The previously documented one — hub-side
+`scripts/check_version_banners.py` hard-checking `docs/ARCHITECTURE.md`
+and `WIKI.md` with no existence guard, which would fail any adopter
+without a `WIKI.md` (this repo has none) — was fixed upstream: the
+checker now tolerates a missing `WIKI.md` (version extraction returns
+None for an absent file) and gates the wiki inline-current check on
+being run inside the hub itself. Verified 2026-10-08 by reading the hub
+source and running `python3 ~/sandbox/hyer/scripts/check_version_banners.py .`
+from this repo root: PASS with no `WIKI.md` present. Originally
+reported upstream 2026-08-27 via `fleet-agent-swarm`; resolved before
+this pass, and this section was rewritten in place (not appended to)
+per AGENTS.md §5's replace-don't-append rule.
 
 ## Running this project's test suite
 
-- **Command**: none found — no `pytest.ini`/`pyproject.toml`/`Cargo.toml`/
-  `go.mod`/`package.json` at repo root. This is a "zero-dependency"
-  shell-script CLI (`install.sh`) per its own `README.md`; verify
-  against current source before assuming there's truly no test harness
-  anywhere in the repo.
+- **Command**: `bash tests/test_install.sh` — a zero-dependency bash
+  suite (5 cases) covering install.sh file-mode copy completeness,
+  piped `curl | bash` survival via the bootstrap clone, idempotent
+  re-run (no second clone), the `sec` usage screen listing `sec sync`
+  plus its `-x` guard, and `sec.conf` mode 600 under a test HOME.
+  Added 2026-10-08 in e5c51d7; run it before committing install-path
+  changes.
+- **Note**: the shared pre-commit's Step 5 does **not** auto-run
+  `tests/*.sh` — it only recognizes `scripts/tests/`+uv,
+  `pytest.ini`/`pyproject.toml`, or `package.json` — so this suite is
+  manual until this repo's issue #2 lands (no `pytest`/`package.json`
+  harness exists at repo root either).
 
 ## Cloud provider
 
-Not applicable — `sec-cli` is a local CLI tool, not a deployed service.
+_Not applicable: `sec-cli` is a local CLI tool, not a deployed service;
+it has no cloud provider footprint and no IaC of its own._
+
+## Docs mirror (if this ecosystem has one)
+
+_Not applicable: AGENTS.md §5's cross-project documentation mirror has
+not been adopted for this ecosystem; README, docs/, and HISTORY.md
+stay in-repo only._
+
+## Cross-session communication (if multiple agent sessions coordinate)
+
+_Not applicable: this repo is worked by a single agent session at a
+time and no cross-session coordination channel is configured or
+needed for it._
+
+## Proactive next-action timeout (`methodology/proactive-next-action.md`)
+
+- **Tool**: opencode (this repo's agent tool).
+- **Mechanism**: none configured — no auto-proceed timer; the session
+  self-drives at task boundaries under standing orders (finish an
+  item, immediately take the next) instead of a timed hook. This is
+  the explicit "no equivalent mechanism" answer, not an unfilled gap.

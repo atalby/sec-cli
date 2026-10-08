@@ -5,7 +5,7 @@
       "command": "sh",
       "args": [
         "-c",
-        "GITLAB_TOKEN=\"$(sec get hyer-gitlab-pat)\" exec node /Users/anass/sandbox/hyer/hyer-mcp/dist/stdio-server.js"
+        "GITLAB_TOKEN=\"$(sec get hyer-gitlab-pat)\" exec node /home/opc/sandbox/hyer/hyer-mcp/dist/stdio-server.js"
       ]
     }
   }
