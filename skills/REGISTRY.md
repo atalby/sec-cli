@@ -7,7 +7,7 @@ column against the current task during the Boot Sequence (`AGENTS.md`
 
 `adopter` skills live under `skills/` and are meant to be copied into
 adopting projects (see `AGENTS.md` §0). `hub-internal` skills live
-under `.claude/skills/` and cover this hub's own release engineering —
+under `.hyer/skills/` and cover this hub's own release engineering —
 never copy these files into an adopting project. That is a
 distribution rule, not an access rule: `AGENTS.md` itself references
 several hub-internal skills by name in normative prose, and an
@@ -33,11 +33,11 @@ reason to skip the skill.
 | targeted-code-reading | `skills/targeted-code-reading/SKILL.md` | reading a file over ~200 lines | adopter |
 | session-restart-handoff | `skills/session-restart-handoff/SKILL.md` | a session has sprawled, hit a clean boundary, or needs to hand off to another session/repo | adopter |
 | stale-branch-merge-audit | `skills/stale-branch-merge-audit/SKILL.md` | rebasing/merging a branch that sat unmerged while main kept moving | adopter |
-| adopter-drift-self-check | `.claude/skills/adopter-drift-self-check/SKILL.md` | wiring drift-check CI into an adopting repo | hub-internal |
-| diagnosing-hook-context-corruption | `.claude/skills/diagnosing-hook-context-corruption/SKILL.md` | a git hook's test/build step behaves differently than running it directly, or unstaged content shows up committed | hub-internal |
-| moving-stable-tag | `.claude/skills/moving-stable-tag/SKILL.md` | cutting a new methodology release | hub-internal |
-| self-learning-skill-synthesis | `.claude/skills/self-learning-skill-synthesis/SKILL.md` | after a non-trivial bug fix or correction | hub-internal |
-| self-refreshing-pre-commit-hook | `.claude/skills/self-refreshing-pre-commit-hook/SKILL.md` | onboarding, or a hook's version banner looks stale | hub-internal |
-| testing-skills-with-evals | `.claude/skills/testing-skills-with-evals/SKILL.md` | creating or materially editing a skill | hub-internal |
-| vet-third-party-tool | `.claude/skills/vet-third-party-tool/SKILL.md` | before wiring a new external CLI/library/service into the project | hub-internal |
-| verifying-negative-existence-claims | `.claude/skills/verifying-negative-existence-claims/SKILL.md` | about to assert something doesn't exist | hub-internal |
+| adopter-drift-self-check | `.hyer/skills/adopter-drift-self-check/SKILL.md` | wiring drift-check CI into an adopting repo | hub-internal |
+| diagnosing-hook-context-corruption | `.hyer/skills/diagnosing-hook-context-corruption/SKILL.md` | a git hook's test/build step behaves differently than running it directly, or unstaged content shows up committed | hub-internal |
+| moving-stable-tag | `.hyer/skills/moving-stable-tag/SKILL.md` | cutting a new methodology release | hub-internal |
+| self-learning-skill-synthesis | `.hyer/skills/self-learning-skill-synthesis/SKILL.md` | after a non-trivial bug fix or correction | hub-internal |
+| self-refreshing-pre-commit-hook | `.hyer/skills/self-refreshing-pre-commit-hook/SKILL.md` | onboarding, or a hook's version banner looks stale | hub-internal |
+| testing-skills-with-evals | `.hyer/skills/testing-skills-with-evals/SKILL.md` | creating or materially editing a skill | hub-internal |
+| vet-third-party-tool | `.hyer/skills/vet-third-party-tool/SKILL.md` | before wiring a new external CLI/library/service into the project | hub-internal |
+| verifying-negative-existence-claims | `.hyer/skills/verifying-negative-existence-claims/SKILL.md` | about to assert something doesn't exist | hub-internal |
