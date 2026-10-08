@@ -89,7 +89,9 @@ itself (dev/test), the same `at-tech-io` fleet convention applies:
   layout this repo doesn't have (no requirements.txt/pyproject), and
   GitHub's native `.github/` conventions are what `gh` actually uses.
   (Confirmed dead first: their only in-repo reference was this
-  file's own earlier "flag if dead weight" note.)
+  file's own earlier "flag if dead weight" note.) The template
+  content itself was ported to `.github/ISSUE_TEMPLATE/` the same
+  day (issue #4), so nothing was lost.
 
 ## Issue tracker
 
