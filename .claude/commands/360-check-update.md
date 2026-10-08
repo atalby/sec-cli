@@ -1,0 +1,28 @@
+---
+description: Refresh the twelve-dimension audit skill against the current tree (does not run the audit)
+argument-hint: "[none: refresh takes no arguments]"
+---
+
+Load the `architecture-360-audit` skill in **refresh mode** and follow its
+`## Regenerating this skill` section end to end. Do not run the audit.
+
+Its canonical file is `skills/architecture-360-audit/SKILL.md`; the copy at
+`.agents/skills/architecture-360-audit` is a symlink to it, so read whichever
+path resolves.
+
+Do not paraphrase, summarise, or re-derive the refresh procedure. The skill is
+the procedure. Load it, then execute the steps of that section in order.
+
+This command is the same entry point as saying any of these in plain language:
+"update the skill", "refresh the skill", "regenerate the profile", "refresh the
+audit profile", "re-derive the audit anchors", "the audit skill is stale",
+"re-run 360-check-update". Those phrases trigger the skill directly, with or
+without this slash command, so a harness with no slash-command support is not
+blocked.
+
+Refresh is bounded and local: it edits only `SKILL.md`, `profile.md`,
+`sentinel.sh`, and the harness bridges. It never edits this repository's
+source, tests, fixtures, or documentation, it needs no internet, and it does
+not commit.
+
+Optional extra focus: $ARGUMENTS
