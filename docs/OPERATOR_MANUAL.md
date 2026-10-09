@@ -88,3 +88,9 @@ Executes zero-plaintext vault-to-vault migration in ephemeral memory.
 - `sec unlock`: Interactively unlocks Bitwarden vault and caches session key.
 - `sec rotate`: Triggers background keep-alive refresh / rotation via `bw-session-keeper`.
 - `sec setup-keychain`: Stores master password in OS Keychain for zero-touch auto-rotation.
+#### 7. `sec sync [--dry-run|-n] [--yes|-y]`
+- Pushes the `SYNC_KEYS` whose values are exported in the calling shell (the vault itself is not read) to GCP Secret Manager and GitLab group variables. `--dry-run` previews key names and targets with zero backend calls; a real push needs an interactive `y/N` on a TTY or an explicit `--yes`.
+- Exit codes: `0` every attempted write succeeded, `1` no keys present, `2` confirmation required (non-interactive without `--yes`, or unknown flag), `3` one or more backend writes failed. Secret values are never printed. Each backend call is bounded (default 60s, `SEC_SYNC_TIMEOUT` overrides).
+
+#### 8. `sec completion {zsh|bash|fish|ps1}`
+- Prints the shell autocompletion script for the named shell (`powershell` is accepted as an alias for `ps1`). The tracked copy at `completions/_sec` mirrors the zsh output.

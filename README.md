@@ -2,7 +2,7 @@
 
 > **Zero-Plaintext Multi-Tenant Secret Manager, Intelligent Housekeeper, Disambiguating Renamer & Vault Migration Engine.**
 
-`sec-cli` is a lightweight, high-leverage, zero-dependency CLI control plane that unifies secret management across **Bitwarden Secrets Manager (`bws`)**, **Bitwarden Vault (`bw`)**, **1Password (`op`)**, **Infisical**, **HashiCorp Vault**, **AWS Secrets Manager**, **GCP Secret Manager**, **Unix Pass**, and **OS Keychains**.
+`sec-cli` is a lightweight, high-leverage CLI control plane that unifies secret management across **Bitwarden Secrets Manager (`bws`)**, **Bitwarden Vault (`bw`)**, **1Password (`op`)**, **Infisical**, and **HashiCorp Vault**, and pushes `sec sync` keys to **GCP Secret Manager** & **GitLab group variables**. Runtime dependencies beyond coreutils: `jq` (housekeep) and `python3` (sync/classify).
 
 ---
 
@@ -50,22 +50,17 @@ export PATH="$HOME/.local/bin:$PATH"
 ```ini
 [global]
 default_backend = bitwarden
-auto_rotate = true
 
 [bitwarden]
-cli = bw
 auto_rotate = true
 
 [1pass]
-cli = op
 auto_rotate = false
 
 [bws]
-cli = bws
 auto_rotate = true
 
 [vault]
-cli = vault
 auto_rotate = false
 ```
 
@@ -83,7 +78,7 @@ Usage:
   sec [<tenant>] get <item>/<field>        Retrieve specific field from named vault item (e.g. 'github/password')
   sec [<tenant>] set <key> [<val>]         Store / create new secret in tenant vault (prompts if <val> omitted)
   sec [<tenant>] run -- <cmd>              Execute command with tenant secrets injected into process memory
-  sec sync                                 Central Secret Sync Engine: Sync Bitwarden secrets to GCP & GitLab
+  sec sync [--dry-run|--yes]          Central Secret Sync Engine: push shell-exported SYNC_KEYS to GCP Secret Manager & GitLab group variables (--dry-run previews, --yes confirms)
   sec housekeep {plan|apply|revert}        Intelligent ML categorization, plan/apply, & instant rollback engine
   sec migrate --from <src> --to <dst>     Zero-plaintext vault-to-vault migration engine
   sec unlock                               Unlock Bitwarden vault and save session
@@ -128,7 +123,7 @@ sec get "github-app/notes"
 
 # Target explicit tenant prefix:
 sec 1pass get STRIPE_SECRET
-sec vault get myapp/production/DATABASE_URL
+sec bws get STRIPE_SECRET
 
 # Execute process with in-memory environment injection:
 sec run -- terraform plan

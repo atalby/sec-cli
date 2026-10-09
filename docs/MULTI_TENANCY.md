@@ -40,7 +40,7 @@ auto_rotate = false
 
 ## 🔀 Tenant Prefix Command Routing
 
-You can target any tenant directly by prefixing its section name before the subcommand:
+Prefix routing supports the eight fixed aliases (bitwarden/bw, 1pass/op, bws, vault, infisical, keychain); arbitrary `sec.conf` sections are not routable as prefixes. You can target any of those eight before the subcommand:
 
 ```bash
 # 1. Use default tenant from ~/.sec/sec.conf (e.g. Bitwarden):

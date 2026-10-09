@@ -29,10 +29,10 @@ own secrets tool, not just another repo.
   Engineer) — this repo's opted-in `packs/solo-founder-governance`
   names a single final approver, and no other opted-in pack or doc here
   names a different owner.
-- **Last updated**: 2026-10-08 (truth-up pass: dead GitLab CI removed,
-  test suite documented, pre-commit re-verified, stale hub-bug section
-  resolved, template gaps filled; the mandate itself arrived
-  2026-09-07 with hub v5.28.0).
+- **Last updated**: 2026-10-09 (360 audit run 2026-10-09-000410 and its
+  report §8 doc truth-up applied; earlier 2026-10-08 truth-up pass: dead
+  GitLab CI removed, test suites documented, pre-commit re-verified,
+  template gaps filled; mandate arrived 2026-09-07 with hub v5.28.0).
 
 ## Opted-in Policy Packs
 
@@ -204,16 +204,16 @@ per AGENTS.md §5's replace-don't-append rule.
 
 ## Running this project's test suite
 
-- **Command**: `bash tests/test_install.sh` — a zero-dependency bash
-  suite (5 cases) covering install.sh file-mode copy completeness,
-  piped `curl | bash` survival via the bootstrap clone, idempotent
-  re-run (no second clone), the `sec` usage screen listing `sec sync`
-  plus its `-x` guard, and `sec.conf` mode 600 under a test HOME.
-  Added 2026-10-08 in e5c51d7; run it before committing install-path
-  changes.
+- **Command**: `bash tests/test_install.sh` (5 cases, install path),
+  `bash tests/test_sync_guard.sh` (6 sections, sync guard canaries),
+  `bash tests/test_write_honesty.sh` (5 cases, silent-no-op write
+  paths) and `bash tests/test_sentinel.sh` (4 cases, the 360 audit
+  instrument's coverage/citations sentinel) — all zero-dependency
+  bash. Run all four before committing; added 2026-10-08/09 in e5c51d7,
+  8c6dcbd, b326a14 and c613d2c.
 - **Note**: the shared pre-commit's Step 5 does **not** auto-run
   `tests/*.sh` — it only recognizes `scripts/tests/`+uv,
-  `pytest.ini`/`pyproject.toml`, or `package.json` — so this suite is
+  `pytest.ini`/`pyproject.toml`, or `package.json` — so these suites are
   manual until this repo's issue #2 lands (no `pytest`/`package.json`
   harness exists at repo root either).
 
