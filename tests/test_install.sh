@@ -23,7 +23,7 @@ else
     fail "install.sh exited non-zero"
     cat "$WORK/out1.log"
 fi
-for f in sec bw-session-keeper sec-organizer sec-classify.py sec-migrator sec-sync-controller.py; do
+for f in sec bw-session-keeper sec-organizer sec-classify.py sec-migrator sec-sync-controller.py sec.ps1; do
     expect_file "$OUT1/$f" "installed $f"
 done
 
