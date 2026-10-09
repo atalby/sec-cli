@@ -51,7 +51,11 @@ get_master_password() {
     elif command -v secret-tool >/dev/null 2>&1; then
         secret-tool lookup service "$MASTER_PASS_SERVICE" username "${USER:-anass}" 2>/dev/null || true
     elif [[ -f "$MASTER_PASS_FILE" ]] && [[ -s "$MASTER_PASS_FILE" ]]; then
-        cat "$MASTER_PASS_FILE"
+        if [[ "${SEC_ALLOW_PLAINTEXT_MASTER_PASS:-0}" == "1" ]]; then
+            cat "$MASTER_PASS_FILE"
+        else
+            echo "[bw-session-keeper] Refusing to read plaintext master_pass file ($MASTER_PASS_FILE); set SEC_ALLOW_PLAINTEXT_MASTER_PASS=1 to opt in or run setup-keychain on a host with keychain support." >&2
+        fi
     fi
 }
 
@@ -65,9 +69,13 @@ save_master_password() {
         secret-tool store --label="Bitwarden Master Password" service "$MASTER_PASS_SERVICE" username "${USER:-anass}" <<< "$pass"
         echo "[bw-session-keeper] Master password saved in Linux Secret Service ($MASTER_PASS_SERVICE)."
     else
+        if [[ "${SEC_ALLOW_PLAINTEXT_MASTER_PASS:-0}" != "1" ]]; then
+            echo "[bw-session-keeper] No keychain backend (security/secret-tool); refusing to store the master password in a plaintext file. Install libsecret (secret-tool) or set SEC_ALLOW_PLAINTEXT_MASTER_PASS=1 to accept the mode-0600 file fallback." >&2
+            exit 1
+        fi
         echo -n "$pass" > "$MASTER_PASS_FILE"
         chmod 600 "$MASTER_PASS_FILE"
-        echo "[bw-session-keeper] Master password saved in mode-0600 file ($MASTER_PASS_FILE)."
+        echo "[bw-session-keeper] Master password saved in mode-0600 plaintext file ($MASTER_PASS_FILE) [SEC_ALLOW_PLAINTEXT_MASTER_PASS=1]."
     fi
 }
 

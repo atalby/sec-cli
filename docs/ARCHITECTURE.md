@@ -7,7 +7,7 @@
 
 ## 2. Core Components & CLI Executables
 - `bin/sec`: Main dispatcher script (get, set, run, sync, housekeep, migrate, unlock, rotate, setup-keychain, completion + aliases create/organize/keep/help/version). `set` writes are honest (issue #7): only bitwarden/bw, 1pass/op, and bws can be stored — any other tenant, or a failed store, exits 1 with an error naming the tenant instead of a silent success.
-- `bin/bw-session-keeper`: One-shot session helper (status/env/unlock/rotate/keep/setup); sessions stored in a 0600 plaintext file, no daemon.
+- `bin/bw-session-keeper`: One-shot session helper (status/env/unlock/rotate/keep/setup); sessions stored in a 0600 plaintext file, no daemon. Master-password storage refuses the plaintext file fallback unless `SEC_ALLOW_PLAINTEXT_MASTER_PASS=1` (issue #10).
 - `bin/sec-classify.py`: Intelligent secret classifier categorizing environment variables.
 - `bin/sec-migrator`: Automated migration engine moving secrets between backends. Apply is transactional and honest (issue #7): the transaction log is flushed after every created item (and on INT/TERM), an unresolved prior transaction refuses to be clobbered (exit 1, undo hinted), and an item that cannot be written aborts with exit 1 instead of counting as migrated.
 - `bin/sec-organizer`: Housekeeping engine (`sec housekeep plan`/`apply`/`revert`) — classify, move, disambiguating-rename, snapshot. Apply/revert refuse backends they cannot drive (issue #7): only bw and op are implemented; an unsupported backend keeps the plan/snapshot and exits 1, 1Password edits use the correct `--tags` flag and failures abort (keeping the plan/snapshot) instead of printing success.

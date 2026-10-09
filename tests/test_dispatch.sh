@@ -49,6 +49,9 @@ case "${1:-}" in
     create)
         echo '{"id":"created-1"}'
         ;;
+    unlock)
+        echo "session-tok-123"
+        ;;
     *)
         exit 0
         ;;
@@ -332,6 +335,71 @@ OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H3" \
 RC=$?
 set -e
 if [[ $RC -eq 0 ]] && [[ "$OUT" == "bws-pw-ANY_KEY" ]]; then pass "default_backend=bws routes get to bws"; else fail "default backend rc=$RC out=$OUT"; fi
+
+MINBIN="$WORK/minbin"
+mkdir -p "$MINBIN"
+for _b in bash cat chmod mkdir uname tr grep jq; do
+    ln -s "$(command -v "$_b")" "$MINBIN/$_b"
+done
+cp "$FAKEBIN/bw" "$MINBIN/bw"
+
+run_keeper() {
+    local h="$1"
+    shift
+    env -i "PATH=$MINBIN" "HOME=$h" \
+        "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+        "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+        "$@" </dev/null
+}
+
+echo "[19] F002: setup-keychain refuses plaintext file store without opt-in"
+H4="$(new_home "$WORK/h4")"
+set +e
+OUT="$(run_keeper "$H4" "$REPO_ROOT/bin/bw-session-keeper" setup-keychain test-master-pass 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]]; then pass "plaintext store refused with exit 1"; else fail "setup-keychain rc=$RC out=$OUT"; fi
+if grep -qi "refusing" <<<"$OUT"; then pass "refusal message printed"; else fail "no refusal message in: $OUT"; fi
+if [[ ! -f "$H4/.cache/bitwarden/master_pass" ]]; then pass "master_pass file not created"; else fail "master_pass file written despite refusal"; fi
+
+echo "[20] F002: opt-in SEC_ALLOW_PLAINTEXT_MASTER_PASS=1 allows the mode-0600 file"
+H5="$(new_home "$WORK/h5")"
+set +e
+OUT="$(env -i "PATH=$MINBIN" "HOME=$H5" "SEC_ALLOW_PLAINTEXT_MASTER_PASS=1" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "$REPO_ROOT/bin/bw-session-keeper" setup-keychain test-master-pass 2>&1 </dev/null)"
+RC=$?
+set -e
+MP="$H5/.cache/bitwarden/master_pass"
+if [[ $RC -eq 0 ]] && [[ -f "$MP" ]] && [[ "$(cat "$MP")" == "test-master-pass" ]]; then pass "opt-in stores master_pass with the given value"; else fail "opt-in store rc=$RC file=$(cat "$MP" 2>/dev/null || echo missing) out=$OUT"; fi
+if [[ -f "$MP" ]] && [[ "$(stat -c '%a' "$MP" 2>/dev/null || stat -f '%Lp' "$MP")" == "600" ]]; then pass "master_pass mode 600"; else fail "master_pass mode not 600"; fi
+
+echo "[21] F002: rotate refuses a legacy plaintext file without opt-in"
+H6="$(new_home "$WORK/h6")"
+mkdir -p "$H6/.cache/bitwarden"
+printf 'legacy-pass' >"$H6/.cache/bitwarden/master_pass"
+chmod 600 "$H6/.cache/bitwarden/master_pass"
+set +e
+OUT="$(run_keeper "$H6" "$REPO_ROOT/bin/bw-session-keeper" rotate 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]]; then pass "rotate with unopted plaintext file exits 1"; else fail "rotate rc=$RC out=$OUT"; fi
+if grep -qi "refusing to read" <<<"$OUT"; then pass "read refusal printed"; else fail "no read-refusal in: $OUT"; fi
+
+echo "[22] F002: opt-in lets rotate consume a legacy plaintext file"
+H7="$(new_home "$WORK/h7")"
+mkdir -p "$H7/.cache/bitwarden"
+printf 'legacy-pass' >"$H7/.cache/bitwarden/master_pass"
+chmod 600 "$H7/.cache/bitwarden/master_pass"
+set +e
+OUT="$(env -i "PATH=$MINBIN" "HOME=$H7" "SEC_ALLOW_PLAINTEXT_MASTER_PASS=1" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "$REPO_ROOT/bin/bw-session-keeper" rotate 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "Vault unlocked successfully" <<<"$OUT"; then pass "opt-in rotate unlocks via stored pass"; else fail "opt-in rotate rc=$RC out=$OUT"; fi
 
 echo
 if [[ $FAILS -eq 0 ]]; then

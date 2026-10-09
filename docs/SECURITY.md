@@ -13,7 +13,7 @@
 | **Process Table Snooping** | Secrets visible in `ps aux` command-line arguments. | **In-Memory Injection**: Credentials passed via process environment variables (`ENV`). |
 | **Snapshot Exposure** | Unauthorized users reading backup plan files (`~/.cache/bitwarden/`). | **Metadata-Only Snapshots**: Backup snapshots store **only item UUIDs, original titles, and folder IDs**. Passwords and secret values are **not** present in snapshot files. |
 | **Session Key Hijacking** | Unauthorized local users accessing active session keys. | **Strict OS File Permissions**: `~/.cache/bitwarden/session` uses mode `0600` (read/write exclusively by owner user ID). |
-| **Master Password Storage** | Plaintext password leaks. | **OS Keychain Integration**: macOS Keychain (`security`) or Linux Secret Service (`secret-tool`); when neither binary exists, a mode-0600 file `~/.cache/bitwarden/master_pass` (plaintext — restrict `$HOME`; do not run `setup-keychain` on a headless host without libsecret). |
+| **Master Password Storage** | Plaintext password leaks. | **OS Keychain Integration**: macOS Keychain (`security`) or Linux Secret Service (`secret-tool`); when neither binary exists the keeper **refuses** to store or read a plaintext file unless `SEC_ALLOW_PLAINTEXT_MASTER_PASS=1` is set (explicit opt-in for headless hosts that cannot run libsecret; the fallback file is mode-0600 at `~/.cache/bitwarden/master_pass`). |
 
 ---
 
