@@ -7,28 +7,30 @@ moves.
 
 ## Maturity tier
 
-**TIER D, tests-present-but-unautomated.**
+**TIER B, established: tests plus CI, no dependency manifest.**
 
 Ecosystems present: Bash (`bin/sec` and five sibling dispatchers, `install.sh`,
-three suites under `tests/`), Python 3 (2 files: `bin/sec-sync-controller.py`,
+five suites under `tests/`), Python 3 (2 files: `bin/sec-sync-controller.py`,
 `bin/sec-classify.py`), PowerShell (`bin/sec.ps1`), zsh completion
-(`completions/_sec`), Markdown (60 files), JSON/YAML/TOML configuration (10
+(`completions/_sec`), Markdown (63 files), JSON/YAML/TOML configuration (13
 files).
 
 Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (5 cases); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (6 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (4 cases, the audit instrument's own suite) |
-| CI | **ABSENT** | `.github/` holds `ISSUE_TEMPLATE/` only; no `.github/workflows/`; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (5 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (5 cases); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (4 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (18 sections) |
+| CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 1 open issue at the time of this profile (`#2`) |
 | Lockfile | **ABSENT** | no lockfile of any ecosystem anywhere (see manifest census below) |
 | Dependency manifest | **ABSENT** | no `package.json`, `pyproject.toml`, `requirements.txt`, `Makefile`, or equivalent in the tree or on disk |
 
-Tier reasoning: B requires CI, C requires a dependency manifest. Neither
-exists, so D; the two green suites plus extensive docs put it above E, and
-the presence of a manifest would put it at C.
+Tier reasoning (ladder: A = manifest + lockfile + runner + CI + docs;
+B = established, most present with partials; C = thin, no CI; D = no CI,
+unautomated tests; E = undocumented): CI arrived 2026-10-09 with five green
+suites and extensive docs, so D and C are cleared; the absence of any
+dependency manifest and lockfile keeps it at B rather than A.
 
 The two partials are themselves findings, not tier annotations:
 
@@ -39,12 +41,14 @@ The two partials are themselves findings, not tier annotations:
    operator's machine, none version-checked. There is no `pip-audit` or
    `npm audit` to run, and per prior art C that absence is the persona 8
    finding, not an excuse to skip the dimension.
-2. **The test suites are never run by any automation.** The local pre-commit
+2. **The local pre-commit gate still never runs the test suites.** The
    hook's test step only recognizes `scripts/tests/`+uv, `pytest.ini`/
    `pyproject`, and `package.json` — never `tests/*.sh` (stated in
-   `ADAPTERS.md:215`, tracked as open issue `#2`). A push from a machine
-   without the hook, or any `--no-verify`, lands with zero test execution.
-   Owned by personas 3 and 6.
+   `ADAPTERS.md:218`, tracked as open issue `#2`). Since 2026-10-09
+   GitHub Actions runs all five suites on push and PR to main
+   (`.github/workflows/test.yml`, issue #8), so an unhooked push is
+   caught by CI after the fact rather than prevented. Owned by
+   personas 3 and 6.
 
 ## Commands (executed)
 
@@ -54,9 +58,12 @@ replace the output; if one stops existing, search the manifest, `Makefile`,
 CI configuration, and contributor documentation before recording an absence.
 
 **Test suite** (four-source discovery: manifest — absent; `Makefile` —
-absent; CI — absent; contributor documentation — `ADAPTERS.md:205`
-"Running this project's test suite"). The third suite, `tests/test_sentinel.sh`,
-belongs to the audit instrument rather than the product but runs the same way:
+absent; CI — `.github/workflows/test.yml` since 2026-10-09 (issue #8);
+contributor documentation — `ADAPTERS.md:206` "Running this project's test
+suite"). The quoted outputs below predate the 2026-10-08/09 suite additions
+(`test_write_honesty.sh`, `test_dispatch.sh`) and CI; the current five-suite
+battery is green end-to-end. `tests/test_sentinel.sh` belongs to the audit
+instrument rather than the product but runs the same way:
 
     $ bash tests/test_install.sh
     [1] file-mode install copies every bin/ entry the dispatcher needs
@@ -222,7 +229,7 @@ How the code reaches each, not merely that it exists.
 | Vercel | claimed as a sync target in `docs/ARCHITECTURE.md:14` — no call site found in the controller this build (candidate smoke finding) | `docs/ARCHITECTURE.md:14` |
 | GitHub (install source + tracker) | `git clone` at install, `gh` CLI for the live tracker read | `install.sh:7`, `README.md:29` |
 | jq | invoked for JSON parsing inside `bin/sec` | `bin/sec:89` |
-| Hyer hub checkers | invoked by the local pre-commit wrapper from `~/sandbox/hyer/scripts/` | `ADAPTERS.md:239` |
+| Hyer hub checkers | invoked by the local pre-commit wrapper from `~/sandbox/hyer/scripts/` | `ADAPTERS.md:177` |
 
 ## Personas
 
@@ -254,7 +261,7 @@ enforced by `tests/test_sync_guard.sh` (start of suite at
 backend write, and that no other writer exists. The most direct leak surface
 is `bin/sec:118` (`eval $(op signin)`): provider-CLI stdout executed as
 shell. Config confidentiality: `install.sh:43` creates `$HOME/.sec/sec.conf`
-mode 600 — confirm the test that claims it (`tests/test_install.sh:79`)
+mode 600 — confirm the test that claims it (`tests/test_install.sh:101`)
 still exercises the real path. Note `.gitignore:11` ignores the literal
 path `~/.sec/`, which never matches the real `$HOME/.sec` outside the repo —
 vestigial rule with a security-adjacent history; decide whether it hides
@@ -274,12 +281,12 @@ pushes to "Vercel projects" — verify a Vercel call site exists anywhere; a
 claim with no code is a smoke finding. Python visibility rule: module-level
 public, leading underscore private.
 
-### 3. Test and evaluation sufficiency -- `tests/test_install.sh:76`, `tests/test_sync_guard.sh:41`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:215`, `ADAPTERS.md:205`
+### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:41`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:218`, `ADAPTERS.md:206`
 
 Five install cases, six guard sections, and the audit instrument's own four
 sentinel cases pass today; establish what they do not cover. Structural gaps
 to quantify, not merely note: no CI anywhere, the hook's test step blind to
-`tests/*.sh` (`ADAPTERS.md:215`, open issue `#2`), and zero coverage
+`tests/*.sh` (`ADAPTERS.md:218`, open issue `#2`), and zero coverage
 tooling. Then cross-reference suites against the hotspots:
 `bin/sec-organizer`, `bin/sec-migrator`, `bin/sec-classify.py`, and
 `bin/bw-session-keeper` have no direct test (the sync/install suites touch
@@ -400,8 +407,8 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **87 tracked files** (`git ls-files | wc -l`, re-measured after
-this refresh). First matching row wins, so specific rows precede general ones.
+Denominator: **95 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-09 after the issue #8 suite and CI additions). First matching row wins, so specific rows precede general ones.
 `sentinel.sh` fails on any tracked file matched by no row, and on any row
 matching no file except the one declared-empty row below.
 
@@ -443,10 +450,10 @@ matching no file except the one declared-empty row below.
 | `skills/**` | 4, 5 |
 | `tests/*.sh` | 3 |
 
-**Declared-empty row:** `docs/360/**` matches nothing until the first audit
-run creates its run directory. `sentinel.sh` exempts exactly this one row so
-the forward declaration does not read as a stale row. Every other row must
-match at least one tracked file.
+**Forward-declared row:** `docs/360/**` was declared before the first audit
+run; the run directory `docs/360/runs/2026-10-09-000410/` now exists and the
+row is live. `sentinel.sh` keeps a one-row exemption for repos that have not
+run the audit yet. Every other row must match at least one tracked file.
 
 ## Gitignored surfaces
 

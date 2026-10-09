@@ -15,7 +15,7 @@
 - `bin/sec.ps1`: Native Windows PowerShell wrapper for the same subcommand surface.
 - `completions/_sec`: shell completion for `sec`.
 - `install.sh`: one-liner installer (bootstrap clone into `~/.sec-cli`, copy of `bin/*` to `~/.local/bin`, `sec.conf` created mode 600).
-- `tests/`: four zero-dependency bash suites (`test_install.sh`, `test_sync_guard.sh`, `test_write_honesty.sh`, `test_sentinel.sh`) run manually — the pre-commit Step 5 does not recognize `tests/*.sh` (issue #2).
+- `tests/`: five zero-dependency bash suites (`test_install.sh`, `test_sync_guard.sh`, `test_write_honesty.sh`, `test_sentinel.sh`, `test_dispatch.sh`) — run manually and by CI (`.github/workflows/test.yml`, push/PR to main, actions pinned by full commit SHA); the pre-commit Step 5 does not recognize `tests/*.sh` (issue #2).
 
 ## 3. Zero-Plaintext Security Architecture
 - **In-Memory Injection**: Secrets are injected directly into child process environments without touching disk.
