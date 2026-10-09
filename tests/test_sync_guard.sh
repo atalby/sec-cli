@@ -51,7 +51,7 @@ OUT1="$(run_ctrl GEMINI_API_KEY=fake-gem-key GITLAB_TOKEN=fake-gl -- --dry-run 2
 RC1=$?
 set -e
 if [[ $RC1 -eq 0 ]]; then pass "--dry-run exits 0"; else fail "--dry-run exited $RC1, expected 0"; fi
-if grep -qi "dry.run" <<<"$OUT1"; then pass "output announces dry-run mode"; else fail "output does not announce dry-run mode"; fi
+if grep -q "^\[INFO\] SEC CENTRAL SECRET SYNC CONTROLLER — DRY RUN" <<<"$OUT1"; then pass "output announces tagged dry-run mode"; else fail "output does not announce tagged dry-run mode"; fi
 if grep -q "gemini-api-key" <<<"$OUT1"; then pass "plan lists present key name"; else fail "plan does not list present key name"; fi
 if grep -q "fake-gem-key" <<<"$OUT1"; then fail "dry-run LEAKED a secret value"; else pass "no secret values printed"; fi
 if [[ -f "$CANARY" ]]; then fail "dry-run invoked gcloud (canary fired)"; else pass "dry-run never invoked gcloud"; fi
@@ -86,7 +86,7 @@ if grep -q "secrets versions add gemini-api-key" "$CANARY" 2>/dev/null; then
 else
     fail "gcloud shim never saw 'secrets versions add gemini-api-key' (canary: $(cat "$CANARY" 2>/dev/null | tr '\n' ';'))"
 fi
-if grep -q "GITLAB_TOKEN not set\|skipping GitLab" <<<"$OUT4"; then
+if grep -q "^\[WARN\] GITLAB_TOKEN not set; skipping GitLab" <<<"$OUT4"; then
     pass "GitLab skipped without token (no network attempted)"
 else
     fail "GitLab skip message missing"
@@ -159,7 +159,7 @@ OUT10="$(run_ctrl GEMINI_API_KEY=fake-gem-key SEC_TEST_GCLOUD_FAIL=1 -- --yes </
 RC10=$?
 set -e
 if [[ $RC10 -eq 3 ]]; then pass "[10] exits 3 on backend write failure"; else fail "[10] exited $RC10, expected 3"; fi
-if grep -qi "FAILED" <<<"$OUT10"; then pass "[10] output marks the sync FAILED"; else fail "[10] no FAILED notice on write failure"; fi
+if grep -q "^\[ERROR\] CENTRAL SECRET SYNC FAILED" <<<"$OUT10"; then pass "[10] output marks the sync FAILED with [ERROR] tag"; else fail "[10] no tagged FAILED notice on write failure"; fi
 if grep -q "fake-gem-key" <<<"$OUT10"; then fail "[10] failure path LEAKED a secret value"; else pass "[10] no secret values printed on failure"; fi
 
 echo "[11] a failing backend write must exit 3, never a fake success (issue #6)"
@@ -169,7 +169,7 @@ OUT7="$(run_ctrl GEMINI_API_KEY=fake-gem-key SEC_TEST_GCLOUD_RC=1 -- --yes </dev
 RC7=$?
 set -e
 if [[ $RC7 -eq 3 ]]; then pass "failed write exits 3 (backend failure)"; else fail "failed write exited $RC7, expected 3"; fi
-if grep -q "updated successfully" <<<"$OUT7"; then
+if grep -q "^\[ OK \] GCP Secret Manager: .* updated successfully" <<<"$OUT7"; then
     fail "failing gcloud still printed 'updated successfully'"
 else
     pass "no false success line on failed write"

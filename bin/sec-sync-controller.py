@@ -70,7 +70,7 @@ def parse_args(argv):
 
 
 def sync_to_gcp_secret_manager(secret_name, secret_value):
-    print(f"  🔒 Syncing to GCP Secret Manager: {secret_name}...")
+    print(f"[INFO] Syncing to GCP Secret Manager: {secret_name}...")
     try:
         check_cmd = [
             "gcloud",
@@ -122,22 +122,22 @@ def sync_to_gcp_secret_manager(secret_name, secret_value):
             p.kill()
             p.communicate()
             print(
-                f"    ❌ GCP Secret Manager sync FAILED for {secret_name}: "
+                f"[ERROR] GCP Secret Manager sync FAILED for {secret_name}: "
                 f"timed out after {BACKEND_TIMEOUT:.0f}s."
             )
             return False
         if p.returncode != 0:
             detail = (err or b"").decode("utf-8", "replace").strip()
             print(
-                f"    ❌ GCP Secret Manager sync FAILED for {secret_name}: "
+                f"[ERROR] GCP Secret Manager sync FAILED for {secret_name}: "
                 f"exit {p.returncode}. {detail}"
             )
             return False
-        print(f"    ✅ GCP Secret Manager: {secret_name} updated successfully.")
+        print(f"[ OK ] GCP Secret Manager: {secret_name} updated successfully.")
         return True
     except subprocess.TimeoutExpired:
         print(
-            f"    ❌ GCP Secret Manager sync FAILED for {secret_name}: "
+            f"[ERROR] GCP Secret Manager sync FAILED for {secret_name}: "
             f"timed out after {BACKEND_TIMEOUT:.0f}s."
         )
         return False
@@ -147,7 +147,7 @@ def sync_to_gcp_secret_manager(secret_name, secret_value):
             detail = detail.decode("utf-8", "replace")
         detail = str(detail).strip()
         print(
-            f"    ❌ GCP Secret Manager sync FAILED for {secret_name}: {e}"
+            f"[ERROR] GCP Secret Manager sync FAILED for {secret_name}: {e}"
             + (f" {detail}" if detail else "")
         )
         return False
@@ -156,10 +156,10 @@ def sync_to_gcp_secret_manager(secret_name, secret_value):
 def sync_to_gitlab_group(secret_name, secret_value):
     if not GITLAB_TOKEN:
         print(
-            f"    ℹ️ GITLAB_TOKEN not set; skipping GitLab group sync for {secret_name}."
+            f"[WARN] GITLAB_TOKEN not set; skipping GitLab group sync for {secret_name}."
         )
         return True
-    print(f"  🦊 Syncing to GitLab Group Variables: {secret_name}...")
+    print(f"[INFO] Syncing to GitLab Group Variables: {secret_name}...")
     url = f"https://gitlab.com/api/v4/groups/{GITLAB_GROUP_ID}/variables/{secret_name}"
     headers = {"PRIVATE-TOKEN": GITLAB_TOKEN, "Content-Type": "application/json"}
     data = json.dumps(
@@ -169,22 +169,21 @@ def sync_to_gitlab_group(secret_name, secret_value):
         req = urllib.request.Request(url, data=data, headers=headers, method="PUT")
         with urllib.request.urlopen(req, timeout=BACKEND_TIMEOUT) as resp:
             print(
-                f"    ✅ GitLab Group Variable {secret_name}: Updated (HTTP {resp.status})"
+                f"[ OK ] GitLab Group Variable {secret_name}: Updated (HTTP {resp.status})"
             )
         return True
     except Exception as e:
-        print(f"    ❌ GitLab sync FAILED for {secret_name}: {e}")
+        print(f"[ERROR] GitLab sync FAILED for {secret_name}: {e}")
         return False
 
 
 def describe_targets():
-    print("Targets:")
-    print(f"  • GCP Secret Manager — project {GCP_PROJECT}")
+    print(f"[INFO] GCP Secret Manager — project {GCP_PROJECT}")
     if GITLAB_TOKEN:
-        print(f"  • GitLab group variables — group {GITLAB_GROUP_ID}")
+        print(f"[INFO] GitLab group variables — group {GITLAB_GROUP_ID}")
     else:
         print(
-            f"  • GitLab group variables — group {GITLAB_GROUP_ID} (skipped: GITLAB_TOKEN not set)"
+            f"[INFO] GitLab group variables — group {GITLAB_GROUP_ID} (skipped: GITLAB_TOKEN not set)"
         )
 
 
@@ -194,7 +193,7 @@ def main():
         print(USAGE)
         return 0
     if mode == "usage-error":
-        print(f"sec sync: unknown argument: {bad_arg}", file=sys.stderr)
+        print(f"[ERROR] sec sync: unknown argument: {bad_arg}", file=sys.stderr)
         print(USAGE, file=sys.stderr)
         return 2
 
@@ -205,8 +204,8 @@ def main():
             present.append((key, val))
 
     if not present:
-        print("❌ No active keys found in environment — nothing to sync.")
-        print(f"   Keys checked: {', '.join(SYNC_KEYS)}")
+        print("[WARN] No active keys found in environment — nothing to sync.")
+        print(f"[INFO] Keys checked: {', '.join(SYNC_KEYS)}")
         return 1
 
     if mode == "dry-run":
@@ -214,32 +213,32 @@ def main():
             "================================================================================"
         )
         print(
-            "🔐 SEC CENTRAL SECRET SYNC CONTROLLER — DRY RUN (no writes, no backend calls)"
+            "[INFO] SEC CENTRAL SECRET SYNC CONTROLLER — DRY RUN (no writes, no backend calls)"
         )
         print(
             "================================================================================"
         )
         describe_targets()
-        print("\nPlan (key names only, values never shown):")
+        print("\n[INFO] Plan (key names only, values never shown):")
         for key, _val in present:
             gcp_name = key.lower().replace("_", "-")
-            line = f"  🔑 {key} → GCP:{gcp_name}"
+            line = f"[INFO] {key} → GCP:{gcp_name}"
             line += (
                 f" | GitLab:{key}" if GITLAB_TOKEN else " | GitLab:skipped(no token)"
             )
             print(line)
         absent = [k for k in SYNC_KEYS if k not in {pk for pk, _ in present}]
         if absent:
-            print(f"  ℹ️ Not present in env: {', '.join(absent)}")
+            print(f"[INFO] Not present in env: {', '.join(absent)}")
         print(
-            f"\n🎉 DRY RUN COMPLETE: {len(present)} key(s) would be written, 0 written."
+            f"\n[ OK ] DRY RUN COMPLETE: {len(present)} key(s) would be written, 0 written."
         )
         return 0
 
     print(
         "================================================================================"
     )
-    print("🔐 SEC CENTRAL SECRET SYNC CONTROLLER (Single Source of Truth: Bitwarden)")
+    print("[INFO] SEC CENTRAL SECRET SYNC CONTROLLER (Single Source of Truth: Bitwarden)")
     print(
         "================================================================================"
     )
@@ -247,22 +246,22 @@ def main():
 
     if mode == "run":
         if not (sys.stdin.isatty() and sys.stdout.isatty()):
-            print("❌ Confirmation required: non-interactive run without --yes.")
+            print("[ERROR] Confirmation required: non-interactive run without --yes.")
             print(
-                "   Nothing pushed. Re-run with --yes to push, or --dry-run to preview."
+                "[INFO] Nothing pushed. Re-run with --yes to push, or --dry-run to preview."
             )
             return 2
         reply = input(f"\nPush {len(present)} secret(s) to the targets above? [y/N] ")
         if reply.strip().lower() not in ("y", "yes"):
-            print("❌ Aborted by user; nothing pushed.")
+            print("[ERROR] Aborted by user; nothing pushed.")
             return 2
     else:
-        print(f"\nProceeding with push (--yes): {len(present)} key(s) queued.")
+        print(f"\n[INFO] Proceeding with push (--yes): {len(present)} key(s) queued.")
 
     synced_count = 0
     failed_count = 0
     for key, val in present:
-        print(f"\n🔑 Pushing active secret: {key}")
+        print(f"\n[INFO] Pushing active secret: {key}")
         if not sync_to_gcp_secret_manager(key.lower().replace("_", "-"), val):
             failed_count += 1
         if not sync_to_gitlab_group(key, val):
@@ -274,14 +273,14 @@ def main():
     )
     if failed_count:
         print(
-            f"❌ CENTRAL SECRET SYNC FAILED: {failed_count} backend write(s) "
+            f"[ERROR] CENTRAL SECRET SYNC FAILED: {failed_count} backend write(s) "
             f"failed across {synced_count} key(s)."
         )
         print(
             "================================================================================"
         )
         return 3
-    print(f"🎉 CENTRAL SECRET SYNC COMPLETED: {synced_count} keys processed.")
+    print(f"[ OK ] CENTRAL SECRET SYNC COMPLETED: {synced_count} keys processed.")
     print(
         "================================================================================"
     )

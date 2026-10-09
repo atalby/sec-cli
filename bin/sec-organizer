@@ -47,11 +47,11 @@ detect_backend() {
 cmd_plan() {
     local backend
     backend="$(detect_backend)"
-    echo "=== 🧹 Fleet Secret Housekeeping Plan (Backend: $backend, ML Disambiguation Enabled) ==="
+    echo "[INFO] Fleet Secret Housekeeping Plan (Backend: $backend, ML Disambiguation Enabled)"
 
     if [[ "$backend" == "bw" ]]; then
         if ! BW_SESSION="${BW_SESSION:-}" bw sync --nostatus >/dev/null 2>&1; then
-            echo "[sec-organizer] Error: Bitwarden vault is locked or session expired. Run 'sec unlock' first." >&2
+            echo "[ERROR] Bitwarden vault is locked or session expired. Run 'sec unlock' first." >&2
             exit 1
         fi
         folders_json="$(bw list folders 2>/dev/null || echo "[]")"
@@ -63,7 +63,7 @@ cmd_plan() {
         items_json="$(bws secret list 2>/dev/null | jq '[.[] | {id: .id, name: .key}]' || echo "[]")"
         folders_json="[]"
     else
-        echo "[sec-organizer] Error: No active, unlocked secret manager backend detected." >&2
+        echo "[ERROR] No active, unlocked secret manager backend detected." >&2
         exit 1
     fi
 
@@ -118,38 +118,38 @@ cmd_plan() {
     done < <(echo "$items_json" | jq -c '.[]')
 
     echo ""
-    echo "Plan Summary: $move_count secrets to re-organize / rename, $skip_count already organized."
+    echo "[INFO] Plan Summary: $move_count secrets to re-organize / rename, $skip_count already organized."
 
     # Save plan
     jq -n --arg backend "$backend" --argjson actions "$plan_actions" --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
       '{backend: $backend, timestamp: $timestamp, actions: $actions}' > "$PLAN_FILE"
 
-    echo "Plan saved to $PLAN_FILE."
+    echo "[ OK ] Plan saved to $PLAN_FILE."
     if [[ $move_count -gt 0 ]]; then
-        echo "Run 'sec housekeep apply' to execute this organization plan."
+        echo "[INFO] Run 'sec housekeep apply' to execute this organization plan."
     fi
 }
 
 # 2. Apply Housekeeping Plan (Creates pre-apply snapshot)
 cmd_apply() {
-    echo "=== ⚡ Executing Fleet Secret Housekeeping Plan ==="
+    echo "[INFO] Executing Fleet Secret Housekeeping Plan"
 
     if [[ ! -f "$PLAN_FILE" ]]; then
-        echo "[sec-organizer] No plan file found. Run 'sec housekeep plan' first." >&2
+        echo "[ERROR] No plan file found. Run 'sec housekeep plan' first." >&2
         exit 1
     fi
 
     backend="$(jq -r '.backend // "bw"' "$PLAN_FILE")"
     actions="$(jq -c '.actions[]' "$PLAN_FILE" 2>/dev/null || echo "")"
     if [[ -z "$actions" ]]; then
-        echo "[sec-organizer] Plan contains zero move/rename actions. Everything is up to date."
+        echo "[INFO] Plan contains zero move/rename actions. Everything is up to date."
         exit 0
     fi
 
     case "$backend" in
         bw|op) ;;
         *)
-            echo "[sec-organizer] Error: apply not implemented for backend '$backend' (supported: bw, op). Plan kept: $PLAN_FILE" >&2
+            echo "[ERROR] apply not implemented for backend '$backend' (supported: bw, op). Plan kept: $PLAN_FILE" >&2
             exit 1
             ;;
     esac
@@ -160,7 +160,7 @@ cmd_apply() {
     cp "$PLAN_FILE" "$snapshot_file"
     chmod 600 "$snapshot_file" "$PLAN_FILE" 2>/dev/null || true
     ln -sf "$snapshot_file" "$LATEST_SNAPSHOT"
-    echo "[sec-organizer] Pre-apply backup snapshot created: $snapshot_file (Mode 0600)"
+    echo "[ OK ] Pre-apply backup snapshot created: $snapshot_file (Mode 0600)"
 
     if [[ "$backend" == "bw" ]]; then
         folders_json="$(bw list folders 2>/dev/null || echo "[]")"
@@ -175,19 +175,19 @@ cmd_apply() {
             folder_id="$(echo "$folders_json" | jq -r --arg t "$target" '.[] | select(.name == $t).id // empty')"
 
             if [[ -z "$folder_id" ]]; then
-                echo "[sec-organizer] Creating folder: \"$target\"..."
+                echo "[INFO] Creating folder: \"$target\"..."
                 new_folder="$(bw get template folder | jq --arg t "$target" '.name = $t' | bw encode | bw create folder 2>/dev/null)"
                 folder_id="$(echo "$new_folder" | jq -r '.id')"
                 folders_json="$(bw list folders 2>/dev/null || echo "[]")"
             fi
 
-            echo "[sec-organizer] Updating \"$orig_name\" -> Name: \"$new_name\", Folder: \"$target\"..."
+            echo "[INFO] Updating \"$orig_name\" -> Name: \"$new_name\", Folder: \"$target\"..."
             item_json="$(bw get item "$id" 2>/dev/null)"
             updated_item="$(echo "$item_json" | jq --arg fid "$folder_id" --arg n "$new_name" '.folderId = $fid | .name = $n' | bw encode)"
             bw edit item "$id" "$updated_item" >/dev/null
         done <<< "$actions"
 
-        echo "[sec-organizer] Syncing Bitwarden vault..."
+        echo "[INFO] Syncing Bitwarden vault..."
         bw sync >/dev/null 2>&1 || true
 
     elif [[ "$backend" == "op" ]]; then
@@ -197,36 +197,36 @@ cmd_apply() {
             new_name="$(echo "$action" | jq -r '.newName')"
             target="$(echo "$action" | jq -r '.targetFolder')"
 
-            echo "[sec-organizer] Updating 1Password item \"$id\" -> Title: \"$new_name\", Tag: \"$target\"..."
+            echo "[INFO] Updating 1Password item \"$id\" -> Title: \"$new_name\", Tag: \"$target\"..."
             op item edit "$id" --title "$new_name" --tags "$target" >/dev/null
         done <<< "$actions"
     fi
 
     rm -f "$PLAN_FILE"
-    echo "=== ✨ Secret Housekeeping Successfully Applied ==="
-    echo "To revert this change at any time, run 'sec housekeep revert'."
+    echo "[ OK ] Secret Housekeeping Successfully Applied"
+    echo "[INFO] To revert this change at any time, run 'sec housekeep revert'."
 }
 
 # 3. Revert / Undo Pre-Apply State
 cmd_revert() {
-    echo "=== 🔄 Reverting Last Secret Housekeeping Operation ==="
+    echo "[INFO] Reverting Last Secret Housekeeping Operation"
 
     if [[ ! -f "$LATEST_SNAPSHOT" ]]; then
-        echo "[sec-organizer] Error: No pre-apply snapshot found ($LATEST_SNAPSHOT). Nothing to revert." >&2
+        echo "[ERROR] No pre-apply snapshot found ($LATEST_SNAPSHOT). Nothing to revert." >&2
         exit 1
     fi
 
     backend="$(jq -r '.backend // "bw"' "$LATEST_SNAPSHOT")"
     actions="$(jq -c '.actions[]' "$LATEST_SNAPSHOT" 2>/dev/null || echo "")"
     if [[ -z "$actions" ]]; then
-        echo "[sec-organizer] Snapshot contains zero move actions."
+        echo "[INFO] Snapshot contains zero move actions."
         exit 0
     fi
 
     case "$backend" in
         bw|op) ;;
         *)
-            echo "[sec-organizer] Error: revert not implemented for backend '$backend' (supported: bw, op). Snapshot kept: $LATEST_SNAPSHOT" >&2
+            echo "[ERROR] revert not implemented for backend '$backend' (supported: bw, op). Snapshot kept: $LATEST_SNAPSHOT" >&2
             exit 1
             ;;
     esac
@@ -239,7 +239,7 @@ cmd_revert() {
             orig_fid="$(echo "$action" | jq -r '.currentFolderId // null')"
             orig_folder_name="$(echo "$action" | jq -r '.currentFolder // "root"')"
 
-            echo "[sec-organizer] Reverting \"$id\" -> Original Name: \"$orig_name\", Original Folder: \"${orig_folder_name:-root}\"..."
+            echo "[INFO] Reverting \"$id\" -> Original Name: \"$orig_name\", Original Folder: \"${orig_folder_name:-root}\"..."
             item_json="$(bw get item "$id" 2>/dev/null)"
             if [[ "$orig_fid" == "null" || -z "$orig_fid" ]]; then
                 updated_item="$(echo "$item_json" | jq --arg n "$orig_name" '.folderId = null | .name = $n' | bw encode)"
@@ -249,7 +249,7 @@ cmd_revert() {
             bw edit item "$id" "$updated_item" >/dev/null
         done <<< "$actions"
 
-        echo "[sec-organizer] Syncing Bitwarden vault..."
+        echo "[INFO] Syncing Bitwarden vault..."
         bw sync >/dev/null 2>&1 || true
 
     elif [[ "$backend" == "op" ]]; then
@@ -258,13 +258,13 @@ cmd_revert() {
             id="$(echo "$action" | jq -r '.id')"
             orig_name="$(echo "$action" | jq -r '.originalName')"
 
-            echo "[sec-organizer] Reverting 1Password item \"$id\" -> Title: \"$orig_name\"..."
+            echo "[INFO] Reverting 1Password item \"$id\" -> Title: \"$orig_name\"..."
             op item edit "$id" --title "$orig_name" --tags="" >/dev/null
         done <<< "$actions"
     fi
 
     rm -f "$LATEST_SNAPSHOT"
-    echo "=== ✨ Secret Housekeeping Revert Successfully Completed ==="
+    echo "[ OK ] Secret Housekeeping Revert Successfully Completed"
 }
 
 case "${1:-plan}" in

@@ -195,7 +195,7 @@ OUT="$(run_sec "$H" get NO_SUCH_KEY 2>&1)"
 RC=$?
 set -e
 if [[ $RC -eq 1 ]]; then pass "miss exits 1"; else fail "miss rc=$RC"; fi
-if grep -q "not found" <<<"$OUT"; then pass "miss names the failure"; else fail "no 'not found' in: $OUT"; fi
+if grep -q "^\[ERROR\] Secret .* not found in tenant" <<<"$OUT"; then pass "miss emits tagged [ERROR]"; else fail "no tagged not-found in: $OUT"; fi
 
 echo "[6] prefix tenant: bws get"
 set +e
@@ -240,7 +240,7 @@ OUT="$(run_sec "$H" bw set NEW_KEY newval 2>&1)"
 RC=$?
 set -e
 if [[ $RC -eq 0 ]]; then pass "bw set exits 0"; else fail "bw set rc=$RC out=$OUT"; fi
-if grep -q "saved to Bitwarden" <<<"$OUT"; then pass "reports saved-to-Bitwarden"; else fail "no saved-to-Bitwarden in: $OUT"; fi
+if grep -q "^\[ OK \] Secret .* saved to Bitwarden Vault" <<<"$OUT"; then pass "reports [ OK ] saved-to-Bitwarden"; else fail "no tagged saved-to-Bitwarden in: $OUT"; fi
 if grep -q "create item" "$BWLOG"; then pass "bw create item executed"; else fail "no 'create item' in bw log: $(tr '\n' ';' <"$BWLOG")"; fi
 
 echo "[11] op set create path"
@@ -272,7 +272,8 @@ OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H" "GEMINI_API_KEY=fake" \
 RC=$?
 set -e
 if [[ $RC -eq 0 ]]; then pass "sec sync --dry-run exits 0"; else fail "sync --dry-run rc=$RC out=$OUT"; fi
-if grep -qi "dry run" <<<"$OUT"; then pass "prints DRY RUN banner"; else fail "no DRY RUN in: $OUT"; fi
+if grep -q "^\[INFO\] SEC CENTRAL SECRET SYNC CONTROLLER — DRY RUN" <<<"$OUT"; then pass "prints tagged DRY RUN banner"; else fail "no tagged DRY RUN banner in: $OUT"; fi
+if grep -q "^\[ OK \] DRY RUN COMPLETE" <<<"$OUT"; then pass "prints tagged DRY RUN COMPLETE"; else fail "no tagged DRY RUN COMPLETE in: $OUT"; fi
 if grep -q "gcloud" "$BWLOG" 2>/dev/null; then fail "dry-run touched gcloud"; else pass "no backend write during dry-run"; fi
 
 echo "[14] housekeep plan executes the organizer"
@@ -288,7 +289,8 @@ PLAN="$H2/.cache/bitwarden/housekeep_plan.json"
 if [[ $RC -eq 0 ]]; then pass "housekeep plan exits 0"; else fail "housekeep plan rc=$RC out=$OUT"; fi
 if [[ -f "$PLAN" ]]; then pass "plan file written"; else fail "no plan file at $PLAN"; fi
 if jq -e '.actions | length >= 1' "$PLAN" >/dev/null 2>&1; then pass "plan has >=1 action"; else fail "plan actions missing/empty: $(cat "$PLAN" 2>/dev/null)"; fi
-if grep -q "Plan Summary" <<<"$OUT"; then pass "prints Plan Summary"; else fail "no Plan Summary in: $OUT"; fi
+if grep -q "^\[INFO\] Plan Summary" <<<"$OUT"; then pass "prints tagged Plan Summary"; else fail "no tagged Plan Summary in: $OUT"; fi
+if grep -q "^\[ OK \] Plan saved to" <<<"$OUT"; then pass "prints tagged Plan saved"; else fail "no tagged Plan saved in: $OUT"; fi
 
 echo "[15] migrate plan executes the migrator"
 set +e
@@ -300,7 +302,8 @@ RC=$?
 set -e
 if [[ $RC -eq 0 ]]; then pass "migrate plan exits 0"; else fail "migrate plan rc=$RC out=$OUT"; fi
 if grep -q "Discovered 2" <<<"$OUT"; then pass "discovers 2 fixture items"; else fail "no 'Discovered 2' in: $OUT"; fi
-if grep -q "Ready to migrate 2" <<<"$OUT"; then pass "ready-to-migrate counts 2"; else fail "no 'Ready to migrate 2' in: $OUT"; fi
+if grep -q "^\[ OK \] Migration Plan Summary: Ready to migrate 2" <<<"$OUT"; then pass "tagged ready-to-migrate counts 2"; else fail "no tagged 'Ready to migrate 2' in: $OUT"; fi
+if grep -q "^\[INFO\] Discovered 2" <<<"$OUT"; then pass "tagged Discovered counts 2"; else fail "no tagged 'Discovered 2' in: $OUT"; fi
 
 echo "[16] sec-classify.py direct smoke"
 set +e
@@ -407,6 +410,17 @@ OUT="$(env -i "PATH=$MINBIN" "HOME=$H7" "SEC_ALLOW_PLAINTEXT_MASTER_PASS=1" \
 RC=$?
 set -e
 if [[ $RC -eq 0 ]] && grep -q "Vault unlocked successfully" <<<"$OUT"; then pass "opt-in rotate unlocks via stored pass"; else fail "opt-in rotate rc=$RC out=$OUT"; fi
+
+echo "[23] no producer still emits legacy [sec*] event prefixes (F048 retrofit)"
+LEGACY=0
+for f in bin/sec bin/sec-organizer bin/sec-migrator bin/bw-session-keeper; do
+    if grep -n 'echo "\[sec' "$REPO_ROOT/$f" | grep -v 'usage\|Usage\|\[sec-organizer\] #' >/dev/null 2>&1; then
+        grep -n 'echo "\[sec' "$REPO_ROOT/$f" || true
+        LEGACY=1
+    fi
+done
+if grep -n 'print(f"\s*\[sec' "$REPO_ROOT/bin/sec-sync-controller.py" >/dev/null 2>&1; then LEGACY=1; fi
+if [[ $LEGACY -eq 0 ]]; then pass "no legacy [sec*] event prefixes in producers"; else fail "legacy [sec*] prefixes remain in a producer"; fi
 
 echo
 if [[ $FAILS -eq 0 ]]; then

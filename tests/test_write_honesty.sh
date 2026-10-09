@@ -44,7 +44,7 @@ OUT1="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H1" "$REPO_ROOT/bin/sec" key
 RC1=$?
 set -e
 if [[ $RC1 -eq 1 ]]; then pass "unsupported tenant set exits 1"; else fail "unsupported tenant set exited $RC1, expected 1"; fi
-if grep -qi "not supported" <<<"$OUT1"; then pass "names the unsupported tenant"; else fail "no 'not supported' explanation: $OUT1"; fi
+if grep -q "^\[ERROR\] set not supported for tenant" <<<"$OUT1"; then pass "tagged refusal names the unsupported tenant"; else fail "no tagged 'not supported' in: $OUT1"; fi
 
 echo "[2] housekeep apply refuses an unsupported backend, keeps the plan"
 H2="$WORK/h2"
@@ -60,7 +60,7 @@ set -e
 if [[ $RC2 -eq 1 ]]; then pass "bws apply exits 1"; else fail "bws apply exited $RC2, expected 1"; fi
 if [[ -f "$PLAN2" ]]; then pass "plan file kept on refusal"; else fail "plan file DELETED on refusal"; fi
 if grep -q "Successfully Applied" <<<"$OUT2"; then fail "reported success for a no-op apply"; else pass "no success banner on refusal"; fi
-if grep -qi "not implemented" <<<"$OUT2"; then pass "explains the unsupported backend"; else fail "no 'not implemented' explanation: $OUT2"; fi
+if grep -q "^\[ERROR\] apply not implemented for backend" <<<"$OUT2"; then pass "tagged refusal explains the unsupported backend"; else fail "no tagged 'not implemented' in: $OUT2"; fi
 
 echo "[3] housekeep apply (op) honours --tags and fails hard on backend error"
 H3="$WORK/h3"
@@ -105,7 +105,7 @@ OUT4="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H4" "$REPO_ROOT/bin/sec-migr
 RC4=$?
 set -e
 if [[ $RC4 -eq 1 ]]; then pass "apply with unresolved TX exits 1"; else fail "apply with unresolved TX exited $RC4, expected 1"; fi
-if grep -q "keepme" "$TX4" && grep -q "unresolved\|undo" <<<"$OUT4"; then pass "existing TX untouched and undo hinted"; else fail "TX clobbered or no undo hint: $OUT4"; fi
+if grep -q "keepme" "$TX4" && grep -q "^\[ERROR\] unresolved migration transaction" <<<"$OUT4"; then pass "existing TX untouched, tagged undo hint"; else fail "TX clobbered or no tagged undo hint: $OUT4"; fi
 
 echo "[5] migrate --apply fails loudly on an empty-valued item (no fake success)"
 H5="$WORK/h5"
@@ -115,7 +115,7 @@ OUT5="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H5" "SEC_TEST_BW_NOTES=" "$R
 RC5=$?
 set -e
 if [[ $RC5 -eq 1 ]]; then pass "empty-val item aborts apply with exit 1"; else fail "empty-val apply exited $RC5, expected 1"; fi
-if grep -q "ERROR" <<<"$OUT5"; then pass "prints the migration ERROR notice"; else fail "no ERROR notice: $OUT5"; fi
+if grep -q "^\[ERROR\] Migration failed while transferring" <<<"$OUT5"; then pass "prints tagged migration ERROR notice"; else fail "no tagged migration ERROR notice: $OUT5"; fi
 if [[ -f "$H5/.cache/bitwarden/migration_transaction.json" ]]; then pass "transaction log written on failure"; else fail "no transaction log on failure"; fi
 
 echo

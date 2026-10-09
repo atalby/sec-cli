@@ -90,7 +90,7 @@ ensure_tenant_auth() {
 
             if [[ "$status_val" != "unlocked" ]]; then
                 if [[ "$auto_rotate" == "true" ]] && [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
-                    echo "[sec] Session expired. Executing auto-rotation for Bitwarden..." >&2
+                    echo "[INFO] Session expired. Executing auto-rotation for Bitwarden..." >&2
                     "$SCRIPT_DIR/bw-session-keeper" rotate >/dev/null 2>&1 || true
                     if [[ -f "$HOME/.cache/bitwarden/session" ]]; then
                         export BW_SESSION="$(cat "$HOME/.cache/bitwarden/session")"
@@ -103,7 +103,7 @@ ensure_tenant_auth() {
                 if [[ "${SEC_NONINTERACTIVE:-0}" == "1" ]]; then
                     return 1
                 fi
-                echo "[sec] Bitwarden vault is locked. Prompting for interactive unlock..." >&2
+                echo "[INFO] Bitwarden vault is locked. Prompting for interactive unlock..." >&2
                 if [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
                     "$SCRIPT_DIR/bw-session-keeper" unlock
                     if [[ -f "$HOME/.cache/bitwarden/session" ]]; then
@@ -114,13 +114,13 @@ ensure_tenant_auth() {
             ;;
         1pass|op)
             if ! op account list >/dev/null 2>&1; then
-                echo "[sec] 1Password is locked. Prompting for interactive signin..." >&2
+                echo "[INFO] 1Password is locked. Prompting for interactive signin..." >&2
                 eval $(op signin)
             fi
             ;;
         vault)
             if ! vault token lookup >/dev/null 2>&1; then
-                echo "[sec] HashiCorp Vault token expired. Prompting for login..." >&2
+                echo "[INFO] HashiCorp Vault token expired. Prompting for login..." >&2
                 vault login
             fi
             ;;
@@ -456,7 +456,7 @@ EOF
                 ;;
         esac
 
-        echo "[sec] Error: Secret '$key' not found in tenant '$TARGET_TENANT'." >&2
+        echo "[ERROR] Secret '$key' not found in tenant '$TARGET_TENANT'." >&2
         exit 1
         ;;
 
@@ -528,7 +528,7 @@ EOF
                         fi
 
                         if [[ -n "$encoded" ]] && BW_SESSION="${BW_SESSION:-}" bw edit item "$existing_id" "$encoded" >/dev/null 2>&1; then
-                            echo "[sec] Secret '$key' updated in Bitwarden Vault."
+                            echo "[ OK ] Secret '$key' updated in Bitwarden Vault."
                             exit 0
                         fi
                     fi
@@ -545,14 +545,14 @@ EOF
                 ' | bw encode 2>/dev/null || true)"
                 if [[ -n "$encoded" ]]; then
                     if BW_SESSION="${BW_SESSION:-}" bw create item "$encoded" >/dev/null 2>&1; then
-                        echo "[sec] Secret '$key' saved to Bitwarden Vault."
+                        echo "[ OK ] Secret '$key' saved to Bitwarden Vault."
                         exit 0
                     fi
                 fi
                 ;;
             1pass|op)
                 if op item create --category=password --title="$key" "password=$value" >/dev/null 2>&1; then
-                    echo "[sec] Secret '$key' saved to 1Password."
+                    echo "[ OK ] Secret '$key' saved to 1Password."
                     exit 0
                 fi
                 ;;
@@ -560,17 +560,17 @@ EOF
                 proj_id="$(bws project list 2>/dev/null | jq -r '.[0].id // empty')"
                 if [[ -n "$proj_id" ]]; then
                     if bws secret create "$key" "$value" "$proj_id" >/dev/null 2>&1; then
-                        echo "[sec] Secret '$key' saved to Bitwarden Secrets Manager."
+                        echo "[ OK ] Secret '$key' saved to Bitwarden Secrets Manager."
                         exit 0
                     fi
                 fi
                 ;;
             *)
-                echo "[sec] Error: set not supported for tenant '$TARGET_TENANT' (supported: bitwarden/bw, 1pass/op, bws)." >&2
+                echo "[ERROR] set not supported for tenant '$TARGET_TENANT' (supported: bitwarden/bw, 1pass/op, bws)." >&2
                 exit 1
                 ;;
         esac
-        echo "[sec] Error: failed to store secret '$key' in tenant '$TARGET_TENANT'." >&2
+        echo "[ERROR] failed to store secret '$key' in tenant '$TARGET_TENANT'." >&2
         exit 1
         ;;
 

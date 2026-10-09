@@ -29,9 +29,9 @@ usage() {
 
 # Handle Undo/Rollback
 if [[ "${1:-}" == "--undo" || "${1:-}" == "undo" || "${1:-}" == "revert" ]]; then
-    echo "=== 🔄 Reverting Last Secret Migration Operation ==="
+    echo "[INFO] Reverting Last Secret Migration Operation"
     if [[ ! -f "$TX_FILE" ]]; then
-        echo "[sec-migrator] Error: No active migration transaction log found ($TX_FILE)." >&2
+        echo "[ERROR] No active migration transaction log found ($TX_FILE)." >&2
         exit 1
     fi
 
@@ -39,7 +39,7 @@ if [[ "${1:-}" == "--undo" || "${1:-}" == "undo" || "${1:-}" == "revert" ]]; the
     created_items="$(jq -c '.createdItems[]' "$TX_FILE" 2>/dev/null || echo "")"
 
     if [[ -z "$created_items" ]]; then
-        echo "[sec-migrator] Transaction log contains zero created items."
+        echo "[INFO] Transaction log contains zero created items."
         exit 0
     fi
 
@@ -48,7 +48,7 @@ if [[ "${1:-}" == "--undo" || "${1:-}" == "undo" || "${1:-}" == "revert" ]]; the
         id="$(echo "$item" | jq -r '.id // empty')"
         name="$(echo "$item" | jq -r '.name // empty')"
 
-        echo "[sec-migrator] Removing migrated item \"$name\" ($id) from target vault '$dst'..."
+        echo "[INFO] Removing migrated item \"$name\" ($id) from target vault '$dst'..."
         case "$dst" in
             1password|op)  op item delete "$id" --archive 2>/dev/null || true ;;
             bitwarden|bw)  bw delete item "$id" 2>/dev/null || true ;;
@@ -57,7 +57,7 @@ if [[ "${1:-}" == "--undo" || "${1:-}" == "undo" || "${1:-}" == "revert" ]]; the
     done <<< "$created_items"
 
     rm -f "$TX_FILE"
-    echo "=== ✨ Secret Migration Rollback Successfully Completed ==="
+    echo "[ OK ] Secret Migration Rollback Successfully Completed"
     exit 0
 fi
 
@@ -79,14 +79,14 @@ if [[ -z "$SRC" || -z "$DST" ]]; then
     usage
 fi
 
-echo "=== 🚀 Fleet Secret Vault Migration ($SRC -> $DST, Mode: $MODE) ==="
+echo "[INFO] Fleet Secret Vault Migration ($SRC -> $DST, Mode: $MODE)"
 
 # 1. Fetch Source Items into Memory
 fetch_source_items() {
     case "$SRC" in
         bitwarden|bw)
             if ! BW_SESSION="${BW_SESSION:-}" bw sync --nostatus >/dev/null 2>&1; then
-                echo "[sec-migrator] Error: Bitwarden vault is locked. Run 'sec unlock' first." >&2
+                echo "[ERROR] Bitwarden vault is locked. Run 'sec unlock' first." >&2
                 exit 1
             fi
             bw list items 2>/dev/null || echo "[]"
@@ -98,7 +98,7 @@ fetch_source_items() {
             bws secret list 2>/dev/null || echo "[]"
             ;;
         *)
-            echo "[sec-migrator] Error: Source backend '$SRC' not supported for bulk migration." >&2
+            echo "[ERROR] Source backend '$SRC' not supported for bulk migration." >&2
             exit 1
             ;;
     esac
@@ -108,11 +108,11 @@ items_json="$(fetch_source_items)"
 count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
 
 if [[ "$count" -eq 0 ]]; then
-    echo "[sec-migrator] Zero items found in source backend '$SRC'."
+    echo "[INFO] Zero items found in source backend '$SRC'."
     exit 0
 fi
 
-echo "Discovered $count secret items in source vault '$SRC'."
+echo "[INFO] Discovered $count secret items in source vault '$SRC'."
 echo ""
 
 # 2. Plan or Apply Migration
@@ -123,14 +123,14 @@ created_log="[]"
 trap_error() {
     local failed_item="$1"
     echo "" >&2
-    echo "[sec-migrator] ERROR: Migration failed while transferring item \"$failed_item\"." >&2
-    echo "[sec-migrator] SOURCE VAULT '$SRC' REMAINS 100% INTACT & UNTOUCHED." >&2
+    echo "[ERROR] Migration failed while transferring item \"$failed_item\"." >&2
+    echo "[INFO] SOURCE VAULT '$SRC' REMAINS 100% INTACT & UNTOUCHED." >&2
 
     # Save transaction log up to failure point
     save_tx
 
-    echo "[sec-migrator] Saved migration transaction state log to $TX_FILE." >&2
-    echo "[sec-migrator] To rollback created items from '$DST', run 'sec migrate --undo'." >&2
+    echo "[ OK ] Saved migration transaction state log to $TX_FILE." >&2
+    echo "[INFO] To rollback created items from '$DST', run 'sec migrate --undo'." >&2
     exit 1
 }
 
@@ -146,7 +146,7 @@ if [[ "$MODE" == "apply" ]]; then
     if [[ -f "$TX_FILE" ]]; then
         existing_items="$(jq -r '.createdItems // [] | length' "$TX_FILE" 2>/dev/null || echo 0)"
         if [[ "${existing_items:-0}" -gt 0 ]]; then
-            echo "[sec-migrator] Error: unresolved migration transaction at $TX_FILE ($existing_items created items). Run 'sec migrate --undo' first." >&2
+            echo "[ERROR] unresolved migration transaction at $TX_FILE ($existing_items created items). Run 'sec migrate --undo' first." >&2
             exit 1
         fi
     fi
@@ -211,13 +211,13 @@ done < <(echo "$items_json" | jq -c '.[]')
 
 echo ""
 if [[ "$MODE" == "plan" ]]; then
-    echo "Migration Plan Summary: Ready to migrate $migrated_count secrets from $SRC -> $DST."
-    echo "Run 'sec migrate --from $SRC --to $DST --apply' to execute migration."
+    echo "[ OK ] Migration Plan Summary: Ready to migrate $migrated_count secrets from $SRC -> $DST."
+    echo "[INFO] Run 'sec migrate --from $SRC --to $DST --apply' to execute migration."
 else
     # Save final completed transaction log
     save_tx
 
-    echo "=== ✨ Vault Migration Successfully Completed ($migrated_count items migrated) ==="
-    echo "Migration transaction log saved to $TX_FILE."
-    echo "If needed, run 'sec migrate --undo' to revert created items in '$DST'."
+    echo "[ OK ] Vault Migration Successfully Completed ($migrated_count items migrated)"
+    echo "[INFO] Migration transaction log saved to $TX_FILE."
+    echo "[INFO] If needed, run 'sec migrate --undo' to revert created items in '$DST'."
 fi
