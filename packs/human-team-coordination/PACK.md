@@ -8,7 +8,7 @@ Mechanics for how multiple HUMANS on a team coordinate with each
 other and with the agent sessions they're each directing — pairing,
 on-call, incident postmortems, and resolving conflicts between
 concurrent sessions touching overlapping code. Distinct from the
-code-level review gate (`AGENTS.md` §3 step 8), which is about a
+code-level review gate (`AGENTS.md` §3 step 7), which is about a
 single change's own merge gate, not standing team process.
 `AGENTS.md` core defines none of this — genuinely varies by team size,
 timezone spread, and org culture.
@@ -36,7 +36,7 @@ timezone spread, and org culture.
 
 - Blameless by convention: the review is of the system and process
   that allowed an incident, not of the individual (human or agent
-  session) that triggered it — matches this methodology's own existing
+  session) that triggered it — matches Hyer's own existing
   ethos (`AGENTS.md` §3 step 6: "record what didn't work... a
   sanitized success narrative is worse than no narrative").
 - A postmortem for an incident an agent session was directly involved
@@ -50,11 +50,11 @@ timezone spread, and org culture.
 ## 4. Conflict resolution — concurrent sessions on overlapping code
 
 The one piece of this pack grounded in mechanisms that already exist
-elsewhere in this methodology, not invented fresh:
+elsewhere in Hyer, not invented fresh:
 
 - **Real branch protection is the actual backstop**, not agent
   discipline alone — a protected trunk that requires review before
-  merge (already covered, §3 step 8) means two concurrent sessions'
+  merge (already covered, §3 step 7) means two concurrent sessions'
   conflicting changes surface as a real merge conflict or review
   comment, not a silent overwrite.
 - If this project has a cross-session coordination channel configured

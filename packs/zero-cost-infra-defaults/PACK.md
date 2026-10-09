@@ -30,7 +30,7 @@ not adopt this pack as-is.
   - Paid Add-ons: Opt-in only (`enable_redis = false`, zero compute
     allocation when unutilized).
 
-`AGENTS.md` §1's Session Scoping and Breach Protocol guidance apply
+the Session Scoping and Breach Protocol guidance in `methodology/tiers.md` applies
 regardless of whether this pack is adopted — they're tool-agnostic
 process, not vendor choice, and stay in core rather than being
 duplicated here.

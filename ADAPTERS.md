@@ -41,9 +41,10 @@ Which of the central methodology repo's optional policy packs
 `AGENTS.md` §2 checks this section at boot.
 
 - `packs/zero-cost-infra-defaults (v1.0.0)`
-- `packs/solo-founder-governance (v1.2.0)` — bumped from v1.0.0 in this
-  sync (v1.1.0 added Codebase Hygiene Specialist, v1.2.0 added OSS
-  Ecosystem Scout — 8-persona taxonomy total).
+- `packs/solo-founder-governance (v1.4.0)` — re-synced to stable@736000d
+  (v1.3.0 added InfraAgent's explicit Traits field, v1.4.0 added the
+  UI/UX Design Reviewer — 9-persona taxonomy total; local was v1.2.0,
+  8-persona, when issue #5 was filed).
 - `packs/ip-and-data-governance (v1.0.0)`
 
 Dropped in this sync: a bespoke "$50/day, >1,000,000 tokens/session"
