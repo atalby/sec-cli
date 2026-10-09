@@ -157,9 +157,11 @@ cloning Hyer directly.
 ## Skills registry
 
 - **Registry file**: `skills/REGISTRY.md`
-- **Contents**: 22 adopter-distributable skills under `skills/` after
-  the 2026-10-08 v5.39.1 adoption (36 registry rows incl.
-  `.hyer/skills/` hub-internal rows). History: first populated in the
+- **Contents**: 23 skill dirs under `skills/` — 22 adopter-distributable
+  from the 2026-10-08 v5.39.1 adoption plus 1 project-specific
+  (`architecture-360-audit`, built in-repo that same day) — plus 12
+  `.hyer/skills/` hub-internal rows: 35 skill rows, one per skill dir.
+  History: first populated in the
   2026-08-27 fleet sync (10 skills, no `skills/` before that);
   hub-internal rows repointed `.claude/skills/` → `.hyer/skills/` on
   2026-10-08 (commit 06f129a); full merge to the v5.39.1 incoming
