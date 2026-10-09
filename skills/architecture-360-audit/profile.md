@@ -153,9 +153,9 @@ belongs to the audit instrument rather than the product but runs the same way:
 **Commit history** (the intent record for forensic scan):
 
     $ git log --oneline | wc -l
-    35
+    40
     $ git log -1 --format='%h %ad %s' --date=short
-    6ff435d 2026-10-08 chore(adopt): stamp AGENTS.md v5.39.1 (stable@736000d), banner + ADAPTERS + HISTORY
+    54146bc 2026-10-09 docs(360): correct profile ADAPTERS anchors after registry-section rewrite
     $ git log --reverse --format='%h %ad %s' --date=short | sed -n '1p'
     89c67d2 2026-08-08 feat: initial release of sec-cli v1.0.0 (Zero-Plaintext Multi-Tenant Secret Manager, Housekeeper & Migration Engine)
 
