@@ -23,6 +23,7 @@ rc=0
 case "$*" in
     *"versions add"*) rc="${SEC_TEST_GCLOUD_RC:-0}" ;;
 esac
+if [ "${SEC_TEST_GCLOUD_FAIL:-0}" = "1" ]; then rc=1; fi
 if [ "$rc" != "0" ]; then echo "shim: simulated backend failure" >&2; fi
 exit "$rc"
 EOF
@@ -119,7 +120,49 @@ set -e
 if [[ $RC6 -eq 2 ]]; then pass "unknown flag exits 2"; else fail "unknown flag exited $RC6, expected 2"; fi
 if [[ -f "$CANARY" ]]; then fail "unknown flag still invoked gcloud"; else pass "no backend touched on bad usage"; fi
 
-echo "[7] a failing backend write must exit 3, never a fake success (issue #6)"
+echo "[7] dry-run names the GCP destination from GCP_PROJECT_ID (F044)"
+rm -f "$CANARY"
+set +e
+OUT7="$(run_ctrl GEMINI_API_KEY=fake-gem-key GCP_PROJECT_ID=dest-proj-test -- --dry-run 2>&1)"
+RC7=$?
+set -e
+if [[ $RC7 -eq 0 ]]; then pass "[7] dry-run exits 0"; else fail "[7] dry-run exited $RC7"; fi
+if grep -q "dest-proj-test" <<<"$OUT7"; then pass "[7] plan names the configured project"; else fail "[7] plan never names GCP_PROJECT_ID (dest-proj-test)"; fi
+if [[ -f "$CANARY" ]]; then fail "[7] destination check touched gcloud in dry-run"; else pass "[7] still zero backend calls in dry-run"; fi
+
+echo "[8] dry-run names the GitLab destination from GITLAB_GROUP_ID (F044)"
+set +e
+OUT8="$(run_ctrl GEMINI_API_KEY=fake-gem-key GITLAB_TOKEN=fake-gl-token GITLAB_GROUP_ID=dest-group-99 -- --dry-run 2>&1)"
+RC8=$?
+set -e
+if [[ $RC8 -eq 0 ]]; then pass "[8] dry-run exits 0"; else fail "[8] dry-run exited $RC8"; fi
+if grep -q "dest-group-99" <<<"$OUT8"; then pass "[8] plan names the configured group"; else fail "[8] plan never names GITLAB_GROUP_ID (dest-group-99)"; fi
+if grep -q "skipped" <<<"$OUT8"; then fail "[8] token-set dry-run still shows GitLab skipped"; else pass "[8] GitLab shown as active target when token present"; fi
+
+echo "[9] real --yes push sends --project=<GCP_PROJECT_ID> to gcloud (F044)"
+rm -f "$CANARY"
+set +e
+OUT9="$(run_ctrl GEMINI_API_KEY=fake-gem-key GCP_PROJECT_ID=dest-proj-yes -- --yes </dev/null 2>&1)"
+RC9=$?
+set -e
+if [[ $RC9 -eq 0 ]]; then pass "[9] push exits 0"; else fail "[9] push exited $RC9"; fi
+if grep -q -- "--project=dest-proj-yes" "$CANARY" 2>/dev/null; then
+    pass "[9] gcloud shim saw the configured project"
+else
+    fail "[9] canary lacks --project=dest-proj-yes (canary: $(tr '\n' ';' <"$CANARY" 2>/dev/null))"
+fi
+
+echo "[10] backend write failure exits 3 with a FAILED notice, no secret leak (F044)"
+rm -f "$CANARY"
+set +e
+OUT10="$(run_ctrl GEMINI_API_KEY=fake-gem-key SEC_TEST_GCLOUD_FAIL=1 -- --yes </dev/null 2>&1)"
+RC10=$?
+set -e
+if [[ $RC10 -eq 3 ]]; then pass "[10] exits 3 on backend write failure"; else fail "[10] exited $RC10, expected 3"; fi
+if grep -qi "FAILED" <<<"$OUT10"; then pass "[10] output marks the sync FAILED"; else fail "[10] no FAILED notice on write failure"; fi
+if grep -q "fake-gem-key" <<<"$OUT10"; then fail "[10] failure path LEAKED a secret value"; else pass "[10] no secret values printed on failure"; fi
+
+echo "[11] a failing backend write must exit 3, never a fake success (issue #6)"
 rm -f "$CANARY"
 set +e
 OUT7="$(run_ctrl GEMINI_API_KEY=fake-gem-key SEC_TEST_GCLOUD_RC=1 -- --yes </dev/null 2>&1)"
@@ -139,11 +182,11 @@ fi
 if grep -qi "failed" <<<"$OUT7"; then pass "summary reports the failure"; else fail "no failure summary"; fi
 if grep -q "fake-gem-key" <<<"$OUT7"; then fail "failure output LEAKED a secret value"; else pass "no secret values printed on failure"; fi
 
-echo "[8] backend timeouts are configured (no unbounded gcloud/urlopen)"
+echo "[12] backend timeouts are configured (no unbounded gcloud/urlopen)"
 NTO="$(grep -c 'timeout=' "$CTRL" || true)"
 if [[ "$NTO" -ge 3 ]]; then pass "controller sets timeout= at $NTO call sites (>=3)"; else fail "only $NTO timeout= sites, expected >=3 (unbounded backend calls)"; fi
 
-echo "[9] --help documents exit 3 so the extended contract is discoverable"
+echo "[13] --help documents exit 3 so the extended contract is discoverable"
 set +e
 OUTH3="$(run_ctrl -- --help 2>&1)"
 RCH3=$?
