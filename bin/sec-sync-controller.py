@@ -14,6 +14,7 @@ import urllib.request
 GCP_PROJECT = os.environ.get("GCP_PROJECT_ID", "sublime-flux-504502-k3")
 GITLAB_GROUP_ID = os.environ.get("GITLAB_GROUP_ID", "at-tech-io")
 GITLAB_TOKEN = os.environ.get("GITLAB_TOKEN", "")
+BACKEND_TIMEOUT = float(os.environ.get("SEC_SYNC_TIMEOUT", "60"))
 
 SYNC_KEYS = [
     "GEMINI_API_KEY",
@@ -34,9 +35,10 @@ Usage:
   sec sync -h | --help        Show this help
 
 Exit codes:
-  0  success (dry-run completed, or push finished)
+  0  success (dry-run completed, every attempted write succeeded)
   1  no syncable keys present in the environment
   2  confirmation required but not given (or bad usage)
+  3  one or more backend writes failed (values NOT stored there)
 
 Targets (values are never printed):
   GCP Secret Manager project  %s
@@ -77,7 +79,9 @@ def sync_to_gcp_secret_manager(secret_name, secret_value):
             secret_name,
             f"--project={GCP_PROJECT}",
         ]
-        res = subprocess.run(check_cmd, capture_output=True, text=True)
+        res = subprocess.run(
+            check_cmd, capture_output=True, text=True, timeout=BACKEND_TIMEOUT
+        )
         if res.returncode != 0:
             create_cmd = [
                 "gcloud",
@@ -87,7 +91,13 @@ def sync_to_gcp_secret_manager(secret_name, secret_value):
                 f"--project={GCP_PROJECT}",
                 "--replication-policy=automatic",
             ]
-            subprocess.run(create_cmd, check=True, capture_output=True)
+            subprocess.run(
+                create_cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=BACKEND_TIMEOUT,
+            )
 
         add_version_cmd = [
             "gcloud",
@@ -104,10 +114,43 @@ def sync_to_gcp_secret_manager(secret_name, secret_value):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        p.communicate(input=secret_value.encode("utf-8"))
+        try:
+            _out, err = p.communicate(
+                input=secret_value.encode("utf-8"), timeout=BACKEND_TIMEOUT
+            )
+        except subprocess.TimeoutExpired:
+            p.kill()
+            p.communicate()
+            print(
+                f"    ❌ GCP Secret Manager sync FAILED for {secret_name}: "
+                f"timed out after {BACKEND_TIMEOUT:.0f}s."
+            )
+            return False
+        if p.returncode != 0:
+            detail = (err or b"").decode("utf-8", "replace").strip()
+            print(
+                f"    ❌ GCP Secret Manager sync FAILED for {secret_name}: "
+                f"exit {p.returncode}. {detail}"
+            )
+            return False
         print(f"    ✅ GCP Secret Manager: {secret_name} updated successfully.")
+        return True
+    except subprocess.TimeoutExpired:
+        print(
+            f"    ❌ GCP Secret Manager sync FAILED for {secret_name}: "
+            f"timed out after {BACKEND_TIMEOUT:.0f}s."
+        )
+        return False
     except Exception as e:
-        print(f"    ⚠️ GCP Secret Manager sync notice for {secret_name}: {e}")
+        detail = getattr(e, "stderr", None) or ""
+        if isinstance(detail, bytes):
+            detail = detail.decode("utf-8", "replace")
+        detail = str(detail).strip()
+        print(
+            f"    ❌ GCP Secret Manager sync FAILED for {secret_name}: {e}"
+            + (f" {detail}" if detail else "")
+        )
+        return False
 
 
 def sync_to_gitlab_group(secret_name, secret_value):
@@ -115,7 +158,7 @@ def sync_to_gitlab_group(secret_name, secret_value):
         print(
             f"    ℹ️ GITLAB_TOKEN not set; skipping GitLab group sync for {secret_name}."
         )
-        return
+        return True
     print(f"  🦊 Syncing to GitLab Group Variables: {secret_name}...")
     url = f"https://gitlab.com/api/v4/groups/{GITLAB_GROUP_ID}/variables/{secret_name}"
     headers = {"PRIVATE-TOKEN": GITLAB_TOKEN, "Content-Type": "application/json"}
@@ -124,12 +167,14 @@ def sync_to_gitlab_group(secret_name, secret_value):
     ).encode("utf-8")
     try:
         req = urllib.request.Request(url, data=data, headers=headers, method="PUT")
-        with urllib.request.urlopen(req) as resp:
+        with urllib.request.urlopen(req, timeout=BACKEND_TIMEOUT) as resp:
             print(
                 f"    ✅ GitLab Group Variable {secret_name}: Updated (HTTP {resp.status})"
             )
+        return True
     except Exception as e:
-        print(f"    ⚠️ GitLab sync notice for {secret_name}: {e}")
+        print(f"    ❌ GitLab sync FAILED for {secret_name}: {e}")
+        return False
 
 
 def describe_targets():
@@ -215,15 +260,27 @@ def main():
         print(f"\nProceeding with push (--yes): {len(present)} key(s) queued.")
 
     synced_count = 0
+    failed_count = 0
     for key, val in present:
         print(f"\n🔑 Pushing active secret: {key}")
-        sync_to_gcp_secret_manager(key.lower().replace("_", "-"), val)
-        sync_to_gitlab_group(key, val)
+        if not sync_to_gcp_secret_manager(key.lower().replace("_", "-"), val):
+            failed_count += 1
+        if not sync_to_gitlab_group(key, val):
+            failed_count += 1
         synced_count += 1
 
     print(
         "\n================================================================================"
     )
+    if failed_count:
+        print(
+            f"❌ CENTRAL SECRET SYNC FAILED: {failed_count} backend write(s) "
+            f"failed across {synced_count} key(s)."
+        )
+        print(
+            "================================================================================"
+        )
+        return 3
     print(f"🎉 CENTRAL SECRET SYNC COMPLETED: {synced_count} keys processed.")
     print(
         "================================================================================"

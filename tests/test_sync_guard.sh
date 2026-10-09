@@ -19,7 +19,12 @@ cat >"$FAKEBIN/gcloud" <<'EOF'
 #!/usr/bin/env bash
 cat >/dev/null 2>&1 || true
 echo "gcloud $*" >>"${SEC_TEST_CANARY:?SEC_TEST_CANARY unset}"
-exit 0
+rc=0
+case "$*" in
+    *"versions add"*) rc="${SEC_TEST_GCLOUD_RC:-0}" ;;
+esac
+if [ "$rc" != "0" ]; then echo "shim: simulated backend failure" >&2; fi
+exit "$rc"
 EOF
 chmod +x "$FAKEBIN/gcloud"
 
@@ -113,6 +118,42 @@ RC6=$?
 set -e
 if [[ $RC6 -eq 2 ]]; then pass "unknown flag exits 2"; else fail "unknown flag exited $RC6, expected 2"; fi
 if [[ -f "$CANARY" ]]; then fail "unknown flag still invoked gcloud"; else pass "no backend touched on bad usage"; fi
+
+echo "[7] a failing backend write must exit 3, never a fake success (issue #6)"
+rm -f "$CANARY"
+set +e
+OUT7="$(run_ctrl GEMINI_API_KEY=fake-gem-key SEC_TEST_GCLOUD_RC=1 -- --yes </dev/null 2>&1)"
+RC7=$?
+set -e
+if [[ $RC7 -eq 3 ]]; then pass "failed write exits 3 (backend failure)"; else fail "failed write exited $RC7, expected 3"; fi
+if grep -q "updated successfully" <<<"$OUT7"; then
+    fail "failing gcloud still printed 'updated successfully'"
+else
+    pass "no false success line on failed write"
+fi
+if grep -q "shim: simulated backend failure" <<<"$OUT7"; then
+    pass "failure notice carries the backend's own stderr"
+else
+    fail "failure notice omits backend stderr (no root cause)"
+fi
+if grep -qi "failed" <<<"$OUT7"; then pass "summary reports the failure"; else fail "no failure summary"; fi
+if grep -q "fake-gem-key" <<<"$OUT7"; then fail "failure output LEAKED a secret value"; else pass "no secret values printed on failure"; fi
+
+echo "[8] backend timeouts are configured (no unbounded gcloud/urlopen)"
+NTO="$(grep -c 'timeout=' "$CTRL" || true)"
+if [[ "$NTO" -ge 3 ]]; then pass "controller sets timeout= at $NTO call sites (>=3)"; else fail "only $NTO timeout= sites, expected >=3 (unbounded backend calls)"; fi
+
+echo "[9] --help documents exit 3 so the extended contract is discoverable"
+set +e
+OUTH3="$(run_ctrl -- --help 2>&1)"
+RCH3=$?
+set -e
+if [[ $RCH3 -eq 0 ]]; then pass "--help exits 0"; else fail "--help exited $RCH3"; fi
+if grep -Eq '3 .*backend' <<<"$OUTH3"; then
+    pass "--help documents exit 3 (backend write failure)"
+else
+    fail "--help does not document exit 3"
+fi
 
 echo ""
 if [[ $FAILS -eq 0 ]]; then
