@@ -138,11 +138,11 @@ usage() {
     echo "  sec [<tenant>] run -- <cmd>              Execute command with tenant secrets injected into process memory"
     echo "  sec housekeep {plan|apply|revert}        Intelligent ML categorization, plan/apply, & instant rollback engine"
     echo "  sec migrate --from <src> --to <dst>     Zero-plaintext vault-to-vault migration engine"
-    echo "  sec sync [--dry-run|--yes]              Push Bitwarden-canonical secrets to GCP Secret Manager / GitLab group variables (--dry-run previews, --yes confirms non-interactively)"
+    echo "  sec sync [--dry-run|--yes]          Central Secret Sync Engine: push shell-exported SYNC_KEYS to GCP Secret Manager & GitLab group variables (--dry-run previews, --yes confirms)"
     echo "  sec unlock                               Unlock Bitwarden vault and save session"
     echo "  sec rotate                               Keep-alive / rotate Bitwarden session key"
     echo "  sec setup-keychain                       Store master password in Keychain for auto-rotation"
-    echo "  sec completion {zsh|bash|ps1}            Generate shell autocompletion scripts"
+    echo "  sec completion {zsh|bash|fish|ps1}        Generate shell autocompletion scripts"
     echo ""
     echo "Flags:"
     echo "  -h, --help     Display this help menu"
@@ -180,6 +180,7 @@ _sec() {
         'get:Retrieve secret value from vault'
         'set:Store / create a new secret in vault'
         'run:Execute command with vault secrets injected into memory'
+        'sync:Push shell-exported keys to GCP Secret Manager & GitLab group'
         'housekeep:Intelligent ML categorization, plan/apply, & instant rollback'
         'migrate:Zero-plaintext vault-to-vault migration engine'
         'unlock:Unlock Bitwarden vault and save session'
@@ -213,8 +214,13 @@ _sec() {
                         '--apply[Execute vault migration]' \
                         '--undo[Rollback partially migrated items]'
                     ;;
+                sync)
+                    _arguments \
+                        '(-n --dry-run)'{-n,--dry-run}'[Preview key names and targets; zero backend calls]' \
+                        '(-y --yes)'{-y,--yes}'[Confirm non-interactive push]'
+                    ;;
                 completion)
-                    local -a shells=('zsh:Zsh completion' 'bash:Bash completion' 'ps1:PowerShell completion')
+                    local -a shells=('zsh:Zsh completion' 'bash:Bash completion' 'fish:Fish completion' 'ps1:PowerShell completion')
                     _describe -t shells 'shells' shells
                     ;;
             esac
@@ -234,7 +240,7 @@ _sec_bash_completion() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    subcmds="get set run housekeep migrate unlock rotate setup-keychain completion --help -h --version -v"
+    subcmds="get set run sync housekeep migrate unlock rotate setup-keychain completion --help -h --version -v"
     tenants="bitwarden bw 1pass op bws vault infisical keychain"
 
     if [[ ${COMP_CWORD} -eq 1 ]]; then
@@ -248,6 +254,9 @@ _sec_bash_completion() {
             ;;
         migrate)
             COMPREPLY=( $(compgen -W "--from --to --plan --apply --undo" -- ${cur}) )
+            ;;
+        sync)
+            COMPREPLY=( $(compgen -W "-n --dry-run -y --yes" -- ${cur}) )
             ;;
         completion)
             COMPREPLY=( $(compgen -W "zsh bash fish ps1" -- ${cur}) )
@@ -272,6 +281,7 @@ end
 complete -f -c sec -n '__fish_sec_needs_command' -a 'get' -d 'Retrieve secret value from vault'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'set' -d 'Store / create a new secret in vault'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'run' -d 'Execute command with vault secrets injected'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'sync' -d 'Push shell-exported keys to GCP Secret Manager & GitLab group'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'housekeep' -d 'Intelligent ML categorization plan/apply/revert'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'migrate' -d 'Zero-plaintext vault-to-vault migration engine'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'unlock' -d 'Unlock Bitwarden vault and save session'
@@ -279,6 +289,7 @@ complete -f -c sec -n '__fish_sec_needs_command' -a 'rotate' -d 'Keep-alive / ro
 complete -f -c sec -n '__fish_sec_needs_command' -a 'setup-keychain' -d 'Store master password in Keychain'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'completion' -d 'Generate shell autocompletion script'
 
+complete -f -c sec -n '__fish_seen_subcommand_from sync' -a '-n --dry-run -y --yes'
 complete -f -c sec -n '__fish_seen_subcommand_from housekeep' -a 'plan apply revert'
 complete -f -c sec -n '__fish_seen_subcommand_from migrate' -a '--from --to --plan --apply --undo'
 complete -f -c sec -n '__fish_seen_subcommand_from completion' -a 'zsh bash fish ps1'
@@ -291,7 +302,7 @@ EOF
 Register-ArgumentCompleter -Native -CommandName 'sec', 'sec.exe', 'sec.ps1' -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
 
-    $subcommands = @('get', 'set', 'run', 'housekeep', 'migrate', 'unlock', 'rotate', 'setup-keychain', 'completion')
+    $subcommands = @('get', 'set', 'run', 'sync', 'housekeep', 'migrate', 'unlock', 'rotate', 'setup-keychain', 'completion')
     $tenants = @('bitwarden', 'bw', '1pass', 'op', 'bws', 'vault', 'infisical', 'keychain')
 
     $elements = $commandAst.ArgumentElements
@@ -305,6 +316,10 @@ Register-ArgumentCompleter -Native -CommandName 'sec', 'sec.exe', 'sec.ps1' -Scr
         }
     } elseif ($elements[1].Value -eq 'migrate') {
         @('--from', '--to', '--plan', '--apply', '--undo') | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+        }
+    } elseif ($elements[1].Value -eq 'sync') {
+        @('-n', '--dry-run', '-y', '--yes') | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
             [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
         }
     } elseif ($elements[1].Value -eq 'completion') {

@@ -9,6 +9,7 @@ _sec() {
         'get:Retrieve secret value from vault'
         'set:Store / create a new secret in vault'
         'run:Execute command with vault secrets injected into memory'
+        'sync:Push shell-exported keys to GCP Secret Manager & GitLab group'
         'housekeep:Intelligent ML categorization, plan/apply, & instant rollback'
         'migrate:Zero-plaintext vault-to-vault migration engine'
         'unlock:Unlock Bitwarden vault and save session'
@@ -42,8 +43,13 @@ _sec() {
                         '--apply[Execute vault migration]' \
                         '--undo[Rollback partially migrated items]'
                     ;;
+                sync)
+                    _arguments \
+                        '(-n --dry-run)'{-n,--dry-run}'[Preview key names and targets; zero backend calls]' \
+                        '(-y --yes)'{-y,--yes}'[Confirm non-interactive push]'
+                    ;;
                 completion)
-                    local -a shells=('zsh:Zsh completion' 'bash:Bash completion' 'ps1:PowerShell completion')
+                    local -a shells=('zsh:Zsh completion' 'bash:Bash completion' 'fish:Fish completion' 'ps1:PowerShell completion')
                     _describe -t shells 'shells' shells
                     ;;
             esac

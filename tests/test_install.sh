@@ -60,12 +60,37 @@ else
 fi
 expect_file "$OUT3/sec-sync-controller.py" "sync controller installed in reuse path"
 
-echo "[4] dispatcher surface: usage documents sec sync, sync controller is -x"
+echo "[4] dispatcher surface: usage, completion surfaces, sync controller is -x"
 HELP="$("$OUT1/sec" --help 2>&1 || true)"
 if grep -q "sec sync" <<<"$HELP"; then
     pass "usage lists 'sec sync'"
 else
     fail "usage does not list 'sec sync'"
+fi
+if grep -q "completion {zsh|bash|fish|ps1}" <<<"$HELP"; then
+    pass "usage lists fish among completion shells"
+else
+    fail "usage does not list fish among completion shells"
+fi
+if "$OUT1/sec" completion zsh | grep -q "'sync:"; then
+    pass "zsh completion offers sec sync"
+else
+    fail "zsh completion does not offer sec sync"
+fi
+if "$OUT1/sec" completion bash | grep -qw "sync"; then
+    pass "bash completion offers sec sync"
+else
+    fail "bash completion does not offer sec sync"
+fi
+if "$OUT1/sec" completion fish | grep -q "'sync'"; then
+    pass "fish completion offers sec sync"
+else
+    fail "fish completion does not offer sec sync"
+fi
+if diff -q <("$OUT1/sec" completion zsh) "$REPO_ROOT/completions/_sec" >/dev/null; then
+    pass "tracked completions/_sec matches 'sec completion zsh' output"
+else
+    fail "completions/_sec has drifted from 'sec completion zsh' output"
 fi
 if [[ -x "$OUT1/sec-sync-controller.py" ]]; then
     pass "bin/sec:562 -x guard for sec-sync-controller.py satisfied"
