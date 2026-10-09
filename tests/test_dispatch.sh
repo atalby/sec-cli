@@ -211,13 +211,20 @@ RC=$?
 set -e
 if [[ $RC -eq 0 ]] && [[ "$OUT" == "op-pw-MY_API_KEY" ]]; then pass "op get -> op-pw-MY_API_KEY"; else fail "op get rc=$RC out=$OUT"; fi
 
-echo "[8] prefix tenant: vault routes to the vault CLI (F037: get arm crashes on unbound item_name — current behavior)"
+echo "[8] prefix tenant: vault get splits item/field and calls vault kv get (F037 fix)"
+: >"$VAULTLOG"
 set +e
 OUT="$(run_sec "$H" vault get anything 2>&1)"
 RC=$?
 set -e
-if grep -q "vault" "$VAULTLOG"; then pass "vault CLI invoked for vault tenant"; else fail "vault CLI never invoked"; fi
-if [[ $RC -eq 1 ]] && grep -q "item_name: unbound variable" <<<"$OUT"; then pass "get arm crashes as F037 documents (exit 1, unbound item_name)"; else fail "F037 behavior changed: rc=$RC out=$OUT — update this test and fix the vault arm"; fi
+if [[ $RC -eq 0 ]] && [[ "$OUT" == "vault-val" ]]; then pass "bare vault get returns stub value"; else fail "bare vault get rc=$RC out=$OUT"; fi
+if grep -q "kv get -field=value secret/data/anything" "$VAULTLOG"; then pass "bare key hits secret/data/anything with field=value"; else fail "unexpected vault call: $(tr '\n' ';' <"$VAULTLOG")"; fi
+set +e
+OUT="$(run_sec "$H" vault get myapp/production/DATABASE_URL 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && [[ "$OUT" == "vault-val" ]]; then pass "item/field vault get returns stub value"; else fail "item/field vault get rc=$RC out=$OUT"; fi
+if grep -q "kv get -field=DATABASE_URL secret/data/myapp/production" "$VAULTLOG"; then pass "subpath hits secret/data/myapp/production with field=DATABASE_URL"; else fail "unexpected vault subpath call: $(tr '\n' ';' <"$VAULTLOG")"; fi
 
 echo "[9] prefix tenant: infisical get"
 set +e

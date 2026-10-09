@@ -438,6 +438,13 @@ EOF
                 ;;
             vault)
                 if command -v vault >/dev/null 2>&1; then
+                    if [[ "$key" == *"/"* ]]; then
+                        item_name="${key%/*}"
+                        field_name="${key##*/}"
+                    else
+                        item_name="$key"
+                        field_name=""
+                    fi
                     f="${field_name:-value}"
                     vault kv get -field="$f" "secret/data/$item_name" 2>/dev/null && exit 0
                 fi
