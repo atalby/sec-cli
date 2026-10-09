@@ -6,11 +6,11 @@
 `sec-cli` is a high-leverage, zero-dependency control plane CLI that unifies secret management across Bitwarden (`bw`), Bitwarden Secrets Manager (`bws`), 1Password (`op`), Infisical, HashiCorp Vault, and AWS Secrets Manager.
 
 ## 2. Core Components & CLI Executables
-- `bin/sec`: Main dispatcher script parsing subcommands (`get`, `inject`, `rotate`, `audit`).
+- `bin/sec`: Main dispatcher script parsing subcommands (`get`, `inject`, `rotate`, `audit`). `set` writes are honest (issue #7): only bitwarden/bw, 1pass/op, and bws can be stored — any other tenant, or a failed store, exits 1 with an error naming the tenant instead of a silent success.
 - `bin/bw-session-keeper`: Daemon process maintaining encrypted Bitwarden unlock sessions.
 - `bin/sec-classify.py`: Intelligent secret classifier categorizing environment variables.
-- `bin/sec-migrator`: Automated migration engine moving secrets between backends.
-- `bin/sec-organizer`: Housekeeping engine (`sec housekeep plan`/`apply`/`revert`) — classify, move, disambiguating-rename, snapshot.
+- `bin/sec-migrator`: Automated migration engine moving secrets between backends. Apply is transactional and honest (issue #7): the transaction log is flushed after every created item (and on INT/TERM), an unresolved prior transaction refuses to be clobbered (exit 1, undo hinted), and an item that cannot be written aborts with exit 1 instead of counting as migrated.
+- `bin/sec-organizer`: Housekeeping engine (`sec housekeep plan`/`apply`/`revert`) — classify, move, disambiguating-rename, snapshot. Apply/revert refuse backends they cannot drive (issue #7): only bw and op are implemented; an unsupported backend keeps the plan/snapshot and exits 1, 1Password edits use the correct `--tags` flag and failures abort (keeping the plan/snapshot) instead of printing success.
 - `bin/sec-sync-controller.py`: Central Secret Sync Controller (`sec sync`) — Bitwarden/bws source of truth pushed to GCP Secret Manager, GitLab group CI/CD variables, Vercel projects. Guarded against accidental prod pushes (issue #3): `--dry-run` previews key names and target endpoints with zero backend calls; a real push requires an interactive `y/N` on a TTY or an explicit `--yes` (non-interactive without it: exit 2, nothing written); zero keys present: exit 1; unknown flags: exit 2 before any work; secret values are never printed. Writes report success only when the backend accepted them — failure notices carry the backend's own stderr, every backend call has a timeout (default 60s, `SEC_SYNC_TIMEOUT` overrides), and any failed write exits 3 (contract: 0 success / 1 no keys / 2 confirmation / 3 backend write failure).
 - `bin/sec.ps1`: Native Windows PowerShell wrapper for the same subcommand surface.
 - `completions/_sec`: shell completion for `sec`.

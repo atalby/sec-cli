@@ -125,16 +125,32 @@ trap_error() {
     echo "" >&2
     echo "[sec-migrator] ERROR: Migration failed while transferring item \"$failed_item\"." >&2
     echo "[sec-migrator] SOURCE VAULT '$SRC' REMAINS 100% INTACT & UNTOUCHED." >&2
-    
+
     # Save transaction log up to failure point
-    jq -n --arg src "$SRC" --arg dst "$DST" --argjson items "$created_log" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-      '{srcBackend: $src, dstBackend: $dst, timestamp: $ts, createdItems: $items}' > "$TX_FILE"
-    chmod 600 "$TX_FILE" 2>/dev/null || true
+    save_tx
 
     echo "[sec-migrator] Saved migration transaction state log to $TX_FILE." >&2
     echo "[sec-migrator] To rollback created items from '$DST', run 'sec migrate --undo'." >&2
     exit 1
 }
+
+save_tx() {
+    jq -n --arg src "$SRC" --arg dst "$DST" --argjson items "$created_log" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      '{srcBackend: $src, dstBackend: $dst, timestamp: $ts, createdItems: $items}' > "$TX_FILE"
+    chmod 600 "$TX_FILE" 2>/dev/null || true
+}
+
+if [[ "$MODE" == "apply" ]]; then
+    trap 'trap_error "interrupted"' INT TERM
+
+    if [[ -f "$TX_FILE" ]]; then
+        existing_items="$(jq -r '.createdItems // [] | length' "$TX_FILE" 2>/dev/null || echo 0)"
+        if [[ "${existing_items:-0}" -gt 0 ]]; then
+            echo "[sec-migrator] Error: unresolved migration transaction at $TX_FILE ($existing_items created items). Run 'sec migrate --undo' first." >&2
+            exit 1
+        fi
+    fi
+fi
 
 while read -r item; do
     if [[ -z "$item" ]]; then continue; fi
@@ -186,7 +202,9 @@ while read -r item; do
                 ;;
         esac
 
+        if [[ -z "$created_id" ]]; then trap_error "$name"; fi
         created_log="$(echo "$created_log" | jq --arg id "$created_id" --arg name "$name" '. + [{"id": $id, "name": $name}]')"
+        save_tx
         migrated_count=$((migrated_count + 1))
     fi
 done < <(echo "$items_json" | jq -c '.[]')
@@ -197,9 +215,7 @@ if [[ "$MODE" == "plan" ]]; then
     echo "Run 'sec migrate --from $SRC --to $DST --apply' to execute migration."
 else
     # Save final completed transaction log
-    jq -n --arg src "$SRC" --arg dst "$DST" --argjson items "$created_log" --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-      '{srcBackend: $src, dstBackend: $dst, timestamp: $ts, createdItems: $items}' > "$TX_FILE"
-    chmod 600 "$TX_FILE" 2>/dev/null || true
+    save_tx
 
     echo "=== ✨ Vault Migration Successfully Completed ($migrated_count items migrated) ==="
     echo "Migration transaction log saved to $TX_FILE."

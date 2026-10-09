@@ -146,6 +146,14 @@ cmd_apply() {
         exit 0
     fi
 
+    case "$backend" in
+        bw|op) ;;
+        *)
+            echo "[sec-organizer] Error: apply not implemented for backend '$backend' (supported: bw, op). Plan kept: $PLAN_FILE" >&2
+            exit 1
+            ;;
+    esac
+
     # Create timestamped pre-apply backup snapshot
     snapshot_ts="$(date +%Y%m%d_%H%M%S)"
     snapshot_file="$CACHE_DIR/snapshot_${snapshot_ts}.json"
@@ -190,7 +198,7 @@ cmd_apply() {
             target="$(echo "$action" | jq -r '.targetFolder')"
 
             echo "[sec-organizer] Updating 1Password item \"$id\" -> Title: \"$new_name\", Tag: \"$target\"..."
-            op item edit "$id" --title "$new_name" --tag "$target" >/dev/null 2>&1 || true
+            op item edit "$id" --title "$new_name" --tags "$target" >/dev/null
         done <<< "$actions"
     fi
 
@@ -214,6 +222,14 @@ cmd_revert() {
         echo "[sec-organizer] Snapshot contains zero move actions."
         exit 0
     fi
+
+    case "$backend" in
+        bw|op) ;;
+        *)
+            echo "[sec-organizer] Error: revert not implemented for backend '$backend' (supported: bw, op). Snapshot kept: $LATEST_SNAPSHOT" >&2
+            exit 1
+            ;;
+    esac
 
     if [[ "$backend" == "bw" ]]; then
         while read -r action; do
@@ -243,7 +259,7 @@ cmd_revert() {
             orig_name="$(echo "$action" | jq -r '.originalName')"
 
             echo "[sec-organizer] Reverting 1Password item \"$id\" -> Title: \"$orig_name\"..."
-            op item edit "$id" --title "$orig_name" --tag="" >/dev/null 2>&1 || true
+            op item edit "$id" --title "$orig_name" --tags="" >/dev/null
         done <<< "$actions"
     fi
 

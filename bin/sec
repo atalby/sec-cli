@@ -543,7 +543,13 @@ EOF
                     fi
                 fi
                 ;;
+            *)
+                echo "[sec] Error: set not supported for tenant '$TARGET_TENANT' (supported: bitwarden/bw, 1pass/op, bws)." >&2
+                exit 1
+                ;;
         esac
+        echo "[sec] Error: failed to store secret '$key' in tenant '$TARGET_TENANT'." >&2
+        exit 1
         ;;
 
     run)
