@@ -1,0 +1,21 @@
+{
+  "schema": "360-timing-v1",
+  "run": "2026-10-09-000410",
+  "started_at": "2026-10-09T00:04:10+00:00",
+  "checkpoint_at": "2026-10-09T09:36:22+00:00",
+  "wall_seconds_to_artifacts": 34332,
+  "note": "Wall duration includes substantial inter-turn idle between waves (session waited on user/tooling); active work was dominated by 7 parallel persona agents (wave 1), tail-recovery extraction agents, and 6 parallel disproof agents (wave 2).",
+  "phases": [
+    {"phase": "1-confirm", "detail": "user gate: 'yes, run the audit now'"},
+    {"phase": "2-timing", "detail": "start recorded; run dir docs/360/runs/2026-10-09-000410/ created"},
+    {"phase": "3-grounding", "detail": "profile 62/62 anchors re-verified; 3 suites green; census empty; sentinel OK; 2 stale records found (commit count 35->40, HEAD 6ff435d->54146bc)"},
+    {"phase": "4-forensic", "detail": "dedicated smoke/hardcoded/intent/ghost/dead agent: 10 candidates + category negatives"},
+    {"phase": "5-sentinel", "detail": "coverage OK (87/35/12), citations OK"},
+    {"phase": "6-personas", "detail": "7 parallel agents (forensic; P1+12; P2+4; P3+9; P5+8; P6+7; P10+11); 5 truncated outputs tail-recovered via extraction agents; 12/12 personas covered"},
+    {"phase": "7-disproof", "detail": "scratchpad emitted (non-negotiable #7); 5 parallel quote-only batches (A-E) + 1 absence batch (F): 42 CONFIRMED, 7 MODIFIED, 27 REJECTED incl. quote corrections; side-effect audit of agent-reported install repro: clean"},
+    {"phase": "8-reconcile", "detail": "live gh issue list: #4/#3/#1 CLOSED, #2 OPEN; reverse reconciliation: #1 PARTIAL (packs 7/9 differ, changelog review undone), #3 LANDED, #4 LANDED; proposals only, nothing filed"},
+    {"phase": "9-docs", "detail": "doc proposals with replacement text; banner untouched (first-match rule observed)"},
+    {"phase": "10-effort", "detail": "Fibonacci {1,2,3,5,8,13} + dependency column in report backlog"},
+    {"phase": "11-report", "detail": "report.md + findings.json (55, schema+quote validated) + timing.json written to run dir; checkpoint = run dir contains profile, scratchpad, findings, report"}
+  ]
+}
