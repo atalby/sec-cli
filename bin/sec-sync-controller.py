@@ -2,7 +2,7 @@
 """
 Central Secret Sync Controller (sec sync)
 Single Source of Truth: Bitwarden Vault / bws
-Targets: GCP Secret Manager, GitLab Group Variables, Vercel Projects
+Targets: GCP Secret Manager, GitLab Group Variables
 """
 
 import os
@@ -238,7 +238,9 @@ def main():
     print(
         "================================================================================"
     )
-    print("[INFO] SEC CENTRAL SECRET SYNC CONTROLLER (Single Source of Truth: Bitwarden)")
+    print(
+        "[INFO] SEC CENTRAL SECRET SYNC CONTROLLER (Single Source of Truth: Bitwarden)"
+    )
     print(
         "================================================================================"
     )

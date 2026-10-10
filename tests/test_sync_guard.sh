@@ -198,6 +198,16 @@ else
     fail "--help does not document exit 3"
 fi
 
+echo "[14] every advertised sync target has an implementation (issue #33)"
+TARGETS_LINE="$(grep '^Targets:' "$CTRL")"
+ADV_COUNT="$(sed 's/^Targets: //' <<<"$TARGETS_LINE" | tr ',' '\n' | grep -c '[^ ]')"
+IMPL_COUNT="$(grep -c '^def sync_to_' "$CTRL")"
+if [[ "$ADV_COUNT" -eq "$IMPL_COUNT" ]]; then
+    pass "help advertises $ADV_COUNT target(s), $IMPL_COUNT writer(s) implemented"
+else
+    fail "help advertises $ADV_COUNT target(s) but only $IMPL_COUNT writer(s) implemented: $TARGETS_LINE"
+fi
+
 echo ""
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"

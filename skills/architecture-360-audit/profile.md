@@ -576,15 +576,15 @@ tenant vocabulary is re-spelled at `bin/sec:65` (regex dispatch),
 completion tables plus the setup-keychain echo) with no
 single source; `case "$cmd" in` at `bin/sec:179` is the real command router
 while usage text at `bin/sec:149` is a parallel declaration that only a test
-checks for one line. Smoke finding, re-verified 2026-10-10: the sync
-controller's own `--help` (`bin/sec-sync-controller.py:5`) advertises the
+checks for one line. Smoke finding, resolved 2026-10-10 (issue #33): the sync
+controller's `--help` (`bin/sec-sync-controller.py:5`) had advertised the
 targets "GCP Secret Manager, GitLab Group Variables, Vercel Projects", but
-the only backend writers implemented are `sync_to_gcp_secret_manager`
+the only backend writers are `sync_to_gcp_secret_manager`
 (`bin/sec-sync-controller.py:72`) and `sync_to_gitlab_group`
-(`bin/sec-sync-controller.py:156`) — no Vercel call site exists anywhere in
-the tree, so a user-facing contract promises a backend no code implements
-(the old `docs/ARCHITECTURE.md:14` "Vercel projects" sentence no longer
-exists; the claim survived only in the help text). Python visibility rule:
+(`bin/sec-sync-controller.py:156`) — a user-facing contract promising a
+backend no code implemented. Vercel removed from the help text and
+`tests/test_sync_guard.sh` section [14] now fails when the advertised target
+count and the `def sync_to_` count diverge. Python visibility rule:
 module-level public, leading underscore private.
 
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:41`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:241`, `ADAPTERS.md:221`
