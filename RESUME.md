@@ -8,7 +8,10 @@
 - Final verification: sentinel coverage + citations green (99 files/38 rows/6 gitignored/12 personas); all five bash suites ALL TESTS PASSED; pytest mirror 9 passed, 1 skipped (10 passed with SEC_TEST_DISPATCH=1); pre-commit gate green; push run green; tree clean.
 
 ## Next High-Value Work
-No unblocked in-repo item remains in the tracker: #2/#13 are hub-side (work_items 291/292), #32's full 360 re-derivation is operator-gated per the 360 skill Step 1.
+- Issue #34 closed (commit f939795, pushed): phase-2 content lint in sentinel.sh citations. (completed)
+- Issue #35 closed (commit a0d0816, pushed): phase-3 claim-existence lint. (completed)
+- Dispatch test skip removed: `test_dispatch_suite_passes` now runs without `SEC_TEST_DISPATCH=1` env var (commit 0284d39). Test suite now 10/10 passing.
+- Remaining: prose-phantom catch (#35's stated remnant) measured and declined for now; #32's full 360 re-derivation is operator-gated per the 360 skill Step 1; #2/#13 hub-side work_items 291/292 await payload resize.
 - Prose-phantom catch (#35's stated remainder): MEASURED AND DECLINED for now. Census run 2026-10-10 at 699e6f2: all non-path backticked spans in profile.md/SKILL.md checked against every tracked file outside the audit docs = 10 zero-hits, every one a legitimate survey shape (gitignore globs `.claude/**`, `.gemini/**`, `.github/**`, `.opencode/**`, `packs/**`, `vendor/`; quoted absent-tool names `.coveragerc`, `pytest-cov`; the placeholder `closes #N`; the instruction phrase `git check-ignore`). A phrase-shaped checker would produce exactly one flag and it would be a false positive (an instruction, not a claim). Signal-to-noise does not justify the checker at this doc size; revisit only if a live prose phantom appears. Phase 3 stays identifier-shaped, which is where the real phantom class (`op account list` in spirit) lived.
 - #32's operator go-ahead: ask the operator for the 360 audit (full re-derivation, what is MISSING per persona, not just claim verification) — then run the architecture-360-audit skill end to end.
 - When the hub lands: re-point the hook to run tests/*.sh (work_items 291) and check packs/ byte-identity after the payload resize (work_items 292).
