@@ -289,6 +289,8 @@ set -e
 PLAN="$H2/.cache/bitwarden/housekeep_plan.json"
 if [[ $RC -eq 0 ]]; then pass "housekeep plan exits 0"; else fail "housekeep plan rc=$RC out=$OUT"; fi
 if [[ -f "$PLAN" ]]; then pass "plan file written"; else fail "no plan file at $PLAN"; fi
+if [[ "$(stat -c '%a' "$H2/.cache/bitwarden")" == "700" ]]; then pass "cache dir created 0700"; else fail "cache dir mode is $(stat -c '%a' "$H2/.cache/bitwarden"), expected 700"; fi
+if [[ -f "$PLAN" && "$(stat -c '%a' "$PLAN")" == "600" ]]; then pass "plan file written 0600"; else fail "plan file mode is $(stat -c '%a' "$PLAN" 2>/dev/null || echo missing), expected 600"; fi
 if jq -e '.actions | length >= 1' "$PLAN" >/dev/null 2>&1; then pass "plan has >=1 action"; else fail "plan actions missing/empty: $(cat "$PLAN" 2>/dev/null)"; fi
 if grep -q "^\[INFO\] Plan Summary" <<<"$OUT"; then pass "prints tagged Plan Summary"; else fail "no tagged Plan Summary in: $OUT"; fi
 if grep -q "^\[ OK \] Plan saved to" <<<"$OUT"; then pass "prints tagged Plan saved"; else fail "no tagged Plan saved in: $OUT"; fi
