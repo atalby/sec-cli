@@ -75,7 +75,20 @@ fi
 ensure_tenant_auth() {
     local tenant="$1"
     local auto_rotate
+    local cli=""
     auto_rotate="$(get_cfg_val "$tenant" "auto_rotate" "true")"
+
+    case "$tenant" in
+        bitwarden|bw) cli=bw ;;
+        1pass|op) cli=op ;;
+        bws) cli=bws ;;
+        vault) cli=vault ;;
+        infisical) cli=infisical ;;
+    esac
+    if [[ -n "$cli" ]] && ! command -v "$cli" >/dev/null 2>&1; then
+        echo "[ERROR] $cli CLI not found for tenant '$tenant'." >&2
+        exit 1
+    fi
 
     case "$tenant" in
         bitwarden|bw)

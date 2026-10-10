@@ -100,7 +100,8 @@ if grep -q "bin/sec:1" <<<"$OUT"; then
 else
     no "lint did not name the stale anchor"
 fi
-printf '\nControl anchor: `usage()` at `bin/sec:149`\n' >>"$WORK_B/skills/architecture-360-audit/profile.md"
+USAGE_LINE="$(grep -nE '^usage\(\) \{' "$WORK_B/bin/sec" | head -1 | cut -d: -f1)"
+printf '\nControl anchor: `usage()` at `bin/sec:%s`\n' "$USAGE_LINE" >>"$WORK_B/skills/architecture-360-audit/profile.md"
 OUT="$(cd "$WORK_B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
 RC=$?
 if [[ $RC -eq 0 ]]; then

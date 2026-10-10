@@ -909,6 +909,28 @@ else
     echo "[INFO] pwsh not found; ps1 set-honesty assertion runs in CI"
 fi
 
+echo "[22h] F025 class: get with the tenant CLI absent names the CLI, not 'not found'"
+for _t in bws vault infisical; do
+    if env -i "PATH=/usr/bin:/bin" command -v "$_t" >/dev/null 2>&1; then
+        echo "[INFO] $_t present on the base PATH; absence assertion skipped"
+        continue
+    fi
+    set +e
+    OUT22H="$(env -i "PATH=/usr/bin:/bin" "HOME=$WORK/empty22h" "$REPO_ROOT/bin/sec" "$_t" get some-key 2>&1 </dev/null)"
+    RC22H=$?
+    set -e
+    if [[ $RC22H -ne 0 ]] && grep -q "^\[ERROR\] $_t CLI not found for tenant '$_t'\." <<<"$OUT22H"; then
+        pass "$_t get without its CLI exits non-zero and names the CLI"
+    else
+        fail "$_t get without its CLI (rc=$RC22H): [$OUT22H]"
+    fi
+    if grep -qi "not found in tenant" <<<"$OUT22H"; then
+        fail "$_t get without its CLI misreported as secret-not-found"
+    else
+        pass "$_t get without its CLI is not misreported as secret-not-found"
+    fi
+done
+
 echo
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"
