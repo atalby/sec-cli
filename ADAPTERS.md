@@ -221,7 +221,7 @@ per AGENTS.md §5's replace-don't-append rule.
 ## Running this project's test suite
 
 - **Command**: `bash tests/test_install.sh` (9 sections, install path),
-  `bash tests/test_sync_guard.sh` (13 sections, sync guard canaries),
+  `bash tests/test_sync_guard.sh` (14 sections, sync guard canaries),
   `bash tests/test_write_honesty.sh` (9 sections, silent-no-op write
   paths, revert/undo honesty), `bash tests/test_sentinel.sh` (4 cases,
   the 360 audit instrument's coverage/citations sentinel) and
@@ -230,7 +230,8 @@ per AGENTS.md §5's replace-don't-append rule.
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed
   2026-10-10 (audit F052, re-counted after #19, #22–#26 and the
-  #27/#29/#30 assertions).
+  #27/#29/#30 assertions; last re-counted again after #33 added the
+  advertised-target guard [14] to the sync_guard suite).
   A sixth, zero-dependency pytest suite lives at `scripts/tests/`
   (`python3 -m pytest scripts/tests/ -q`, added in 00b1a65 under issue
   #2); since #31 it also **executes** the four fast bash suites

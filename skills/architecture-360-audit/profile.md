@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (4 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (40 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (4 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (40 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#2`, `#13`) |
@@ -167,6 +167,8 @@ instrument rather than the product but runs the same way:
     [13] --help documents exit 3 so the extended contract is discoverable
       ok: --help exits 0
       ok: --help documents exit 3 (backend write failure)
+    [14] every advertised sync target has an implementation (issue #33)
+      ok: help advertises 2 target(s), 2 writer(s) implemented
 
     ALL TESTS PASSED
     (exit 0)
@@ -386,10 +388,10 @@ instrument rather than the product but runs the same way:
 
     $ python3 -m pytest scripts/tests/ -q
     .........s                                                            [100%]
-    9 passed, 1 skipped in 2.24s
+    9 passed, 1 skipped in 2.01s
 
   (the skip is the heavy dispatch suite behind SEC_TEST_DISPATCH=1;
-  with it set: 10 passed in 14.39s)
+  with it set: 10 passed, ~14s)
 
 **Tracked file count** (the manifest denominator):
 
@@ -409,12 +411,13 @@ instrument rather than the product but runs the same way:
     2026-10-10, when opencode bootstrapped its plugin dependency there;
     the pre-bootstrap census was `(no output)`.
 
-**Tracker, live** (point-in-time capture, 2026-10-10 at commit `29b60b1` — the
+**Tracker, live** (point-in-time capture, 2026-10-10 at commit `b15a01e` — the
 issue list moves on every close/open/comment (a comment refreshes the
 row's timestamp); re-run before trusting a state claim):
 
      $ gh issue list --repo atalby/sec-cli --state all --limit 100
-     32	OPEN	Persona claims in 360-audit profile.md need full re-derivation (post-CI/post-pytest/F052 era)		2026-10-10T16:37:25Z
+     33	CLOSED	sec sync --help advertises Vercel Projects; no Vercel backend exists in code		2026-10-10T18:34:10Z
+     32	OPEN	Persona claims in 360-audit profile.md need full re-derivation (post-CI/post-pytest/F052 era)		2026-10-10T18:31:14Z
      31	CLOSED	Pytest mirror (scripts/tests/test_install.py) detects only — wire it to exercise the bash suites		2026-10-10T17:07:37Z
      30	CLOSED	sec.ps1 'set' lies: reports success it never achieved		2026-10-10T16:35:53Z
     29	CLOSED	sec.ps1 op read failure still exits 0 with empty output (same honesty class as #24)		2026-10-10T08:53:48Z
@@ -448,12 +451,12 @@ row's timestamp); re-run before trusting a state claim):
     1	CLOSED	Hyer payload lag: repo on HIAE Protocol v5.28.0, hub stable is v5.39.1		2026-10-08T23:06:39Z
 
 **Commit history** (the intent record for forensic scan; captured 2026-10-10 at
-commit `29b60b1`):
+commit `b15a01e`):
 
      $ git log --oneline | wc -l
-     88
+     93
      $ git log -1 --format='%h %ad %s' --date=short
-     29b60b1 2026-10-10 docs: record the CI mirror runs — red first, green after the venv fix
+     b15a01e 2026-10-10 fix: drop the Vercel target the sync controller never implemented (closes #33)
     $ git log --reverse --format='%h %ad %s' --date=short | sed -n '1p'
     89c67d2 2026-08-08 feat: initial release of sec-cli v1.0.0 (Zero-Plaintext Multi-Tenant Secret Manager, Housekeeper & Migration Engine)
 
@@ -587,9 +590,9 @@ backend no code implemented. Vercel removed from the help text and
 count and the `def sync_to_` count diverge. Python visibility rule:
 module-level public, leading underscore private.
 
-### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:41`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:241`, `ADAPTERS.md:221`
+### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:241`, `ADAPTERS.md:221`
 
-Nine install sections, thirteen guard sections, nine write-honesty
+Nine install sections, fourteen guard sections, nine write-honesty
 sections, and the audit instrument's own four sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes the four fast suites and gates the dispatch suite behind
