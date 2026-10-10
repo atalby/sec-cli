@@ -113,9 +113,13 @@ ensure_tenant_auth() {
             fi
             ;;
         1pass|op)
-            if ! op account list >/dev/null 2>&1; then
+            if ! op whoami >/dev/null 2>&1; then
                 echo "[INFO] 1Password is locked. Prompting for interactive signin..." >&2
                 eval $(op signin)
+                if ! op whoami >/dev/null 2>&1; then
+                    echo "[ERROR] 1Password signin failed or session is still invalid (op whoami)." >&2
+                    return 1
+                fi
             fi
             ;;
         vault)

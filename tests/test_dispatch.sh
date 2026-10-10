@@ -72,10 +72,25 @@ cat >"$FAKEBIN/op" <<'EOF'
 echo "op $*" >>"${SEC_TEST_OP_LOG:?SEC_TEST_OP_LOG unset}"
 case "${1:-}" in
     read)
+        if [ "${SEC_TEST_OP_WHOAMI_RC:-0}" != "0" ] && [ ! -f "${HOME}/.cache/op-signedin" ]; then
+            exit 1
+        fi
         case "${2:-}" in
             op://private/MY_API_KEY/password) echo "op-pw-MY_API_KEY" ;;
             *) exit 1 ;;
         esac
+        ;;
+    whoami)
+        if [ -f "${HOME}/.cache/op-signedin" ]; then exit 0; fi
+        exit "${SEC_TEST_OP_WHOAMI_RC:-0}"
+        ;;
+    signin)
+        if [ "${SEC_TEST_OP_SIGNIN_RC:-0}" = "0" ]; then
+            mkdir -p "${HOME}/.cache"
+            touch "${HOME}/.cache/op-signedin"
+            echo "export OP_SESSION_TEST=1"
+        fi
+        exit "${SEC_TEST_OP_SIGNIN_RC:-0}"
         ;;
     item)
         case "${2:-}" in
@@ -575,6 +590,33 @@ if grep -q 'hyer-mcp.sh' "$REPO_ROOT/.mcp.json.example" 2>/dev/null; then pass "
 if grep -qE '^\.mcp\.json$' "$REPO_ROOT/.gitignore"; then pass ".mcp.json gitignored (host-local)"; else fail ".mcp.json not in .gitignore"; fi
 if git -C "$REPO_ROOT" ls-files --error-unmatch .mcp.json >/dev/null 2>&1; then fail ".mcp.json still tracked (host-local config must not be committed)"; else pass ".mcp.json untracked"; fi
 if grep -q '/home/opc' "$REPO_ROOT/bin/hyer-mcp.sh" 2>/dev/null; then fail "wrapper hardcodes /home/opc"; else pass "wrapper has no hardcoded host path"; fi
+
+echo "[25] F024: op guard tests session validity (op whoami), not account configuration"
+H25="$WORK/h25"
+mkdir -p "$H25"
+OPLOG25="$WORK/op25.log"
+: >"$OPLOG25"
+set +e
+OUT25="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H25" "SEC_TEST_OP_LOG=$OPLOG25" "SEC_TEST_OP_WHOAMI_RC=1" "$REPO_ROOT/bin/sec" op get MY_API_KEY 2>&1)"
+RC25=$?
+set -e
+if [[ $RC25 -eq 0 ]]; then pass "expired session re-authenticated, get succeeds"; else fail "get rc=$RC25 with expired session: $OUT25"; fi
+if grep -q "op-pw-MY_API_KEY" <<<"$OUT25"; then pass "value returned after re-auth"; else fail "no value after re-auth: $OUT25"; fi
+if grep -q "op signin" "$OPLOG25" 2>/dev/null; then pass "signin prompted when session invalid"; else fail "op signin never attempted: $(tr '\n' ' ' <"$OPLOG25" 2>/dev/null)"; fi
+OPLOG25B="$WORK/op25b.log"
+: >"$OPLOG25B"
+H25B="$WORK/h25b"
+mkdir -p "$H25B"
+set +e
+ERR25="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H25B" "SEC_TEST_OP_LOG=$OPLOG25B" "SEC_TEST_OP_WHOAMI_RC=1" "SEC_TEST_OP_SIGNIN_RC=1" "$REPO_ROOT/bin/sec" op get MY_API_KEY 2>&1)"
+RC25B=$?
+set -e
+if [[ $RC25B -ne 0 ]] && grep -q "^\[ERROR\]" <<<"$ERR25" && ! grep -q "not found" <<<"$ERR25"; then
+    pass "failed signin: non-zero exit, tagged error, not misreported as not-found"
+else
+    fail "failed-signin path wrong (rc=$RC25B): $ERR25"
+fi
+if grep -q "op signin" "$OPLOG25B" 2>/dev/null; then pass "signin attempted before giving up"; else fail "op signin never attempted on failed path"; fi
 
 echo
 if [[ $FAILS -eq 0 ]]; then
