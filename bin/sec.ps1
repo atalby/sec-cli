@@ -103,10 +103,14 @@ switch ($Command) {
         if (Get-Command bws -ErrorAction SilentlyContinue) {
             $projId = (bws project list 2>$null | ConvertFrom-Json)[0].id
             if ($projId) {
-                bws secret create $Key $Value $projId | Out-Null
+                bws secret create $Key $Value $projId >$null 2>$null
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "[ OK ] Secret '$Key' saved to Bitwarden Secrets Manager."
                     exit 0
+                }
+                else {
+                    Write-Error "[ERROR] failed to store secret '$Key' in Bitwarden Secrets Manager."
+                    exit 1
                 }
             }
         }
@@ -116,10 +120,14 @@ switch ($Command) {
             $tmpl.type = 1
             $tmpl.login.password = $Value
             $encoded = $tmpl | ConvertTo-Json -Depth 5 | bw encode
-            bw create item $encoded | Out-Null
+            bw create item $encoded >$null 2>$null
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "[ OK ] Secret '$Key' saved to Bitwarden Vault."
                 exit 0
+            }
+            else {
+                Write-Error "[ERROR] failed to store secret '$Key' in Bitwarden Vault."
+                exit 1
             }
         }
         Write-Error "[ERROR] failed to store secret '$Key' (no backend succeeded)."
