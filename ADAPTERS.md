@@ -225,15 +225,20 @@ per AGENTS.md §5's replace-don't-append rule.
   `bash tests/test_write_honesty.sh` (9 sections, silent-no-op write
   paths, revert/undo honesty), `bash tests/test_sentinel.sh` (4 cases,
   the 360 audit instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (34 sections, every `sec` dispatch arm
+  `bash tests/test_dispatch.sh` (40 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed
-  2026-10-10 (audit F052, re-counted after #19 and #22–#26).
+  2026-10-10 (audit F052, re-counted after #19, #22–#26 and the
+  #27/#29/#30 assertions).
   A sixth, zero-dependency pytest suite lives at `scripts/tests/`
-  (`python3 -m pytest scripts/tests/ -q`, 5 assertions, added in 00b1a65
-  under issue #2); it mirrors the install-shell suite so the pre-commit
-  gate has a detectable target.
+  (`python3 -m pytest scripts/tests/ -q`, added in 00b1a65 under issue
+  #2); since #31 it also **executes** the four fast bash suites
+  (`test_install`, `test_sync_guard`, `test_write_honesty`,
+  `test_sentinel` — a regression in any of them fails pytest, verified
+  by injection). The heavy `tests/test_dispatch.sh` (~14s, stub
+  backends) is opt-in: `SEC_TEST_DISPATCH=1 python3 -m pytest
+  scripts/tests/ -q` (10 passed), keeping the pre-commit gate fast.
 - **Note**: the shared pre-commit's Step 5 still does **not** auto-run
   `tests/*.sh` — it only recognizes `scripts/tests/`+uv,
   `pytest.ini`/`pyproject.toml`, or `package.json` — which is why the

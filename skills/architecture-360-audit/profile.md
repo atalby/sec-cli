@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (5 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (5 cases); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (4 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (18 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (4 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (40 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#2`, `#13`) |
@@ -384,8 +384,11 @@ instrument rather than the product but runs the same way:
     (exit 0)
 
     $ python3 -m pytest scripts/tests/ -q
-    .....                                                                    [100%]
-    5 passed in 0.03s
+    .........s                                                            [100%]
+    9 passed, 1 skipped in 2.24s
+
+  (the skip is the heavy dispatch suite behind SEC_TEST_DISPATCH=1;
+  with it set: 10 passed in 14.39s)
 
 **Tracked file count** (the manifest denominator):
 
@@ -405,12 +408,12 @@ instrument rather than the product but runs the same way:
     2026-10-10, when opencode bootstrapped its plugin dependency there;
     the pre-bootstrap census was `(no output)`.
 
-**Tracker, live** (point-in-time capture, 2026-10-10 at commit `66ff49b` — the
+**Tracker, live** (point-in-time capture, 2026-10-10 at commit `f1decee` — the
 issue list moves on every close/open; re-run before trusting a state claim):
 
      $ gh issue list --repo atalby/sec-cli --state all --limit 100
      32	OPEN	Persona claims in 360-audit profile.md need full re-derivation (post-CI/post-pytest/F052 era)		2026-10-10T16:37:25Z
-     31	OPEN	Pytest mirror (scripts/tests/test_install.py) detects only — wire it to exercise the bash suites		2026-10-10T16:37:25Z
+     31	CLOSED	Pytest mirror (scripts/tests/test_install.py) detects only — wire it to exercise the bash suites		2026-10-10T17:07:37Z
      30	CLOSED	sec.ps1 'set' lies: reports success it never achieved		2026-10-10T16:35:53Z
     29	CLOSED	sec.ps1 op read failure still exits 0 with empty output (same honesty class as #24)		2026-10-10T08:53:48Z
     28	CLOSED	ADAPTERS.md test-suite section counts and Last-updated date stale (audit §8 item 11 residual)		2026-10-10T07:23:04Z
@@ -439,16 +442,16 @@ issue list moves on every close/open; re-run before trusting a state claim):
     5	CLOSED	#1 follow-up: packs/ never re-synced (7/9 differ from stable) + changelog review unrecorded (F055)		2026-10-09T20:00:52Z
     4	CLOSED	Port deleted GitLab issue templates to GitHub-native .github/ISSUE_TEMPLATE/		2026-10-08T14:23:59Z
     3	CLOSED	sec sync pushes all present secrets to prod backends with no dry-run or confirmation		2026-10-08T14:22:15Z
-    2	OPEN	Pre-commit Step 5 never runs tests/*.sh suites (our install tests are skipped every commit)		2026-10-10T07:47:23Z
+    2	OPEN	Pre-commit Step 5 never runs tests/*.sh suites (our install tests are skipped every commit)		2026-10-10T16:36:55Z
     1	CLOSED	Hyer payload lag: repo on HIAE Protocol v5.28.0, hub stable is v5.39.1		2026-10-08T23:06:39Z
 
 **Commit history** (the intent record for forensic scan; captured 2026-10-10 at
-commit `66ff49b`):
+commit `f1decee`):
 
      $ git log --oneline | wc -l
-     82
+     83
      $ git log -1 --format='%h %ad %s' --date=short
-     66ff49b 2026-10-10 docs: mark resume point at issue #31 with the wall-time measurement as first unit
+     f1decee 2026-10-10 docs(360): re-capture tracker and commit-history quotes; label snapshots point-in-time
     $ git log --reverse --format='%h %ad %s' --date=short | sed -n '1p'
     89c67d2 2026-08-08 feat: initial release of sec-cli v1.0.0 (Zero-Plaintext Multi-Tenant Secret Manager, Housekeeper & Migration Engine)
 
@@ -570,16 +573,18 @@ pushes to "Vercel projects" — verify a Vercel call site exists anywhere; a
 claim with no code is a smoke finding. Python visibility rule: module-level
 public, leading underscore private.
 
-### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:41`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:237`, `ADAPTERS.md:221`
+### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:41`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:241`, `ADAPTERS.md:221`
 
 Nine install sections, thirteen guard sections, nine write-honesty
 sections, and the audit instrument's own four sentinel cases pass today
-(as does the five-assertion pytest mirror at `scripts/tests/`); establish
+(as does the pytest mirror at `scripts/tests/`, which since #31 itself
+executes the four fast suites and gates the dispatch suite behind
+`SEC_TEST_DISPATCH=1`); establish
 what they do not cover. Structural gaps to quantify, not merely note:
 GitHub Actions CI exists since 2026-10-09 (issue #8,
 `.github/workflows/test.yml`) but runs only the five bash suites — the
 pytest mirror is not wired in; the hook's test step is blind to
-`tests/*.sh` (`ADAPTERS.md:237`, open issue `#2`); and there is zero
+`tests/*.sh` (`ADAPTERS.md:241`, open issue `#2`); and there is zero
 coverage tooling. Then cross-reference suites against the hotspots:
 `bin/sec-organizer`, `bin/sec-migrator`, `bin/sec-classify.py`, and
 `bin/bw-session-keeper` have no direct test (the sync/install suites touch

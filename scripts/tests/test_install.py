@@ -11,9 +11,6 @@ import pytest
 _ABS_FILE = os.path.abspath(__file__)
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(_ABS_FILE)))
 
-# Fast hermetic bash suites (~2.2s combined; no real backends, no network).
-# test_dispatch.sh is excluded here: it spins up stub bw/bws/op backends and
-# takes ~14s — opt in with SEC_TEST_DISPATCH=1 or in CI rather than every commit.
 _FAST_SUITES = [
     "test_install.sh",
     "test_sync_guard.sh",
@@ -85,7 +82,6 @@ def test_test_dispatch_suite_shell():
 
 @pytest.mark.parametrize("suite_name", _FAST_SUITES)
 def test_bash_suite_passes(suite_name):
-    """A regression in any fast bash suite must fail pytest (issue #31)."""
     result = _run_suite(suite_name)
     assert result.returncode == 0, (
         f"{suite_name} exited {result.returncode}\n"
@@ -98,7 +94,6 @@ def test_bash_suite_passes(suite_name):
     reason="test_dispatch.sh takes ~14s (stub backends); opt in with SEC_TEST_DISPATCH=1",
 )
 def test_dispatch_suite_passes():
-    """The heavy dispatch suite, opt-in so the pre-commit gate stays fast."""
     result = _run_suite("test_dispatch.sh")
     assert result.returncode == 0, (
         f"test_dispatch.sh exited {result.returncode}\n"
