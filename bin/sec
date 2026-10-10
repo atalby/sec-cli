@@ -153,6 +153,7 @@ usage() {
     echo "Usage:"
     echo "  sec [<tenant>] get <key>                 Retrieve secret value from tenant or default vault"
     echo "  sec [<tenant>] get <item>/<field>        Retrieve specific field from named vault item (e.g. 'github/password')"
+    echo "  sec [<tenant>] get --scope <name> <key>  Scope lookup to a bw folder or op vault (bw/op only; others: exit 2)"
     echo "  sec [<tenant>] set <key> [<val>]         Store / create new secret in tenant vault (prompts if <val> omitted)"
     echo "  sec [<tenant>] run -- <cmd>              Run command; env injection only for bws/op/infisical (bitwarden: plain exec)"
     echo "  sec housekeep {plan|apply|revert}        Intelligent ML categorization, plan/apply, & instant rollback engine"
@@ -354,9 +355,40 @@ EOF
         ;;
 
     get)
+        SCOPE_NAME=""
+        if [[ "${1:-}" == "--scope" ]]; then
+            if [[ $# -lt 2 ]]; then usage; fi
+            SCOPE_NAME="$2"
+            shift 2
+        fi
         if [[ $# -lt 1 ]]; then usage; fi
         key="$1"
+        case "$TARGET_TENANT" in
+            bitwarden|bw|1pass|op) ;;
+            *)
+                if [[ -n "$SCOPE_NAME" ]]; then
+                    echo "[ERROR] --scope is not supported for tenant '$TARGET_TENANT' (supported: bw, 1pass/op)." >&2
+                    exit 2
+                fi
+                ;;
+        esac
         ensure_tenant_auth "$TARGET_TENANT"
+
+        SCOPE_ARGS=()
+        SCOPE_FOLDER_ID=""
+        if [[ -n "$SCOPE_NAME" && "$TARGET_TENANT" =~ ^(bitwarden|bw)$ ]]; then
+            if [[ "$SCOPE_NAME" == "null" ]]; then
+                echo "[ERROR] scope folder name 'null' is reserved (bw uses it for folderless items); pick another folder or omit --scope." >&2
+                exit 1
+            fi
+            folders_json="$(BW_SESSION="${BW_SESSION:-}" bw list folders 2>/dev/null || echo '[]')"
+            SCOPE_FOLDER_ID="$(jq -r --arg t "$SCOPE_NAME" '.[] | select(.name == $t).id // empty' <<<"$folders_json")"
+            if [[ -z "$SCOPE_FOLDER_ID" ]]; then
+                echo "[ERROR] scope folder not found: '$SCOPE_NAME'" >&2
+                exit 1
+            fi
+            SCOPE_ARGS=(--folderid "$SCOPE_FOLDER_ID")
+        fi
 
         if [[ "$key" =~ ^op:// ]]; then
             if command -v op >/dev/null 2>&1; then
@@ -368,10 +400,18 @@ EOF
             bitwarden|bw)
                 if command -v bw >/dev/null 2>&1; then
                     # 1. Check for exact item name match $key
-                    items_json="$(bw_list_items --search "$key")"
+                    items_json="$(bw_list_items --search "$key" "${SCOPE_ARGS[@]}")"
                     [[ "$items_json" == "ERR" ]] && exit 1
                     count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
                     if [[ "$count" -ge 1 ]]; then
+                        if [[ "$key" != */* ]]; then
+                            match_count="$(echo "$items_json" | jq -r --arg name "$key" '[.[] | select(.name == $name)] | length')"
+                            if [[ "$match_count" -ge 2 ]]; then
+                                matches_desc="$(echo "$items_json" | jq -r --arg name "$key" '[.[] | select(.name == $name)] | map("\(.id) (\(.name))") | join(", ")')"
+                                echo "[ERROR] ambiguous item name '$key': $matches_desc — use '<item>/<field>' or --scope" >&2
+                                exit 1
+                            fi
+                        fi
                         item="$(echo "$items_json" | jq --arg name "$key" '[.[] | select(.name == $name)][0] // empty')"
                         if [[ -n "$item" && "$item" != "null" ]]; then
                             res="$(echo "$item" | jq -r '.notes // .login.password // .card.number // .identity.ssn // .identity.email // empty')"
@@ -383,7 +423,7 @@ EOF
                         if [[ -n "$cf_res" && "$cf_res" != "null" ]]; then echo "$cf_res"; exit 0; fi
                     else
                         # Fallback: Search custom fields across all vault items
-                        all_items="$(bw_list_items)"
+                        all_items="$(bw_list_items "${SCOPE_ARGS[@]}")"
                         [[ "$all_items" == "ERR" ]] && exit 1
                         cf_res="$(echo "$all_items" | jq -r --arg f "$key" '[.[] | .fields[]? | select(.name == $f).value // empty][0] // empty')"
                         if [[ -n "$cf_res" && "$cf_res" != "null" ]]; then echo "$cf_res"; exit 0; fi
@@ -398,14 +438,14 @@ EOF
                         if [[ "$item_name" == *"/"* ]] && [[ "${item_name##*/}" == "attachment" ]]; then
                             real_item_name="${item_name%/*}"
                             attachment_file="$field_name"
-                            item_id="$(bw_list_items --search "$real_item_name" | jq -r --arg n "$real_item_name" '[.[] | select(.name == $n)][0].id // empty')"
+                            item_id="$(bw_list_items --search "$real_item_name" "${SCOPE_ARGS[@]}" | jq -r --arg n "$real_item_name" '[.[] | select(.name == $n)][0].id // empty')"
                             if [[ "$item_id" == "ERR" ]]; then exit 1; fi
                             if [[ -n "$item_id" ]]; then
                                 BW_SESSION="${BW_SESSION:-}" bw get attachment "$attachment_file" --itemid "$item_id" --raw 2>/dev/null && exit 0
                             fi
                         fi
 
-                        items_json="$(bw_list_items --search "$item_name")"
+                        items_json="$(bw_list_items --search "$item_name" "${SCOPE_ARGS[@]}")"
                         [[ "$items_json" == "ERR" ]] && exit 1
                         count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
                         if [[ "$count" -ge 1 ]]; then
@@ -441,13 +481,14 @@ EOF
                 ;;
             1pass|op)
                 if command -v op >/dev/null 2>&1; then
-                    if res="$(op read "op://private/$key/password" 2>/dev/null || op read "op://private/$key/notes" 2>/dev/null)"; then
+                    op_vault="${SCOPE_NAME:-private}"
+                    if res="$(op read "op://$op_vault/$key/password" 2>/dev/null || op read "op://$op_vault/$key/notes" 2>/dev/null)"; then
                         if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
                     fi
                     if [[ "$key" == *"/"* ]]; then
                         item_name="${key%/*}"
                         field_name="${key##*/}"
-                        if res="$(op read "op://private/$item_name/$field_name" 2>/dev/null)"; then
+                        if res="$(op read "op://$op_vault/$item_name/$field_name" 2>/dev/null)"; then
                             if [[ -n "$res" ]]; then echo "$res"; exit 0; fi
                         fi
                     fi

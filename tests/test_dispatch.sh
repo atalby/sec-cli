@@ -15,7 +15,8 @@ mkdir -p "$FAKEBIN"
 cat >"$FAKEBIN/bw" <<'EOF'
 #!/usr/bin/env bash
 echo "bw $*" >>"${SEC_TEST_BW_LOG:?SEC_TEST_BW_LOG unset}"
-ITEMS='[{"id":"item-1","name":"MY_API_KEY","notes":null,"login":{"password":"pw-MY_API_KEY","username":"me@example.com","uris":[]},"fields":[],"folderId":""},{"id":"item-2","name":"github-app","notes":null,"login":{"password":"gh-pw","username":"gh-user","uris":[]},"fields":[{"type":0,"name":"token","value":"cf-token"}],"folderId":""}]'
+DEFAULT_ITEMS='[{"id":"item-1","name":"MY_API_KEY","notes":null,"login":{"password":"pw-MY_API_KEY","username":"me@example.com","uris":[]},"fields":[],"folderId":""},{"id":"item-2","name":"github-app","notes":null,"login":{"password":"gh-pw","username":"gh-user","uris":[]},"fields":[{"type":0,"name":"token","value":"cf-token"}],"folderId":""}]'
+ITEMS="${SEC_TEST_BW_ITEMS:-$DEFAULT_ITEMS}"
 case "${1:-}" in
     status)
         echo '{"status":"unlocked"}'
@@ -30,14 +31,33 @@ case "${1:-}" in
                     echo "Error: vault is locked." >&2
                     exit "${SEC_TEST_BW_LIST_RC}"
                 fi
-                if [ "${3:-}" = "--search" ]; then
-                    jq -c --arg q "${4:-}" '[.[] | select(.name | contains($q))]' <<<"$ITEMS"
+                shift 2
+                SEARCH_Q=""
+                FOLDER_ID=""
+                while [ $# -gt 0 ]; do
+                    case "$1" in
+                        --search) SEARCH_Q="${2:-}"; shift 2 ;;
+                        --folderid) FOLDER_ID="${2:-}"; shift 2 ;;
+                        *) shift ;;
+                    esac
+                done
+                if [ -n "$FOLDER_ID" ]; then
+                    if [ "$FOLDER_ID" = "null" ]; then
+                        items="$(jq -c '[.[] | select((.folderId // "") == "")]' <<<"$ITEMS")"
+                    else
+                        items="$(jq -c --arg f "$FOLDER_ID" '[.[] | select(.folderId == $f)]' <<<"$ITEMS")"
+                    fi
                 else
-                    echo "$ITEMS"
+                    items="$ITEMS"
+                fi
+                if [ -n "$SEARCH_Q" ]; then
+                    jq -c --arg q "$SEARCH_Q" '[.[] | select(.name | contains($q))]' <<<"$items"
+                else
+                    echo "$items"
                 fi
                 ;;
             folders)
-                echo '[]'
+                echo '[{"id":"f-aaa","name":"work"},{"id":"f-bbb","name":"home"}]'
                 ;;
         esac
         ;;
@@ -77,6 +97,10 @@ case "${1:-}" in
         fi
         case "${2:-}" in
             op://private/MY_API_KEY/password) echo "op-pw-MY_API_KEY" ;;
+            op://*/MY_API_KEY/password)
+                vault_part="${2#op://}"
+                echo "op-pw-vault-${vault_part%%/*}"
+                ;;
             *) exit 1 ;;
         esac
         ;;
@@ -617,6 +641,143 @@ else
     fail "failed-signin path wrong (rc=$RC25B): $ERR25"
 fi
 if grep -q "op signin" "$OPLOG25B" 2>/dev/null; then pass "signin attempted before giving up"; else fail "op signin never attempted on failed path"; fi
+
+echo "[26] #27: --scope on unsupported tenants refuses honestly (exit 2, tagged)"
+H26="$WORK/h26"
+mkdir -p "$H26"
+set +e
+OUT26A="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H26" "$REPO_ROOT/bin/sec" bws get --scope proj secret-key 2>&1)"
+RC26A=$?
+OUT26B="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H26" "$REPO_ROOT/bin/sec" infisical get --scope proj secret-key 2>&1)"
+RC26B=$?
+set -e
+if [[ $RC26A -eq 2 ]] && grep -q "^\[ERROR\] --scope is not supported for tenant 'bws'" <<<"$OUT26A"; then
+    pass "bws --scope refused with tagged error, exit 2"
+else
+    fail "bws --scope wrong (rc=$RC26A): $OUT26A"
+fi
+if [[ $RC26B -eq 2 ]] && grep -q "^\[ERROR\] --scope is not supported for tenant 'infisical'" <<<"$OUT26B"; then
+    pass "infisical --scope refused with tagged error, exit 2"
+else
+    fail "infisical --scope wrong (rc=$RC26B): $OUT26B"
+fi
+
+echo "[27] #27: bw --scope resolves a folder name and restricts lookup"
+H27="$WORK/h27"
+mkdir -p "$H27"
+BWLOG27="$WORK/bw27.log"
+: >"$BWLOG27"
+ITEMS27='[{"id":"api-1","name":"api-key","notes":null,"login":{"password":"scoped-val","username":"","uris":[]},"fields":[],"folderId":"f-aaa"},{"id":"api-2","name":"api-key","notes":null,"login":{"password":"other-val","username":"","uris":[]},"fields":[],"folderId":"f-bbb"}]'
+set +e
+OUT27="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H27" "SEC_TEST_BW_LOG=$BWLOG27" "SEC_TEST_BW_ITEMS=$ITEMS27" "$REPO_ROOT/bin/sec" bw get --scope work api-key 2>&1)"
+RC27=$?
+set -e
+if [[ $RC27 -eq 0 ]] && grep -q '^scoped-val$' <<<"$OUT27"; then pass "scoped get returns the folder's item value"; else fail "scoped get wrong (rc=$RC27): $OUT27"; fi
+if grep -q -- '--folderid f-aaa' "$BWLOG27" 2>/dev/null; then pass "lookup passed --folderid f-aaa"; else fail "no --folderid in bw calls: $(tr '\n' ' ' <"$BWLOG27")"; fi
+set +e
+ERR27="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H27" "SEC_TEST_BW_LOG=$BWLOG27" "SEC_TEST_BW_ITEMS=$ITEMS27" "$REPO_ROOT/bin/sec" bw get --scope nope api-key 2>&1)"
+RC27B=$?
+set -e
+if [[ $RC27B -eq 1 ]] && grep -q "^\[ERROR\] scope folder not found: 'nope'" <<<"$ERR27"; then
+    pass "unresolvable folder: exit 1, tagged scope-folder-not-found"
+else
+    fail "unresolvable-folder path wrong (rc=$RC27B): $ERR27"
+fi
+
+echo "[28] #27: op --scope substitutes the vault in synthesized URIs (bash + ps1)"
+H28="$WORK/h28"
+mkdir -p "$H28"
+OPLOG28="$WORK/op28.log"
+: >"$OPLOG28"
+set +e
+OUT28="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H28" "SEC_TEST_OP_LOG=$OPLOG28" "$REPO_ROOT/bin/sec" op get --scope eng MY_API_KEY 2>&1)"
+RC28=$?
+set -e
+if [[ $RC28 -eq 0 ]] && grep -q '^op-pw-vault-eng$' <<<"$OUT28"; then
+    pass "bash op --scope reads from the named vault"
+else
+    fail "bash op --scope wrong (rc=$RC28): $OUT28"
+fi
+set +e
+OUT28P="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H28" "SEC_TEST_OP_LOG=$OPLOG28" "$REPO_ROOT/bin/sec" op get MY_API_KEY 2>&1)"
+RC28P=$?
+set -e
+if [[ $RC28P -eq 0 ]] && grep -q '^op-pw-MY_API_KEY$' <<<"$OUT28P"; then
+    pass "unscoped op get still defaults to the private vault"
+else
+    fail "unscoped op get changed (rc=$RC28P): $OUT28P"
+fi
+PWSH28="${PWSH_BIN:-}"
+if [ -z "$PWSH28" ]; then PWSH28="$(command -v pwsh 2>/dev/null || true)"; fi
+if [ -z "$PWSH28" ] && [ -x /tmp/opencode/pwsh/pwsh ]; then PWSH28=/tmp/opencode/pwsh/pwsh; fi
+if [ -n "$PWSH28" ]; then
+    FB28="$WORK/fb28"
+    mkdir -p "$FB28"
+    cp "$FAKEBIN/op" "$FB28/op"
+    H28P="$WORK/h28p"
+    mkdir -p "$H28P"
+    OPLOG28P="$WORK/op28p.log"
+    : >"$OPLOG28P"
+    set +e
+    OUT28PS="$(env -i "PATH=$FB28:/usr/bin:/bin" "HOME=$H28P" "SEC_TEST_OP_LOG=$OPLOG28P" "$PWSH28" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" get --scope eng MY_API_KEY 2>&1)"
+    RC28PS=$?
+    set -e
+    if [[ $RC28PS -eq 0 ]] && grep -q 'op-pw-vault-eng' <<<"$OUT28PS"; then
+        pass "ps1 op --scope reads from the named vault"
+    else
+        fail "ps1 op --scope wrong (rc=$RC28PS): $OUT28PS"
+    fi
+else
+    echo "[INFO] pwsh not found; ps1 --scope assertion runs in CI"
+fi
+
+echo "[29] #27: bw ambiguous item name refuses instead of first-match"
+H29="$WORK/h29"
+mkdir -p "$H29"
+BWLOG29="$WORK/bw29.log"
+: >"$BWLOG29"
+ITEMS29='[{"id":"dup-1","name":"api-key","notes":null,"login":{"password":"dup-one","username":"","uris":[]},"fields":[],"folderId":""},{"id":"dup-2","name":"api-key","notes":null,"login":{"password":"dup-two","username":"","uris":[]},"fields":[],"folderId":""}]'
+set +e
+ERR29="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H29" "SEC_TEST_BW_LOG=$BWLOG29" "SEC_TEST_BW_ITEMS=$ITEMS29" "$REPO_ROOT/bin/sec" bw get api-key 2>&1)"
+RC29=$?
+set -e
+if [[ $RC29 -eq 1 ]] && grep -q "^\[ERROR\] ambiguous item name 'api-key'" <<<"$ERR29" && grep -q 'dup-1' <<<"$ERR29" && grep -q 'dup-2' <<<"$ERR29"; then
+    pass "ambiguous name: exit 1, tagged error lists both matches"
+else
+    fail "ambiguous-name path wrong (rc=$RC29): $ERR29"
+fi
+set +e
+OUT29B="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H29" "SEC_TEST_BW_LOG=$BWLOG29" "SEC_TEST_BW_ITEMS=$ITEMS29" "$REPO_ROOT/bin/sec" bw get api-key/password 2>&1)"
+RC29B=$?
+set -e
+if [[ $RC29B -eq 0 ]] && grep -q '^dup-one$' <<<"$OUT29B"; then
+    pass "slash form still extracts the field across matches"
+else
+    fail "slash form broke (rc=$RC29B): $OUT29B"
+fi
+PWSH29="${PWSH_BIN:-}"
+if [ -z "$PWSH29" ]; then PWSH29="$(command -v pwsh 2>/dev/null || true)"; fi
+if [ -z "$PWSH29" ] && [ -x /tmp/opencode/pwsh/pwsh ]; then PWSH29=/tmp/opencode/pwsh/pwsh; fi
+if [ -n "$PWSH29" ]; then
+    FB29="$WORK/fb29"
+    mkdir -p "$FB29"
+    cp "$FAKEBIN/bw" "$FB29/bw"
+    H29P="$WORK/h29p"
+    mkdir -p "$H29P"
+    BWLOG29P="$WORK/bw29p.log"
+    : >"$BWLOG29P"
+    set +e
+    ERR29PS="$(env -i "PATH=$FB29:/usr/bin:/bin" "HOME=$H29P" "SEC_TEST_BW_LOG=$BWLOG29P" "SEC_TEST_BW_ITEMS=$ITEMS29" "$PWSH29" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" get api-key 2>&1)"
+    RC29PS=$?
+    set -e
+    if [[ $RC29PS -ne 0 ]] && grep -qi 'ambiguous' <<<"$ERR29PS"; then
+        pass "ps1 ambiguous name refuses (was a yellow notice)"
+    else
+        fail "ps1 ambiguity wrong (rc=$RC29PS): $ERR29PS"
+    fi
+else
+    echo "[INFO] pwsh not found; ps1 ambiguity assertion runs in CI"
+fi
 
 echo
 if [[ $FAILS -eq 0 ]]; then

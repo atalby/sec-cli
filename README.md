@@ -76,6 +76,7 @@ sec-cli v1.0.0 — Multi-Tenant Zero-Plaintext Secret Manager & Housekeeper
 Usage:
   sec [<tenant>] get <key>                 Retrieve secret value from tenant or default vault
   sec [<tenant>] get <item>/<field>        Retrieve specific field from named vault item (e.g. 'github/password')
+  sec [<tenant>] get --scope <name> <key>  Scope lookup to a bw folder or op vault (bw/op only; others: exit 2)
   sec [<tenant>] set <key> [<val>]         Store / create new secret in tenant vault (prompts if <val> omitted)
   sec [<tenant>] run -- <cmd>              Run command; env injection only for bws/op/infisical (bitwarden: plain exec)
   sec sync [--dry-run|--yes]          Central Secret Sync Engine: push shell-exported SYNC_KEYS to GCP Secret Manager & GitLab group variables (--dry-run previews, --yes confirms)

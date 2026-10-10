@@ -30,6 +30,15 @@ function Ensure-BwSession {
 
 switch ($Command) {
     "get" {
+        $ScopeName = $null
+        $scopeIdx = [array]::IndexOf($PositionalRest, "--scope")
+        if ($scopeIdx -ge 0) {
+            if ($scopeIdx + 1 -ge $PositionalRest.Count) { Write-Error "Usage: sec.ps1 get [--scope <name>] <key>"; exit 1 }
+            $ScopeName = $PositionalRest[$scopeIdx + 1]
+            $PositionalRest = @($PositionalRest | Where-Object { $_ -ne "--scope" -and $_ -ne $ScopeName })
+            $Key = if ($PositionalRest.Count -gt 0) { $PositionalRest[0] } else { $null }
+            if (-not $Key) { Write-Error "Usage: sec.ps1 get [--scope <name>] <key>"; exit 1 }
+        }
         if (-not $Key) { Write-Error "Usage: sec.ps1 get <key> or sec.ps1 get <item>/<field>"; exit 1 }
         Ensure-BwSession
 
@@ -50,7 +59,9 @@ switch ($Command) {
         if (Get-Command bw -ErrorAction SilentlyContinue) {
             $items = bw list items --search $itemName 2>$null | ConvertFrom-Json
             if ($items.Count -gt 1 -and -not $fieldName) {
-                Write-Host "[sec] Notice: Multiple items match '$itemName'. Use 'sec get \"$itemName/field\"' for exact targeting." -ForegroundColor Yellow
+                $ids = ($items | ForEach-Object { "$($_.id) ($($_.name))" }) -join ", "
+                Write-Error "[sec] Error: ambiguous item name '$itemName': $ids — use '<item>/<field>' or --scope"
+                exit 1
             }
             if ($items.Count -ge 1) {
                 $item = $items[0]
@@ -67,10 +78,11 @@ switch ($Command) {
         }
 
         if (Get-Command op -ErrorAction SilentlyContinue) {
+            $opVault = if ($ScopeName) { $ScopeName } else { "private" }
             if ($fieldName) {
-                op read "op://private/$itemName/$fieldName" 2>$null
+                op read "op://$opVault/$itemName/$fieldName" 2>$null
             } else {
-                op read "op://private/$Key/password" 2>$null
+                op read "op://$opVault/$Key/password" 2>$null
             }
             exit 0
         }
