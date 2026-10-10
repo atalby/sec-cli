@@ -106,6 +106,78 @@ else
     fail "sec.conf not created in \$HOME/.sec"
 fi
 
+echo "[6] piped install never trusts a foreign cwd's bin/sec (F038 supply-chain)"
+OUT6="$WORK/install6"
+BOOT6="$WORK/bootstrap6"
+EVIL="$WORK/evil"
+mkdir -p "$EVIL/bin"
+printf '#!/bin/sh\necho FOREIGN-TRUSTED-MARKER\n' >"$EVIL/bin/sec"
+chmod +x "$EVIL/bin/sec"
+if (cd "$EVIL" && cat "$REPO_ROOT/install.sh" | HOME="$WORK/home1" INSTALL_DIR="$OUT6" \
+    SEC_BOOTSTRAP_DIR="$BOOT6" SEC_REPO_URL="$REPO_ROOT" bash) >"$WORK/out6.log" 2>&1; then
+    pass "piped install from foreign cwd exits 0"
+else
+    fail "piped install from foreign cwd exited non-zero"
+    cat "$WORK/out6.log"
+fi
+if grep -q "FOREIGN-TRUSTED-MARKER" "$OUT6/sec" 2>/dev/null; then
+    fail "installer copied the foreign cwd's bin/sec"
+else
+    pass "foreign cwd bin/sec ignored"
+fi
+if grep -q "Bootstrapping" "$WORK/out6.log"; then
+    pass "piped mode bootstrapped from SEC_REPO_URL instead of cwd"
+else
+    fail "no bootstrap occurred from a foreign cwd"
+fi
+
+echo "[7] LICENSE is installed alongside the binaries (F051)"
+if [[ -f "$OUT1/sec-cli-LICENSE" ]] && diff -q "$REPO_ROOT/LICENSE" "$OUT1/sec-cli-LICENSE" >/dev/null 2>&1; then
+    pass "LICENSE copied to install dir, byte-identical"
+else
+    fail "LICENSE not installed (expected $OUT1/sec-cli-LICENSE)"
+fi
+
+echo "[8] file-mode install warns about missing runtime dependencies (F053)"
+MINBIN8="$WORK/minbin8"
+mkdir -p "$MINBIN8"
+for _b in bash mkdir chmod dirname cp; do
+    ln -s "$(command -v "$_b")" "$MINBIN8/$_b"
+done
+OUT8="$WORK/install8"
+if env -i "PATH=$MINBIN8" "HOME=$WORK/home1" "INSTALL_DIR=$OUT8" \
+    "$REPO_ROOT/install.sh" >"$WORK/out8.log" 2>&1; then
+    pass "install still succeeds with jq/python3 absent"
+else
+    fail "install failed when jq/python3 absent"
+    cat "$WORK/out8.log"
+fi
+if grep -q "jq" "$WORK/out8.log" && grep -q "python3" "$WORK/out8.log" && grep -qi "warning" "$WORK/out8.log"; then
+    pass "warnings name both missing runtime deps"
+else
+    fail "no missing-dependency warnings in: $(cat "$WORK/out8.log")"
+fi
+
+echo "[9] piped install fails with a clear diagnostic when git is absent (F053)"
+BOOT9="$WORK/bootstrap9"
+MINBIN9="$WORK/minbin9"
+mkdir -p "$MINBIN9"
+for _b in bash mkdir chmod dirname cp; do
+    ln -s "$(command -v "$_b")" "$MINBIN9/$_b"
+done
+set +e
+(cd "$WORK" && cat "$REPO_ROOT/install.sh" | env -i "PATH=$MINBIN9" "HOME=$WORK/home1" \
+    "INSTALL_DIR=$WORK/install9" "SEC_BOOTSTRAP_DIR=$BOOT9" "SEC_REPO_URL=$REPO_ROOT" bash) \
+    >"$WORK/out9.log" 2>&1
+RC9=$?
+set -e
+if [[ $RC9 -ne 0 ]]; then pass "piped install without git exits non-zero"; else fail "piped install without git exited 0"; fi
+if grep -q "git is required" "$WORK/out9.log"; then
+    pass "clear git-missing diagnostic"
+else
+    fail "raw failure instead of diagnostic: $(cat "$WORK/out9.log")"
+fi
+
 echo ""
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"
