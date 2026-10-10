@@ -391,7 +391,7 @@ is the production write path and an install hang is a user's first
 impression. Contrast: the guard tests do exercise the refusal paths
 (exit 2/1), so policy-failure is covered while network-failure is not.
 
-### 12. Untrusted input reaching a trusted sink -- `bin/sec:65`, `bin/sec:118`, `bin/sec-sync-controller.py:120`, `install.sh:7`, `.mcp.json:1`
+### 12. Untrusted input reaching a trusted sink -- `bin/sec:65`, `bin/sec:118`, `bin/sec-sync-controller.py:120`, `install.sh:7`, `.mcp.json.example:1`
 
 Trace each external input to its sink. CLI argv: `bin/sec:65` regex-selects
 a tenant from user input, then dispatch (`bin/sec:159`) chooses the
@@ -402,13 +402,16 @@ compromised CI or hostile dotfile). Provider output: `bin/sec:118` executes
 it (`eval`), `bin/sec:89` and friends parse it with `jq`; sync controller
 URL-constructs with the secret name at `bin/sec-sync-controller.py:120` —
 what chars can a `SYNC_KEYS` value carry into an API path? Config-adjacent:
-`.mcp.json` is prompt-adjacent surface consumed by agent tooling. (Prior
+`.mcp.json.example` wires the host-local (gitignored) `.mcp.json` through
+`bin/hyer-mcp.sh`, so agent tooling never carries a tracked exec string —
+check that the wrapper keeps the PAT env-only. (Prior
 art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **95 tracked files** (`git ls-files | wc -l`, re-measured
-2026-10-09 after the issue #8 suite and CI additions). First matching row wins, so specific rows precede general ones.
+Denominator: **96 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-10 after issue #20: `.mcp.json` untracked, `.mcp.json.example`
+and `bin/hyer-mcp.sh` added). First matching row wins, so specific rows precede general ones.
 `sentinel.sh` fails on any tracked file matched by no row, and on any row
 matching no file except the one declared-empty row below.
 
@@ -418,7 +421,7 @@ matching no file except the one declared-empty row below.
 | `.gemini/**` | 4 |
 | `.github/**` | 5 |
 | `.gitignore` | 1, 8 |
-| `.mcp.json` | 1, 4 |
+| `.mcp.json.example` | 1, 4 |
 | `.opencode/**` | 4 |
 | `.claude/**` | 4 |
 | `ADAPTERS.md` | 4, 5 |
@@ -429,6 +432,7 @@ matching no file except the one declared-empty row below.
 | `README.md` | 4, 5 |
 | `SKILL.md` | 4 |
 | `bin/bw-session-keeper` | 1, 9 |
+| `bin/hyer-mcp.sh` | 1, 4 |
 | `bin/sec` | 4, 12, 1 |
 | `bin/sec-classify.py` | 10, 3 |
 | `bin/sec-migrator` | 10, 12 |
@@ -472,6 +476,7 @@ never return the path.
 | `.cache/` (operator runtime cache for housekeep/session state) | no | yes | 7 |
 | `~/.sec/` (literal path; inert — the real config lives outside the repo at `$HOME/.sec`) | no | yes | 7 |
 | `housekeep_plan.json`, `snapshot_*.json`, `migration_transaction.json` (writers: `bin/sec-organizer`, `bin/sec-migrator`) | no | yes | 7 |
+| `.mcp.json` (host-local MCP wiring; tracked copy removed in issue #20, `.mcp.json.example` is the tracked template) | yes | yes | 4 |
 | `node_modules/`, `vendor/` | **absent** | n/a | 8 |
 | `.pytest_cache/` | **absent** | n/a | 3 |
 | `graphify-out/`, `graft/` (regenerable code-graph caches) | **absent** | n/a | 8 |

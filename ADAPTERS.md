@@ -125,17 +125,25 @@ cloning Hyer directly.
 - **Hub location**: filesystem-local checkout `~/sandbox/hyer`, remote
   `git@gitlab.com:at-tech-io/infrastructure/hyer.git` (the hub lives
   on GitLab even though this repo doesn't).
-- **Tool**: `hyer` MCP server, wired in `.mcp.json`
-  (`hyer-mcp/dist/stdio-server.js` from that checkout, `GITLAB_TOKEN`
-  injected via `sec get hyer-gitlab-pat`).
+- **Tool**: `hyer` MCP server, launched by `bin/hyer-mcp.sh`
+  (resolves `$HYER_HOME`, default `~/sandbox/hyer`, runs
+  `hyer-mcp/dist/stdio-server.js` from that checkout; `GITLAB_TOKEN`
+  fetched via `sec get hyer-gitlab-pat` and exported to node's
+  environment — never argv). MCP client config is host-local: copy the
+  tracked `.mcp.json.example` to `.mcp.json` (gitignored) and set the
+  two paths.
 - **Check current/latest version**: `sync_status` with this repo's
   current `AGENTS.md` version as `current_version`.
 - **Fetch latest content**: `get_methodology` with `version: "stable"`.
-- **Known fragility**: (a) `.mcp.json`'s path tracks the hub checkout's
-  disk, not a git ref — and until 2026-10-08 it pointed at a foreign
-  machine's path (`/Users/anass/...`, never valid on this host);
-  corrected to `/home/opc/sandbox/hyer/...` then, with the boot of the
-  server script verified against the new path. (b) 2026-10-08: the
+- **Known fragility**: (a) the hub checkout location still tracks disk,
+  not a git ref — but since issue #20 (2026-10-10) that path lives only
+  in the host-local, gitignored `.mcp.json` (template:
+  `.mcp.json.example`), resolved at server start via `HYER_HOME`, so
+  the tracked tree carries no absolute host path, no `sh -c` exec
+  string, and the PAT is delivered via environment only (until
+  2026-10-08 the tracked file had pointed at a never-valid
+  `/Users/anass/...` path; corrected to `/home/opc/sandbox/hyer` then,
+  re-hardened out of the tree under #20). (b) 2026-10-08: the
   server responded `fetch is not defined` to every method
   (`locate_hub`, `list_payload`, `get_methodology`) — a deterministic
   server-side bug, retried once and still failing, so the MCP read path
