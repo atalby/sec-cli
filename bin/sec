@@ -698,6 +698,8 @@ EOF
         ;;
 
     *)
-        usage
+        echo "[ERROR] unknown command: $cmd" >&2
+        echo "Run 'sec --help' for usage." >&2
+        exit 2
         ;;
 esac

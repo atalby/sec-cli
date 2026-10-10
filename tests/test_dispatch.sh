@@ -223,12 +223,12 @@ RC=$?
 set -e
 if [[ $RC -eq 0 ]] && grep -q "Usage:" <<<"$OUT"; then pass "no-args exits 0 with Usage"; else fail "no-args rc=$RC"; fi
 
-echo "[2] unknown command falls through to usage (current behavior: exit 0)"
+echo "[2] unknown command fails loudly: exit 2 + tagged error, not a silent usage + exit 0"
 set +e
 OUT="$(run_sec "$H" frobnicate 2>&1)"
 RC=$?
 set -e
-if [[ $RC -eq 0 ]] && grep -q "Usage:" <<<"$OUT"; then pass "unknown cmd prints usage, exit 0"; else fail "unknown cmd rc=$RC out=$OUT"; fi
+if [[ $RC -eq 2 ]] && grep -q "^\[ERROR\] unknown command" <<<"$OUT"; then pass "unknown cmd exits 2 with a tagged error"; else fail "unknown cmd rc=$RC out=$OUT"; fi
 
 echo "[3] bw get: plain key returns login.password"
 set +e

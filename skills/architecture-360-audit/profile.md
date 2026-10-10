@@ -249,8 +249,8 @@ instrument rather than the product but runs the same way:
       ok: --help exits 0 with Usage
       ok: help states per-tenant injection truth (F001)
       ok: no-args exits 0 with Usage
-    [2] unknown command falls through to usage (current behavior: exit 0)
-      ok: unknown cmd prints usage, exit 0
+    [2] unknown command fails loudly: exit 2 + tagged error, not a silent usage + exit 0
+      ok: unknown cmd exits 2 with a tagged error
     [3] bw get: plain key returns login.password
       ok: bw get MY_API_KEY -> pw-MY_API_KEY
     [4] bw get: item/field subpath
@@ -461,12 +461,12 @@ row's timestamp); re-run before trusting a state claim):
     1	CLOSED	Hyer payload lag: repo on HIAE Protocol v5.28.0, hub stable is v5.39.1		2026-10-08T23:06:39Z
 
 **Commit history** (the intent record for forensic scan; captured 2026-10-10 at
-commit `12f4e72`):
+commit `9ceea3b`):
 
      $ git log --oneline | wc -l
-     108
+     109
      $ git log -1 --format='%h %ad %s' --date=short
-     12f4e72 2026-10-10 fix(sec): housekeep/migrate/keeper arms error instead of silent exit 0 (F021 residual, #36); refresh doc counts
+     9ceea3b 2026-10-10 fix(sec): get with an absent backend CLI names the CLI, not a phantom 'not found' (#37)
     $ git log --reverse --format='%h %ad %s' --date=short | sed -n '1p'
     89c67d2 2026-08-08 feat: initial release of sec-cli v1.0.0 (Zero-Plaintext Multi-Tenant Secret Manager, Housekeeper & Migration Engine)
 
