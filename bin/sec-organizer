@@ -231,6 +231,8 @@ cmd_revert() {
             ;;
     esac
 
+    local rc=0
+
     if [[ "$backend" == "bw" ]]; then
         while read -r action; do
             if [[ -z "$action" ]]; then continue; fi
@@ -241,12 +243,20 @@ cmd_revert() {
 
             echo "[INFO] Reverting \"$id\" -> Original Name: \"$orig_name\", Original Folder: \"${orig_folder_name:-root}\"..."
             item_json="$(bw get item "$id" 2>/dev/null)"
+            if [[ -z "$item_json" || "$item_json" == "null" ]]; then
+                echo "[ERROR] revert failed: could not read item '$id' from vault" >&2
+                rc=1
+                continue
+            fi
             if [[ "$orig_fid" == "null" || -z "$orig_fid" ]]; then
                 updated_item="$(echo "$item_json" | jq --arg n "$orig_name" '.folderId = null | .name = $n' | bw encode)"
             else
                 updated_item="$(echo "$item_json" | jq --arg fid "$orig_fid" --arg n "$orig_name" '.folderId = $fid | .name = $n' | bw encode)"
             fi
-            bw edit item "$id" "$updated_item" >/dev/null
+            if ! bw edit item "$id" "$updated_item" >/dev/null 2>&1; then
+                echo "[ERROR] revert failed: could not restore item '$id' (name: \"$orig_name\")" >&2
+                rc=1
+            fi
         done <<< "$actions"
 
         echo "[INFO] Syncing Bitwarden vault..."
@@ -259,8 +269,16 @@ cmd_revert() {
             orig_name="$(echo "$action" | jq -r '.originalName')"
 
             echo "[INFO] Reverting 1Password item \"$id\" -> Title: \"$orig_name\"..."
-            op item edit "$id" --title "$orig_name" --tags="" >/dev/null
+            if ! op item edit "$id" --title "$orig_name" --tags="" >/dev/null 2>&1; then
+                echo "[ERROR] revert failed: could not restore 1Password item '$id' (title: \"$orig_name\")" >&2
+                rc=1
+            fi
         done <<< "$actions"
+    fi
+
+    if [[ $rc -ne 0 ]]; then
+        echo "[ERROR] Revert incomplete; snapshot kept at $LATEST_SNAPSHOT so the operation can be retried." >&2
+        exit 1
     fi
 
     rm -f "$LATEST_SNAPSHOT"

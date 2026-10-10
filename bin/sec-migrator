@@ -35,11 +35,18 @@ if [[ "${1:-}" == "--undo" || "${1:-}" == "undo" || "${1:-}" == "revert" ]]; the
         exit 1
     fi
 
-    dst="$(jq -r '.dstBackend // "op"' "$TX_FILE")"
-    created_items="$(jq -c '.createdItems[]' "$TX_FILE" 2>/dev/null || echo "")"
+    if ! dst="$(jq -r '.dstBackend // "op"' "$TX_FILE" 2>/dev/null)"; then
+        echo "[ERROR] corrupt or unreadable migration transaction log ($TX_FILE). Undo is blocked; inspect or delete the file manually." >&2
+        exit 1
+    fi
+    if ! created_items="$(jq -c '.createdItems[]?' "$TX_FILE" 2>/dev/null)"; then
+        echo "[ERROR] corrupt or unreadable migration transaction log ($TX_FILE). Undo is blocked; inspect or delete the file manually." >&2
+        exit 1
+    fi
 
     if [[ -z "$created_items" ]]; then
         echo "[INFO] Transaction log contains zero created items."
+        rm -f "$TX_FILE"
         exit 0
     fi
 
