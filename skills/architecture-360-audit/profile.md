@@ -611,11 +611,12 @@ product surface: a broken bridge is a broken feature.
 
 Read tracker state live with the Step 8 command; never from memory or from
 `HISTORY.md`. Reconcile both directions: confirmed findings already filed
-(#2 is the standing one), and open/closed issues whose code state disagrees
-— all three closed issues were closed by commits in one 2026-10-08 session;
-verify each described change is actually on disk now. `HISTORY.md:1` is the
-narrative intent record for forensic scan, current-state paragraph updated
-in place, entries append-only.
+(the standing open ones are #2 and #13, both hub-side, plus #32 persona
+re-derivation awaiting operator go-ahead), and open/closed issues whose code
+state disagrees — the three issues closed on 2026-10-08 were closed by
+commits in that one session; verify each described change is actually on disk
+now. `HISTORY.md:1` is the narrative intent record for forensic scan,
+current-state paragraph updated in place, entries append-only.
 
 ### 6. Infrastructure, delivery, and cost -- `install.sh:7`, `README.md:29`, `packs/zero-cost-infra-defaults/PACK.md:1`, `.gemini/settings.json:1`
 
@@ -627,7 +628,9 @@ pre-commit wrapper;
 there is no build and no release automation — establish what actually
 gates a release: CI plus the wrapper, nothing else. Cost posture comes
 from `packs/zero-cost-infra-defaults` (opted in; check its claims still bind
-against what the repo actually runs — zero CI minutes because zero CI).
+against what the repo actually runs — CI runs consume free-tier minutes on
+this public repo, so the zero-cost claim binds on minutes-spend, not on
+zero-CI).
 `.gemini/settings.json` and the bridge dirs are harness delivery surfaces.
 
 ### 7. Persistence and state -- `bin/sec:8`, `sec.conf.example:1`, `.gitignore:12`, `bin/sec-organizer:7`, `bin/sec-migrator:6`
@@ -684,16 +687,19 @@ order?), and multi-tenant boundary correctness (`docs/MULTI_TENANCY.md:1` —
 can tenant A's key resolve to tenant B's item through the search fallbacks
 in `bin/sec:337-371`?).
 
-### 11. Resilience of the happy path -- `bin/sec-sync-controller.py:127`, `bin/sec-sync-controller.py:90`, `install.sh:24`, `bin/sec:116`
+### 11. Resilience of the happy path -- `bin/sec-sync-controller.py:17`, `bin/sec-sync-controller.py:83`, `install.sh:24`, `bin/sec:116`
 
 Count every external call and check three properties on each: timeout,
 retry, defined behaviour on partial failure. The measured baseline this
-build: **zero `timeout` occurrences** in `bin/sec-sync-controller.py`,
-`install.sh`, or `bin/sec` — `urlopen` at `bin/sec-sync-controller.py:127`
-has no timeout, the `subprocess.run`/`Popen` gcloud calls (e.g.
-`bin/sec-sync-controller.py:90`) pass no `timeout=`, `git clone --depth 1`
-at `install.sh:24` can hang unbounded, and the piped install itself has no
-`--max-time`. The failure matters more here than in most repos: `sec sync`
+build (re-derived 2026-10-10 after issue #6 landed): `bin/sec-sync-controller.py`
+has **4 timeout sites** — all `subprocess.run` backend calls (lines 83, 99,
+119) and the `urlopen` at line 170 pass `timeout=BACKEND_TIMEOUT`
+(`SEC_SYNC_TIMEOUT`, default 60s, defined at line 17), so the earlier
+"zero timeout occurrences" baseline is obsolete there. Still unguarded:
+`git clone --depth 1` at `install.sh:24` (no `--max-time`, can hang
+unbounded) and the piped install itself (no `--max-time`) — `install.sh` and
+`bin/sec` still have **zero** timeout occurrences. The failure matters more
+here than in most repos: `sec sync`
 is the production write path and an install hang is a user's first
 impression. Contrast: the guard tests do exercise the refusal paths
 (exit 2/1), so policy-failure is covered while network-failure is not.
