@@ -409,8 +409,9 @@ instrument rather than the product but runs the same way:
     2026-10-10, when opencode bootstrapped its plugin dependency there;
     the pre-bootstrap census was `(no output)`.
 
-**Tracker, live** (point-in-time capture, 2026-10-10 at commit `f1decee` — the
-issue list moves on every close/open; re-run before trusting a state claim):
+**Tracker, live** (point-in-time capture, 2026-10-10 at commit `29b60b1` — the
+issue list moves on every close/open/comment (a comment refreshes the
+row's timestamp); re-run before trusting a state claim):
 
      $ gh issue list --repo atalby/sec-cli --state all --limit 100
      32	OPEN	Persona claims in 360-audit profile.md need full re-derivation (post-CI/post-pytest/F052 era)		2026-10-10T16:37:25Z
@@ -443,16 +444,16 @@ issue list moves on every close/open; re-run before trusting a state claim):
     5	CLOSED	#1 follow-up: packs/ never re-synced (7/9 differ from stable) + changelog review unrecorded (F055)		2026-10-09T20:00:52Z
     4	CLOSED	Port deleted GitLab issue templates to GitHub-native .github/ISSUE_TEMPLATE/		2026-10-08T14:23:59Z
     3	CLOSED	sec sync pushes all present secrets to prod backends with no dry-run or confirmation		2026-10-08T14:22:15Z
-    2	OPEN	Pre-commit Step 5 never runs tests/*.sh suites (our install tests are skipped every commit)		2026-10-10T16:36:55Z
+    2	OPEN	Pre-commit Step 5 never runs tests/*.sh suites (our install tests are skipped every commit)		2026-10-10T17:41:19Z
     1	CLOSED	Hyer payload lag: repo on HIAE Protocol v5.28.0, hub stable is v5.39.1		2026-10-08T23:06:39Z
 
 **Commit history** (the intent record for forensic scan; captured 2026-10-10 at
-commit `f1decee`):
+commit `29b60b1`):
 
      $ git log --oneline | wc -l
-     83
+     88
      $ git log -1 --format='%h %ad %s' --date=short
-     f1decee 2026-10-10 docs(360): re-capture tracker and commit-history quotes; label snapshots point-in-time
+     29b60b1 2026-10-10 docs: record the CI mirror runs — red first, green after the venv fix
     $ git log --reverse --format='%h %ad %s' --date=short | sed -n '1p'
     89c67d2 2026-08-08 feat: initial release of sec-cli v1.0.0 (Zero-Plaintext Multi-Tenant Secret Manager, Housekeeper & Migration Engine)
 
