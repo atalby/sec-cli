@@ -8,10 +8,10 @@
 - Final verification: sentinel coverage + citations green (99 files/38 rows/6 gitignored/12 personas); all five bash suites ALL TESTS PASSED; pytest mirror 9 passed, 1 skipped (10 passed with SEC_TEST_DISPATCH=1); pre-commit gate green; push run green; tree clean.
 
 ## Next High-Value Work
-No unblocked in-repo item remains in the tracker: #2/#13 are hub-side (work_items 291/292), #32's full 360 re-derivation is operator-gated per the 360 skill Step 1. Highest-value unfinished work that IS reachable here, in order:
-1. The prose-phantom catch (#35's stated remainder): extend phase 3 to check multi-word quoted claims against the tree, or declare prose spans exempt in profile.md with an explicit exceptions list. Design must avoid false positives on legit phrase claims.
-2. #32's operator go-ahead: ask the operator for the 360 audit (full re-derivation, what is MISSING per persona, not just claim verification) — then run the architecture-360-audit skill end to end.
-3. When the hub lands: re-point the hook to run tests/*.sh (work_items 291) and check packs/ byte-identity after the payload resize (work_items 292).
+No unblocked in-repo item remains in the tracker: #2/#13 are hub-side (work_items 291/292), #32's full 360 re-derivation is operator-gated per the 360 skill Step 1.
+- Prose-phantom catch (#35's stated remainder): MEASURED AND DECLINED for now. Census run 2026-10-10 at 699e6f2: all non-path backticked spans in profile.md/SKILL.md checked against every tracked file outside the audit docs = 10 zero-hits, every one a legitimate survey shape (gitignore globs `.claude/**`, `.gemini/**`, `.github/**`, `.opencode/**`, `packs/**`, `vendor/`; quoted absent-tool names `.coveragerc`, `pytest-cov`; the placeholder `closes #N`; the instruction phrase `git check-ignore`). A phrase-shaped checker would produce exactly one flag and it would be a false positive (an instruction, not a claim). Signal-to-noise does not justify the checker at this doc size; revisit only if a live prose phantom appears. Phase 3 stays identifier-shaped, which is where the real phantom class (`op account list` in spirit) lived.
+- #32's operator go-ahead: ask the operator for the 360 audit (full re-derivation, what is MISSING per persona, not just claim verification) — then run the architecture-360-audit skill end to end.
+- When the hub lands: re-point the hook to run tests/*.sh (work_items 291) and check packs/ byte-identity after the payload resize (work_items 292).
 
 ## Resume Instructions
 Resume with `gh issue list --repo atalby/sec-cli --state open` and this file. #2/#13 stay comment-only until the hub lands; #32 needs explicit operator go-ahead before any 360 audit. Tests: the four fast suites via pytest mirror (`python3 -m pytest scripts/tests/ -q`), all five directly, plus `bash skills/architecture-360-audit/sentinel.sh citations` after any profile.md edit.

@@ -29,7 +29,13 @@ own secrets tool, not just another repo.
   Engineer) — this repo's opted-in `packs/solo-founder-governance`
   names a single final approver, and no other opted-in pack or doc here
   names a different owner.
-- **Last updated**: 2026-10-10 (audit follow-up issues #16–#28 —
+- **Last updated**: 2026-10-10 (later same day: issues #30–#35 —
+  sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
+  the four fast bash suites with dispatch opt-in behind `SEC_TEST_DISPATCH=1`,
+  GitHub Actions runs the mirror in a venv (issue #2 half), Vercel phantom
+  dropped from the sync controller, sentinel citations gained an anchor-content
+  lint and an identifier-claim-existence lint; earlier the same day: audit
+  follow-up issues #16–#28 —
   keeper/organizer/migrator/install/MCP/classify honesty guards, suite
   counts re-measured; prior 2026-10-09: 360 audit run 2026-10-09-000410
   and its report §8 doc truth-up applied, then issue #8: fifth test suite
