@@ -132,7 +132,7 @@ case "$cmd" in
         fi
 
         echo "[INFO] Unlocking Bitwarden vault..."
-        raw_session="$(bw unlock "$password" --raw 2>/dev/null || true)"
+        raw_session="$(BW_UNLOCK_PASS="$password" bw unlock --passwordenv BW_UNLOCK_PASS --raw 2>/dev/null || true)"
 
         if [[ -n "$raw_session" ]]; then
             save_session "$raw_session"

@@ -50,6 +50,9 @@ case "${1:-}" in
         echo '{"id":"created-1"}'
         ;;
     unlock)
+        if [ -n "${BW_UNLOCK_PASS:-}" ]; then
+            echo "bw-env-present" >>"${SEC_TEST_BW_LOG:?SEC_TEST_BW_LOG unset}"
+        fi
         echo "session-tok-123"
         ;;
     *)
@@ -413,6 +416,16 @@ OUT="$(env -i "PATH=$MINBIN" "HOME=$H7" "SEC_ALLOW_PLAINTEXT_MASTER_PASS=1" \
 RC=$?
 set -e
 if [[ $RC -eq 0 ]] && grep -q "Vault unlocked successfully" <<<"$OUT"; then pass "opt-in rotate unlocks via stored pass"; else fail "opt-in rotate rc=$RC out=$OUT"; fi
+
+echo "[22b] F003: keeper unlock never puts the password on bw's argv"
+H8="$(new_home "$WORK/h8")"
+set +e
+OUT="$(run_keeper "$H8" "$REPO_ROOT/bin/bw-session-keeper" unlock test-master-pass 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "Vault unlocked successfully" <<<"$OUT"; then pass "keeper unlock with password exits 0 and saves session"; else fail "keeper unlock rc=$RC out=$OUT"; fi
+if grep 'bw unlock' "$BWLOG" | grep -q 'test-master-pass'; then fail "master password exposed on bw argv: $(grep 'bw unlock' "$BWLOG")"; else pass "master password absent from bw argv"; fi
+if grep -q 'bw-env-present' "$BWLOG"; then pass "master password delivered to bw via env (BW_UNLOCK_PASS)"; else fail "password not passed via BW_UNLOCK_PASS env: $(grep 'bw unlock' "$BWLOG")"; fi
 
 echo "[23] no producer still emits legacy [sec*] event prefixes (F048 retrofit)"
 LEGACY=0
