@@ -419,7 +419,7 @@ instrument rather than the product but runs the same way:
     2026-10-10, when opencode bootstrapped its plugin dependency there;
     the pre-bootstrap census was `(no output)`.
 
-**Tracker, live** (point-in-time capture, 2026-10-10 at commit `699e6f2` — the
+**Tracker, live** (point-in-time capture, 2026-10-10 at commit `eb9b188` — the
 issue list moves on every close/open/comment (a comment refreshes the
 row's timestamp); re-run before trusting a state claim):
 
@@ -461,12 +461,12 @@ row's timestamp); re-run before trusting a state claim):
     1	CLOSED	Hyer payload lag: repo on HIAE Protocol v5.28.0, hub stable is v5.39.1		2026-10-08T23:06:39Z
 
 **Commit history** (the intent record for forensic scan; captured 2026-10-10 at
-commit `699e6f2`):
+commit `eb9b188`):
 
      $ git log --oneline | wc -l
-     100
+     102
      $ git log -1 --format='%h %ad %s' --date=short
-     699e6f2 2026-10-10 docs: mark resume point at the prose-phantom catch; #35 closed
+     eb9b188 2026-10-10 docs: resume decision on the prose-phantom census; ADAPTERS last-updated covers #30-#35
     $ git log --reverse --format='%h %ad %s' --date=short | sed -n '1p'
     89c67d2 2026-08-08 feat: initial release of sec-cli v1.0.0 (Zero-Plaintext Multi-Tenant Secret Manager, Housekeeper & Migration Engine)
 
