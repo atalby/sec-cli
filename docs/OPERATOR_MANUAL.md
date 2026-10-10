@@ -8,7 +8,7 @@ Welcome to the **`sec-cli` Operator Manual**. This document provides detailed te
 
 `sec-cli` is designed around four core principles:
 
-1. **Zero-Plaintext Enforcement**: Secrets are stored exclusively in secure OS Keychains or encrypted vault providers. Process execution (`sec run -- <cmd>`) injects credentials into RAM without leaving `.env` files on disk.
+1. **Zero-Plaintext Enforcement**: Secrets live in encrypted vault providers; `setup-keychain` puts the Bitwarden master password in an OS Keychain when one exists (plaintext fallback requires `SEC_ALLOW_PLAINTEXT_MASTER_PASS=1`, issue #10). Process execution injects credentials into RAM only for `bws`/`op`/`infisical` (vendor run-wrappers); `sec run -- <cmd>` under `bitwarden` — the default — is a plain exec with no injection (audit F001).
 2. **Multi-Tenant Routing**: Supports configuring multiple vault backends simultaneously (`~/.sec/sec.conf`) with simple tenant prefix command routing (`sec 1pass get KEY` vs `sec bitwarden get KEY`).
 3. **Machine Learning Housekeeping**: Embedded zero-dependency ML classification engine ([`bin/sec-classify.py`](../bin/sec-classify.py)) analyzes title tokens, URIs, and field formats to propose folder organization structures and disambiguate generic titles (`Gmail (anass.personal@gmail.com)`).
 4. **Transaction Safety & Revertability**: Every apply operation generates a timestamped, mode `0600` metadata-only pre-apply backup snapshot (`~/.cache/bitwarden/snapshot_latest.json`) and supports single-command rollbacks (`sec housekeep revert` / `sec migrate --undo`).
@@ -58,7 +58,7 @@ Stores or creates a new secret entry in the active or specified tenant vault.
   ```
 
 #### 3. `sec [<tenant>] run -- <command_and_args>`
-Executes `<command_and_args>` as a child process with injected environment variables in process memory.
+Executes `<command_and_args>` as a child process. Environment injection happens only when the tenant is `bws`, `op` or `infisical` — the vendor's run-wrapper injects the secrets. Under `bitwarden` (the default) the command runs as a plain child with no vault-injected environment; fetch values with `sec get` and pass them yourself.
 
 - **Examples**:
   ```bash

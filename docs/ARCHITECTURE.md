@@ -18,6 +18,6 @@
 - `tests/`: five zero-dependency bash suites (`test_install.sh`, `test_sync_guard.sh`, `test_write_honesty.sh`, `test_sentinel.sh`, `test_dispatch.sh`) — run manually and by CI (`.github/workflows/test.yml`, push/PR to main, actions pinned by full commit SHA); the pre-commit Step 5 does not recognize `tests/*.sh` (issue #2).
 
 ## 3. Zero-Plaintext Security Architecture
-- **In-Memory Injection**: Secrets are injected directly into child process environments without touching disk.
+- **In-Memory Injection**: For `bws`/`op`/`infisical`, secrets reach child process environments through the vendor run-wrappers without touching disk; `bitwarden`'s `sec run` is a plain exec with no injection (audit F001, docs corrected 2026-10-09).
 - **Zero-Storage Principle**: Plaintext secrets are never stored in temporary files or shell histories.
 - **Confluence Space**: `SECCLI` | **Jira Project Key**: `SEC`

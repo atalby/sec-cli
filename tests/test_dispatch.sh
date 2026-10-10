@@ -162,6 +162,7 @@ OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H" "$REPO_ROOT/bin/sec" --hel
 RC=$?
 set -e
 if [[ $RC -eq 0 ]] && grep -q "Usage:" <<<"$OUT"; then pass "--help exits 0 with Usage"; else fail "--help rc=$RC"; fi
+if grep -q "env injection only for bws/op/infisical" <<<"$OUT"; then pass "help states per-tenant injection truth (F001)"; else fail "help still promises universal injection: $OUT"; fi
 set +e
 OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H" "$REPO_ROOT/bin/sec" 2>&1 </dev/null)"
 RC=$?

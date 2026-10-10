@@ -135,7 +135,7 @@ usage() {
     echo "  sec [<tenant>] get <key>                 Retrieve secret value from tenant or default vault"
     echo "  sec [<tenant>] get <item>/<field>        Retrieve specific field from named vault item (e.g. 'github/password')"
     echo "  sec [<tenant>] set <key> [<val>]         Store / create new secret in tenant vault (prompts if <val> omitted)"
-    echo "  sec [<tenant>] run -- <cmd>              Execute command with tenant secrets injected into process memory"
+    echo "  sec [<tenant>] run -- <cmd>              Run command; env injection only for bws/op/infisical (bitwarden: plain exec)"
     echo "  sec housekeep {plan|apply|revert}        Intelligent ML categorization, plan/apply, & instant rollback engine"
     echo "  sec migrate --from <src> --to <dst>     Zero-plaintext vault-to-vault migration engine"
     echo "  sec sync [--dry-run|--yes]          Central Secret Sync Engine: push shell-exported SYNC_KEYS to GCP Secret Manager & GitLab group variables (--dry-run previews, --yes confirms)"

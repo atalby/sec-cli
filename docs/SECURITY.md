@@ -8,7 +8,7 @@
 
 | Threat Vector | Potential Vulnerability | How `sec-cli` Mitigates It |
 | :--- | :--- | :--- |
-| **Disk Storage Leak** | Unencrypted secrets in `.env` files or Git commits. | **Zero-Plaintext**: Secrets are never written to disk. Injected directly into memory via `sec run --`. |
+| **Disk Storage Leak** | Unencrypted secrets in `.env` files or Git commits. | **Zero-Plaintext**: Vendor run-wrappers (`bws`/`op`/`infisical`) inject secrets into process memory via `sec run --`; under `bitwarden` (the default) `sec run` is a plain exec with no injection (audit F001). Documented on-disk exceptions, both mode 0600: the session-key file, and the master-pass file which is written/read only with `SEC_ALLOW_PLAINTEXT_MASTER_PASS=1` (issue #10). |
 | **Shell History Leak** | Secrets visible in `~/.zsh_history` or `~/.bash_history`. | **Silent Stdin Prompts**: `sec set KEY` uses terminal echo-off prompts (`read -rsp` / `-AsSecureString`). |
 | **Process Table Snooping** | Secrets visible in `ps aux` command-line arguments. | **In-Memory Injection**: Credentials passed via process environment variables (`ENV`). |
 | **Snapshot Exposure** | Unauthorized users reading backup plan files (`~/.cache/bitwarden/`). | **Metadata-Only Snapshots**: Backup snapshots store **only item UUIDs, original titles, and folder IDs**. Passwords and secret values are **not** present in snapshot files. |

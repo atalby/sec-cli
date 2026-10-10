@@ -8,7 +8,7 @@
 
 ## ✨ Key Features
 
-- 🛡️ **Zero-Plaintext Security**: Eliminates `.env` files and hardcoded API keys. Credentials are injected directly into process memory (`sec run -- <cmd>`) or prompt stdin without appearing in terminal command-line history.
+- 🛡️ **Zero-Plaintext Security**: Eliminates `.env` files and hardcoded API keys. For `bws`, `op` and `infisical`, `sec run -- <cmd>` delegates to the vendor run-wrapper so credentials are injected into process memory without appearing in terminal command-line history; under `bitwarden` (the default tenant) `sec run` is a plain exec — fetch values with `sec get` and supply them yourself.
 - 🏢 **Multi-Tenant Configuration (`~/.sec/sec.conf`)**: Configure default vaults and override target tenants per command (`sec 1pass get KEY` vs `sec bitwarden get KEY`).
 - 🔄 **Smart Session Auto-Rotation**: Keeps Bitwarden/1Password sessions alive in background RAM using OS Keychains (`security` / `secret-tool`), with fallback to interactive prompts when locked.
 - 🧹 **Intelligent Housekeeping (`sec housekeep plan` / `apply`)**:
@@ -77,7 +77,7 @@ Usage:
   sec [<tenant>] get <key>                 Retrieve secret value from tenant or default vault
   sec [<tenant>] get <item>/<field>        Retrieve specific field from named vault item (e.g. 'github/password')
   sec [<tenant>] set <key> [<val>]         Store / create new secret in tenant vault (prompts if <val> omitted)
-  sec [<tenant>] run -- <cmd>              Execute command with tenant secrets injected into process memory
+  sec [<tenant>] run -- <cmd>              Run command; env injection only for bws/op/infisical (bitwarden: plain exec)
   sec sync [--dry-run|--yes]          Central Secret Sync Engine: push shell-exported SYNC_KEYS to GCP Secret Manager & GitLab group variables (--dry-run previews, --yes confirms)
   sec housekeep {plan|apply|revert}        Intelligent ML categorization, plan/apply, & instant rollback engine
   sec migrate --from <src> --to <dst>     Zero-plaintext vault-to-vault migration engine
@@ -125,7 +125,7 @@ sec get "github-app/notes"
 sec 1pass get STRIPE_SECRET
 sec bws get STRIPE_SECRET
 
-# Execute process with in-memory environment injection:
+# Run a command (env injection only for bws/op/infisical; bitwarden is a plain exec):
 sec run -- terraform plan
 sec 1pass run -- aws s3 ls
 ```
