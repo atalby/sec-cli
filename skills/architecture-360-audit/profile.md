@@ -544,36 +544,48 @@ Hygiene Specialist for dead surface — and routes all output to the Human
 Systems Architect for approval. A persona here is an audit lens, not a
 dispatched worker.
 
-### 1. Security and access control -- `bin/sec-sync-controller.py:18`, `bin/sec-sync-controller.py:204`, `install.sh:43`, `bin/sec:118`, `.gitignore:11`, `docs/SECURITY.md:1`, `tests/test_sync_guard.sh:41`
+### 1. Security and access control -- `bin/sec-sync-controller.py:19`, `bin/sec-sync-controller.py:248`, `install.sh:50`, `bin/sec:118`, `.gitignore:11`, `docs/SECURITY.md:1`, `tests/test_sync_guard.sh:47`
 
 The zero-plaintext claim in `docs/SECURITY.md` and `docs/ARCHITECTURE.md:1`
 is the repo's reason to exist; audit the places it can leak. The production
-path is `sec sync`: `SYNC_KEYS` at `bin/sec-sync-controller.py:18` names the
-six env keys, and the guards — TTY/`--yes` gate at line 204, dry-run — are
-enforced by `tests/test_sync_guard.sh` (start of suite at
-`tests/test_sync_guard.sh:41`). Re-verify the guards actually precede every
-backend write, and that no other writer exists. The most direct leak surface
+path is `sec sync`: `SYNC_KEYS` at `bin/sec-sync-controller.py:19` names the
+six env keys (verified 2026-10-10: GEMINI_API_KEY, OPENAI_API_KEY,
+ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, ATLASSIAN_API_TOKEN, STRIPE_SECRET_KEY),
+and the guards — TTY/`--yes` gate at line 248, dry-run — are
+enforced by `tests/test_sync_guard.sh` (first suite section
+`[1] --dry-run previews` at `tests/test_sync_guard.sh:47`). Re-verify the
+guards actually precede every backend write, and that no other writer exists.
+The most direct leak surface
 is `bin/sec:118` (`eval $(op signin)`): provider-CLI stdout executed as
-shell. Config confidentiality: `install.sh:43` creates `$HOME/.sec/sec.conf`
-mode 600 — confirm the test that claims it (`tests/test_install.sh:101`)
-still exercises the real path. Note `.gitignore:11` ignores the literal
+shell. Config confidentiality: `install.sh:50` creates `$HOME/.sec/sec.conf`
+mode 600 — the test that claims it is section `[5]` of
+`tests/test_install.sh` (assert at `tests/test_install.sh:104`), and it still
+exercises the real path (runs install.sh against a fake `$HOME`). Note
+`.gitignore:11` ignores the literal
 path `~/.sec/`, which never matches the real `$HOME/.sec` outside the repo —
 vestigial rule with a security-adjacent history; decide whether it hides
 anything (it does not today).
 
-### 2. Architecture and code structure -- `docs/ARCHITECTURE.md:1`, `docs/ARCHITECTURE.md:14`, `bin/sec:65`, `bin/sec:159`, `bin/sec-sync-controller.py:51`
+### 2. Architecture and code structure -- `docs/ARCHITECTURE.md:1`, `bin/sec:149`, `bin/sec:179`, `bin/sec-sync-controller.py:72`, `bin/sec-sync-controller.py:5`
 
 One dispatcher, five sibling executables, one Python controller — judge
 whether the documented component table in `docs/ARCHITECTURE.md` matches the
 tree and the call graph matches the docs. Structural smells to quantify: the
 tenant vocabulary is re-spelled at `bin/sec:65` (regex dispatch),
-`bin/sec:178`, `bin/sec:238`, and `bin/sec:295` (completion tables) with no
-single source; `case "$cmd" in` at `bin/sec:159` is the real command router
-while usage text at `bin/sec:130` is a parallel declaration that only a test
-checks for one line. `docs/ARCHITECTURE.md:14` claims the sync controller
-pushes to "Vercel projects" — verify a Vercel call site exists anywhere; a
-claim with no code is a smoke finding. Python visibility rule: module-level
-public, leading underscore private.
+`bin/sec:171`, `bin/sec:198`, `bin/sec:264`, and `bin/sec:326` (three
+completion tables plus the setup-keychain echo) with no
+single source; `case "$cmd" in` at `bin/sec:179` is the real command router
+while usage text at `bin/sec:149` is a parallel declaration that only a test
+checks for one line. Smoke finding, re-verified 2026-10-10: the sync
+controller's own `--help` (`bin/sec-sync-controller.py:5`) advertises the
+targets "GCP Secret Manager, GitLab Group Variables, Vercel Projects", but
+the only backend writers implemented are `sync_to_gcp_secret_manager`
+(`bin/sec-sync-controller.py:72`) and `sync_to_gitlab_group`
+(`bin/sec-sync-controller.py:156`) — no Vercel call site exists anywhere in
+the tree, so a user-facing contract promises a backend no code implements
+(the old `docs/ARCHITECTURE.md:14` "Vercel projects" sentence no longer
+exists; the claim survived only in the help text). Python visibility rule:
+module-level public, leading underscore private.
 
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:41`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:241`, `ADAPTERS.md:221`
 
@@ -595,15 +607,19 @@ only their install footprint and the controller). Check for assertions that
 pin the same hardcoded constants the implementation uses. The suites' value
 is real but partial — measure the gap, do not dismiss either side.
 
-### 4. Interface and developer experience -- `bin/sec:130`, `bin/sec:237`, `completions/_sec:1`, `SKILL.md:1`, `CLAUDE.md:1`, `skills/REGISTRY.md:1`, `docs/OPERATOR_MANUAL.md:1`
+### 4. Interface and developer experience -- `bin/sec:149`, `bin/sec:263`, `completions/_sec:1`, `SKILL.md:1`, `CLAUDE.md:1`, `skills/REGISTRY.md:1`, `docs/OPERATOR_MANUAL.md:1`
 
-The operator surface is `usage()` at `bin/sec:130` (the subcommand contract,
-including the `sec sync [--dry-run|--yes]` line at `bin/sec:141`), the zsh
+The operator surface is `usage()` at `bin/sec:149` (the subcommand contract,
+including the `sec sync [--dry-run|--yes]` line at `bin/sec:161`), the zsh
 completion `completions/_sec`, `bin/sec.ps1`, and the docs. Measure: does
-every advertised subcommand (`subcmds` list at `bin/sec:237`) exist in the
+every advertised subcommand (`subcmds` list at `bin/sec:263`) exist in the
 dispatch, does every dispatched command appear in usage, do the completions
 agree? AGENTS §8 mandates one `[ TAG ]` line per event for machine-parsed
-stdout — count how much of `bin/` actually conforms. Harness entry points
+stdout — measured 2026-10-10: 7 of the 8 tracked `bin/` entries emit tagged
+output (`sec` 18, `sec-organizer` 29, `sec-sync-controller.py` 29,
+`sec-migrator` 22, `bw-session-keeper` 16, `sec.ps1` 5, `hyer-mcp.sh` 4
+lines); the sole zero is `bin/sec-classify.py`, and `install.sh` (outside
+`bin/`) also emits none. Harness entry points
 (`SKILL.md`, `CLAUDE.md`, `.gemini/`, `skills/REGISTRY.md`) are part of the
 product surface: a broken bridge is a broken feature.
 
@@ -633,17 +649,20 @@ this public repo, so the zero-cost claim binds on minutes-spend, not on
 zero-CI).
 `.gemini/settings.json` and the bridge dirs are harness delivery surfaces.
 
-### 7. Persistence and state -- `bin/sec:8`, `sec.conf.example:1`, `.gitignore:12`, `bin/sec-organizer:7`, `bin/sec-migrator:6`
+### 7. Persistence and state -- `bin/sec:8`, `sec.conf.example:1`, `.gitignore:12`, `bin/sec-organizer:8`, `bin/sec-migrator:6`
 
 Persistent state: `$HOME/.sec/sec.conf` (`bin/sec:8`, INI-ish, mode 600) is
 the only declared config; the ignore list names the runtime state files —
 `housekeep_plan.json`, `snapshot_*.json`, `migration_transaction.json`
-(`.gitignore:12` and siblings) — whose on-disk writers are
-`bin/sec-organizer:7` (`LATEST_SNAPSHOT`) and `bin/sec-migrator:6`
+(`.gitignore:12` and its lines 13-14) — whose on-disk writers are
+`bin/sec-organizer:8` (`LATEST_SNAPSHOT`) and `bin/sec-migrator:6`
 (`TX_FILE`). Audit: are these files ever read back across runs (rollback and
 revert depend on it), are formats deterministic between writer and reader,
 what happens on a torn snapshot, and does any state file ever carry a
 plaintext secret (zero-plaintext invariant applied to the state layer).
+Read-back verified 2026-10-10: `LATEST_SNAPSHOT` is read at
+`bin/sec-organizer:216` (revert refuses when absent) and the migration
+transaction log is re-read and corruption-checked at `bin/sec-migrator:33-43`.
 
 ### 8. Supply chain, licensing, and compliance -- `LICENSE:1`, `install.sh:24`, `README.md:29`, `packs/compliance-baseline/PACK.md:1`, `.gitignore:8`
 
@@ -653,39 +672,44 @@ What can be verified:
 `LICENSE:1` (MIT) covers the tree; the two remote-fetch sites
 (`README.md:29`, `install.sh:24`) are integrity-unverified by construction;
 the PATH toolchain (`bw`, `op`, `gcloud`, `jq`) is unpinned. Then the
-compliance pack: `packs/compliance-baseline` and
-`packs/human-team-coordination` are present on disk and were declared
-opted-in in ADAPTERS on 2026-10-10 (audit F052 — the declaration itself
-was late), so re-verify the declaration and the on-disk bytes still agree
+compliance pack: three compliance-family packs — `packs/compliance-baseline`,
+`packs/human-team-coordination`, and `packs/ip-and-data-governance` — are
+present on disk and were declared opted-in in ADAPTERS on 2026-10-10 (audit
+F052; the declaration itself was late), so re-verify the declaration and the
+on-disk bytes still agree
 rather than trusting either. Re-verify that no plaintext secret has ever
 reached a tracked file using the hook's own secret scan step rather than
 an impression.
 
-### 9. Observability and resilience -- `bin/bw-session-keeper:8`, `.gitignore:9`, `bin/sec-sync-controller.py:27`
+### 9. Observability and resilience -- `bin/bw-session-keeper:8`, `.gitignore:9`, `bin/sec-sync-controller.py:28`
 
 There is no telemetry: no log shipping, no metrics, no alerting — `*.log`
 is ignored (`*.log` at `.gitignore:9`) rather than produced. What exists
-instead: exit codes. `USAGE` at `bin/sec-sync-controller.py:27` is a
-documented exit-code contract (0 preview/success, 1 no keys, 2 refused);
-audit whether the dispatcher and the suites honor it consistently. The only
+instead: exit codes. `USAGE` at `bin/sec-sync-controller.py:28` is a
+documented exit-code contract — 0 success (dry-run completed, every attempted
+write succeeded), 1 no syncable keys present, 2 confirmation required but
+not given (or bad usage), 3 one or more backend writes failed, values NOT
+stored there (contract block at `bin/sec-sync-controller.py:36-41`) —
+audit whether the dispatcher and the suites honor it consistently (the guard
+suite does cover exit 2 and exit 3). The only
 long-running process is `bin/bw-session-keeper` with its session file at
 line 8 — establish what happens when Bitwarden locks mid-rotation, whether
 failures are visible to an operator, and whether any runbook exists for it
 (none does — absence is the finding).
 
-### 10. Domain specialist: secret-management correctness -- `bin/sec-classify.py:83`, `bin/sec-organizer:133`, `bin/sec-migrator:197`, `docs/MULTI_TENANCY.md:1`
+### 10. Domain specialist: secret-management correctness -- `bin/sec-classify.py:186`, `bin/sec-organizer:161`, `bin/sec-migrator:136`, `docs/MULTI_TENANCY.md:1`
 
 The dimension this repository exists to own: does the tool do correct secret
 management? Lenses: classification correctness (`classify_item` at
-`bin/sec-classify.py:83` — on what inputs does it mis-bin, and does a wrong
+`bin/sec-classify.py:186` — on what inputs does it mis-bin, and does a wrong
 classification propagate to an apply?), housekeeping safety (pre-apply
-snapshot at `bin/sec-organizer:133` — can `revert` lose data if interrupted,
+snapshot at `bin/sec-organizer:161` — can `revert` lose data if interrupted,
 and does plan/apply use identical classification?), migration atomicity
-(transaction state at `bin/sec-migrator:197` — is a mid-migration crash
+(transaction state at `bin/sec-migrator:136` — is a mid-migration crash
 recoverable, is a secret ever written to both backends in an inconsistent
 order?), and multi-tenant boundary correctness (`docs/MULTI_TENANCY.md:1` —
-can tenant A's key resolve to tenant B's item through the search fallbacks
-in `bin/sec:337-371`?).
+can tenant A's key resolve to tenant B's item through the name-matching and
+`--scope` folder search in `bin/sec:380-425`?).
 
 ### 11. Resilience of the happy path -- `bin/sec-sync-controller.py:17`, `bin/sec-sync-controller.py:83`, `install.sh:24`, `bin/sec:116`
 
