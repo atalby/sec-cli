@@ -7,7 +7,7 @@ moves.
 
 ## Maturity tier
 
-**TIER B, established: tests plus CI, no dependency manifest.**
+**TIER B, established: tests plus CI, no project dependency manifest.**
 
 Ecosystems present: Bash (`bin/sec` and five sibling dispatchers, `install.sh`,
 five suites under `tests/`), Python 3 (2 files: `bin/sec-sync-controller.py`,
@@ -22,25 +22,30 @@ Measured against the tier definition:
 | Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (5 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (5 cases); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (4 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (18 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
-| Issue tracker | present, live | GitHub `atalby/sec-cli`, 1 open issue at the time of this profile (`#2`) |
-| Lockfile | **ABSENT** | no lockfile of any ecosystem anywhere (see manifest census below) |
-| Dependency manifest | **ABSENT** | no `package.json`, `pyproject.toml`, `requirements.txt`, `Makefile`, or equivalent in the tree or on disk |
+| Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#2`, `#13`) |
+| Lockfile | **ABSENT (project)** | no project lockfile of any ecosystem; the only lockfile on disk is the harness-managed `.opencode/package-lock.json` (2026-10-10, self-gitignored by `.opencode/.gitignore`) |
+| Dependency manifest | **ABSENT (project)** | no `package.json`, `pyproject.toml`, `requirements.txt`, `Makefile`, or equivalent anywhere in the tracked tree; the only manifests on disk are `.opencode/package.json` + `.opencode/package-lock.json`, opencode's own plugin bootstrap (`@opencode-ai/plugin` 1.18.35, installed 2026-10-10) |
 
 Tier reasoning (ladder: A = manifest + lockfile + runner + CI + docs;
 B = established, most present with partials; C = thin, no CI; D = no CI,
 unautomated tests; E = undocumented): CI arrived 2026-10-09 with five green
 suites and extensive docs, so D and C are cleared; the absence of any
-dependency manifest and lockfile keeps it at B rather than A.
+project dependency manifest and lockfile keeps it at B rather than A — the
+`.opencode/` pair is harness tooling state, not a build input, so it does
+not promote the tier.
 
 The two partials are themselves findings, not tier annotations:
 
-1. **No dependency manifest at all, so no supply-chain scanner has a target.**
-   The zero-dependency claim in `README.md` is trivially true — there is
-   nothing to pin because nothing is declared — while the runtime pulls in
+1. **No project dependency manifest at all, so no supply-chain scanner has
+   a target.** The zero-dependency claim in `README.md` is trivially true —
+   there is nothing to pin because nothing is declared — while the runtime pulls in
    `bw`, `bws`, `op`, `jq`, `gcloud`, `git`, `curl`, and `python3` from the
-   operator's machine, none version-checked. There is no `pip-audit` or
-   `npm audit` to run, and per prior art C that absence is the persona 8
-   finding, not an excuse to skip the dimension.
+   operator's machine, none version-checked. There is no `pip-audit` target
+   and no project `npm audit` target; the only npm manifest on disk is the
+   harness's own `.opencode/package.json` (opencode plugin state, ignored by
+   `.opencode/.gitignore`), which is tooling, not this project's supply
+   chain. Per prior art C that absence is the persona 8 finding, not an
+   excuse to skip the dimension.
 2. **The local pre-commit gate still never runs the test suites.** The
    hook's test step only recognizes `scripts/tests/`+uv, `pytest.ini`/
    `pyproject`, and `package.json` — never `tests/*.sh` (stated in
@@ -142,12 +147,20 @@ instrument rather than the product but runs the same way:
 **Tracked file count** (the manifest denominator):
 
     $ git ls-files | wc -l
-    87
+    96
 
 **Dependency manifest census** (the persona 8 denominator):
 
-    $ find . -path ./.git -prune -o -type f \( -name 'package.json' -o -name 'package-lock.json' -o -name 'go.mod' -o -name 'Cargo.toml' -o -name 'Cargo.lock' -o -name 'pyproject.toml' -o -name 'requirements.txt' -o -name 'Makefile' -o -name 'uv.lock' -o -name 'Pipfile' -o -name 'Gemfile' -o -name 'composer.json' -o -name 'mix.exs' -o -name 'pom.xml' -o -name 'build.gradle' \) -print
-    (no output)
+    $ find . -path ./.git -prune -o -type f \( -name 'package.json' -o -name 'package-lock.json' -o -name 'go.mod' -o -name 'Cargo.toml' -o -name 'Cargo.lock' -o -name 'pyproject.toml' -o -name 'requirements.txt' -o -name 'Makefile' -o -name 'uv.lock' -o -name 'Pipfile' -o -name 'Gemfile' -o -name 'composer.json' -o -name 'mix.exs' -o -name 'pom.xml' -o -name 'build.gradle' \) -print | wc -l
+    44
+
+    $ find . -path ./.git -prune -o -type f \( -name 'package.json' -o -name 'package-lock.json' -o -name 'go.mod' -o -name 'Cargo.toml' -o -name 'Cargo.lock' -o -name 'pyproject.toml' -o -name 'requirements.txt' -o -name 'Makefile' -o -name 'uv.lock' -o -name 'Pipfile' -o -name 'Gemfile' -o -name 'composer.json' -o -name 'mix.exs' -o -name 'pom.xml' -o -name 'build.gradle' \) -print | grep -vc '^./\.opencode/'
+    0
+
+    44 hits, every one under `.opencode/` (2 root files plus 42 below
+    `.opencode/node_modules/`), zero anywhere else in the tree. First seen
+    2026-10-10, when opencode bootstrapped its plugin dependency there;
+    the pre-bootstrap census was `(no output)`.
 
 **Tracker, live:**
 
@@ -477,13 +490,18 @@ never return the path.
 | `~/.sec/` (literal path; inert — the real config lives outside the repo at `$HOME/.sec`) | no | yes | 7 |
 | `housekeep_plan.json`, `snapshot_*.json`, `migration_transaction.json` (writers: `bin/sec-organizer`, `bin/sec-migrator`) | no | yes | 7 |
 | `.mcp.json` (host-local MCP wiring; tracked copy removed in issue #20, `.mcp.json.example` is the tracked template) | yes | yes | 4 |
-| `node_modules/`, `vendor/` | **absent** | n/a | 8 |
+| `node_modules/`, `vendor/` | `node_modules/` **present once** — `.opencode/node_modules/` (opencode's plugin dependency tree, 42 manifests below it); `vendor/` absent | yes — `.opencode/.gitignore` line 1; no root rule needed | 8 |
 | `.pytest_cache/` | **absent** | n/a | 3 |
 | `graphify-out/`, `graft/` (regenerable code-graph caches) | **absent** | n/a | 8 |
-| `.claude/`, `.opencode/` (bridge `commands/` subdirs are tracked; no session state in tree) | yes — the two bridge directories only | n/a (bridges tracked deliberately; a session-state rule would be needed before state could exist) | 4 |
-| `package.json`, `package-lock.json`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `requirements.txt`, `uv.lock`, `Makefile` | **absent** — and this absence is a persona 8 finding, not a clean bill of health | n/a | 8 |
+| `.claude/`, `.opencode/` (bridge `commands/` subdirs are tracked) | yes — both bridge dirs; `.opencode/` additionally carries opencode's plugin install since 2026-10-10 (`package.json`, lockfile, `node_modules/`, self-written `.gitignore`) | partially — bridges tracked deliberately; the plugin install self-ignores via `.opencode/.gitignore` | 4 |
+| `package.json`, `package-lock.json`, `go.mod`, `Cargo.toml`, `pyproject.toml`, `requirements.txt`, `uv.lock`, `Makefile` | **absent as a project surface** — and that absence is a persona 8 finding, not a clean bill of health | n/a | 8 |
+| `.opencode/package*.json` | yes — 2 files, opencode's own plugin bootstrap (`@opencode-ai/plugin` 1.18.35), first seen 2026-10-10; harness tooling state, not a project build input | yes — `.opencode/.gitignore` (written by opencode, ignores itself too) | 4, 8 |
 
-The last two rows are the ones a sentinel must be allowed to report as
-absent: their absence from disk is the finding, so the sentinel must not fail
-merely because they do not exist, and persona 8 must not read the empty
-result as a passed check.
+The `node_modules`/`vendor` and project-manifest rows are the ones a
+sentinel must be allowed to report as absent: their absence from disk is
+the finding, so the sentinel must not fail merely because they do not
+exist, and persona 8 must not read the empty result as a passed check.
+The `.opencode/package*.json` row is the mirror case: the same sentinel
+fails closed until a row claims a manifest that does appear, which is how
+the 2026-10-10 plugin bootstrap was caught (suite `tests/test_sentinel.sh`,
+3 assertions red until this row existed).
