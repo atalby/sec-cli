@@ -12,7 +12,7 @@ moves.
 Ecosystems present: Bash (`bin/sec` and five sibling dispatchers, `install.sh`,
 five suites under `tests/`), Python 3 (2 files: `bin/sec-sync-controller.py`,
 `bin/sec-classify.py`), PowerShell (`bin/sec.ps1`), zsh completion
-(`completions/_sec`), Markdown (63 files), JSON/YAML/TOML configuration (13
+(`completions/_sec`), Markdown (64 files), JSON/YAML/TOML configuration (12
 files).
 
 Measured against the tier definition:
@@ -22,7 +22,7 @@ Measured against the tier definition:
 | Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (6 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (40 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
-| Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#2`, `#13`) |
+| Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#2`, `#13`, `#32`) |
 | Lockfile | **ABSENT (project)** | no project lockfile of any ecosystem; the only lockfile on disk is the harness-managed `.opencode/package-lock.json` (2026-10-10, self-gitignored by `.opencode/.gitignore`) |
 | Dependency manifest | **ABSENT (project)** | no `package.json`, `pyproject.toml`, `requirements.txt`, `Makefile`, or equivalent anywhere in the tracked tree; the only manifests on disk are `.opencode/package.json` + `.opencode/package-lock.json`, opencode's own plugin bootstrap (`@opencode-ai/plugin` 1.18.35, installed 2026-10-10) |
 
@@ -96,7 +96,7 @@ instrument rather than the product but runs the same way:
       ok: bash completion offers sec sync
       ok: fish completion offers sec sync
       ok: tracked completions/_sec matches 'sec completion zsh' output
-      ok: bin/sec:562 -x guard for sec-sync-controller.py satisfied
+      ok: sec-sync-controller.py installed executable ('sec sync' arm would exec it)
     [5] config bootstrap: sec.conf created under $HOME/.sec with mode 600
       ok: sec.conf mode 600
     [6] piped install never trusts a foreign cwd's bin/sec (F038 supply-chain)
@@ -419,7 +419,7 @@ instrument rather than the product but runs the same way:
     2026-10-10, when opencode bootstrapped its plugin dependency there;
     the pre-bootstrap census was `(no output)`.
 
-**Tracker, live** (point-in-time capture, 2026-10-10 at commit `eb9b188` — the
+**Tracker, live** (point-in-time capture, 2026-10-10 at commit `78120f6` — the
 issue list moves on every close/open/comment (a comment refreshes the
 row's timestamp); re-run before trusting a state claim):
 
@@ -461,12 +461,12 @@ row's timestamp); re-run before trusting a state claim):
     1	CLOSED	Hyer payload lag: repo on HIAE Protocol v5.28.0, hub stable is v5.39.1		2026-10-08T23:06:39Z
 
 **Commit history** (the intent record for forensic scan; captured 2026-10-10 at
-commit `eb9b188`):
+commit `78120f6`):
 
      $ git log --oneline | wc -l
-     102
+     106
      $ git log -1 --format='%h %ad %s' --date=short
-     eb9b188 2026-10-10 docs: resume decision on the prose-phantom census; ADAPTERS last-updated covers #30-#35
+     78120f6 2026-10-10 resume: update next high-value work - dispatch test skip resolved
     $ git log --reverse --format='%h %ad %s' --date=short | sed -n '1p'
     89c67d2 2026-08-08 feat: initial release of sec-cli v1.0.0 (Zero-Plaintext Multi-Tenant Secret Manager, Housekeeper & Migration Engine)
 
@@ -620,8 +620,10 @@ hook's test step is still blind to `tests/*.sh`
 (`ADAPTERS.md:243`, open issue `#2`); and there is zero
 coverage tooling. Then cross-reference suites against the hotspots:
 `bin/sec-organizer`, `bin/sec-migrator`, `bin/sec-classify.py`, and
-`bin/bw-session-keeper` have no direct test (the sync/install suites touch
-only their install footprint and the controller). Check for assertions that
+`bin/bw-session-keeper` have no suite of their own, but they are exercised
+directly by `tests/test_dispatch.sh` (section 14 organizer, 15 migrator,
+16/16b-d classify, 17 keeper), so the gap is assertion depth, not zero
+coverage. Check for assertions that
 pin the same hardcoded constants the implementation uses. The suites' value
 is real but partial — measure the gap, do not dismiss either side.
 

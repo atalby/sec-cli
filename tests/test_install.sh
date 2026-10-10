@@ -93,7 +93,7 @@ else
     fail "completions/_sec has drifted from 'sec completion zsh' output"
 fi
 if [[ -x "$OUT1/sec-sync-controller.py" ]]; then
-    pass "bin/sec:562 -x guard for sec-sync-controller.py satisfied"
+    pass "sec-sync-controller.py installed executable ('sec sync' arm would exec it)"
 else
     fail "sec-sync-controller.py not executable; 'sec sync' would fall through silently"
 fi
