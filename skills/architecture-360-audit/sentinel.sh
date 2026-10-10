@@ -157,6 +157,51 @@ def symbol_tokens(text):
     return toks
 
 
+IDENT = re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+
+
+def symbolish(span):
+    if not IDENT.match(span):
+        return False
+    return "_" in span or re.search(r"[a-z][A-Z]", span)
+
+
+claim_sources = {os.path.relpath(s, repo) for s in (skill, profile)}
+contents = []
+for f in tracked:
+    if f in claim_sources:
+        continue
+    try:
+        with open(f, encoding="utf-8", errors="replace") as fh:
+            contents.append(fh.read())
+    except OSError:
+        continue
+
+
+def phantom_claims(src_name, text):
+    seen = {}
+    for lineno, line in enumerate(text.split("\n"), 1):
+        for m in backtick.finditer(line):
+            span = m.group(1)
+            if "://" in span:
+                continue
+            if path_only.match(span) or path_like.match(span):
+                continue
+            if anchor_ish.search(span):
+                continue
+            if not symbolish(span):
+                continue
+            seen.setdefault(span, lineno)
+    hits = []
+    for span, lineno in seen.items():
+        if not any(span in c for c in contents):
+            hits.append(
+                "%s:%d claims `%s` -- no such identifier anywhere in the tree"
+                % (src_name, lineno, span)
+            )
+    return hits
+
+
 def stale_content_anchors(src_name, text):
     paragraphs = re.split(r"\n\s*\n", text)
     offset = 0
@@ -264,11 +309,12 @@ for src in (skill, profile):
                         f"line {fields[-1]} beyond end of file ({total} lines)"
                     )
     broken.extend(stale_content_anchors(os.path.basename(src), text))
+    broken.extend(phantom_claims(os.path.basename(src), text))
 
 if broken:
     for b in broken:
         print(f"{ERROR} {b}")
-    print(f"{ERROR} {len(broken)} citation problem(s): broken anchors and stale-content anchors")
+    print(f"{ERROR} {len(broken)} citation problem(s): broken anchors, stale-content anchors, phantom claims")
     sys.exit(1)
 print(f"{OK} citations: every file:line anchor in SKILL.md and profile.md resolves")
 sys.exit(0)

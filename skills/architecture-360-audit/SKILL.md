@@ -182,9 +182,10 @@ Then re-verify, by opening each cited location, every `file:line` anchor in
 its `## Personas` section. Record each as resolved or moved. A moved citation
 is corrected in `profile.md` in the same run and listed in the report's
 re-derivation section — never silently. `sentinel.sh citations` runs first and
-already fails anchors whose cited line lost the claim's symbol, but it can
-only check an anchor with a named symbol nearby; a phantom claim (a symbol
-that exists nowhere in the code) is only caught by reading the code. Also re-derive, from the repository
+already fails anchors whose cited line lost the claim's symbol (phase 2), and
+any identifier-shaped claim that exists nowhere in the tree (phase 3); a
+phantom phrase that is not identifier-shaped — space-separated prose like
+`op account list` — is still only caught by reading the code. Also re-derive, from the repository
 rather than from `profile.md`'s prose:
 
 - the maturity tier's factual claims (does the test command still pass, is

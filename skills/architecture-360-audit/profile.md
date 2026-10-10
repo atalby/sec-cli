@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (5 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (40 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (6 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (40 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#2`, `#13`) |
@@ -235,6 +235,10 @@ instrument rather than the product but runs the same way:
       ok: lint exits nonzero on a stale-content anchor
       ok: lint names the stale anchor
       ok: lint accepts a well-formed anchor
+    [6] a phantom identifier claim is detected (claim-existence lint, issue #35)
+      ok: lint exits nonzero on a phantom identifier
+      ok: lint names the phantom identifier
+      ok: lint accepts a real identifier
 
     ALL TESTS PASSED
     (exit 0)
@@ -543,7 +547,8 @@ highest-value-first**: persona 1 is audited first; a scoped run drops from
 persona 12 upward. Every anchor below was verified against this tree when
 this profile was written; Step 3 re-verifies them at the start of every run,
 and since issue #34 `sentinel.sh citations` also fails in the gate on any
-anchor whose cited line no longer holds the claim's symbol.
+anchor whose cited line no longer holds the claim's symbol; since issue #35
+it also fails on any identifier-shaped claim that exists nowhere in the tree.
 
 Declared-persona taxonomy: `packs/solo-founder-governance` v1.2.0 was read
 before deriving (`packs/solo-founder-governance/PACK.md:24` binds the repo to
@@ -603,7 +608,7 @@ module-level public, leading underscore private.
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:241`, `ADAPTERS.md:221`
 
 Nine install sections, fourteen guard sections, nine write-honesty
-sections, and the audit instrument's own five sentinel cases pass today
+sections, and the audit instrument's own six sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes the four fast suites and gates the dispatch suite behind
 `SEC_TEST_DISPATCH=1`); establish what they do not cover. Structural

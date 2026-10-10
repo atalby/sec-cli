@@ -51,7 +51,7 @@ fi
 
 echo "[3] a broken citation is detected (sentinel fails closed)"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B"' EXIT
+trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D"' EXIT
 mkdir -p "$WORK/skills/architecture-360-audit"
 cp "$REPO_ROOT/skills/architecture-360-audit/profile.md" "$WORK/skills/architecture-360-audit/profile.md"
 cp "$REPO_ROOT/skills/architecture-360-audit/SKILL.md" "$WORK/skills/architecture-360-audit/SKILL.md"
@@ -107,6 +107,37 @@ if [[ $RC -eq 0 ]]; then
     ok "lint accepts a well-formed anchor"
 else
     no "lint rejected a well-formed anchor"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[6] a phantom identifier claim is detected (claim-existence lint, issue #35)"
+PH="SEC_$(printf 'PHANTOM')_$(printf 'BACKEND')_KEY"
+WORK_C="$(mktemp -d)"
+WORK_D="$(mktemp -d)"
+for W in "$WORK_C" "$WORK_D"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+printf '\nPhantom claim: `%s` read at startup\n' "$PH" >>"$WORK_C/skills/architecture-360-audit/profile.md"
+OUT="$(cd "$WORK_C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "lint exits nonzero on a phantom identifier"
+else
+    no "lint accepted a phantom identifier"
+fi
+if grep -q "$PH" <<<"$OUT"; then
+    ok "lint names the phantom identifier"
+else
+    no "lint did not name the phantom identifier"
+fi
+printf '\nControl claim: `SEC_SYNC_TIMEOUT` bounds each backend call\n' >>"$WORK_D/skills/architecture-360-audit/profile.md"
+OUT="$(cd "$WORK_D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "lint accepts a real identifier"
+else
+    no "lint rejected a real identifier"
     printf '%s\n' "$OUT"
 fi
 
