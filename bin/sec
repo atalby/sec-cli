@@ -127,6 +127,21 @@ ensure_tenant_auth() {
     esac
 }
 
+bw_list_items() {
+    local rc err items
+    err="$(mktemp)"
+    items="$(BW_SESSION="${BW_SESSION:-}" bw list items "$@" 2>"$err")"
+    rc=$?
+    if [[ $rc -ne 0 ]]; then
+        echo "[ERROR] bitwarden 'bw list items' failed (exit $rc): $(tr -d '\r' <"$err" | head -n1)" >&2
+        rm -f "$err"
+        printf 'ERR'
+        return 0
+    fi
+    rm -f "$err"
+    printf '%s' "$items"
+}
+
 usage() {
     echo "sec-cli v$VERSION — Multi-Tenant Zero-Plaintext Secret Manager & Housekeeper"
     echo "Config File: ~/.sec/sec.conf (Default Tenant: $DEFAULT_BACKEND)"
@@ -349,7 +364,8 @@ EOF
             bitwarden|bw)
                 if command -v bw >/dev/null 2>&1; then
                     # 1. Check for exact item name match $key
-                    items_json="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$key" 2>/dev/null || true)"
+                    items_json="$(bw_list_items --search "$key")"
+                    [[ "$items_json" == "ERR" ]] && exit 1
                     count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
                     if [[ "$count" -ge 1 ]]; then
                         item="$(echo "$items_json" | jq --arg name "$key" '[.[] | select(.name == $name)][0] // empty')"
@@ -363,7 +379,8 @@ EOF
                         if [[ -n "$cf_res" && "$cf_res" != "null" ]]; then echo "$cf_res"; exit 0; fi
                     else
                         # Fallback: Search custom fields across all vault items
-                        all_items="$(BW_SESSION="${BW_SESSION:-}" bw list items 2>/dev/null || true)"
+                        all_items="$(bw_list_items)"
+                        [[ "$all_items" == "ERR" ]] && exit 1
                         cf_res="$(echo "$all_items" | jq -r --arg f "$key" '[.[] | .fields[]? | select(.name == $f).value // empty][0] // empty')"
                         if [[ -n "$cf_res" && "$cf_res" != "null" ]]; then echo "$cf_res"; exit 0; fi
                     fi
@@ -377,13 +394,15 @@ EOF
                         if [[ "$item_name" == *"/"* ]] && [[ "${item_name##*/}" == "attachment" ]]; then
                             real_item_name="${item_name%/*}"
                             attachment_file="$field_name"
-                            item_id="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$real_item_name" 2>/dev/null | jq -r --arg n "$real_item_name" '[.[] | select(.name == $n)][0].id // empty')"
+                            item_id="$(bw_list_items --search "$real_item_name" | jq -r --arg n "$real_item_name" '[.[] | select(.name == $n)][0].id // empty')"
+                            if [[ "$item_id" == "ERR" ]]; then exit 1; fi
                             if [[ -n "$item_id" ]]; then
                                 BW_SESSION="${BW_SESSION:-}" bw get attachment "$attachment_file" --itemid "$item_id" --raw 2>/dev/null && exit 0
                             fi
                         fi
 
-                        items_json="$(BW_SESSION="${BW_SESSION:-}" bw list items --search "$item_name" 2>/dev/null || true)"
+                        items_json="$(bw_list_items --search "$item_name")"
+                        [[ "$items_json" == "ERR" ]] && exit 1
                         count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
                         if [[ "$count" -ge 1 ]]; then
                             # Extract field across all items matching item_name
@@ -590,6 +609,9 @@ EOF
     sync)
         if [[ -x "$SCRIPT_DIR/sec-sync-controller.py" ]]; then
             exec python3 "$SCRIPT_DIR/sec-sync-controller.py" "$@"
+        else
+            echo "[ERROR] sync controller not found or not executable: $SCRIPT_DIR/sec-sync-controller.py" >&2
+            exit 1
         fi
         ;;
 

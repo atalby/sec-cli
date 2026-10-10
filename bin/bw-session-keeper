@@ -127,8 +127,13 @@ case "$cmd" in
         fi
 
         if [[ -z "$password" ]]; then
-            read -rsp "Enter Bitwarden Master Password: " password
-            echo ""
+            if [[ -t 0 ]]; then
+                read -rsp "Enter Bitwarden Master Password: " password
+                echo ""
+            else
+                echo "[ERROR] Master password not available (no stored password) and stdin is not a TTY. Pass it as an argument, run 'bw-session-keeper setup-keychain', or unlock interactively." >&2
+                exit 1
+            fi
         fi
 
         echo "[INFO] Unlocking Bitwarden vault..."
@@ -166,8 +171,13 @@ case "$cmd" in
         shift || true
         password="${1:-}"
         if [[ -z "$password" ]]; then
-            read -rsp "Enter Bitwarden Master Password: " password
-            echo ""
+            if [[ -t 0 ]]; then
+                read -rsp "Enter Bitwarden Master Password: " password
+                echo ""
+            else
+                echo "[ERROR] Master password not provided and stdin is not a TTY. Pass it as an argument or run setup-keychain interactively." >&2
+                exit 1
+            fi
         fi
 
         save_master_password "$password"

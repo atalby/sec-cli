@@ -26,6 +26,10 @@ case "${1:-}" in
     list)
         case "${2:-}" in
             items)
+                if [ "${SEC_TEST_BW_LIST_RC:-0}" != "0" ]; then
+                    echo "Error: vault is locked." >&2
+                    exit "${SEC_TEST_BW_LIST_RC}"
+                fi
                 if [ "${3:-}" = "--search" ]; then
                     jq -c --arg q "${4:-}" '[.[] | select(.name | contains($q))]' <<<"$ITEMS"
                 else
@@ -426,6 +430,48 @@ set -e
 if [[ $RC -eq 0 ]] && grep -q "Vault unlocked successfully" <<<"$OUT"; then pass "keeper unlock with password exits 0 and saves session"; else fail "keeper unlock rc=$RC out=$OUT"; fi
 if grep 'bw unlock' "$BWLOG" | grep -q 'test-master-pass'; then fail "master password exposed on bw argv: $(grep 'bw unlock' "$BWLOG")"; else pass "master password absent from bw argv"; fi
 if grep -q 'bw-env-present' "$BWLOG"; then pass "master password delivered to bw via env (BW_UNLOCK_PASS)"; else fail "password not passed via BW_UNLOCK_PASS env: $(grep 'bw unlock' "$BWLOG")"; fi
+
+echo "[22c] F011: non-TTY unlock with no stored password fails with a message, not silently"
+H9="$(new_home "$WORK/h9")"
+set +e
+OUT="$(run_keeper "$H9" "$REPO_ROOT/bin/bw-session-keeper" unlock 2>&1)"
+RC=$?
+set -e
+if [[ $RC -ne 0 ]]; then pass "non-TTY unlock exits non-zero"; else fail "non-TTY unlock exited 0 with no password source"; fi
+if grep -q "^\[ERROR\]" <<<"$OUT"; then pass "non-TTY unlock emits a tagged [ERROR]"; else fail "non-TTY unlock died with no [ERROR]: $OUT"; fi
+
+echo "[22d] F011: non-TTY setup-keychain with no password fails with a message, not silently"
+H10="$(new_home "$WORK/h10")"
+set +e
+OUT="$(run_keeper "$H10" "$REPO_ROOT/bin/bw-session-keeper" setup-keychain 2>&1)"
+RC=$?
+set -e
+if [[ $RC -ne 0 ]]; then pass "non-TTY setup-keychain exits non-zero"; else fail "non-TTY setup-keychain exited 0 with no password source"; fi
+if grep -q "^\[ERROR\]" <<<"$OUT"; then pass "non-TTY setup-keychain emits a tagged [ERROR]"; else fail "non-TTY setup-keychain died with no [ERROR]: $OUT"; fi
+
+echo "[22e] F021: sync with no controller errors instead of exiting 0"
+SEC21_DIR="$(mktemp -d "$WORK/sec21.XXXXXX")"
+cp "$REPO_ROOT/bin/sec" "$SEC21_DIR/sec"
+chmod +x "$SEC21_DIR/sec"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$WORK/empty" "$SEC21_DIR/sec" sync --dry-run 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -ne 0 ]]; then pass "sync without controller exits non-zero"; else fail "sync without controller exited 0"; fi
+if grep -q "^\[ERROR\]" <<<"$OUT"; then pass "sync without controller emits a tagged [ERROR]"; else fail "sync without controller died with no [ERROR]: $OUT"; fi
+
+echo "[22f] F025: failing bw list items surfaces the provider error, not not-found"
+H11="$(new_home "$WORK/h11")"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H11" \
+    "SEC_TEST_BW_LIST_RC=1" "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "$REPO_ROOT/bin/sec" bw get missing-key 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -ne 0 ]]; then pass "provider failure exits non-zero"; else fail "provider failure exited 0"; fi
+if grep -q "^\[ERROR\]" <<<"$OUT"; then pass "provider failure emits a tagged [ERROR]"; else fail "provider failure died with no [ERROR]: $OUT"; fi
+if grep -qi "not found" <<<"$OUT"; then fail "provider failure misreported as not-found: $OUT"; else pass "provider failure is not misreported as not-found"; fi
 
 echo "[23] no producer still emits legacy [sec*] event prefixes (F048 retrofit)"
 LEGACY=0
