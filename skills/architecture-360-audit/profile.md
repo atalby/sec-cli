@@ -405,10 +405,13 @@ instrument rather than the product but runs the same way:
     2026-10-10, when opencode bootstrapped its plugin dependency there;
     the pre-bootstrap census was `(no output)`.
 
-**Tracker, live:**
+**Tracker, live** (point-in-time capture, 2026-10-10 at commit `66ff49b` — the
+issue list moves on every close/open; re-run before trusting a state claim):
 
-    $ gh issue list --repo atalby/sec-cli --state all --limit 100
-    30	OPEN	sec.ps1 'set' lies: reports success it never achieved		2026-10-10T13:42:04Z
+     $ gh issue list --repo atalby/sec-cli --state all --limit 100
+     32	OPEN	Persona claims in 360-audit profile.md need full re-derivation (post-CI/post-pytest/F052 era)		2026-10-10T16:37:25Z
+     31	OPEN	Pytest mirror (scripts/tests/test_install.py) detects only — wire it to exercise the bash suites		2026-10-10T16:37:25Z
+     30	CLOSED	sec.ps1 'set' lies: reports success it never achieved		2026-10-10T16:35:53Z
     29	CLOSED	sec.ps1 op read failure still exits 0 with empty output (same honesty class as #24)		2026-10-10T08:53:48Z
     28	CLOSED	ADAPTERS.md test-suite section counts and Last-updated date stale (audit §8 item 11 residual)		2026-10-10T07:23:04Z
     27	CLOSED	bin/sec get: no folder/tenant/org scoping; arbitrary first match and on-miss full dump (F020)		2026-10-10T08:46:22Z
@@ -439,12 +442,13 @@ instrument rather than the product but runs the same way:
     2	OPEN	Pre-commit Step 5 never runs tests/*.sh suites (our install tests are skipped every commit)		2026-10-10T07:47:23Z
     1	CLOSED	Hyer payload lag: repo on HIAE Protocol v5.28.0, hub stable is v5.39.1		2026-10-08T23:06:39Z
 
-**Commit history** (the intent record for forensic scan):
+**Commit history** (the intent record for forensic scan; captured 2026-10-10 at
+commit `66ff49b`):
 
-    $ git log --oneline | wc -l
-    80
-    $ git log -1 --format='%h %ad %s' --date=short
-    3592421 2026-10-10 docs: update RESUME.md with issue #2 completion and new high-value work status
+     $ git log --oneline | wc -l
+     82
+     $ git log -1 --format='%h %ad %s' --date=short
+     66ff49b 2026-10-10 docs: mark resume point at issue #31 with the wall-time measurement as first unit
     $ git log --reverse --format='%h %ad %s' --date=short | sed -n '1p'
     89c67d2 2026-08-08 feat: initial release of sec-cli v1.0.0 (Zero-Plaintext Multi-Tenant Secret Manager, Housekeeper & Migration Engine)
 
