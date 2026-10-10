@@ -49,8 +49,9 @@ The two partials are themselves findings, not tier annotations:
 2. **The local pre-commit gate still never runs the test suites.** The
    hook's test step only recognizes `scripts/tests/`+uv, `pytest.ini`/
    `pyproject`, and `package.json` — never `tests/*.sh` (stated in
-   `ADAPTERS.md:233`, tracked as open issue `#2`). Since 2026-10-09
-   GitHub Actions runs all five suites on push and PR to main
+   `ADAPTERS.md:241`, tracked as open issue `#2`). Since 2026-10-09
+   GitHub Actions runs the five bash suites and the pytest mirror on
+   push and PR to main
    (`.github/workflows/test.yml`, issue #8), so an unhooked push is
    caught by CI after the fact rather than prevented. Owned by
    personas 3 and 6.
@@ -579,12 +580,13 @@ Nine install sections, thirteen guard sections, nine write-honesty
 sections, and the audit instrument's own four sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes the four fast suites and gates the dispatch suite behind
-`SEC_TEST_DISPATCH=1`); establish
-what they do not cover. Structural gaps to quantify, not merely note:
-GitHub Actions CI exists since 2026-10-09 (issue #8,
-`.github/workflows/test.yml`) but runs only the five bash suites — the
-pytest mirror is not wired in; the hook's test step is blind to
-`tests/*.sh` (`ADAPTERS.md:241`, open issue `#2`); and there is zero
+`SEC_TEST_DISPATCH=1`); establish what they do not cover. Structural
+gaps to quantify, not merely note: GitHub Actions CI exists since
+2026-10-09 (issue #8, `.github/workflows/test.yml`) and since 2026-10-10
+runs the five bash suites **and** the pytest mirror
+(`SEC_TEST_DISPATCH=1`) on push and PR to main — but the pre-commit
+hook's test step is still blind to `tests/*.sh`
+(`ADAPTERS.md:241`, open issue `#2`); and there is zero
 coverage tooling. Then cross-reference suites against the hotspots:
 `bin/sec-organizer`, `bin/sec-migrator`, `bin/sec-classify.py`, and
 `bin/bw-session-keeper` have no direct test (the sync/install suites touch
@@ -619,7 +621,8 @@ in place, entries append-only.
 Delivery is: piped `curl | bash` (`README.md:29`) with a git-clone bootstrap
 (`install.sh:7`), plus manual local git hooks. GitHub Actions CI has
 existed since 2026-10-09 (issue #8, `.github/workflows/test.yml`: the five
-bash suites on push/PR to main) alongside the local pre-commit wrapper;
+bash suites plus the pytest mirror on push/PR to main) alongside the local
+pre-commit wrapper;
 there is no build and no release automation — establish what actually
 gates a release: CI plus the wrapper, nothing else. Cost posture comes
 from `packs/zero-cost-infra-defaults` (opted in; check its claims still bind

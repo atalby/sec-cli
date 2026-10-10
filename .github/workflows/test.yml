@@ -18,3 +18,9 @@ jobs:
             echo "=== $t ==="
             bash "tests/$t.sh"
           done
+      - name: Run pytest mirror
+        env:
+          SEC_TEST_DISPATCH: "1"
+        run: |
+          set -e
+          python3 -m pytest scripts/tests/ -q

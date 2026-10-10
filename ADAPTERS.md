@@ -243,9 +243,10 @@ per AGENTS.md §5's replace-don't-append rule.
   `tests/*.sh` — it only recognizes `scripts/tests/`+uv,
   `pytest.ini`/`pyproject.toml`, or `package.json` — which is why the
   `scripts/tests/` pytest mirror exists (issue #2). Since 2026-10-09
-  GitHub Actions runs all five on push and PR to main
-  (`.github/workflows/test.yml`, issue #8; checkout pinned by full
-  commit SHA).
+  GitHub Actions runs the five bash suites plus the pytest mirror (with
+  `SEC_TEST_DISPATCH=1`, so the dispatch suite runs in both) on push and
+  PR to main (`.github/workflows/test.yml`, issue #8; checkout pinned by
+  full commit SHA).
 
 ## Cloud provider
 
