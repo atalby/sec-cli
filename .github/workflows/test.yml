@@ -23,4 +23,7 @@ jobs:
           SEC_TEST_DISPATCH: "1"
         run: |
           set -e
-          python3 -m pytest scripts/tests/ -q
+          python3 -m venv .venv
+          . .venv/bin/activate
+          python -m pip install -q pytest
+          python -m pytest scripts/tests/ -q
