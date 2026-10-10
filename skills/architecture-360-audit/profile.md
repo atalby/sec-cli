@@ -396,7 +396,7 @@ instrument rather than the product but runs the same way:
 
     $ python3 -m pytest scripts/tests/ -q
     .........s                                                            [100%]
-    9 passed, 1 skipped in 2.01s
+    9 passed, 1 skipped in 4.41s
 
   (the skip is the heavy dispatch suite behind SEC_TEST_DISPATCH=1;
   with it set: 10 passed, ~14s)
@@ -419,12 +419,12 @@ instrument rather than the product but runs the same way:
     2026-10-10, when opencode bootstrapped its plugin dependency there;
     the pre-bootstrap census was `(no output)`.
 
-**Tracker, live** (point-in-time capture, 2026-10-10 at commit `f939795` — the
+**Tracker, live** (point-in-time capture, 2026-10-10 at commit `699e6f2` — the
 issue list moves on every close/open/comment (a comment refreshes the
 row's timestamp); re-run before trusting a state claim):
 
      $ gh issue list --repo atalby/sec-cli --state all --limit 100
-     35	OPEN	Sentinel lint cannot catch a phantom symbol: claim tokens that exist nowhere in code		2026-10-10T20:07:46Z
+     35	CLOSED	Sentinel lint cannot catch a phantom symbol: claim tokens that exist nowhere in code		2026-10-10T20:27:28Z
      34	CLOSED	Sentinel citations verify anchor existence, not target correctness — stale anchors resolve to unrelated lines		2026-10-10T20:08:15Z
      33	CLOSED	sec sync --help advertises Vercel Projects; no Vercel backend exists in code		2026-10-10T18:34:10Z
      32	OPEN	Persona claims in 360-audit profile.md need full re-derivation (post-CI/post-pytest/F052 era)		2026-10-10T18:31:14Z
@@ -461,12 +461,12 @@ row's timestamp); re-run before trusting a state claim):
     1	CLOSED	Hyer payload lag: repo on HIAE Protocol v5.28.0, hub stable is v5.39.1		2026-10-08T23:06:39Z
 
 **Commit history** (the intent record for forensic scan; captured 2026-10-10 at
-commit `f939795`):
+commit `699e6f2`):
 
      $ git log --oneline | wc -l
-     96
+     100
      $ git log -1 --format='%h %ad %s' --date=short
-     f939795 2026-10-10 feat(360): citations lint fails anchors whose cited line lost the claim (closes #34)
+     699e6f2 2026-10-10 docs: mark resume point at the prose-phantom catch; #35 closed
     $ git log --reverse --format='%h %ad %s' --date=short | sed -n '1p'
     89c67d2 2026-08-08 feat: initial release of sec-cli v1.0.0 (Zero-Plaintext Multi-Tenant Secret Manager, Housekeeper & Migration Engine)
 
