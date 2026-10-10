@@ -51,7 +51,7 @@ fi
 
 echo "[3] a broken citation is detected (sentinel fails closed)"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
+trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B"' EXIT
 mkdir -p "$WORK/skills/architecture-360-audit"
 cp "$REPO_ROOT/skills/architecture-360-audit/profile.md" "$WORK/skills/architecture-360-audit/profile.md"
 cp "$REPO_ROOT/skills/architecture-360-audit/SKILL.md" "$WORK/skills/architecture-360-audit/SKILL.md"
@@ -78,6 +78,36 @@ if [[ $RC -eq 2 ]]; then
     ok "bad invocation exits 2"
 else
     no "bad invocation exited $RC, expected 2"
+fi
+
+echo "[5] a stale-content citation is detected (anchor-content lint, issue #34)"
+WORK_A="$(mktemp -d)"
+WORK_B="$(mktemp -d)"
+for W in "$WORK_A" "$WORK_B"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+printf '\nStale anchor: `usage()` at `bin/sec:1`\n' >>"$WORK_A/skills/architecture-360-audit/profile.md"
+OUT="$(cd "$WORK_A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "lint exits nonzero on a stale-content anchor"
+else
+    no "lint accepted a stale-content anchor"
+fi
+if grep -q "bin/sec:1" <<<"$OUT"; then
+    ok "lint names the stale anchor"
+else
+    no "lint did not name the stale anchor"
+fi
+printf '\nControl anchor: `usage()` at `bin/sec:149`\n' >>"$WORK_B/skills/architecture-360-audit/profile.md"
+OUT="$(cd "$WORK_B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "lint accepts a well-formed anchor"
+else
+    no "lint rejected a well-formed anchor"
+    printf '%s\n' "$OUT"
 fi
 
 echo

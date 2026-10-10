@@ -89,6 +89,24 @@ EXTLESS = r"bin/sec|bin/bw-session-keeper|bin/sec-migrator|bin/sec-organizer|com
 pattern = re.compile(
     r"((?:[A-Za-z0-9_./-]+\.(?:%s)|%s)):(\d+(?:[,-]\d+)*)" % (EXTS, EXTLESS)
 )
+backtick = re.compile(r"`([^`]+)`")
+path_only = re.compile(
+    r"^(?:[A-Za-z0-9_./-]+\.(?:%s)|%s|\.gitignore)$" % (EXTS, EXTLESS)
+)
+path_like = re.compile(r"^(?:~|\.{0,2})?/?(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]*/?$")
+anchor_ish = re.compile(r"[A-Za-z0-9_./-]+:\d")
+STOPWORDS = {
+    "the", "and", "with", "for", "that", "this", "from", "issue", "path",
+    "file", "line", "lines", "row", "claim", "claims", "verbatim", "still",
+    "are", "was", "were", "not", "its", "into", "only", "real", "true",
+    "false", "names", "name", "named", "exists", "exist", "missing",
+    "test", "tests", "suite", "suites", "section", "top", "left", "right",
+    "bin", "sec", "cli", "sh", "md", "py", "json", "yml", "yaml", "ps1",
+    "toml", "example", "gitignore", "license", "install", "readme",
+    "adapters", "skill", "profile", "docs", "architecture", "security",
+    "operator", "manual", "registry", "history", "resume", "agents",
+    "code", "any", "runs", "run", "via", "per", "out", "set",
+}
 broken = []
 
 tracked = subprocess.run(
@@ -112,36 +130,145 @@ def lines_in(path):
         return sum(1 for _ in fh)
 
 
+def cited_lines(spec):
+    out = []
+    for token in spec.split(","):
+        fields = token.split("-", 1)
+        if len(fields) == 2 and int(fields[1]) < int(fields[0]):
+            continue
+        out.append((int(fields[0]), int(fields[-1])))
+    return out
+
+
+def content_of(path):
+    with open(os.path.join(repo, path), encoding="utf-8", errors="replace") as fh:
+        return fh.read().split("\n")
+
+
+def symbol_tokens(text):
+    toks = []
+    for t in re.split(r"[^A-Za-z0-9_$.()'\"-]+", text):
+        tl = t.lower().strip("'\"()")
+        if len(tl) < 2 or tl in STOPWORDS or not re.search(r"[A-Za-z]", tl):
+            continue
+        if re.fullmatch(r"\.[a-z]+", tl):
+            continue
+        toks.append(tl)
+    return toks
+
+
+def stale_content_anchors(src_name, text):
+    paragraphs = re.split(r"\n\s*\n", text)
+    offset = 0
+    hits = []
+    for para in paragraphs:
+        flat = para.replace("\n", " ")
+        base = text.index(para, offset)
+        offset = base + len(para)
+        anchors = []
+        for m in pattern.finditer(flat):
+            if "://" in m.group(1) or m.group(1).startswith("/"):
+                continue
+            if os.path.basename(m.group(1)) in {"x.py", "y.py", "example.py"}:
+                continue
+            anchors.append(m)
+        if not anchors:
+            continue
+        para_lines = para.split("\n")
+        is_table = all(l.lstrip().startswith("|") for l in para_lines if l.strip())
+        line_of = {}
+        lineno = text.count("\n", 0, base) + 1
+        for i, ch in enumerate(para):
+            if ch == "\n":
+                lineno += 1
+            line_of[i] = lineno
+        spans = []
+        for m in backtick.finditer(flat):
+            if "://" in m.group(1):
+                continue
+            if path_only.match(m.group(1)) or path_like.match(m.group(1)):
+                continue
+            if anchor_ish.search(m.group(1)):
+                continue
+            spans.append(m)
+        for m in anchors:
+            same_line = sum(
+                1 for a in anchors if line_of[a.start()] == line_of[m.start()]
+            )
+            if same_line >= 3:
+                continue
+            near = []
+            for s in spans:
+                if is_table and line_of.get(s.start()) != line_of[m.start()]:
+                    continue
+                gap = (
+                    0
+                    if s.start() <= m.end() and m.start() <= s.end()
+                    else max(s.start() - m.end(), m.start() - s.end())
+                )
+                if gap <= 45:
+                    near.append(s.group(1))
+            toks = []
+            for span in near:
+                toks.extend(symbol_tokens(span))
+            if not toks:
+                continue
+            full = resolve(m.group(1))
+            if full is None:
+                continue
+            content = content_of(full)
+            hit = False
+            for t in toks:
+                pat = re.compile(r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(t))
+                for a, b in cited_lines(m.group(2)):
+                    for n in range(a - 1, min(b, len(content))):
+                        if pat.search(content[n].lower()):
+                            hit = True
+                            break
+                    if hit:
+                        break
+                if hit:
+                    break
+            if not hit:
+                hits.append(
+                    "%s:%d cites %s:%s -- the cited line holds none of %s"
+                    % (src_name, line_of[m.start()], m.group(1), m.group(2), toks)
+                )
+    return hits
+
+
 for src in (skill, profile):
     with open(src, encoding="utf-8") as fh:
-        for lineno, line in enumerate(fh, 1):
-            for m in pattern.finditer(line):
-                path, spec = m.group(1), m.group(2)
-                if "://" in path or path.startswith("/"):
+        text = fh.read()
+    for lineno, line in enumerate(text.split("\n"), 1):
+        for m in pattern.finditer(line):
+            path, spec = m.group(1), m.group(2)
+            if "://" in path or path.startswith("/"):
+                continue
+            if os.path.basename(path) in {"x.py", "y.py", "example.py"}:
+                continue
+            full = resolve(path)
+            if full is None:
+                broken.append(f"{os.path.basename(src)}:{lineno} cites {path}:{spec} -- no such tracked path")
+                continue
+            full = os.path.join(repo, full)
+            total = lines_in(full)
+            for token in spec.split(","):
+                fields = token.split("-", 1)
+                if len(fields) == 2 and int(fields[1]) < int(fields[0]):
+                    broken.append(f"{os.path.basename(src)}:{lineno} cites {path}:{spec} -- reversed range")
                     continue
-                if os.path.basename(path) in {"x.py", "y.py", "example.py"}:
-                    continue
-                full = resolve(path)
-                if full is None:
-                    broken.append(f"{os.path.basename(src)}:{lineno} cites {path}:{spec} -- no such tracked path")
-                    continue
-                full = os.path.join(repo, full)
-                total = lines_in(full)
-                for token in spec.split(","):
-                    fields = token.split("-", 1)
-                    if len(fields) == 2 and int(fields[1]) < int(fields[0]):
-                        broken.append(f"{os.path.basename(src)}:{lineno} cites {path}:{spec} -- reversed range")
-                        continue
-                    if int(fields[-1]) > total:
-                        broken.append(
-                            f"{os.path.basename(src)}:{lineno} cites {path}:{spec} -- "
-                            f"line {fields[-1]} beyond end of file ({total} lines)"
-                        )
+                if int(fields[-1]) > total:
+                    broken.append(
+                        f"{os.path.basename(src)}:{lineno} cites {path}:{spec} -- "
+                        f"line {fields[-1]} beyond end of file ({total} lines)"
+                    )
+    broken.extend(stale_content_anchors(os.path.basename(src), text))
 
 if broken:
     for b in broken:
         print(f"{ERROR} {b}")
-    print(f"{ERROR} {len(broken)} citation(s) no longer resolve")
+    print(f"{ERROR} {len(broken)} citation problem(s): broken anchors and stale-content anchors")
     sys.exit(1)
 print(f"{OK} citations: every file:line anchor in SKILL.md and profile.md resolves")
 sys.exit(0)

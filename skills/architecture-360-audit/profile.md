@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (4 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (40 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (5 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (40 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#2`, `#13`) |
@@ -231,6 +231,10 @@ instrument rather than the product but runs the same way:
       ok: citations names the broken anchor
     [4] unknown subcommand is a usage error (exit 2)
       ok: bad invocation exits 2
+    [5] a stale-content citation is detected (anchor-content lint, issue #34)
+      ok: lint exits nonzero on a stale-content anchor
+      ok: lint names the stale anchor
+      ok: lint accepts a well-formed anchor
 
     ALL TESTS PASSED
     (exit 0)
@@ -516,15 +520,17 @@ How the code reaches each, not merely that it exists.
 
 | Integration | Reached via | Anchors |
 |---|---|---|
-| Bitwarden (`bw` CLI) | dispatcher shells out (`bw status`, `bw list items`, `bw get attachment`) | `bin/sec:89`, `bin/sec:337`, `bin/bw-session-keeper:1` |
+| Bitwarden (`bw` CLI) | dispatcher shells out (`bw status`, `bw list items`, `bw get attachment`) | `bin/sec:89`, `bin/sec:137`, `bin/sec:444` |
+| bw-session-keeper (session freshness) | dispatcher shells out for `unlock` and `rotate` | `bin/sec:94`, `bin/sec:108` |
 | Bitwarden Secrets Manager (`bws`) | dispatcher tenant vocabulary | `bin/sec:65` |
-| 1Password (`op` CLI) | `op account list`, `op signin`, `op read` | `bin/sec:115`, `bin/sec:118`, `bin/sec:327` |
+| 1Password (`op` CLI) | `op whoami` session check, `op signin`, `op read` | `bin/sec:116`, `bin/sec:118`, `bin/sec:395` |
 | Infisical / HashiCorp Vault / macOS Keychain | dispatcher tenant vocabulary | `bin/sec:65`, `bin/sec:178` |
 | AWS Secrets Manager | claimed in `docs/ARCHITECTURE.md:6` — verify whether any code path reaches it (candidate smoke finding) | `docs/ARCHITECTURE.md:6` |
-| GCP Secret Manager | `gcloud` shell-outs from the sync controller | `bin/sec-sync-controller.py:74`, `bin/sec-sync-controller.py:90` |
-| GitLab group CI/CD variables | HTTPS API `PUT` via `urllib.request` | `bin/sec-sync-controller.py:120`, `bin/sec-sync-controller.py:127` |
+| GCP Secret Manager | `gcloud` shell-outs from the sync controller | `bin/sec-sync-controller.py:76`, `bin/sec-sync-controller.py:87` |
+| GitLab group CI/CD variables | HTTPS API `PUT` via `urllib.request` | `bin/sec-sync-controller.py:169`, `bin/sec-sync-controller.py:170` |
 | Vercel | claimed as a sync target in `docs/ARCHITECTURE.md:14` — no call site found in the controller this build (candidate smoke finding) | `docs/ARCHITECTURE.md:14` |
-| GitHub (install source + tracker) | `git clone` at install, `gh` CLI for the live tracker read | `install.sh:7`, `README.md:29` |
+| GitHub (install source) | `REPO_URL` default feeding `git clone`, piped `curl` install source | `install.sh:7`, `README.md:29` |
+| GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:107` |
 | jq | invoked for JSON parsing inside `bin/sec` | `bin/sec:89` |
 | Hyer hub checkers | invoked by the local pre-commit wrapper from `~/sandbox/hyer/scripts/` | `ADAPTERS.md:188` |
 
@@ -533,7 +539,9 @@ How the code reaches each, not merely that it exists.
 Twelve, numbered 1 through 12, never dropped or renumbered. **Ranked
 highest-value-first**: persona 1 is audited first; a scoped run drops from
 persona 12 upward. Every anchor below was verified against this tree when
-this profile was written; Step 3 re-verifies them at the start of every run.
+this profile was written; Step 3 re-verifies them at the start of every run,
+and since issue #34 `sentinel.sh citations` also fails in the gate on any
+anchor whose cited line no longer holds the claim's symbol.
 
 Declared-persona taxonomy: `packs/solo-founder-governance` v1.2.0 was read
 before deriving (`packs/solo-founder-governance/PACK.md:24` binds the repo to
@@ -580,7 +588,7 @@ completion tables plus the setup-keychain echo) with no
 single source; `case "$cmd" in` at `bin/sec:179` is the real command router
 while usage text at `bin/sec:149` is a parallel declaration that only a test
 checks for one line. Smoke finding, resolved 2026-10-10 (issue #33): the sync
-controller's `--help` (`bin/sec-sync-controller.py:5`) had advertised the
+controller's `Targets:` header (`bin/sec-sync-controller.py:5`) had advertised the
 targets "GCP Secret Manager, GitLab Group Variables, Vercel Projects", but
 the only backend writers are `sync_to_gcp_secret_manager`
 (`bin/sec-sync-controller.py:72`) and `sync_to_gitlab_group`
@@ -593,7 +601,7 @@ module-level public, leading underscore private.
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:241`, `ADAPTERS.md:221`
 
 Nine install sections, fourteen guard sections, nine write-honesty
-sections, and the audit instrument's own four sentinel cases pass today
+sections, and the audit instrument's own five sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes the four fast suites and gates the dispatch suite behind
 `SEC_TEST_DISPATCH=1`); establish what they do not cover. Structural
@@ -706,7 +714,7 @@ The dimension this repository exists to own: does the tool do correct secret
 management? Lenses: classification correctness (`classify_item` at
 `bin/sec-classify.py:186` — on what inputs does it mis-bin, and does a wrong
 classification propagate to an apply?), housekeeping safety (pre-apply
-snapshot at `bin/sec-organizer:161` — can `revert` lose data if interrupted,
+`snapshot_file` at `bin/sec-organizer:161` — can `revert` lose data if interrupted,
 and does plan/apply use identical classification?), migration atomicity
 (transaction state at `bin/sec-migrator:136` — is a mid-migration crash
 recoverable, is a secret ever written to both backends in an inconsistent
@@ -740,7 +748,7 @@ reach provider CLIs. Environment: `SEC_REPO_URL` at `install.sh:7` flows
 into `git clone` unchecked (an env var is attacker-controlled in any
 compromised CI or hostile dotfile). Provider output: `bin/sec:118` executes
 it (`eval`), `bin/sec:89` and friends parse it with `jq`; sync controller
-URL-constructs with the secret name at `bin/sec-sync-controller.py:120` —
+URL-constructs with the `secret_name` at `bin/sec-sync-controller.py:163` —
 what chars can a `SYNC_KEYS` value carry into an API path? Config-adjacent:
 `.mcp.json.example` wires the host-local (gitignored) `.mcp.json` through
 `bin/hyer-mcp.sh`, so agent tooling never carries a tracked exec string —

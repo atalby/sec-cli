@@ -61,7 +61,11 @@ Bind these into every run. They are not style preferences.
 5. **The audit detects its own drift.** Every `file:line` cited in
    `profile.md` is re-verified by reading it at the start of every run. A
    citation that has moved is corrected in `profile.md` *and* listed in that
-   run's report. A persona auditing a stale line number produces a confident
+   run's report. `sentinel.sh citations` enforces this mechanically: phase 1
+   resolves every anchor to an existing tracked path; phase 2 fails any
+   anchor whose cited line no longer holds the claim's symbol, so an anchor
+   that resolves to an existing but unrelated line is red rather than
+   accepted. A persona auditing a stale line number produces a confident
    wrong finding, which is worse than no finding.
 6. **No scope drift.** No unrequested refactors, no opportunistic cleanups,
    no fixing an audit finding in passing.
@@ -177,11 +181,14 @@ changes when this repository changes.
 Then re-verify, by opening each cited location, every `file:line` anchor in
 its `## Personas` section. Record each as resolved or moved. A moved citation
 is corrected in `profile.md` in the same run and listed in the report's
-re-derivation section — never silently. Also re-derive, from the repository
+re-derivation section — never silently. `sentinel.sh citations` runs first and
+already fails anchors whose cited line lost the claim's symbol, but it can
+only check an anchor with a named symbol nearby; a phantom claim (a symbol
+that exists nowhere in the code) is only caught by reading the code. Also re-derive, from the repository
 rather than from `profile.md`'s prose:
 
-- the maturity tier's factual claims (does the test command still pass, does
-  CI still absent or present, are the manifests still absent);
+- the maturity tier's factual claims (does the test command still pass, is
+  CI absent or present, are the manifests still absent);
 - the external integration list (does each named provider still appear in
   the code);
 - the coverage manifest against the current `git ls-files`.
