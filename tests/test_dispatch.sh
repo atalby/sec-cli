@@ -779,6 +779,40 @@ else
     echo "[INFO] pwsh not found; ps1 ambiguity assertion runs in CI"
 fi
 
+echo "[30] #29: ps1 op read failure exits nonzero with an error (not silent success)"
+PWSH30="${PWSH_BIN:-}"
+if [ -z "$PWSH30" ]; then PWSH30="$(command -v pwsh 2>/dev/null || true)"; fi
+if [ -z "$PWSH30" ] && [ -x /tmp/opencode/pwsh/pwsh ]; then PWSH30=/tmp/opencode/pwsh/pwsh; fi
+if [ -n "$PWSH30" ]; then
+    FB30="$WORK/fb30"
+    mkdir -p "$FB30"
+    cp "$FAKEBIN/op" "$FB30/op"
+    H30="$WORK/h30"
+    mkdir -p "$H30"
+    OPLOG30="$WORK/op30.log"
+    : >"$OPLOG30"
+    set +e
+    OUT30="$(env -i "PATH=$FB30:/usr/bin:/bin" "HOME=$H30" "SEC_TEST_OP_LOG=$OPLOG30" "$PWSH30" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" get MISSING_ITEM 2>&1)"
+    RC30=$?
+    set -e
+    if [[ $RC30 -ne 0 ]] && grep -q "not found" <<<"$OUT30"; then
+        pass "ps1 failed op read: nonzero exit, not-found error"
+    else
+        fail "ps1 failed op read silent-success (rc=$RC30): [$OUT30]"
+    fi
+    set +e
+    OUT30B="$(env -i "PATH=$FB30:/usr/bin:/bin" "HOME=$H30" "SEC_TEST_OP_LOG=$OPLOG30" "$PWSH30" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" get MY_API_KEY 2>&1)"
+    RC30B=$?
+    set -e
+    if [[ $RC30B -eq 0 ]] && grep -q 'op-pw-MY_API_KEY' <<<"$OUT30B"; then
+        pass "ps1 successful op read still returns the value, exit 0"
+    else
+        fail "ps1 successful op read broke (rc=$RC30B): $OUT30B"
+    fi
+else
+    echo "[INFO] pwsh not found; ps1 op-honesty assertion runs in CI"
+fi
+
 echo
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"

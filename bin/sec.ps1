@@ -79,12 +79,13 @@ switch ($Command) {
 
         if (Get-Command op -ErrorAction SilentlyContinue) {
             $opVault = if ($ScopeName) { $ScopeName } else { "private" }
+            $opVal = $null
             if ($fieldName) {
-                op read "op://$opVault/$itemName/$fieldName" 2>$null
+                $opVal = op read "op://$opVault/$itemName/$fieldName" 2>$null
             } else {
-                op read "op://$opVault/$Key/password" 2>$null
+                $opVal = op read "op://$opVault/$Key/password" 2>$null
             }
-            exit 0
+            if ($opVal) { $opVal; exit 0 }
         }
 
         Write-Error "[sec] Error: Secret '$Key' not found."
