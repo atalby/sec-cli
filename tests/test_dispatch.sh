@@ -548,6 +548,22 @@ if [[ $RC -ne 0 ]]; then pass "provider failure exits non-zero"; else fail "prov
 if grep -q "^\[ERROR\]" <<<"$OUT"; then pass "provider failure emits a tagged [ERROR]"; else fail "provider failure died with no [ERROR]: $OUT"; fi
 if grep -qi "not found" <<<"$OUT"; then fail "provider failure misreported as not-found: $OUT"; else pass "provider failure is not misreported as not-found"; fi
 
+echo "[22g] F021 class: housekeep/migrate/keeper arms error when their module is absent"
+NOMOD_DIR="$(mktemp -d "$WORK/nomod.XXXXXX")"
+cp "$REPO_ROOT/bin/sec" "$NOMOD_DIR/sec"
+chmod +x "$NOMOD_DIR/sec"
+set +e
+OUTG1="$(env -i "PATH=/usr/bin:/bin" "HOME=$WORK/empty" "$NOMOD_DIR/sec" housekeep plan 2>&1 </dev/null)"
+RCG1=$?
+OUTG2="$(env -i "PATH=/usr/bin:/bin" "HOME=$WORK/empty" "$NOMOD_DIR/sec" migrate --plan 2>&1 </dev/null)"
+RCG2=$?
+OUTG3="$(env -i "PATH=/usr/bin:/bin" "HOME=$WORK/empty" "$NOMOD_DIR/sec" rotate 2>&1 </dev/null)"
+RCG3=$?
+set -e
+if [[ $RCG1 -ne 0 ]] && grep -q "^\[ERROR\]" <<<"$OUTG1"; then pass "housekeep without organizer exits non-zero, tagged"; else fail "housekeep without organizer exited 0 or untagged (rc=$RCG1): $OUTG1"; fi
+if [[ $RCG2 -ne 0 ]] && grep -q "^\[ERROR\]" <<<"$OUTG2"; then pass "migrate without migrator exits non-zero, tagged"; else fail "migrate without migrator exited 0 or untagged (rc=$RCG2): $OUTG2"; fi
+if [[ $RCG3 -ne 0 ]] && grep -q "^\[ERROR\]" <<<"$OUTG3"; then pass "rotate without keeper exits non-zero, tagged"; else fail "rotate without keeper exited 0 or untagged (rc=$RCG3): $OUTG3"; fi
+
 echo "[23] no producer still emits legacy [sec*] event prefixes (F048 retrofit)"
 LEGACY=0
 for f in bin/sec bin/sec-organizer bin/sec-migrator bin/bw-session-keeper; do

@@ -229,9 +229,9 @@ per AGENTS.md §5's replace-don't-append rule.
 - **Command**: `bash tests/test_install.sh` (9 sections, install path),
   `bash tests/test_sync_guard.sh` (14 sections, sync guard canaries),
   `bash tests/test_write_honesty.sh` (9 sections, silent-no-op write
-  paths, revert/undo honesty), `bash tests/test_sentinel.sh` (4 cases,
+  paths, revert/undo honesty), `bash tests/test_sentinel.sh` (6 cases,
   the 360 audit instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (40 sections, every `sec` dispatch arm
+  `bash tests/test_dispatch.sh` (41 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed

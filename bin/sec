@@ -664,18 +664,24 @@ EOF
         if [[ -x "$SCRIPT_DIR/sec-organizer" ]]; then
             exec "$SCRIPT_DIR/sec-organizer" "${1:-plan}"
         fi
+        echo "[ERROR] organizer module not found or not executable: $SCRIPT_DIR/sec-organizer" >&2
+        exit 1
         ;;
 
     migrate)
         if [[ -x "$SCRIPT_DIR/sec-migrator" ]]; then
             exec "$SCRIPT_DIR/sec-migrator" "$@"
         fi
+        echo "[ERROR] migrator module not found or not executable: $SCRIPT_DIR/sec-migrator" >&2
+        exit 1
         ;;
 
     unlock|rotate|keep|setup-keychain)
         if [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
             exec "$SCRIPT_DIR/bw-session-keeper" "$cmd" "$@"
         fi
+        echo "[ERROR] session keeper not found or not executable: $SCRIPT_DIR/bw-session-keeper" >&2
+        exit 1
         ;;
 
     *)
