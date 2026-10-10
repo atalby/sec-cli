@@ -63,11 +63,11 @@ replace the output; if one stops existing, search the manifest, `Makefile`,
 CI configuration, and contributor documentation before recording an absence.
 
 **Test suite** (four-source discovery: manifest — absent; `Makefile` —
-absent; CI — `.github/workflows/test.yml` since 2026-10-09 (issue #8);
-contributor documentation — `ADAPTERS.md:221` "Running this project's test
-suite"). The quoted outputs below predate the 2026-10-08/09 suite additions
-(`test_write_honesty.sh`, `test_dispatch.sh`) and CI; the current five-suite
-battery is green end-to-end. `tests/test_sentinel.sh` belongs to the audit
+absent; CI — `.github/workflows/test.yml` since 2026-10-09 (issue #8), runs
+the five bash suites below and nothing else; contributor documentation —
+`ADAPTERS.md:221` "Running this project's test suite", which also names the
+pytest mirror at `scripts/tests/`). All quotes below current as of the
+2026-10-10 profile pass. `tests/test_sentinel.sh` belongs to the audit
 instrument rather than the product but runs the same way:
 
     $ bash tests/test_install.sh
@@ -79,6 +79,7 @@ instrument rather than the product but runs the same way:
       ok: installed sec-classify.py
       ok: installed sec-migrator
       ok: installed sec-sync-controller.py
+      ok: installed sec.ps1
     [2] piped mode: no bin/sec beside script, BASH_SOURCE unset under set -u
       ok: piped install exits 0 (no 'unbound variable' abort)
       ok: piped-mode install produced sec
@@ -87,11 +88,28 @@ instrument rather than the product but runs the same way:
       ok: second piped install exits 0 against existing bootstrap
       ok: no redundant clone when bootstrap already present
       ok: sync controller installed in reuse path
-    [4] dispatcher surface: usage documents sec sync, sync controller is -x
+    [4] dispatcher surface: usage, completion surfaces, sync controller is -x
       ok: usage lists 'sec sync'
+      ok: usage lists fish among completion shells
+      ok: zsh completion offers sec sync
+      ok: bash completion offers sec sync
+      ok: fish completion offers sec sync
+      ok: tracked completions/_sec matches 'sec completion zsh' output
       ok: bin/sec:562 -x guard for sec-sync-controller.py satisfied
     [5] config bootstrap: sec.conf created under $HOME/.sec with mode 600
       ok: sec.conf mode 600
+    [6] piped install never trusts a foreign cwd's bin/sec (F038 supply-chain)
+      ok: piped install from foreign cwd exits 0
+      ok: foreign cwd bin/sec ignored
+      ok: piped mode bootstrapped from SEC_REPO_URL instead of cwd
+    [7] LICENSE is installed alongside the binaries (F051)
+      ok: LICENSE copied to install dir, byte-identical
+    [8] file-mode install warns about missing runtime dependencies (F053)
+      ok: install still succeeds with jq/python3 absent
+      ok: warnings name both missing runtime deps
+    [9] piped install fails with a clear diagnostic when git is absent (F053)
+      ok: piped install without git exits non-zero
+      ok: clear git-missing diagnostic
 
     ALL TESTS PASSED
     (exit 0)
@@ -99,7 +117,7 @@ instrument rather than the product but runs the same way:
     $ bash tests/test_sync_guard.sh
     [1] --dry-run previews present keys without writing anywhere
       ok: --dry-run exits 0
-      ok: output announces dry-run mode
+      ok: output announces tagged dry-run mode
       ok: plan lists present key name
       ok: no secret values printed
       ok: dry-run never invoked gcloud
@@ -122,6 +140,76 @@ instrument rather than the product but runs the same way:
     [6] unknown flag is rejected before any work (exit 2, no gcloud)
       ok: unknown flag exits 2
       ok: no backend touched on bad usage
+    [7] dry-run names the GCP destination from GCP_PROJECT_ID (F044)
+      ok: [7] dry-run exits 0
+      ok: [7] plan names the configured project
+      ok: [7] still zero backend calls in dry-run
+    [8] dry-run names the GitLab destination from GITLAB_GROUP_ID (F044)
+      ok: [8] dry-run exits 0
+      ok: [8] plan names the configured group
+      ok: [8] GitLab shown as active target when token present
+    [9] real --yes push sends --project=<GCP_PROJECT_ID> to gcloud (F044)
+      ok: [9] push exits 0
+      ok: [9] gcloud shim saw the configured project
+    [10] backend write failure exits 3 with a FAILED notice, no secret leak (F044)
+      ok: [10] exits 3 on backend write failure
+      ok: [10] output marks the sync FAILED with [ERROR] tag
+      ok: [10] no secret values printed on failure
+    [11] a failing backend write must exit 3, never a fake success (issue #6)
+      ok: failed write exits 3 (backend failure)
+      ok: no false success line on failed write
+      ok: failure notice carries the backend's own stderr
+      ok: summary reports the failure
+      ok: no secret values printed on failure
+    [12] backend timeouts are configured (no unbounded gcloud/urlopen)
+      ok: controller sets timeout= at 4 call sites (>=3)
+    [13] --help documents exit 3 so the extended contract is discoverable
+      ok: --help exits 0
+      ok: --help documents exit 3 (backend write failure)
+
+    ALL TESTS PASSED
+    (exit 0)
+
+    $ bash tests/test_write_honesty.sh
+    [1] sec set for an unsupported tenant fails loudly (exit 1, not silent 0)
+      ok: unsupported tenant set exits 1
+      ok: tagged refusal names the unsupported tenant
+    [2] housekeep apply refuses an unsupported backend, keeps the plan
+      ok: bws apply exits 1
+      ok: plan file kept on refusal
+      ok: no success banner on refusal
+      ok: tagged refusal explains the unsupported backend
+    [3] housekeep apply (op) honours --tags and fails hard on backend error
+      ok: op apply surfaces backend failure (exit 1)
+      ok: plan kept after failed op apply
+      ok: snapshot kept after failed op apply
+      ok: no success banner on failure
+      ok: op apply succeeds against a working backend
+      ok: op invoked with --tags
+      ok: no bogus --tag flag
+    [4] migrate --apply refuses to clobber an unresolved transaction
+      ok: apply with unresolved TX exits 1
+      ok: existing TX untouched, tagged undo hint
+    [5] migrate --apply fails loudly on an empty-valued item (no fake success)
+      ok: empty-val item aborts apply with exit 1
+      ok: prints tagged migration ERROR notice
+      ok: transaction log written on failure
+    [6] housekeep revert: a failed bw edit is surfaced, snapshot kept, no fake success
+      ok: revert with a failing edit exits 1
+      ok: snapshot kept after failed revert
+      ok: no success banner on failed revert
+      ok: tagged revert-failure notice names the item
+    [7] housekeep revert: successful edits clear the snapshot and report success
+      ok: revert with working edits exits 0
+      ok: snapshot cleared after successful revert
+      ok: tagged success banner on real success
+    [8] migrate --undo on a corrupt transaction log fails loudly (no silent no-op)
+      ok: corrupt TX --undo exits 1
+      ok: tagged corrupt-TX notice
+      ok: corrupt TX file kept for diagnosis
+    [9] migrate --undo on a well-formed empty TX reports zero items and exits 0
+      ok: empty TX --undo exits 0
+      ok: reports zero created items
 
     ALL TESTS PASSED
     (exit 0)
@@ -144,10 +232,165 @@ instrument rather than the product but runs the same way:
     ALL TESTS PASSED
     (exit 0)
 
+    $ bash tests/test_dispatch.sh
+    [1] version/help/no-args surface
+      ok: sec -v exits 0 with version
+      ok: --help exits 0 with Usage
+      ok: help states per-tenant injection truth (F001)
+      ok: no-args exits 0 with Usage
+    [2] unknown command falls through to usage (current behavior: exit 0)
+      ok: unknown cmd prints usage, exit 0
+    [3] bw get: plain key returns login.password
+      ok: bw get MY_API_KEY -> pw-MY_API_KEY
+    [4] bw get: item/field subpath
+      ok: bw get github-app/password -> gh-pw
+    [5] bw get: miss exits 1 with tenant error
+      ok: miss exits 1
+      ok: miss emits tagged [ERROR]
+    [6] prefix tenant: bws get
+      ok: bws get -> bws-pw-MY_KEY
+    [7] prefix tenant: op get
+      ok: op get -> op-pw-MY_API_KEY
+    [8] prefix tenant: vault get splits item/field and calls vault kv get (F037 fix)
+      ok: bare vault get returns stub value
+      ok: bare key hits secret/data/anything with field=value
+      ok: item/field vault get returns stub value
+      ok: subpath hits secret/data/myapp/production with field=DATABASE_URL
+    [9] prefix tenant: infisical get
+      ok: infisical get -> inf-pw-MY_API_KEY
+    [10] bw set create path
+      ok: bw set exits 0
+      ok: reports [ OK ] saved-to-Bitwarden
+      ok: bw create item executed
+    [11] op set create path
+      ok: op set exits 0
+      ok: reports saved-to-1Password
+    [12] run dispatch: default exec + op delegation
+      ok: sec run -- echo run-ok
+      ok: sec op run -- echo op-run-ok
+    [13] sync dispatch reaches the controller (dry-run)
+      ok: sec sync --dry-run exits 0
+      ok: prints tagged DRY RUN banner
+      ok: prints tagged DRY RUN COMPLETE
+      ok: no backend write during dry-run
+    [14] housekeep plan executes the organizer
+      ok: housekeep plan exits 0
+      ok: plan file written
+      ok: cache dir created 0700
+      ok: plan file written 0600
+      ok: plan has >=1 action
+      ok: prints tagged Plan Summary
+      ok: prints tagged Plan saved
+    [15] migrate plan executes the migrator
+      ok: migrate plan exits 0
+      ok: discovers 2 fixture items
+      ok: tagged ready-to-migrate counts 2
+      ok: tagged Discovered counts 2
+    [16] sec-classify.py direct smoke
+      ok: aws fixture classifies cloud/aws
+    [16b] F017: classify reads login.password (AKIA key in password field -> cloud/aws)
+      ok: AKIA in login.password classifies cloud/aws
+    [16c] F017: a null uri in login.uris does not drop the item to confidence-0
+      ok: null uri does not drop confidence to 0 (got 66)
+    [16d] F018: iam.gserviceaccount.com classifies cloud/gcp, not cloud/aws
+      ok: iam.gserviceaccount.com classifies cloud/gcp
+    [17] keeper helper: rotate without session/master-pass, status output (invoked directly — F045)
+      ok: keeper rotate without secrets exits 1
+      ok: rotate names the missing master password
+      ok: keeper status exits 0 with Vault Status banner
+      ok: status reports session EXPIRED or MISSING
+    [18] default_backend from sec.conf routes unprefixed get
+      ok: default_backend=bws routes get to bws
+    [19] F002: setup-keychain refuses plaintext file store without opt-in
+      ok: plaintext store refused with exit 1
+      ok: refusal message printed
+      ok: master_pass file not created
+    [20] F002: opt-in SEC_ALLOW_PLAINTEXT_MASTER_PASS=1 allows the mode-0600 file
+      ok: opt-in stores master_pass with the given value
+      ok: master_pass mode 600
+    [21] F002: rotate refuses a legacy plaintext file without opt-in
+      ok: rotate with unopted plaintext file exits 1
+      ok: read refusal printed
+    [22] F002: opt-in lets rotate consume a legacy plaintext file
+      ok: opt-in rotate unlocks via stored pass
+    [22b] F003: keeper unlock never puts the password on bw's argv
+      ok: keeper unlock with password exits 0 and saves session
+      ok: master password absent from bw argv
+      ok: master password delivered to bw via env (BW_UNLOCK_PASS)
+    [22c] F011: non-TTY unlock with no stored password fails with a message, not silently
+      ok: non-TTY unlock exits non-zero
+      ok: non-TTY unlock emits a tagged [ERROR]
+    [22d] F011: non-TTY setup-keychain with no password fails with a message, not silently
+      ok: non-TTY setup-keychain exits non-zero
+      ok: non-TTY setup-keychain emits a tagged [ERROR]
+    [22e] F021: sync with no controller errors instead of exiting 0
+      ok: sync without controller exits non-zero
+      ok: sync without controller emits a tagged [ERROR]
+    [22f] F025: failing bw list items surfaces the provider error, not not-found
+      ok: provider failure exits non-zero
+      ok: provider failure emits a tagged [ERROR]
+      ok: provider failure is not misreported as not-found
+    [23] no producer still emits legacy [sec*] event prefixes (F048 retrofit)
+      ok: no legacy [sec*] event prefixes in producers
+    [23b] F026: sec.ps1 captures trailing args and execs without re-parse (static contract)
+      ok: no Invoke-Expression re-parse in sec.ps1
+      ok: trailing args captured via ValueFromRemainingArguments
+      ok: no $args references left in sec.ps1
+    [INFO] pwsh not present on this host; sec.ps1 functional run test (section [23c]) runs in CI
+    [24] F039: hyer MCP wiring is env-resolved, PAT via env only, no sh -c
+      ok: wrapper execs the server with HYER_HOME resolved (rc=0)
+      ok: node invoked with the resolved server path
+      ok: PAT delivered to node via environment
+      ok: PAT never on argv
+      ok: wrapper stdout clean for MCP stdio
+      ok: missing checkout: tagged [ERROR] naming HYER_HOME, non-zero exit
+      ok: tracked .mcp.json.example has no host path and no sh -c
+      ok: example wires bin/hyer-mcp.sh
+      ok: .mcp.json gitignored (host-local)
+      ok: .mcp.json untracked
+      ok: wrapper has no hardcoded host path
+    [25] F024: op guard tests session validity (op whoami), not account configuration
+      ok: expired session re-authenticated, get succeeds
+      ok: value returned after re-auth
+      ok: signin prompted when session invalid
+      ok: failed signin: non-zero exit, tagged error, not misreported as not-found
+      ok: signin attempted before giving up
+    [26] #27: --scope on unsupported tenants refuses honestly (exit 2, tagged)
+      ok: bws --scope refused with tagged error, exit 2
+      ok: infisical --scope refused with tagged error, exit 2
+    [27] #27: bw --scope resolves a folder name and restricts lookup
+      ok: scoped get returns the folder's item value
+      ok: lookup passed --folderid f-aaa
+      ok: unresolvable folder: exit 1, tagged scope-folder-not-found
+    [28] #27: op --scope substitutes the vault in synthesized URIs (bash + ps1)
+      ok: bash op --scope reads from the named vault
+      ok: unscoped op get still defaults to the private vault
+      ok: ps1 op --scope reads from the named vault
+    [29] #27: bw ambiguous item name refuses instead of first-match
+      ok: ambiguous name: exit 1, tagged error lists both matches
+      ok: slash form still extracts the field across matches
+      ok: ps1 ambiguous name refuses (was a yellow notice)
+    [30] #29: ps1 op read failure exits nonzero with an error (not silent success)
+      ok: ps1 failed op read: nonzero exit, not-found error
+      ok: ps1 successful op read still returns the value, exit 0
+    [31] #30: ps1 set fails honestly (no backend, or store write fails)
+      ok: ps1 set with no backend: nonzero exit + tagged error
+      ok: ps1 set with failing bw create: nonzero exit, no false success line
+      ok: ps1 set with a working bw reports success, exit 0
+      ok: ps1 set with failing bws create: nonzero exit, no false success line
+      ok: ps1 set with a working bws reports success, exit 0
+
+    ALL TESTS PASSED
+    (exit 0)
+
+    $ python3 -m pytest scripts/tests/ -q
+    .....                                                                    [100%]
+    5 passed in 0.03s
+
 **Tracked file count** (the manifest denominator):
 
     $ git ls-files | wc -l
-    96
+    99
 
 **Dependency manifest census** (the persona 8 denominator):
 
@@ -165,6 +408,7 @@ instrument rather than the product but runs the same way:
 **Tracker, live:**
 
     $ gh issue list --repo atalby/sec-cli --state all --limit 100
+    30	OPEN	sec.ps1 'set' lies: reports success it never achieved		2026-10-10T13:42:04Z
     29	CLOSED	sec.ps1 op read failure still exits 0 with empty output (same honesty class as #24)		2026-10-10T08:53:48Z
     28	CLOSED	ADAPTERS.md test-suite section counts and Last-updated date stale (audit §8 item 11 residual)		2026-10-10T07:23:04Z
     27	CLOSED	bin/sec get: no folder/tenant/org scoping; arbitrary first match and on-miss full dump (F020)		2026-10-10T08:46:22Z
@@ -198,9 +442,9 @@ instrument rather than the product but runs the same way:
 **Commit history** (the intent record for forensic scan):
 
     $ git log --oneline | wc -l
-    75
+    80
     $ git log -1 --format='%h %ad %s' --date=short
-    25afa5b 2026-10-10 docs(360): claim the .opencode plugin surface in profile (sentinel red)
+    3592421 2026-10-10 docs: update RESUME.md with issue #2 completion and new high-value work status
     $ git log --reverse --format='%h %ad %s' --date=short | sed -n '1p'
     89c67d2 2026-08-08 feat: initial release of sec-cli v1.0.0 (Zero-Plaintext Multi-Tenant Secret Manager, Housekeeper & Migration Engine)
 
@@ -233,8 +477,11 @@ dimension.
 
 ## Dependency manifests and lockfiles
 
-**None.** No manifest, no lockfile, no `Makefile`, in the tree or on disk —
-the census above is empty output, re-verified this build.
+**None as a project surface.** No manifest, no lockfile, no `Makefile`
+belonging to this project in the tree or on disk — the only on-disk census
+hits are opencode's own harness install under `.opencode/` (see the census
+above), which is tooling state, not a build input. Re-verified in the
+2026-10-10 profile pass.
 
 **Unpinned and floating, by mechanism:**
 
@@ -319,13 +566,17 @@ pushes to "Vercel projects" — verify a Vercel call site exists anywhere; a
 claim with no code is a smoke finding. Python visibility rule: module-level
 public, leading underscore private.
 
-### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:41`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:233`, `ADAPTERS.md:221`
+### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:41`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:237`, `ADAPTERS.md:221`
 
-Five install cases, six guard sections, and the audit instrument's own four
-sentinel cases pass today; establish what they do not cover. Structural gaps
-to quantify, not merely note: no CI anywhere, the hook's test step blind to
-`tests/*.sh` (`ADAPTERS.md:233`, open issue `#2`), and zero coverage
-tooling. Then cross-reference suites against the hotspots:
+Nine install sections, thirteen guard sections, nine write-honesty
+sections, and the audit instrument's own four sentinel cases pass today
+(as does the five-assertion pytest mirror at `scripts/tests/`); establish
+what they do not cover. Structural gaps to quantify, not merely note:
+GitHub Actions CI exists since 2026-10-09 (issue #8,
+`.github/workflows/test.yml`) but runs only the five bash suites — the
+pytest mirror is not wired in; the hook's test step is blind to
+`tests/*.sh` (`ADAPTERS.md:237`, open issue `#2`); and there is zero
+coverage tooling. Then cross-reference suites against the hotspots:
 `bin/sec-organizer`, `bin/sec-migrator`, `bin/sec-classify.py`, and
 `bin/bw-session-keeper` have no direct test (the sync/install suites touch
 only their install footprint and the controller). Check for assertions that
@@ -357,9 +608,11 @@ in place, entries append-only.
 ### 6. Infrastructure, delivery, and cost -- `install.sh:7`, `README.md:29`, `packs/zero-cost-infra-defaults/PACK.md:1`, `.gemini/settings.json:1`
 
 Delivery is: piped `curl | bash` (`README.md:29`) with a git-clone bootstrap
-(`install.sh:7`), plus manual local git hooks. There is no CI (finding, not
-skip), no build, no release automation — establish what actually gates a
-release: the local pre-commit wrapper and nothing else. Cost posture comes
+(`install.sh:7`), plus manual local git hooks. GitHub Actions CI has
+existed since 2026-10-09 (issue #8, `.github/workflows/test.yml`: the five
+bash suites on push/PR to main) alongside the local pre-commit wrapper;
+there is no build and no release automation — establish what actually
+gates a release: CI plus the wrapper, nothing else. Cost posture comes
 from `packs/zero-cost-infra-defaults` (opted in; check its claims still bind
 against what the repo actually runs — zero CI minutes because zero CI).
 `.gemini/settings.json` and the bridge dirs are harness delivery surfaces.
@@ -378,14 +631,17 @@ plaintext secret (zero-plaintext invariant applied to the state layer).
 
 ### 8. Supply chain, licensing, and compliance -- `LICENSE:1`, `install.sh:24`, `README.md:29`, `packs/compliance-baseline/PACK.md:1`, `.gitignore:8`
 
-Mechanical part first: no manifest and no lockfile exist, so there is no
-scanner target — say so as the verdict (prior art C). What can be verified:
+Mechanical part first: no project manifest and no lockfile exist, so there
+is no project-level scanner target — say so as the verdict (prior art C).
+What can be verified:
 `LICENSE:1` (MIT) covers the tree; the two remote-fetch sites
 (`README.md:29`, `install.sh:24`) are integrity-unverified by construction;
 the PATH toolchain (`bw`, `op`, `gcloud`, `jq`) is unpinned. Then the
-compliance pack: `packs/compliance-baseline` is present on disk but is NOT
-in ADAPTERS' opted-in list — present-but-not-declared is itself a
-governance finding candidate. Re-verify that no plaintext secret has ever
+compliance pack: `packs/compliance-baseline` and
+`packs/human-team-coordination` are present on disk and were declared
+opted-in in ADAPTERS on 2026-10-10 (audit F052 — the declaration itself
+was late), so re-verify the declaration and the on-disk bytes still agree
+rather than trusting either. Re-verify that no plaintext secret has ever
 reached a tracked file using the hook's own secret scan step rather than
 an impression.
 
@@ -447,9 +703,10 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **96 tracked files** (`git ls-files | wc -l`, re-measured
-2026-10-10 after issue #20: `.mcp.json` untracked, `.mcp.json.example`
-and `bin/hyer-mcp.sh` added). First matching row wins, so specific rows precede general ones.
+Denominator: **99 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-10 after the issue #2 pytest suite (`scripts/tests/`) and the
+`RESUME.md` resume marker landed: 96 + 3). First matching row wins, so
+specific rows precede general rows.
 `sentinel.sh` fails on any tracked file matched by no row, and on any row
 matching no file except the one declared-empty row below.
 
@@ -486,7 +743,9 @@ matching no file except the one declared-empty row below.
 | `install.sh` | 6, 8, 11 |
 | `methodology/**` | 4, 5 |
 | `packs/**` | 6, 5 |
+| `RESUME.md` | 4, 5 |
 | `sec.conf.example` | 7, 1 |
+| `scripts/tests/**` | 3 |
 | `skills/architecture-360-audit/**` | 4, 5 |
 | `skills/360-audit-skill-forge/**` | 4, 5 |
 | `skills/**` | 4, 5 |

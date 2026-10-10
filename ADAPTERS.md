@@ -230,12 +230,17 @@ per AGENTS.md §5's replace-don't-append rule.
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed
   2026-10-10 (audit F052, re-counted after #19 and #22–#26).
-- **Note**: the shared pre-commit's Step 5 does **not** auto-run
+  A sixth, zero-dependency pytest suite lives at `scripts/tests/`
+  (`python3 -m pytest scripts/tests/ -q`, 5 assertions, added in 00b1a65
+  under issue #2); it mirrors the install-shell suite so the pre-commit
+  gate has a detectable target.
+- **Note**: the shared pre-commit's Step 5 still does **not** auto-run
   `tests/*.sh` — it only recognizes `scripts/tests/`+uv,
-  `pytest.ini`/`pyproject.toml`, or `package.json` — so the local gate
-  never runs them (issue #2). Since 2026-10-09 GitHub Actions runs all
-  five on push and PR to main (`.github/workflows/test.yml`, issue #8;
-  checkout pinned by full commit SHA).
+  `pytest.ini`/`pyproject.toml`, or `package.json` — which is why the
+  `scripts/tests/` pytest mirror exists (issue #2). Since 2026-10-09
+  GitHub Actions runs all five on push and PR to main
+  (`.github/workflows/test.yml`, issue #8; checkout pinned by full
+  commit SHA).
 
 ## Cloud provider
 
