@@ -29,9 +29,11 @@ own secrets tool, not just another repo.
   Engineer) — this repo's opted-in `packs/solo-founder-governance`
   names a single final approver, and no other opted-in pack or doc here
   names a different owner.
-- **Last updated**: 2026-10-09 (360 audit run 2026-10-09-000410 and its
-  report §8 doc truth-up applied, then issue #8: fifth test suite +
-  GitHub Actions CI; earlier 2026-10-08 truth-up pass: dead GitLab CI
+- **Last updated**: 2026-10-10 (audit follow-up issues #16–#28 —
+  keeper/organizer/migrator/install/MCP/classify honesty guards, suite
+  counts re-measured; prior 2026-10-09: 360 audit run 2026-10-09-000410
+  and its report §8 doc truth-up applied, then issue #8: fifth test suite
+  + GitHub Actions CI; earlier 2026-10-08 truth-up pass: dead GitLab CI
   removed, test suites documented, pre-commit re-verified, template gaps
   filled; mandate arrived 2026-09-07 with hub v5.28.0).
 
@@ -218,16 +220,16 @@ per AGENTS.md §5's replace-don't-append rule.
 
 ## Running this project's test suite
 
-- **Command**: `bash tests/test_install.sh` (5 sections, install path),
+- **Command**: `bash tests/test_install.sh` (9 sections, install path),
   `bash tests/test_sync_guard.sh` (13 sections, sync guard canaries),
   `bash tests/test_write_honesty.sh` (9 sections, silent-no-op write
   paths, revert/undo honesty), `bash tests/test_sentinel.sh` (4 cases,
   the 360 audit instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (23 sections, every `sec` dispatch arm
+  `bash tests/test_dispatch.sh` (34 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed
-  2026-10-10 (audit F052 doc drift).
+  2026-10-10 (audit F052, re-counted after #19 and #22–#26).
 - **Note**: the shared pre-commit's Step 5 does **not** auto-run
   `tests/*.sh` — it only recognizes `scripts/tests/`+uv,
   `pytest.ini`/`pyproject.toml`, or `package.json` — so the local gate
