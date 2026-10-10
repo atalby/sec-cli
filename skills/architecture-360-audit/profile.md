@@ -165,17 +165,42 @@ instrument rather than the product but runs the same way:
 **Tracker, live:**
 
     $ gh issue list --repo atalby/sec-cli --state all --limit 100
+    29	CLOSED	sec.ps1 op read failure still exits 0 with empty output (same honesty class as #24)		2026-10-10T08:53:48Z
+    28	CLOSED	ADAPTERS.md test-suite section counts and Last-updated date stale (audit §8 item 11 residual)		2026-10-10T07:23:04Z
+    27	CLOSED	bin/sec get: no folder/tenant/org scoping; arbitrary first match and on-miss full dump (F020)		2026-10-10T08:46:22Z
+    26	CLOSED	bin/sec: op session guard tests op account list, not session validity (F024)		2026-10-10T07:10:32Z
+    25	CLOSED	sec-classify.py: login.password/username/totp unread; GCP service-account token lost to AWS (F017/F018)		2026-10-10T06:43:24Z
+    24	CLOSED	bin/sec get: failing bw list items is reported as Secret-not-found (F025)		2026-10-10T05:59:24Z
+    23	CLOSED	bin/sec: sync arm falls through to exit 0 when controller is absent (F021)		2026-10-10T05:59:15Z
+    22	CLOSED	bw-session-keeper: non-TTY unlock/setup dies silently before any message (F011)		2026-10-10T05:59:05Z
+    21	CLOSED	ADAPTERS packs declaration misses 2 packs on disk; test-suite section stale (F052 + §8.11 drift)		2026-10-10T03:08:14Z
+    20	CLOSED	.mcp.json hardcodes a foreign absolute repo path and pipes a live GitLab PAT into sh -c with no integrity pin (F039)		2026-10-10T04:25:06Z
+    19	CLOSED	install.sh supply-chain hardening: piped-mode foreign bin/sec trust, LICENSE not copied, zero dependency checks (F038/F051/F053)		2026-10-10T03:35:41Z
+    18	CLOSED	sec.ps1 run re-parses tokenized argv as PowerShell source; positional scope wrong (F026)		2026-10-10T03:32:37Z
+    17	CLOSED	sec-organizer: cache dir never chmod 700; plan file written 0644 until apply (F014)		2026-10-10T03:14:36Z
+    16	CLOSED	bw-session-keeper unlock passes master password as argv, contradicting SECURITY.md env-mitigation claim (F003)		2026-10-10T03:24:02Z
+    15	CLOSED	sec-migrator: TX-file jq failure silently treated as empty transaction (audit F015)		2026-10-10T01:20:35Z
+    14	CLOSED	sec-organizer revert: failed bw/op edits are discarded, snapshot deleted, success printed (audit F013 residual)		2026-10-10T01:20:33Z
+    13	OPEN	Hub-side: PACK.md secrets section cites AGENTS.md §6 as stating the two-tier pattern (audit §8 item 14)		2026-10-10T07:47:24Z
+    12	CLOSED	Full [ TAG ] stdout retrofit across sec-cli (audit F048)		2026-10-09T23:59:05Z
+    11	CLOSED	bin/sec vault get: unbound item_name under set -u (audit F037)		2026-10-09T23:28:09Z
+    10	CLOSED	bw-session-keeper: refuse plaintext master_pass file storage (audit F002)		2026-10-09T23:21:20Z
+    9	CLOSED	Docs truth-up batch: phantom backends/Vercel/SoT claims, stale README usage, OPERATOR_MANUAL missing sync (report section 8)		2026-10-09T21:04:09Z
+    8	CLOSED	Test backbone: 791 lines behaviorally untested, only --help executed, destination unpinned, no CI, sentinel suite not executable (F044-F046/F054/F042)		2026-10-09T23:00:59Z
+    7	CLOSED	Silent no-op and lossy write paths: set arms exit 0 without storing, bws housekeep apply skips then deletes plan, op revert wrong flag, migrator TX gaps (F019/F012/F013/F015/F016)		2026-10-09T19:54:45Z
+    6	CLOSED	sec sync reports success on failed writes: returncode unchecked, unconditional check mark, exit 0 after 100% failure, no timeouts (F006-F009)		2026-10-09T19:09:10Z
+    5	CLOSED	#1 follow-up: packs/ never re-synced (7/9 differ from stable) + changelog review unrecorded (F055)		2026-10-09T20:00:52Z
     4	CLOSED	Port deleted GitLab issue templates to GitHub-native .github/ISSUE_TEMPLATE/		2026-10-08T14:23:59Z
     3	CLOSED	sec sync pushes all present secrets to prod backends with no dry-run or confirmation		2026-10-08T14:22:15Z
-    2	OPEN	Pre-commit Step 5 never runs tests/*.sh suites (our install tests are skipped every commit)		2026-10-08T14:00:47Z
+    2	OPEN	Pre-commit Step 5 never runs tests/*.sh suites (our install tests are skipped every commit)		2026-10-10T07:47:23Z
     1	CLOSED	Hyer payload lag: repo on HIAE Protocol v5.28.0, hub stable is v5.39.1		2026-10-08T23:06:39Z
 
 **Commit history** (the intent record for forensic scan):
 
     $ git log --oneline | wc -l
-    40
+    75
     $ git log -1 --format='%h %ad %s' --date=short
-    54146bc 2026-10-09 docs(360): correct profile ADAPTERS anchors after registry-section rewrite
+    25afa5b 2026-10-10 docs(360): claim the .opencode plugin surface in profile (sentinel red)
     $ git log --reverse --format='%h %ad %s' --date=short | sed -n '1p'
     89c67d2 2026-08-08 feat: initial release of sec-cli v1.0.0 (Zero-Plaintext Multi-Tenant Secret Manager, Housekeeper & Migration Engine)
 
