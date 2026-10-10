@@ -47,6 +47,11 @@ Which of the central methodology repo's optional policy packs
   UI/UX Design Reviewer — 9-persona taxonomy total; local was v1.2.0,
   8-persona, when issue #5 was filed).
 - `packs/ip-and-data-governance (v1.0.0)`
+- `packs/compliance-baseline (v1.0.0)` — byte-identical hub payload
+  (declared 2026-10-10, audit F052: present on disk since the v5.39.1
+  full-payload adoption but never listed here).
+- `packs/human-team-coordination (v1.0.0)` — byte-identical hub payload
+  (declared 2026-10-10, audit F052, same provenance).
 
 Dropped in this sync: a bespoke "$50/day, >1,000,000 tokens/session"
 Cost Circuit-Breaker threshold, migrated verbatim from the pre-v5.1.0
@@ -207,13 +212,14 @@ per AGENTS.md §5's replace-don't-append rule.
 
 - **Command**: `bash tests/test_install.sh` (5 sections, install path),
   `bash tests/test_sync_guard.sh` (13 sections, sync guard canaries),
-  `bash tests/test_write_honesty.sh` (5 cases, silent-no-op write
-  paths), `bash tests/test_sentinel.sh` (4 cases, the 360 audit
-  instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (18 sections, every `sec` dispatch arm
+  `bash tests/test_write_honesty.sh` (9 sections, silent-no-op write
+  paths, revert/undo honesty), `bash tests/test_sentinel.sh` (4 cases,
+  the 360 audit instrument's coverage/citations sentinel) and
+  `bash tests/test_dispatch.sh` (23 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
-  8c6dcbd, b326a14, c613d2c and eaab363.
+  8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed
+  2026-10-10 (audit F052 doc drift).
 - **Note**: the shared pre-commit's Step 5 does **not** auto-run
   `tests/*.sh` — it only recognizes `scripts/tests/`+uv,
   `pytest.ini`/`pyproject.toml`, or `package.json` — so the local gate
