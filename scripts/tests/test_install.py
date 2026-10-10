@@ -89,10 +89,6 @@ def test_bash_suite_passes(suite_name):
     )
 
 
-@pytest.mark.skipif(
-    os.environ.get("SEC_TEST_DISPATCH") != "1",
-    reason="test_dispatch.sh takes ~14s (stub backends); opt in with SEC_TEST_DISPATCH=1",
-)
 def test_dispatch_suite_passes():
     result = _run_suite("test_dispatch.sh")
     assert result.returncode == 0, (
