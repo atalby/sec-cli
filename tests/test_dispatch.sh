@@ -438,6 +438,32 @@ done
 if grep -n 'print(f"\s*\[sec' "$REPO_ROOT/bin/sec-sync-controller.py" >/dev/null 2>&1; then LEGACY=1; fi
 if [[ $LEGACY -eq 0 ]]; then pass "no legacy [sec*] event prefixes in producers"; else fail "legacy [sec*] prefixes remain in a producer"; fi
 
+echo "[23b] F026: sec.ps1 captures trailing args and execs without re-parse (static contract)"
+if grep -qi 'invoke-expression' "$REPO_ROOT/bin/sec.ps1"; then fail "sec.ps1 still re-parses tokenized argv as source (Invoke-Expression, F026)"; else pass "no Invoke-Expression re-parse in sec.ps1"; fi
+if grep -q 'ValueFromRemainingArguments' "$REPO_ROOT/bin/sec.ps1"; then pass "trailing args captured via ValueFromRemainingArguments"; else fail "sec.ps1 does not capture args past the first three positionals (F026 scope)"; fi
+if grep -q '\$args' "$REPO_ROOT/bin/sec.ps1"; then fail "sec.ps1 still references \$args (empty under its param block, F026)"; else pass "no \$args references left in sec.ps1"; fi
+
+if command -v pwsh >/dev/null 2>&1; then
+    echo "[23c] F026: sec.ps1 run execs the command with tokens intact (pwsh functional)"
+    HPS="$(new_home "$WORK/hps")"
+    FBPS="$WORK/fb_ps"
+    mkdir -p "$FBPS"
+    printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$@" >"${SEC_TEST_PS_LOG:?}"\n' >"$FBPS/mytool"
+    chmod +x "$FBPS/mytool"
+    PSLOG="$WORK/ps_tokens.log"
+    PWSH_BIN="$(command -v pwsh)"
+    set +e
+    env -i "PATH=$FBPS:/usr/bin:/bin" "HOME=$HPS" "SEC_TEST_PS_LOG=$PSLOG" \
+        "$PWSH_BIN" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" run mytool alpha "beta two" >/dev/null 2>&1
+    PRC=$?
+    set -e
+    if [[ $PRC -eq 0 ]] && [[ -f "$PSLOG" ]]; then pass "sec.ps1 run executed the target command"; else fail "sec.ps1 run did not execute target (rc=$PRC)"; fi
+    if [[ -f "$PSLOG" ]] && [[ "$(sed -n '1p' "$PSLOG")" == "alpha" ]] && [[ "$(sed -n '2p' "$PSLOG")" == "beta two" ]]; then pass "tokens passed through intact, no re-parse or loss"; else fail "token stream mangled: $(cat "$PSLOG" 2>/dev/null || echo '<no log>')"; fi
+    rm -rf "$HPS" "$FBPS" "$PSLOG"
+else
+    echo "[INFO] pwsh not present on this host; sec.ps1 functional run test (section [23c]) runs in CI"
+fi
+
 echo
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"

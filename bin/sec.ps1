@@ -7,8 +7,13 @@ param (
     [string]$Key,
 
     [Parameter(Position=2, Mandatory=$false)]
-    [string]$Value
+    [string]$Value,
+
+    [Parameter(ValueFromRemainingArguments=$true)]
+    [string[]]$Rest
 )
+
+$PositionalRest = @(@($Key, $Value) + $Rest | Where-Object { $_ })
 
 $CacheDir = "$HOME\.cache\bitwarden"
 $SessionFile = "$CacheDir\session"
@@ -105,7 +110,7 @@ switch ($Command) {
         Ensure-BwSession
         $scriptPath = "$PSScriptRoot\sec-organizer"
         if (Test-Path $scriptPath) {
-            bash $scriptPath $Key
+            bash $scriptPath @PositionalRest
         } else {
             Write-Error "[sec] Error: sec-organizer script not found."
         }
@@ -114,19 +119,25 @@ switch ($Command) {
         Ensure-BwSession
         $scriptPath = "$PSScriptRoot\sec-migrator"
         if (Test-Path $scriptPath) {
-            bash $scriptPath $args
+            bash $scriptPath @PositionalRest
         } else {
             Write-Error "[sec] Error: sec-migrator script not found."
         }
     }
     "run" {
         Ensure-BwSession
+        $exe = $PositionalRest[0]
+        if (-not $exe) {
+            Write-Error "[sec] Error: sec.ps1 run <command> [<args>]"
+            exit 1
+        }
+        $exeArgs = @($PositionalRest | Select-Object -Skip 1)
         if (Get-Command bws -ErrorAction SilentlyContinue) {
-            bws run -- $args
+            bws run -- @PositionalRest
         } elseif (Get-Command op -ErrorAction SilentlyContinue) {
-            op run -- $args
+            op run -- @PositionalRest
         } else {
-            Invoke-Expression ($args -join " ")
+            & $exe @exeArgs
         }
     }
     default {
