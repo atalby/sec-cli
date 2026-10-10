@@ -104,8 +104,10 @@ switch ($Command) {
             $projId = (bws project list 2>$null | ConvertFrom-Json)[0].id
             if ($projId) {
                 bws secret create $Key $Value $projId | Out-Null
-                Write-Host "[sec] Secret '$Key' saved to Bitwarden Secrets Manager."
-                exit 0
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "[ OK ] Secret '$Key' saved to Bitwarden Secrets Manager."
+                    exit 0
+                }
             }
         }
         if (Get-Command bw -ErrorAction SilentlyContinue) {
@@ -115,9 +117,13 @@ switch ($Command) {
             $tmpl.login.password = $Value
             $encoded = $tmpl | ConvertTo-Json -Depth 5 | bw encode
             bw create item $encoded | Out-Null
-            Write-Host "[sec] Secret '$Key' saved to Bitwarden Vault."
-            exit 0
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "[ OK ] Secret '$Key' saved to Bitwarden Vault."
+                exit 0
+            }
         }
+        Write-Error "[ERROR] failed to store secret '$Key' (no backend succeeded)."
+        exit 1
     }
     "housekeep" {
         Ensure-BwSession

@@ -71,6 +71,10 @@ case "${1:-}" in
         cat
         ;;
     create)
+        if [ "${SEC_TEST_BW_CREATE_RC:-0}" != "0" ]; then
+            echo "Error: vault is locked." >&2
+            exit "${SEC_TEST_BW_CREATE_RC}"
+        fi
         echo '{"id":"created-1"}'
         ;;
     unlock)
@@ -146,6 +150,10 @@ case "${1:-} ${2:-}" in
         echo '[{"id":"proj-1","name":"p"}]'
         ;;
     "secret create")
+        if [ "${SEC_TEST_BWS_CREATE_RC:-0}" != "0" ]; then
+            echo "Error: could not create secret." >&2
+            exit "${SEC_TEST_BWS_CREATE_RC}"
+        fi
         echo '{"id":"bws-created"}'
         ;;
 esac
@@ -811,6 +819,78 @@ if [ -n "$PWSH30" ]; then
     fi
 else
     echo "[INFO] pwsh not found; ps1 op-honesty assertion runs in CI"
+fi
+
+echo "[31] #30: ps1 set fails honestly (no backend, or store write fails)"
+PWSH31="${PWSH_BIN:-}"
+if [ -z "$PWSH31" ]; then PWSH31="$(command -v pwsh 2>/dev/null || true)"; fi
+if [ -z "$PWSH31" ] && [ -x /tmp/opencode/pwsh/pwsh ]; then PWSH31=/tmp/opencode/pwsh/pwsh; fi
+if [ -n "$PWSH31" ]; then
+    H31="$WORK/h31"
+    mkdir -p "$H31"
+    # A) no backend at all -> nonzero + tagged error, never a silent no-op
+    FB31EMPTY="$WORK/fb31empty"
+    mkdir -p "$FB31EMPTY"
+    set +e
+    OUT31A="$(env -i "PATH=$FB31EMPTY:/usr/bin:/bin" "HOME=$H31" "$PWSH31" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" set mykey myval 2>&1)"
+    RC31A=$?
+    set -e
+    if [[ $RC31A -ne 0 ]] && grep -qi "failed to store" <<<"$OUT31A"; then
+        pass "ps1 set with no backend: nonzero exit + tagged error"
+    else
+        fail "ps1 set no-backend silent success (rc=$RC31A): [$OUT31A]"
+    fi
+    # B) bw present but create fails -> nonzero + tagged error, no false success
+    FB31="$WORK/fb31"
+    mkdir -p "$FB31"
+    cp "$FAKEBIN/bw" "$FB31/bw"
+    BWLOG31="$WORK/bw31.log"
+    : >"$BWLOG31"
+    set +e
+    OUT31B="$(env -i "PATH=$FB31:/usr/bin:/bin" "HOME=$H31" "SEC_TEST_BW_LOG=$BWLOG31" "SEC_TEST_BW_CREATE_RC=1" "$PWSH31" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" set mykey myval 2>&1)"
+    RC31B=$?
+    set -e
+    if [[ $RC31B -ne 0 ]] && grep -qi "failed to store" <<<"$OUT31B" && ! grep -q "saved to Bitwarden" <<<"$OUT31B"; then
+        pass "ps1 set with failing bw create: nonzero exit, no false success line"
+    else
+        fail "ps1 set lied on bw create failure (rc=$RC31B): [$OUT31B]"
+    fi
+    # C) positive control: a working bw still reports success
+    set +e
+    OUT31C="$(env -i "PATH=$FB31:/usr/bin:/bin" "HOME=$H31" "SEC_TEST_BW_LOG=$BWLOG31" "$PWSH31" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" set mykey myval 2>&1)"
+    RC31C=$?
+    set -e
+    if [[ $RC31C -eq 0 ]] && grep -q "saved to Bitwarden Vault" <<<"$OUT31C"; then
+        pass "ps1 set with a working bw reports success, exit 0"
+    else
+        fail "ps1 set success path broke (rc=$RC31C): [$OUT31C]"
+    fi
+    # D/E) same honesty for the bws backend
+    FB31B="$WORK/fb31b"
+    mkdir -p "$FB31B"
+    cp "$FAKEBIN/bws" "$FB31B/bws"
+    BWSLOG31="$WORK/bws31.log"
+    : >"$BWSLOG31"
+    set +e
+    OUT31D="$(env -i "PATH=$FB31B:/usr/bin:/bin" "HOME=$H31" "SEC_TEST_BWS_LOG=$BWSLOG31" "SEC_TEST_BWS_CREATE_RC=1" "$PWSH31" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" set mykey myval 2>&1)"
+    RC31D=$?
+    set -e
+    if [[ $RC31D -ne 0 ]] && grep -qi "failed to store" <<<"$OUT31D" && ! grep -q "saved to Bitwarden" <<<"$OUT31D"; then
+        pass "ps1 set with failing bws create: nonzero exit, no false success line"
+    else
+        fail "ps1 set lied on bws create failure (rc=$RC31D): [$OUT31D]"
+    fi
+    set +e
+    OUT31E="$(env -i "PATH=$FB31B:/usr/bin:/bin" "HOME=$H31" "SEC_TEST_BWS_LOG=$BWSLOG31" "$PWSH31" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" set mykey myval 2>&1)"
+    RC31E=$?
+    set -e
+    if [[ $RC31E -eq 0 ]] && grep -q "saved to Bitwarden Secrets Manager" <<<"$OUT31E"; then
+        pass "ps1 set with a working bws reports success, exit 0"
+    else
+        fail "ps1 set bws success path broke (rc=$RC31E): [$OUT31E]"
+    fi
+else
+    echo "[INFO] pwsh not found; ps1 set-honesty assertion runs in CI"
 fi
 
 echo
