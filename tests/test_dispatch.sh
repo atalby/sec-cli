@@ -324,6 +324,34 @@ set -e
 CAT="$(jq -r '.category' <<<"$OUT" 2>/dev/null || echo parse-fail)"
 if [[ $RC -eq 0 && "$CAT" == "cloud/aws" ]]; then pass "aws fixture classifies cloud/aws"; else fail "classify rc=$RC category=$CAT out=$OUT"; fi
 
+echo "[16b] F017: classify reads login.password (AKIA key in password field -> cloud/aws)"
+AWS_KEY_TAIL="2233445566778899"
+set +e
+OUT="$(printf '%s' "{\"name\":\"db\",\"login\":{\"username\":\"a@example.com\",\"password\":\"AKIA${AWS_KEY_TAIL}\"},\"notes\":\"\",\"uris\":[]}" \
+    | python3 "$REPO_ROOT/bin/sec-classify.py" 2>&1)"
+RC=$?
+set -e
+CAT="$(jq -r '.category' <<<"$OUT" 2>/dev/null || echo parse-fail)"
+if [[ $RC -eq 0 && "$CAT" == "cloud/aws" ]]; then pass "AKIA in login.password classifies cloud/aws"; else fail "AKIA in password: rc=$RC category=$CAT out=$OUT"; fi
+
+echo "[16c] F017: a null uri in login.uris does not drop the item to confidence-0"
+set +e
+OUT="$(printf '%s' '{"name":"genericdb","login":{"username":"a@example.com","uris":[null]},"notes":"postgres db","fields":[]}' \
+    | python3 "$REPO_ROOT/bin/sec-classify.py" 2>&1)"
+RC=$?
+set -e
+CONF="$(jq -r '.confidence' <<<"$OUT" 2>/dev/null || echo parse-fail)"
+if [[ $RC -eq 0 && "$CONF" != "0" ]]; then pass "null uri does not drop confidence to 0 (got $CONF)"; else fail "null uri dropped item: rc=$RC conf=$CONF out=$OUT"; fi
+
+echo "[16d] F018: iam.gserviceaccount.com classifies cloud/gcp, not cloud/aws"
+set +e
+OUT="$(printf '%s' '{"name":"gcp-sa","login":{"username":"a@example.com","uris":[{"uri":"https://iam.gserviceaccount.com"}]},"notes":"","fields":[]}' \
+    | python3 "$REPO_ROOT/bin/sec-classify.py" 2>&1)"
+RC=$?
+set -e
+CAT="$(jq -r '.category' <<<"$OUT" 2>/dev/null || echo parse-fail)"
+if [[ $RC -eq 0 && "$CAT" == "cloud/gcp" ]]; then pass "iam.gserviceaccount.com classifies cloud/gcp"; else fail "gcp SA uri: rc=$RC category=$CAT out=$OUT"; fi
+
 echo "[17] keeper helper: rotate without session/master-pass, status output (invoked directly — F045)"
 set +e
 OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2" \

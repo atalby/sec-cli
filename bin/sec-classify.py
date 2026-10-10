@@ -9,76 +9,179 @@ import json
 import re
 
 GENERIC_NAMES = {
-    "gmail", "google", "aws", "postgres", "mysql", "login", "password", 
-    "account", "database", "key", "api_key", "token", "secret", "credentials"
+    "gmail",
+    "google",
+    "aws",
+    "postgres",
+    "mysql",
+    "login",
+    "password",
+    "account",
+    "database",
+    "key",
+    "api_key",
+    "token",
+    "secret",
+    "credentials",
 }
 
 CATEGORY_WEIGHTS = {
     "cloud/aws": {
-        "tokens": ["aws", "s3", "ec2", "eks", "iam", "dynamodb", "sqs", "sns", "arn", "amazon", "cloudfront", "route53"],
-        "regex": [r"AKIA[0-9A-Z]{16}", r"aws[_\-]?access", r"s3[_\-]?bucket"]
+        "tokens": [
+            "aws",
+            "s3",
+            "ec2",
+            "eks",
+            "iam",
+            "dynamodb",
+            "sqs",
+            "sns",
+            "arn",
+            "amazon",
+            "cloudfront",
+            "route53",
+        ],
+        "regex": [r"AKIA[0-9A-Z]{16}", r"aws[_\-]?access", r"s3[_\-]?bucket"],
     },
     "cloud/gcp": {
-        "tokens": ["gcp", "gcloud", "google", "bigquery", "firebase", "pubsub", "gke"],
-        "regex": [r"google[_\-]?cloud", r"gcp[_\-]?key"]
+        "tokens": [
+            "gcp",
+            "gcloud",
+            "google",
+            "bigquery",
+            "firebase",
+            "pubsub",
+            "gke",
+            "service_account",
+            "gserviceaccount",
+        ],
+        "regex": [r"google[_\-]?cloud", r"gcp[_\-]?key", r"iam\.gserviceaccount\.com"],
     },
     "cloud/cloudflare": {
         "tokens": ["cloudflare", "cf", "dns", "zone", "workers", "r2"],
-        "regex": [r"cf[_\-]?api", r"cloudflare[_\-]?token"]
+        "regex": [r"cf[_\-]?api", r"cloudflare[_\-]?token"],
     },
     "cloud/azure": {
         "tokens": ["azure", "az", "blob", "cosmos", "entra", "active_directory"],
-        "regex": [r"azure[_\-]?key", r"az[_\-]?secret"]
+        "regex": [r"azure[_\-]?key", r"az[_\-]?secret"],
     },
     "database": {
-        "tokens": ["db", "database", "postgres", "postgresql", "mysql", "redis", "mongodb", "mongo", "sqlite", "supabase", "cockroach", "planetscale"],
-        "regex": [r"postgres://", r"mysql://", r"mongodb://", r"redis://", r"db[_\-]?password", r"db[_\-]?url"]
+        "tokens": [
+            "db",
+            "database",
+            "postgres",
+            "postgresql",
+            "mysql",
+            "redis",
+            "mongodb",
+            "mongo",
+            "sqlite",
+            "supabase",
+            "cockroach",
+            "planetscale",
+        ],
+        "regex": [
+            r"postgres://",
+            r"mysql://",
+            r"mongodb://",
+            r"redis://",
+            r"db[_\-]?password",
+            r"db[_\-]?url",
+        ],
     },
     "integrations": {
-        "tokens": ["github", "gitlab", "stripe", "slack", "discord", "twilio", "sendgrid", "linear", "jira", "datadog"],
-        "regex": [r"ghp_[a-zA-Z0-9]{36}", r"glpat-[a-zA-Z0-9_\-]{20}", r"sk_live_[a-zA-Z0-9]+"]
+        "tokens": [
+            "github",
+            "gitlab",
+            "stripe",
+            "slack",
+            "discord",
+            "twilio",
+            "sendgrid",
+            "linear",
+            "jira",
+            "datadog",
+        ],
+        "regex": [
+            r"ghp_[a-zA-Z0-9]{36}",
+            r"glpat-[a-zA-Z0-9_\-]{20}",
+            r"sk_live_[a-zA-Z0-9]+",
+        ],
     },
     "infrastructure/ssh": {
         "tokens": ["ssh", "rsa", "ed25519", "pubkey", "private_key", "authorized_keys"],
-        "regex": [r"BEGIN (OPENSSH|RSA|EC|DSA) PRIVATE KEY", r"ssh-rsa", r"ssh-ed25519"]
+        "regex": [
+            r"BEGIN (OPENSSH|RSA|EC|DSA) PRIVATE KEY",
+            r"ssh-rsa",
+            r"ssh-ed25519",
+        ],
     },
     "infrastructure/certificates": {
-        "tokens": ["cert", "certificate", "tls", "ssl", "crt", "pem", "pfx", "keystore"],
-        "regex": [r"BEGIN CERTIFICATE", r"\.crt$", r"\.pem$"]
+        "tokens": [
+            "cert",
+            "certificate",
+            "tls",
+            "ssl",
+            "crt",
+            "pem",
+            "pfx",
+            "keystore",
+        ],
+        "regex": [r"BEGIN CERTIFICATE", r"\.crt$", r"\.pem$"],
     },
     "authentication": {
-        "tokens": ["jwt", "oauth", "auth", "bearer", "session", "passphrase", "totp", "2fa"],
-        "regex": [r"bearer\s+[a-zA-Z0-9_\-\.]+", r"jwt[_\-]?secret"]
-    }
+        "tokens": [
+            "jwt",
+            "oauth",
+            "auth",
+            "bearer",
+            "session",
+            "passphrase",
+            "totp",
+            "2fa",
+        ],
+        "regex": [r"bearer\s+[a-zA-Z0-9_\-\.]+", r"jwt[_\-]?secret"],
+    },
 }
 
+
 def tokenize(text: str) -> list[str]:
-    return [t.lower() for t in re.split(r'[^a-zA-Z0-9]+', text) if len(t) >= 2]
+    return [t.lower() for t in re.split(r"[^a-zA-Z0-9]+", text) if len(t) >= 2]
+
 
 def infer_suggested_name(item: dict) -> tuple[str, bool]:
     name = item.get("name", "").strip()
     name_clean = name.lower()
-    username = item.get("login", {}).get("username", "") if isinstance(item.get("login"), dict) else ""
+    username = (
+        item.get("login", {}).get("username", "")
+        if isinstance(item.get("login"), dict)
+        else ""
+    )
     if not username:
         username = item.get("username", "")
 
     notes = item.get("notes", "")
 
     # Check if current name is generic or if username is available to make it specific
-    is_generic = name_clean in GENERIC_NAMES or any(g in name_clean for g in GENERIC_NAMES)
+    is_generic = name_clean in GENERIC_NAMES or any(
+        g in name_clean for g in GENERIC_NAMES
+    )
 
     if username and username not in name:
         suggested = f"{name} ({username})"
         return suggested, True
 
     # Try extracting environment / project tag from notes if generic
-    env_match = re.search(r"(env|environment|stage|project)[:=]\s*([a-zA-Z0-9_\-]+)", notes, re.IGNORECASE)
+    env_match = re.search(
+        r"(env|environment|stage|project)[:=]\s*([a-zA-Z0-9_\-]+)", notes, re.IGNORECASE
+    )
     if env_match and is_generic:
         tag = env_match.group(2)
         suggested = f"{name} ({tag})"
         return suggested, True
 
     return name, False
+
 
 def classify_item(item: dict) -> dict:
     name = item.get("name", "")
@@ -89,13 +192,22 @@ def classify_item(item: dict) -> dict:
     card_dict = item.get("card", {}) if isinstance(item.get("card"), dict) else {}
     card_info = f"{card_dict.get('cardholderName', '')} {card_dict.get('brand', '')}"
 
-    ident_dict = item.get("identity", {}) if isinstance(item.get("identity"), dict) else {}
+    ident_dict = (
+        item.get("identity", {}) if isinstance(item.get("identity"), dict) else {}
+    )
     identity_info = f"{ident_dict.get('email', '')} {ident_dict.get('company', '')} {ident_dict.get('username', '')}"
 
     fields = item.get("fields", []) if isinstance(item.get("fields"), list) else []
-    fields_info = " ".join([f"{f.get('name', '')} {f.get('value', '')}" for f in fields if isinstance(f, dict)])
+    fields_info = " ".join(
+        [
+            f"{f.get('name', '')} {f.get('value', '')}"
+            for f in fields
+            if isinstance(f, dict)
+        ]
+    )
 
-    full_text = f"{name} {notes} {' '.join(uris)} {card_info} {identity_info} {fields_info}"
+    login_str = f"{login_dict.get('password', '')} {login_dict.get('username', '')} {login_dict.get('totp', '')}"
+    full_text = f"{name} {notes} {login_str} {' '.join(uris)} {card_info} {identity_info} {fields_info}"
     tokens = tokenize(full_text)
 
     scores = {}
@@ -128,7 +240,7 @@ def classify_item(item: dict) -> dict:
             "confidence": 50,
             "reasons": ["fallback:no_matching_signals"],
             "suggested_name": suggested_name,
-            "needs_rename": needs_rename
+            "needs_rename": needs_rename,
         }
 
     best_cat = max(scores, key=scores.get)
@@ -140,8 +252,9 @@ def classify_item(item: dict) -> dict:
         "confidence": confidence,
         "reasons": matched_reasons.get(best_cat, []),
         "suggested_name": suggested_name,
-        "needs_rename": needs_rename
+        "needs_rename": needs_rename,
     }
+
 
 if __name__ == "__main__":
     try:
@@ -149,4 +262,14 @@ if __name__ == "__main__":
         result = classify_item(data)
         print(json.dumps(result))
     except Exception as e:
-        print(json.dumps({"category": "general", "confidence": 0, "reasons": [str(e)], "suggested_name": "", "needs_rename": False}))
+        print(
+            json.dumps(
+                {
+                    "category": "general",
+                    "confidence": 0,
+                    "reasons": [str(e)],
+                    "suggested_name": "",
+                    "needs_rename": False,
+                }
+            )
+        )
