@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "hyer": {
+      "command": "bash",
+      "args": ["/path/to/sec-cli/bin/hyer-mcp.sh"],
+      "env": {
+        "HYER_HOME": "/path/to/hyer"
+      }
+    }
+  }
+}

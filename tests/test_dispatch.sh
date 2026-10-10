@@ -464,6 +464,44 @@ else
     echo "[INFO] pwsh not present on this host; sec.ps1 functional run test (section [23c]) runs in CI"
 fi
 
+echo "[24] F039: hyer MCP wiring is env-resolved, PAT via env only, no sh -c"
+HMW="$WORK/hmw"
+mkdir -p "$HMW/hyer-mcp/dist"
+printf '#!/usr/bin/env bash\nexit 0\n' >"$HMW/hyer-mcp/dist/stdio-server.js"
+FB24="$WORK/fb24"
+mkdir -p "$FB24"
+printf '#!/usr/bin/env bash\nprintf "node-argv: %%s\\n" "$*" >"${SEC_TEST_NODE_LOG:?}"\nprintf "node-env-token: %%s\\n" "${GITLAB_TOKEN:-<unset>}" >>"${SEC_TEST_NODE_LOG:?}"\n' >"$FB24/node"
+printf '#!/usr/bin/env bash\necho "glpat-test-fake-token"\n' >"$FB24/sec"
+chmod +x "$FB24/node" "$FB24/sec"
+NLOG="$WORK/node24.log"
+set +e
+OUT24="$(env -i "PATH=$FB24:/usr/bin:/bin" "HOME=$HMW" "HYER_HOME=$HMW" "SEC_TEST_NODE_LOG=$NLOG" "$REPO_ROOT/bin/hyer-mcp.sh" 2>&1)"
+RC24=$?
+set -e
+if [[ $RC24 -eq 0 && -f "$NLOG" ]]; then pass "wrapper execs the server with HYER_HOME resolved (rc=0)"; else fail "wrapper rc=$RC24 out=$OUT24"; fi
+if grep -q "node-argv: .*${HMW}/hyer-mcp/dist/stdio-server.js" "$NLOG" 2>/dev/null; then pass "node invoked with the resolved server path"; else fail "server path missing from node argv: $(cat "$NLOG" 2>/dev/null)"; fi
+if grep -q "node-env-token: glpat-test-fake-token" "$NLOG" 2>/dev/null; then pass "PAT delivered to node via environment"; else fail "GITLAB_TOKEN not in node env: $(cat "$NLOG" 2>/dev/null)"; fi
+if grep -q "node-argv: .*glpat" "$NLOG" 2>/dev/null; then fail "PAT on node argv (process-table leak)"; else pass "PAT never on argv"; fi
+if [[ -z "$OUT24" ]]; then pass "wrapper stdout clean for MCP stdio"; else fail "wrapper polluted stdout: $OUT24"; fi
+set +e
+ERR24="$(env -i "PATH=$FB24:/usr/bin:/bin" "HOME=$HMW" "HYER_HOME=$WORK/nonexistent24" "SEC_TEST_NODE_LOG=$NLOG" "$REPO_ROOT/bin/hyer-mcp.sh" 2>&1)"
+RC24B=$?
+set -e
+if [[ $RC24B -ne 0 ]] && grep -q '^\[ERROR\]' <<<"$ERR24" && grep -q "HYER_HOME" <<<"$ERR24"; then
+    pass "missing checkout: tagged [ERROR] naming HYER_HOME, non-zero exit"
+else
+    fail "missing-checkout diagnostic wrong (rc=$RC24B): $ERR24"
+fi
+if [[ -f "$REPO_ROOT/.mcp.json.example" ]] && ! grep -q '/home/opc' "$REPO_ROOT/.mcp.json.example" && ! grep -q '"command": "sh"' "$REPO_ROOT/.mcp.json.example"; then
+    pass "tracked .mcp.json.example has no host path and no sh -c"
+else
+    fail ".mcp.json.example missing or still carries /home/opc or sh -c"
+fi
+if grep -q 'hyer-mcp.sh' "$REPO_ROOT/.mcp.json.example" 2>/dev/null; then pass "example wires bin/hyer-mcp.sh"; else fail "example does not reference bin/hyer-mcp.sh"; fi
+if grep -qE '^\.mcp\.json$' "$REPO_ROOT/.gitignore"; then pass ".mcp.json gitignored (host-local)"; else fail ".mcp.json not in .gitignore"; fi
+if git -C "$REPO_ROOT" ls-files --error-unmatch .mcp.json >/dev/null 2>&1; then fail ".mcp.json still tracked (host-local config must not be committed)"; else pass ".mcp.json untracked"; fi
+if grep -q '/home/opc' "$REPO_ROOT/bin/hyer-mcp.sh" 2>/dev/null; then fail "wrapper hardcodes /home/opc"; else pass "wrapper has no hardcoded host path"; fi
+
 echo
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"

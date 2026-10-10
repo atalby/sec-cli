@@ -12,3 +12,4 @@ __pycache__/
 housekeep_plan.json
 snapshot_*.json
 migration_transaction.json
+.mcp.json
