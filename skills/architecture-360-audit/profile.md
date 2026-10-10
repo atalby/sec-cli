@@ -795,6 +795,7 @@ matching no file except the one declared-empty row below.
 | `bin/sec-classify.py` | 10, 3 |
 | `bin/sec-migrator` | 10, 12 |
 | `bin/sec-organizer` | 10, 7 |
+| `scripts/**` | 1 |
 | `bin/sec-sync-controller.py` | 1, 11, 12 |
 | `bin/sec.ps1` | 4 |
 | `completions/_sec` | 4 |
