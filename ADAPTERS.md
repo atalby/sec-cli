@@ -34,7 +34,7 @@ own secrets tool, not just another repo.
   issue #46: sentinel now guards the profile.md
   coverage denominator against the live tracked-file count; issue #44: sec.ps1 doc parity + non-zero exit on unimplemented
   commands; issue #48: `sec migrate` tagged usage/help exit-code parity; issue #49:
-  re-measured the profile `[ TAG ]` census; dispatch 48, write-honesty 11, sentinel 8; earlier 2026-10-10, later
+  re-measured the profile.md tagged-output census; dispatch 48, write-honesty 11, sentinel 8; earlier 2026-10-10, later
   same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
   the four fast bash suites with dispatch opt-in behind `SEC_TEST_DISPATCH=1`,
