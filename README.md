@@ -186,7 +186,7 @@ sec migrate --undo
 | **macOS** | ✅ Native | N/A | ✅ Native (Python 3) |
 | **Linux** (Ubuntu, Fedora, Arch) | ✅ Native | N/A | ✅ Native (Python 3) |
 | **Windows WSL 2** | ✅ Native | N/A | ✅ Native (Python 3) |
-| **Windows Native** | ✅ Git Bash | ✅ Native PowerShell | ✅ Native (Python 3) |
+| **Windows Native** | ✅ Git Bash (full surface) | ✅ Native PowerShell (core: `get`/`set`/`run`; full surface via Git Bash) | ✅ Native (Python 3) |
 
 ---
 

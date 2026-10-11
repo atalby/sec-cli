@@ -170,5 +170,9 @@ switch ($Command) {
     default {
         Write-Host "Fleet Zero-Plaintext Secret Manager (sec.ps1)"
         Write-Host "Usage: sec.ps1 {get|set|run|housekeep|migrate} <args>"
+        Write-Host "Full surface (sync, unlock, rotate, setup-keychain, completion, create/organize/keep): bin/sec via Git Bash or WSL."
+        if ($Command -in @('help', '--help', '-h')) { exit 0 }
+        Write-Error "[ERROR] sec.ps1 does not implement '$Command' (supported: get, set, run, housekeep, migrate)."
+        exit 2
     }
 }

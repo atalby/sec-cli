@@ -634,6 +634,23 @@ else
     echo "[INFO] pwsh not present on this host; sec.ps1 functional run test (section [23c]) runs in CI"
 fi
 
+echo "[23d] F027: sec.ps1 rejects unimplemented commands instead of a silent exit 0 (static + pwsh)"
+if grep -q 'does not implement' "$REPO_ROOT/bin/sec.ps1"; then pass "sec.ps1 names unimplemented commands"; else fail "sec.ps1 default arm does not report unimplemented commands (F027)"; fi
+if grep -q 'exit 2' "$REPO_ROOT/bin/sec.ps1"; then pass "sec.ps1 default arm exits non-zero for unknown commands"; else fail "sec.ps1 default arm leaves a silent exit 0 (F027)"; fi
+if command -v pwsh >/dev/null 2>&1; then
+    H27PS="$(new_home "$WORK/h27ps")"
+    PWSH27="$(command -v pwsh)"
+    set +e
+    OUT27PS="$(env -i "PATH=/usr/bin:/bin" "HOME=$H27PS" "$PWSH27" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" sync 2>&1)"
+    RC27PS=$?
+    set -e
+    if [[ $RC27PS -ne 0 ]]; then pass "sec.ps1 sync exits non-zero (rc=$RC27PS)"; else fail "sec.ps1 sync silently succeeded with exit 0 (F027)"; fi
+    if grep -q '\[ERROR\]' <<<"$OUT27PS"; then pass "sec.ps1 sync emits a tagged [ERROR]"; else fail "sec.ps1 sync emitted no tagged error: $OUT27PS"; fi
+    rm -rf "$H27PS"
+else
+    echo "[INFO] pwsh not present on this host; sec.ps1 F027 functional assertion runs in CI"
+fi
+
 echo "[24] F039: hyer MCP wiring is env-resolved, PAT via env only, no sh -c"
 HMW="$WORK/hmw"
 mkdir -p "$HMW/hyer-mcp/dist"
