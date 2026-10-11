@@ -648,9 +648,10 @@ completion `completions/_sec`, `bin/sec.ps1`, and the docs. Measure: does
 every advertised subcommand (`subcmds` list at `bin/sec:282`) exist in the
 dispatch, does every dispatched command appear in usage, do the completions
 agree? AGENTS §8 mandates one `[ TAG ]` line per event for machine-parsed
-stdout — measured 2026-10-10: 7 of the 8 tracked `bin/` entries emit tagged
-output (`sec` 18, `sec-organizer` 29, `sec-sync-controller.py` 29,
-`sec-migrator` 22, `bw-session-keeper` 16, `sec.ps1` 5, `hyer-mcp.sh` 4
+stdout — measured 2026-10-11 (`grep -cE '\[ ?(OK|INFO|WARN|ERROR) ?\]'`; re-measured
+after #41/#42/#44/#45/#48 added tagged lines): 7 of the 8 tracked `bin/` entries emit tagged
+output (`sec` 25, `sec-organizer` 36, `sec-sync-controller.py` 29,
+`sec-migrator` 23, `bw-session-keeper` 16, `sec.ps1` 6, `hyer-mcp.sh` 4
 lines); the sole zero is `bin/sec-classify.py`, and `install.sh` (outside
 `bin/`) also emits none. Harness entry points
 (`SKILL.md`, `CLAUDE.md`, `.gemini/`, `skills/REGISTRY.md`) are part of the
