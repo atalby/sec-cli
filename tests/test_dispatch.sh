@@ -76,7 +76,12 @@ case "${1:-}" in
             echo "Error: vault is locked." >&2
             exit "${SEC_TEST_BW_CREATE_RC}"
         fi
+        if [ ! -t 0 ]; then cat >>"${SEC_TEST_BW_LOG:?SEC_TEST_BW_LOG unset}"; fi
         echo '{"id":"created-1"}'
+        ;;
+    edit)
+        if [ ! -t 0 ]; then cat >>"${SEC_TEST_BW_LOG:?SEC_TEST_BW_LOG unset}"; fi
+        echo '{"id":"item-1"}'
         ;;
     unlock)
         if [ -n "${BW_UNLOCK_PASS:-}" ]; then
@@ -1226,6 +1231,41 @@ else
     fail "ps1 completion advertises commands sec.ps1 rejects (issue #57)"; _miss=1
 fi
 if [[ $_miss -eq 0 ]]; then pass "zsh/bash/fish completion surfaces offer create/organize/keep; ps1 scoped to sec.ps1's subset"; fi
+
+echo "[22m] bw set: the secret value reaches jq via env and bw via stdin, never argv (#58)"
+JQGUARD="$WORK/jqguard"; mkdir -p "$JQGUARD"
+REAL_JQ="$(command -v jq)"
+cat >"$JQGUARD/jq" <<JQEOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >>"\${SEC_TEST_JQ_LOG:?SEC_TEST_JQ_LOG unset}"
+exec "$REAL_JQ" "\$@"
+JQEOF
+chmod +x "$JQGUARD/jq"
+JQLOG="$WORK/jqguard.log"; : >"$JQLOG"
+: >"$BWLOG"
+G58="$(new_home "$WORK/h58")"
+set +e
+OUT="$(printf 'CANARY-SECRET-58b1\n' | env -i "PATH=$JQGUARD:$FAKEBIN:/usr/bin:/bin" "HOME=$G58" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_JQ_LOG=$JQLOG" \
+    "$REPO_ROOT/bin/sec" set N58KEY 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]]; then pass "bw set with a stdin-prompted value exits 0"; else fail "bw set rc=$RC out=$OUT"; fi
+if grep -q "CANARY-SECRET-58b1" "$JQLOG"; then
+    fail "sec set put the secret value on jq's argv (issue #58): $(tr '\n' ';' <"$JQLOG")"
+else
+    pass "sec set keeps the secret value off jq's argv"
+fi
+if grep -qE "^bw .*CANARY-SECRET-58b1" "$BWLOG"; then
+    fail "sec set put the secret value on bw's argv (issue #58)"
+else
+    pass "sec set keeps the secret value off bw's argv"
+fi
+if grep -q "CANARY-SECRET-58b1" "$BWLOG"; then
+    pass "bw received the secret value via stdin"
+else
+    fail "bw never received the secret value (stdin capture empty): $(tr '\n' ';' <"$BWLOG")"
+fi
 
 echo
 if [[ $FAILS -eq 0 ]]; then

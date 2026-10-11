@@ -620,26 +620,26 @@ EOF
                     existing_item="$(BW_SESSION="${BW_SESSION:-}" bw get item "$existing_id" 2>/dev/null || true)"
                     if [[ -n "$existing_item" ]]; then
                         if [[ -n "$update_field" ]]; then
-                            encoded="$(echo "$existing_item" | jq --arg f "$update_field" --arg val "$value" '
-                                if $f == "username" or $f == "user" then .login.username = $val
-                                elif $f == "password" or $f == "pass" then .login.password = $val
-                                elif $f == "totp" or $f == "2fa" then .login.totp = $val
-                                elif $f == "notes" or $f == "note" then .notes = $val
+                            encoded="$(echo "$existing_item" | SECVAL="$value" jq --arg f "$update_field" '
+                                if $f == "username" or $f == "user" then .login.username = env.SECVAL
+                                elif $f == "password" or $f == "pass" then .login.password = env.SECVAL
+                                elif $f == "totp" or $f == "2fa" then .login.totp = env.SECVAL
+                                elif $f == "notes" or $f == "note" then .notes = env.SECVAL
                                 else
                                     .fields = (
                                         if (.fields | map(select(.name == $f)) | length) > 0 then
-                                            .fields | map(if .name == $f then .value = $val else . end)
+                                            .fields | map(if .name == $f then .value = env.SECVAL else . end)
                                         else
-                                            .fields + [{"type": 0, "name": $f, "value": $val}]
+                                            .fields + [{"type": 0, "name": $f, "value": env.SECVAL}]
                                         end
                                     )
                                 end
                             ' | bw encode 2>/dev/null || true)"
                         else
-                            encoded="$(echo "$existing_item" | jq --arg val "$value" '.notes=$val | .login.password=$val' | bw encode 2>/dev/null || true)"
+                            encoded="$(echo "$existing_item" | SECVAL="$value" jq '.notes=env.SECVAL | .login.password=env.SECVAL' | bw encode 2>/dev/null || true)"
                         fi
 
-                        if [[ -n "$encoded" ]] && BW_SESSION="${BW_SESSION:-}" bw edit item "$existing_id" "$encoded" >/dev/null 2>&1; then
+                        if [[ -n "$encoded" ]] && printf '%s' "$encoded" | BW_SESSION="${BW_SESSION:-}" bw edit item "$existing_id" >/dev/null 2>&1; then
                             echo "[ OK ] Secret '$key' updated in Bitwarden Vault."
                             exit 0
                         fi
@@ -647,16 +647,16 @@ EOF
                 fi
 
                 # Create new item with specified type
-                encoded="$(BW_SESSION="${BW_SESSION:-}" bw get template item 2>/dev/null | jq --arg name "$key" --arg val "$value" --argjson type "$ITEM_TYPE" '
-                    .name=$name | .type=$type | .notes=$val |
-                    if $type == 1 then .login.password=$val
-                    elif $type == 3 then .card.number=$val
-                    elif $type == 4 then .identity.ssn=$val
+                encoded="$(BW_SESSION="${BW_SESSION:-}" bw get template item 2>/dev/null | SECVAL="$value" jq --arg name "$key" --argjson type "$ITEM_TYPE" '
+                    .name=$name | .type=$type | .notes=env.SECVAL |
+                    if $type == 1 then .login.password=env.SECVAL
+                    elif $type == 3 then .card.number=env.SECVAL
+                    elif $type == 4 then .identity.ssn=env.SECVAL
                     else .
                     end
                 ' | bw encode 2>/dev/null || true)"
                 if [[ -n "$encoded" ]]; then
-                    if BW_SESSION="${BW_SESSION:-}" bw create item "$encoded" >/dev/null 2>&1; then
+                    if printf '%s' "$encoded" | BW_SESSION="${BW_SESSION:-}" bw create item >/dev/null 2>&1; then
                         echo "[ OK ] Secret '$key' saved to Bitwarden Vault."
                         exit 0
                     fi

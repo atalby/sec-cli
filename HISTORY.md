@@ -55,10 +55,17 @@ array, so tab-completion advertised `sync`/`create`/`organize`/`keep`/…
 that the wrapper rejects with `[ERROR]`; the completer now offers
 `sec.ps1` only its implemented set (via a `GetCommandName() -ieq
 'sec.ps1'` branch) while `sec`/`sec.exe` keep the full list, and dispatch
-guard [22l] checks the ps1 scoping. All
+guard [22l] checks the ps1 scoping. Then #58 removed the last secret-on-
+argv path on the default backend: `sec set` handed the value to `jq` as
+`--arg val`, putting it on jq's command line (visible in `ps`) even when
+supplied via the prompts that exist to keep it out of argv/history, and
+then passed the encoded blob (embedding the value) as a positional arg to
+`bw create/edit item`; the value now reaches jq via `env.SECVAL` and the
+blob reaches bw on stdin, with dispatch guard 22m pinning it (the
+op/bws/migrator paths are the tracked remainder). All
 five bash
 suites pass (install 9 / sync_guard 15 / write_honesty 11 / sentinel 10 /
-dispatch 60), the pytest mirror passes, and the GitHub tracker holds only
+dispatch 61), the pytest mirror passes, and the GitHub tracker holds only
 the hub-side handoff #51. Next: advance the highest-value unfinished work.
 
 ## Archive
