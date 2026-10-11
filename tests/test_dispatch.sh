@@ -382,6 +382,35 @@ if jq -e '.actions | length >= 1' "$PLAN" >/dev/null 2>&1; then pass "plan has >
 if grep -q "^\[INFO\] Plan Summary" <<<"$OUT"; then pass "prints tagged Plan Summary"; else fail "no tagged Plan Summary in: $OUT"; fi
 if grep -q "^\[ OK \] Plan saved to" <<<"$OUT"; then pass "prints tagged Plan saved"; else fail "no tagged Plan saved in: $OUT"; fi
 
+echo "[14b] F048: op plan classifies from full item detail, not the id/name/tags projection"
+OPBIN="$WORK/opbin"
+mkdir -p "$OPBIN"
+cat >"$OPBIN/op" <<'EOF'
+#!/usr/bin/env bash
+case "${1:-} ${2:-}" in
+    "item list")
+        echo '[{"id":"op-1","title":"item-one","tags":[]}]'
+        ;;
+    "item get")
+        echo '{"id":"op-1","title":"item-one","fields":[{"id":"username","label":"username","value":"a@example.com"},{"id":"password","label":"password","type":"CONCEALED","value":"'"${SEC_TEST_OP_AWS_KEY}"'"}],"urls":[]}'
+        ;;
+esac
+exit 0
+EOF
+chmod +x "$OPBIN/op"
+OP_AWS_TAIL="2233445566778899"
+OP_AWS_KEY="AKIA${OP_AWS_TAIL}"
+HOP="$(new_home "$WORK/hop")"
+set +e
+OUTOP="$(env -i "PATH=$OPBIN:/usr/bin:/bin" "HOME=$HOP" "SEC_TEST_OP_AWS_KEY=$OP_AWS_KEY" "$REPO_ROOT/bin/sec" housekeep plan 2>&1 </dev/null)"
+RCOP=$?
+set -e
+PLANOP="$HOP/.cache/bitwarden/housekeep_plan.json"
+if [[ $RCOP -eq 0 ]]; then pass "op housekeep plan exits 0"; else fail "op plan rc=$RCOP out=$OUTOP"; fi
+if grep -q "Backend: op" <<<"$OUTOP"; then pass "op plan selects the op backend"; else fail "op plan backend is not op: $OUTOP"; fi
+OPCAT="$(jq -r '.actions[0].targetFolder // empty' "$PLANOP" 2>/dev/null || true)"
+if [[ "$OPCAT" == "cloud/aws" ]]; then pass "op plan sees the full item (AKIA in password -> cloud/aws)"; else fail "op plan category='$OPCAT' (expected cloud/aws; F048 fidelity)"; fi
+
 echo "[15] migrate plan executes the migrator"
 set +e
 OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2" \

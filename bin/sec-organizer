@@ -45,6 +45,38 @@ detect_backend() {
     fi
 }
 
+collect_op_items() {
+    local list ids out id full
+    list="$(op item list --format=json 2>/dev/null || echo "[]")"
+    ids="$(echo "$list" | jq -r '(.[]? | .id) // empty' 2>/dev/null || true)"
+    out="[]"
+    if [[ -z "$ids" ]]; then
+        echo "$out"
+        return 0
+    fi
+    while read -r id; do
+        [[ -z "$id" ]] && continue
+        full="$(op item get "$id" --format=json 2>/dev/null || true)"
+        if [[ -n "$full" ]] && echo "$full" | jq -e 'type == "object"' >/dev/null 2>&1; then
+            full="$(echo "$full" | jq -c '{
+                id: (.id // ""),
+                name: (.title // .name // ""),
+                notes: (.notesPlain // ([.fields[]? | select((.id // "") == "notesPlain" or (.label // "") == "notesPlain") | .value] | first) // ""),
+                login: {
+                    username: ([.fields[]? | select((.id // "") == "username" or (.label // "") == "username") | .value] | first // ""),
+                    password: ([.fields[]? | select((.id // "") == "password" or (.label // "") == "password" or (.type // "") == "CONCEALED") | .value] | first // ""),
+                    totp: ([.fields[]? | select((.id // "") == "one-time password" or (.label // "") == "one-time password") | .value] | first // ""),
+                    uris: [.urls[]?.href // empty | {uri: .}]
+                }
+            }')"
+        else
+            full="$(echo "$list" | jq -c --arg id "$id" '(.[]? | select(.id == $id) | {id: .id, name: .title, tags: .tags}) // {}' 2>/dev/null || echo '{}')"
+        fi
+        out="$(echo "$out" | jq -c --argjson it "$full" '. + [$it]')"
+    done <<< "$ids"
+    echo "$out"
+}
+
 # 1. Generate Housekeeping & Disambiguation Plan
 cmd_plan() {
     local backend
@@ -59,10 +91,10 @@ cmd_plan() {
         folders_json="$(bw list folders 2>/dev/null || echo "[]")"
         items_json="$(bw list items 2>/dev/null || echo "[]")"
     elif [[ "$backend" == "op" ]]; then
-        items_json="$(op item list --format=json 2>/dev/null | jq '[.[] | {id: .id, name: .title, tags: .tags}]' || echo "[]")"
+        items_json="$(collect_op_items)"
         folders_json="[]"
     elif [[ "$backend" == "bws" ]]; then
-        items_json="$(bws secret list 2>/dev/null | jq '[.[] | {id: .id, name: .key}]' || echo "[]")"
+        items_json="$(bws secret list 2>/dev/null | jq '[.[] | {id: .id, name: .key, notes: .note}]' || echo "[]")"
         folders_json="[]"
     else
         echo "[ERROR] No active, unlocked secret manager backend detected." >&2
@@ -156,6 +188,8 @@ cmd_apply() {
             ;;
     esac
 
+    local apply_count=0 stale_count=0 apply_rc=0
+
     # Create timestamped pre-apply backup snapshot
     snapshot_ts="$(date +%Y%m%d_%H%M%S)"
     snapshot_file="$CACHE_DIR/snapshot_${snapshot_ts}.json"
@@ -174,6 +208,19 @@ cmd_apply() {
             new_name="$(echo "$action" | jq -r '.newName')"
             target="$(echo "$action" | jq -r '.targetFolder')"
 
+            item_json="$(bw get item "$id" 2>/dev/null || true)"
+            current_name="$(echo "$item_json" | jq -r '.name // empty' 2>/dev/null || true)"
+            if [[ -z "$item_json" || "$item_json" == "null" ]]; then
+                echo "[WARN] Skipping \"$id\": item not readable from the vault (plan expected \"$orig_name\")." >&2
+                stale_count=$((stale_count + 1))
+                continue
+            fi
+            if [[ -n "$current_name" && "$current_name" != "$orig_name" ]]; then
+                echo "[WARN] Skipping \"$id\": item is now named \"$current_name\" (plan expected \"$orig_name\"); re-run 'sec housekeep plan'." >&2
+                stale_count=$((stale_count + 1))
+                continue
+            fi
+
             folder_id="$(echo "$folders_json" | jq -r --arg t "$target" '.[] | select(.name == $t).id // empty')"
 
             if [[ -z "$folder_id" ]]; then
@@ -184,9 +231,13 @@ cmd_apply() {
             fi
 
             echo "[INFO] Updating \"$orig_name\" -> Name: \"$new_name\", Folder: \"$target\"..."
-            item_json="$(bw get item "$id" 2>/dev/null)"
             updated_item="$(echo "$item_json" | jq --arg fid "$folder_id" --arg n "$new_name" '.folderId = $fid | .name = $n' | bw encode)"
-            bw edit item "$id" "$updated_item" >/dev/null
+            if ! bw edit item "$id" "$updated_item" >/dev/null 2>&1; then
+                echo "[ERROR] apply failed for \"$orig_name\" (id: $id); item left unchanged." >&2
+                apply_rc=1
+                continue
+            fi
+            apply_count=$((apply_count + 1))
         done <<< "$actions"
 
         echo "[INFO] Syncing Bitwarden vault..."
@@ -196,12 +247,35 @@ cmd_apply() {
         while read -r action; do
             if [[ -z "$action" ]]; then continue; fi
             id="$(echo "$action" | jq -r '.id')"
+            orig_name="$(echo "$action" | jq -r '.originalName')"
             new_name="$(echo "$action" | jq -r '.newName')"
             target="$(echo "$action" | jq -r '.targetFolder')"
 
+            item_json="$(op item get "$id" --format=json 2>/dev/null || true)"
+            current_name="$(echo "$item_json" | jq -r '.title // .name // empty' 2>/dev/null || true)"
+            if [[ -n "$current_name" && "$current_name" != "$orig_name" ]]; then
+                echo "[WARN] Skipping \"$id\": item is now titled \"$current_name\" (plan expected \"$orig_name\"); re-run 'sec housekeep plan'." >&2
+                stale_count=$((stale_count + 1))
+                continue
+            fi
+
             echo "[INFO] Updating 1Password item \"$id\" -> Title: \"$new_name\", Tag: \"$target\"..."
-            op item edit "$id" --title "$new_name" --tags "$target" >/dev/null
+            if ! op item edit "$id" --title "$new_name" --tags "$target" >/dev/null 2>&1; then
+                echo "[ERROR] apply failed for 1Password item \"$id\"; item left unchanged." >&2
+                apply_rc=1
+                continue
+            fi
+            apply_count=$((apply_count + 1))
         done <<< "$actions"
+    fi
+
+    if [[ $apply_rc -ne 0 ]]; then
+        echo "[ERROR] Apply incomplete; plan kept at $PLAN_FILE so the operation can be retried." >&2
+        exit 1
+    fi
+    if [[ $apply_count -eq 0 && $stale_count -gt 0 ]]; then
+        echo "[WARN] No actions applied: every planned item had changed since the plan was created. Plan kept at $PLAN_FILE; re-run 'sec housekeep plan'." >&2
+        exit 1
     fi
 
     rm -f "$PLAN_FILE"

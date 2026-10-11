@@ -14,10 +14,12 @@ mkdir -p "$FAKEBIN"
 
 cat >"$FAKEBIN/bw" <<'EOF'
 #!/usr/bin/env bash
+if [ -n "${SEC_TEST_BW_LOG:-}" ]; then echo "bw $*" >>"$SEC_TEST_BW_LOG"; fi
+BW_ITEM_JSON="${SEC_TEST_BW_ITEM_JSON:-{\"id\":\"a\",\"name\":\"a\",\"folderId\":null}}"
 case "$*" in
     "sync --nostatus") exit 0 ;;
     "list items") echo '[{"name":"k","notes":"'"${SEC_TEST_BW_NOTES-v}"'"}]' ;;
-    get\ item*) echo '{"id":"a","name":"a","folderId":null}' ;;
+    get\ item*) echo "$BW_ITEM_JSON" ;;
     edit\ item*) exit "${SEC_TEST_BW_EDIT_RC:-0}" ;;
     encode) cat ;;
     *) exit 0 ;;
@@ -35,6 +37,10 @@ OPCANARY="$WORK/op-canary.log"
 cat >"$FAKEBIN/op" <<'EOF'
 #!/usr/bin/env bash
 echo "op $*" >>"${SEC_TEST_OP_CANARY:?SEC_TEST_OP_CANARY unset}"
+if [ "${1:-}" = "item" ] && [ "${2:-}" = "get" ]; then
+    if [ -n "${SEC_TEST_OP_ITEM_GET_JSON:-}" ]; then echo "${SEC_TEST_OP_ITEM_GET_JSON}"; fi
+    exit "${SEC_TEST_OP_ITEM_GET_RC:-0}"
+fi
 exit "${SEC_TEST_OP_RC:-0}"
 EOF
 chmod +x "$FAKEBIN/op"
@@ -95,6 +101,24 @@ set -e
 if [[ $RC3b -eq 0 ]]; then pass "op apply succeeds against a working backend"; else fail "op apply exited $RC3b despite working backend: $OUT3b"; fi
 if grep -qE -- '--tags( |$)' "$OPCANARY" 2>/dev/null; then pass "op invoked with --tags"; else fail "op never saw --tags (canary: $(tr '\n' ';' <"$OPCANARY" 2>/dev/null))"; fi
 if grep -qE -- '--tag( |$)' "$OPCANARY" 2>/dev/null; then fail "op still invoked with the bogus --tag flag"; else pass "no bogus --tag flag"; fi
+
+echo "[3b] F048: op apply skips an action whose item changed since the plan (staleness guard)"
+H3c="$WORK/h3c"
+mkdir -p "$H3c/.cache/bitwarden"
+PLAN3c="$H3c/.cache/bitwarden/housekeep_plan.json"
+cat >"$PLAN3c" <<'EOF'
+{"backend":"op","timestamp":"t","actions":[{"id":"x","originalName":"old-name","newName":"new-name","targetFolder":"general","currentFolder":null,"currentFolderId":null,"confidence":50}]}
+EOF
+rm -f "$OPCANARY"
+set +e
+OUT3c="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H3c" "SEC_TEST_OP_CANARY=$OPCANARY" "SEC_TEST_OP_RC=0" 'SEC_TEST_OP_ITEM_GET_JSON={"id":"x","title":"renamed-since-plan"}' "$REPO_ROOT/bin/sec-organizer" apply 2>&1)"
+RC3c=$?
+set -e
+if [[ $RC3c -ne 0 ]]; then pass "all-stale op apply exits non-zero (no false success)"; else fail "all-stale op apply exited 0"; fi
+if grep -q "Successfully Applied" <<<"$OUT3c"; then fail "reported success while skipping every action"; else pass "no success banner when every action skipped"; fi
+if grep -q "^\[WARN\] Skipping" <<<"$OUT3c"; then pass "tagged [WARN] skip explains the staleness"; else fail "no tagged staleness warning: $OUT3c"; fi
+if [[ -f "$PLAN3c" ]]; then pass "plan kept when nothing was applied"; else fail "plan DELETED despite zero applied"; fi
+if grep -qE -- '--tags( |$)' "$OPCANARY" 2>/dev/null; then fail "op item edit invoked for a stale action"; else pass "no write attempted for the stale action"; fi
 
 echo "[4] migrate --apply refuses to clobber an unresolved transaction"
 H4="$WORK/h4"
@@ -172,6 +196,24 @@ RC9=$?
 set -e
 if [[ $RC9 -eq 0 ]]; then pass "empty TX --undo exits 0"; else fail "empty TX --undo exited $RC9, expected 0: $OUT9"; fi
 if grep -q "zero created items" <<<"$OUT9"; then pass "reports zero created items"; else fail "no zero-items notice: $OUT9"; fi
+
+echo "[10] F048: bw apply skips an action whose item was renamed since the plan"
+H10="$WORK/h10"
+mkdir -p "$H10/.cache/bitwarden"
+PLAN10="$H10/.cache/bitwarden/housekeep_plan.json"
+cat >"$PLAN10" <<'EOF'
+{"backend":"bw","timestamp":"t","actions":[{"id":"a","originalName":"old","newName":"new","targetFolder":"general","currentFolder":"root","currentFolderId":null,"confidence":50}]}
+EOF
+BWLOG10="$WORK/bw10.log"; : >"$BWLOG10"
+set +e
+OUT10="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H10" "SEC_TEST_BW_LOG=$BWLOG10" 'SEC_TEST_BW_ITEM_JSON={"id":"a","name":"renamed-since-plan","folderId":null}' "$REPO_ROOT/bin/sec-organizer" apply 2>&1)"
+RC10=$?
+set -e
+if [[ $RC10 -ne 0 ]]; then pass "all-stale bw apply exits non-zero"; else fail "all-stale bw apply exited 0: $OUT10"; fi
+if grep -q "Successfully Applied" <<<"$OUT10"; then fail "bw reported success while skipping everything"; else pass "bw no success banner when all skipped"; fi
+if grep -q "^\[WARN\] Skipping" <<<"$OUT10"; then pass "bw tagged [WARN] skip explains staleness"; else fail "bw no skip message: $OUT10"; fi
+if grep -q "edit item" "$BWLOG10"; then fail "bw edit item invoked for a stale action"; else pass "bw no write attempted for the stale action"; fi
+if [[ -f "$PLAN10" ]]; then pass "bw plan kept when nothing applied"; else fail "bw plan DELETED despite zero applied"; fi
 
 echo
 if [[ $FAILS -eq 0 ]]; then
