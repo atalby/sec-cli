@@ -11,6 +11,7 @@
 - **Docs**: `docs/ARCHITECTURE.md` dispatcher row gains the issue-#42 clause.
 - **Verified**: five bash suites ALL TESTS PASSED; pytest mirror 10 passed; sentinel citations green.
 - **Closed**: #42.
+- **Commit**: `228c773` — pushed (`2d203d1..228c773` on origin/main).
 - **Next**: tracker empty again; advance highest-value unfinished work.
 
 ### 2026-10-11 — #41: a recognized subcommand with a missing/invalid operand exits 2 with a tagged error, not silent usage/exit 0
@@ -22,6 +23,7 @@
 - **Anchors**: the `bin/sec` insertion shifted every file:line anchor after line 186; all `profile.md` anchors re-pinned (e.g. `case "$cmd"` :192 -> :198, `subcmds` :276 -> :282, `bw get attachment` :457 -> :466) and sentinel citations green.
 - **Verified**: sentinel coverage + citations green; five bash suites ALL TESTS PASSED; pytest mirror 10 passed.
 - **Closed**: #41.
+- **Commit**: `2d203d1` (pushed to origin/main).
 - **Next**: tracker hub-side-only (#2/#13).
 
 ### 2026-10-11 — #40: packs/zero-cost-infra-defaults/PACK.md restored after bde9f25 stripped its newlines
