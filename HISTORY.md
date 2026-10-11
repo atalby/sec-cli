@@ -89,10 +89,18 @@ branch the sync_guard shim had never exercised: it special-cased only
 `versions add`, so `secrets describe` always returned 0 and
 `gcloud secrets create` never ran on a missing secret; the shim now honors
 `SEC_TEST_GCLOUD_DESCRIBE_RC` and guard [16] makes a failing describe
-assert create-then-version-add. All five bash suites pass (install 9 / sync_guard 16 /
-write_honesty 11 / sentinel 10 / dispatch 64), the pytest mirror (29 tests) passes, and
-the GitHub tracker holds only the hub-side handoff #51 (in-repo issues
-exhausted). Next: advance the highest-value unfinished in-repo work.
+assert create-then-version-add. Then #63 removed dead surface: the tracked
+`scripts/pre-commit-test-suites.sh` (added for #2) was invoked by no tracked
+file, and the untracked local hook meant to call it resolved `SCRIPT_DIR` to
+`.git`, so it tested a nonexistent `.git/scripts/...` path and silently never
+ran its claimed fast-suite step; the script is deleted and the local hook
+restored to the documented pristine thin wrapper (the real enforcement is the
+`scripts/tests/` pytest mirror, run by the hub gate's Step 5, plus GitHub
+Actions CI on push). All five bash suites pass (install 9 / sync_guard 16 /
+write_honesty 11 / sentinel 10 / dispatch 64), the pytest mirror (29 tests)
+passes, and the GitHub tracker holds the hub-side handoff #51 plus the new #64
+(local enforcement requires `uv`) — in-repo issues exhausted. Next: advance the
+highest-value unfinished in-repo work.
 
 ## Archive
 

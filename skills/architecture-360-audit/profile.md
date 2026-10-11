@@ -247,7 +247,7 @@ instrument rather than the product but runs the same way:
       ok: lint names the phantom identifier
       ok: lint accepts a real identifier
     [7] the coverage denominator in profile.md matches the live tracked-file count (issue #46)
-      ok: profile.md denominator (108) matches tracked files (108)
+       ok: profile.md denominator (107) matches tracked files (107)
       ok: coverage exits nonzero on a drifted denominator
       ok: coverage names the denominator mismatch
       ok: control copy (correct denominator) exits 0
@@ -793,12 +793,14 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **108 tracked files** (`git ls-files | wc -l`, re-measured
-2026-10-11 after issue #47 split the narrative into `history/` and issue #61
-added the GitLab sync-controller pytest mirror; the issue
-#2 pytest suite (`scripts/tests/`), the `RESUME.md` resume marker, the
-`scripts/` pre-commit runner, and the six `history/*.md` archives are all
-counted). First matching row wins, so
+Denominator: **107 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-11 after issue #63 removed the dead `scripts/pre-commit-test-suites.sh`
+(no tracked caller; its only would-be caller, the untracked local hook,
+resolved to a nonexistent `.git/scripts/...` path), after issue #47 split the
+narrative into `history/` and issue #61 added the GitLab sync-controller pytest
+mirror; the issue #2 pytest suite (`scripts/tests/`), the `RESUME.md` resume
+marker, and the six `history/*.md` archives are all counted). First matching
+row wins, so
 specific rows precede general rows.
 `sentinel.sh` fails on any tracked file matched by no row, and on any row
 matching no file except the one declared-empty row below, and (since issue
