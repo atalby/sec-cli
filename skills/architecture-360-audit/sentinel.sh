@@ -328,6 +328,7 @@ ALLOW_EMPTY_ROWS="docs/360/**"
 python3 - "$PROFILE" "$REPO_ROOT" "$ALLOW_EMPTY_ROWS" "$LIST" <<'PY'
 import fnmatch
 import os
+import re
 import subprocess
 import sys
 
@@ -447,6 +448,11 @@ for _g, who in cov_rows:
             used.add(int(tok))
 missing_personas = [i for i in range(1, 13) if i not in used]
 
+# --- 5. prose denominator must match the live tracked-file count --------------
+profile_text = open(profile, encoding="utf-8").read()
+denom_match = re.search(r"Denominator:\s*\*\*(\d+)\s+tracked files\*\*", profile_text)
+denominator = int(denom_match.group(1)) if denom_match else None
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -481,6 +487,13 @@ if new_ecosystems:
         print(f"{ERROR} unmodelled ecosystem manifest: {m}")
 if missing_personas:
     failures.append(f"persona(s) {missing_personas} referenced by no manifest row")
+if denominator is None:
+    failures.append("profile.md coverage denominator line (Denominator: **N tracked files**) not found")
+elif denominator != len(tracked):
+    failures.append(
+        f"profile.md coverage denominator says {denominator} tracked files, "
+        f"but git ls-files reports {len(tracked)}"
+    )
 
 if failures:
     for f in failures:
@@ -488,6 +501,7 @@ if failures:
     sys.exit(1)
 
 print(f"{OK} coverage: all {len(tracked)} tracked files claimed by {len(cov_rows)} manifest rows")
+print(f"{OK} coverage denominator: profile.md states {denominator} tracked files, matches git ls-files")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

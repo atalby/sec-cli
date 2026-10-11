@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (6 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (47 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (7 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (47 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#2`, `#13`, `#32`) |
@@ -239,6 +239,11 @@ instrument rather than the product but runs the same way:
       ok: lint exits nonzero on a phantom identifier
       ok: lint names the phantom identifier
       ok: lint accepts a real identifier
+    [7] the coverage denominator in profile.md matches the live tracked-file count (issue #46)
+      ok: profile.md denominator (100) matches tracked files (100)
+      ok: coverage exits nonzero on a drifted denominator
+      ok: coverage names the denominator mismatch
+      ok: control copy (correct denominator) exits 0
 
     ALL TESTS PASSED
     (exit 0)
@@ -770,12 +775,14 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **99 tracked files** (`git ls-files | wc -l`, re-measured
-2026-10-10 after the issue #2 pytest suite (`scripts/tests/`) and the
-`RESUME.md` resume marker landed: 96 + 3). First matching row wins, so
+Denominator: **100 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-11; the issue #2 pytest suite (`scripts/tests/`), the `RESUME.md`
+resume marker, and the `scripts/` pre-commit runner are all counted). First matching row wins, so
 specific rows precede general rows.
 `sentinel.sh` fails on any tracked file matched by no row, and on any row
-matching no file except the one declared-empty row below.
+matching no file except the one declared-empty row below, and (since issue
+#46) on this denominator exceeding or falling short of the live
+`git ls-files | wc -l`.
 
 | Glob | Personas |
 |---|---|

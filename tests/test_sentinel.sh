@@ -51,7 +51,7 @@ fi
 
 echo "[3] a broken citation is detected (sentinel fails closed)"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D"' EXIT
+trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F"' EXIT
 mkdir -p "$WORK/skills/architecture-360-audit"
 cp "$REPO_ROOT/skills/architecture-360-audit/profile.md" "$WORK/skills/architecture-360-audit/profile.md"
 cp "$REPO_ROOT/skills/architecture-360-audit/SKILL.md" "$WORK/skills/architecture-360-audit/SKILL.md"
@@ -139,6 +139,50 @@ if [[ $RC -eq 0 ]]; then
     ok "lint accepts a real identifier"
 else
     no "lint rejected a real identifier"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[7] the coverage denominator in profile.md matches the live tracked-file count (issue #46)"
+WORK_E="$(mktemp -d)"
+WORK_F="$(mktemp -d)"
+for W in "$WORK_E" "$WORK_F"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+REAL_COUNT="$(cd "$REPO_ROOT" && git ls-files | wc -l | tr -d ' ')"
+DOC_COUNT="$(grep -oE 'Denominator: \*\*[0-9]+ tracked files' "$REPO_ROOT/skills/architecture-360-audit/profile.md" | grep -oE '[0-9]+' | head -1)"
+if [[ -n "$DOC_COUNT" && "$REAL_COUNT" == "$DOC_COUNT" ]]; then
+    ok "profile.md denominator ($DOC_COUNT) matches tracked files ($REAL_COUNT)"
+else
+    no "profile.md denominator (${DOC_COUNT:-none}) != tracked files ($REAL_COUNT)"
+fi
+python3 - "$WORK_E/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+open(p, "w", encoding="utf-8").write(
+    re.sub(r"(Denominator: \*\*)\d+( tracked files)", r"\g<1>999999\g<2>", s, count=1)
+)
+PY
+OUT="$(cd "$WORK_E" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted denominator"
+else
+    no "coverage accepted a drifted denominator"
+fi
+if grep -q "denominator" <<<"$OUT"; then
+    ok "coverage names the denominator mismatch"
+else
+    no "coverage did not name the denominator mismatch"
+fi
+OUT="$(cd "$WORK_F" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct denominator) exits 0"
+else
+    no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"
 fi
 
