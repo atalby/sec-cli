@@ -51,7 +51,7 @@ fi
 
 echo "[3] a broken citation is detected (sentinel fails closed)"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F"' EXIT
+trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F" "$WORK_G" "$WORK_H"' EXIT
 mkdir -p "$WORK/skills/architecture-360-audit"
 cp "$REPO_ROOT/skills/architecture-360-audit/profile.md" "$WORK/skills/architecture-360-audit/profile.md"
 cp "$REPO_ROOT/skills/architecture-360-audit/SKILL.md" "$WORK/skills/architecture-360-audit/SKILL.md"
@@ -181,6 +181,35 @@ OUT="$(cd "$WORK_F" && git init -q . && git add -A && "skills/architecture-360-a
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (correct denominator) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[8] HISTORY.md must stay rotated into history/ archives (issue #47)"
+WORK_G="$(mktemp -d)"
+WORK_H="$(mktemp -d)"
+for W in "$WORK_G" "$WORK_H"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+printf '\n### 2026-99-99 — injected dated entry\n- x\n' >>"$WORK_G/HISTORY.md"
+OUT="$(cd "$WORK_G" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a dated entry in HISTORY.md"
+else
+    no "coverage accepted a dated entry in HISTORY.md"
+fi
+if grep -q "HISTORY.md" <<<"$OUT"; then
+    ok "coverage names HISTORY.md"
+else
+    no "coverage did not name HISTORY.md"
+fi
+OUT="$(cd "$WORK_H" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (rotated history) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"

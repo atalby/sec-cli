@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (7 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (47 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (8 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (47 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#2`, `#13`, `#32`) |
@@ -49,7 +49,7 @@ The two partials are themselves findings, not tier annotations:
 2. **The local pre-commit gate still never runs the test suites.** The
    hook's test step only recognizes `scripts/tests/`+uv, `pytest.ini`/
    `pyproject`, and `package.json` — never `tests/*.sh` (stated in
-   `ADAPTERS.md:246`, tracked as open issue `#2`). Since 2026-10-09
+   `ADAPTERS.md:253`, tracked as open issue `#2`). Since 2026-10-09
    GitHub Actions runs the five bash suites and the pytest mirror on
    push and PR to main
    (`.github/workflows/test.yml`, issue #8), so an unhooked push is
@@ -66,7 +66,7 @@ CI configuration, and contributor documentation before recording an absence.
 **Test suite** (four-source discovery: manifest — absent; `Makefile` —
 absent; CI — `.github/workflows/test.yml` since 2026-10-09 (issue #8), runs
 the five bash suites below and nothing else; contributor documentation —
-`ADAPTERS.md:230` "Running this project's test suite", which also names the
+`ADAPTERS.md:237` "Running this project's test suite", which also names the
 pytest mirror at `scripts/tests/`). All quotes below current as of the
 2026-10-10 profile pass. `tests/test_sentinel.sh` belongs to the audit
 instrument rather than the product but runs the same way:
@@ -240,10 +240,14 @@ instrument rather than the product but runs the same way:
       ok: lint names the phantom identifier
       ok: lint accepts a real identifier
     [7] the coverage denominator in profile.md matches the live tracked-file count (issue #46)
-      ok: profile.md denominator (100) matches tracked files (100)
+      ok: profile.md denominator (106) matches tracked files (106)
       ok: coverage exits nonzero on a drifted denominator
       ok: coverage names the denominator mismatch
       ok: control copy (correct denominator) exits 0
+    [8] HISTORY.md must stay rotated into history/ archives (issue #47)
+      ok: coverage exits nonzero on a dated entry in HISTORY.md
+      ok: coverage names HISTORY.md
+      ok: control copy (rotated history) exits 0
 
     ALL TESTS PASSED
     (exit 0)
@@ -545,9 +549,9 @@ How the code reaches each, not merely that it exists.
 | GitLab group CI/CD variables | HTTPS API `PUT` via `urllib.request` | `bin/sec-sync-controller.py:169`, `bin/sec-sync-controller.py:170` |
 | Vercel | claimed as a sync target in `docs/ARCHITECTURE.md:14` — no call site found in the controller this build (candidate smoke finding) | `docs/ARCHITECTURE.md:14` |
 | GitHub (install source) | `REPO_URL` default feeding `git clone`, piped `curl` install source | `install.sh:7`, `README.md:29` |
-| GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:116` |
+| GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:118` |
 | jq | invoked for JSON parsing inside `bin/sec` | `bin/sec:102` |
-| Hyer hub checkers | invoked by the local pre-commit wrapper from `~/sandbox/hyer/scripts/` | `ADAPTERS.md:224` |
+| Hyer hub checkers | invoked by the local pre-commit wrapper from `~/sandbox/hyer/scripts/` | `ADAPTERS.md:231` |
 
 ## Personas
 
@@ -614,10 +618,10 @@ backend no code implemented. Vercel removed from the help text and
 count and the `def sync_to_` count diverge. Python visibility rule:
 module-level public, leading underscore private.
 
-### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:246`, `ADAPTERS.md:230`
+### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:253`, `ADAPTERS.md:237`
 
 Nine install sections, fourteen guard sections, eleven write-honesty
-sections, and the audit instrument's own six sentinel cases pass today
+sections, and the audit instrument's own eight sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes the four fast suites and gates the dispatch suite behind
 `SEC_TEST_DISPATCH=1`); establish what they do not cover. Structural
@@ -626,7 +630,7 @@ gaps to quantify, not merely note: GitHub Actions CI exists since
 runs the five bash suites **and** the pytest mirror
 (`SEC_TEST_DISPATCH=1`) on push and PR to main — but the pre-commit
 hook's test step is still blind to `tests/*.sh`
-(`ADAPTERS.md:246`, open issue `#2`); and there is zero
+(`ADAPTERS.md:253`, open issue `#2`); and there is zero
 coverage tooling. Then cross-reference suites against the hotspots:
 `bin/sec-organizer`, `bin/sec-migrator`, `bin/sec-classify.py`, and
 `bin/bw-session-keeper` have no suite of their own, but they are exercised
@@ -660,8 +664,10 @@ Read tracker state live with the Step 8 command; never from memory or from
 re-derivation awaiting operator go-ahead), and open/closed issues whose code
 state disagrees — the three issues closed on 2026-10-08 were closed by
 commits in that one session; verify each described change is actually on disk
-now. `HISTORY.md:1` is the narrative intent record for forensic scan,
-current-state paragraph updated in place, entries append-only.
+now. `HISTORY.md:1` is the narrative intent record for forensic scan: a
+short current-state summary updated in place, with the full per-period
+narrative archived append-only under `history/` (issue #47; `sentinel.sh
+coverage` guards against the summary re-bloating).
 
 ### 6. Infrastructure, delivery, and cost -- `install.sh:7`, `README.md:29`, `packs/zero-cost-infra-defaults/PACK.md:1`, `.gemini/settings.json:1`
 
@@ -775,14 +781,18 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **100 tracked files** (`git ls-files | wc -l`, re-measured
-2026-10-11; the issue #2 pytest suite (`scripts/tests/`), the `RESUME.md`
-resume marker, and the `scripts/` pre-commit runner are all counted). First matching row wins, so
+Denominator: **106 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-11 after issue #47 split the narrative into `history/`; the issue
+#2 pytest suite (`scripts/tests/`), the `RESUME.md` resume marker, the
+`scripts/` pre-commit runner, and the six `history/*.md` archives are all
+counted). First matching row wins, so
 specific rows precede general rows.
 `sentinel.sh` fails on any tracked file matched by no row, and on any row
 matching no file except the one declared-empty row below, and (since issue
 #46) on this denominator exceeding or falling short of the live
-`git ls-files | wc -l`.
+`git ls-files | wc -l`, and (since issue #47) when `HISTORY.md` holds a
+dated entry, bloats past its summary budget, or leaves a `history/`
+archive unlinked.
 
 | Glob | Personas |
 |---|---|
@@ -815,6 +825,7 @@ matching no file except the one declared-empty row below, and (since issue
 | `docs/OPERATOR_MANUAL.md` | 4, 5 |
 | `docs/SECURITY.md` | 1 |
 | `docs/360/**` | 5, 2 |
+| `history/**` | 2, 5 |
 | `install.sh` | 6, 8, 11 |
 | `methodology/**` | 4, 5 |
 | `packs/**` | 6, 5 |

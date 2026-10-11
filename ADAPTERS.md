@@ -29,9 +29,11 @@ own secrets tool, not just another repo.
   Engineer) — this repo's opted-in `packs/solo-founder-governance`
   names a single final approver, and no other opted-in pack or doc here
   names a different owner.
-- **Last updated**: 2026-10-11 (issue #46: sentinel now guards the profile.md
+- **Last updated**: 2026-10-11 (issue #47: the 103 KB `HISTORY.md` narrative was
+  split losslessly into per-date `history/` archives and guarded against re-bloat;
+  issue #46: sentinel now guards the profile.md
   coverage denominator against the live tracked-file count; issue #44: sec.ps1 doc parity + non-zero exit on unimplemented
-  commands; dispatch 47, write-honesty 11, sentinel 7; earlier 2026-10-10, later
+  commands; dispatch 47, write-honesty 11, sentinel 8; earlier 2026-10-10, later
   same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
   the four fast bash suites with dispatch opt-in behind `SEC_TEST_DISPATCH=1`,
@@ -122,11 +124,16 @@ itself (dev/test), the same `at-tech-io` fleet convention applies:
   §5) as the in-repo store, plus host-level knowledge-graph MCP
   servers (graft, codebase-memory) that index this checkout — no
   in-repo graph output directory exists.
-- **Where it lives**: in-repo at `HISTORY.md`; graph data lives in
-  each MCP server's own storage outside the checkout.
+- **Where it lives**: in-repo at `HISTORY.md` (short current-state
+  summary) and `history/<date>.md` (full per-period narrative); graph
+  data lives in each MCP server's own storage outside the checkout.
 - **Pruning policy**: `HISTORY.md` follows AGENTS.md §5's
-  rotation/archival rule once it starts dominating session-load cost;
-  the graphs are still small, no pruning needed yet.
+  rotation/archival rule once it starts dominating session-load cost.
+  Executed 2026-10-11 (issue #47): the single 103 KB file was split
+  losslessly into per-date archives under `history/`, `HISTORY.md`
+  reduced to a summary + links, and `sentinel.sh coverage` now fails
+  if a dated entry, an over-budget summary, or an orphaned archive
+  reappears. The graphs are still small, no pruning needed yet.
 
 ## Methodology version sync (Hyer)
 
@@ -232,7 +239,7 @@ per AGENTS.md §5's replace-don't-append rule.
 - **Command**: `bash tests/test_install.sh` (9 sections, install path),
   `bash tests/test_sync_guard.sh` (14 sections, sync guard canaries),
   `bash tests/test_write_honesty.sh` (11 sections, silent-no-op write
-  paths, revert/undo honesty), `bash tests/test_sentinel.sh` (7 cases,
+  paths, revert/undo honesty), `bash tests/test_sentinel.sh` (8 cases,
   the 360 audit instrument's coverage/citations sentinel) and
   `bash tests/test_dispatch.sh` (47 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency

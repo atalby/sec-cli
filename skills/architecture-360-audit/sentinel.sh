@@ -453,6 +453,20 @@ profile_text = open(profile, encoding="utf-8").read()
 denom_match = re.search(r"Denominator:\s*\*\*(\d+)\s+tracked files\*\*", profile_text)
 denominator = int(denom_match.group(1)) if denom_match else None
 
+# --- 6. narrative history must stay rotated (AGENTS.md §5) --------------------
+# HISTORY.md is force-loaded by every session, so it must hold only a short
+# current-state summary; the full narrative lives in per-period archives under
+# history/. Fail if a dated entry has crept back in, if the summary bloats past
+# budget, or if an archive file is orphaned (not linked from HISTORY.md).
+HISTORY_BUDGET = 8192
+history_path = os.path.join(repo, "HISTORY.md")
+history_text = open(history_path, encoding="utf-8").read() if os.path.exists(history_path) else ""
+dated_entries = [ln for ln in history_text.splitlines() if ln.startswith("### ")]
+history_bytes = len(history_text.encode("utf-8"))
+history_dir = os.path.join(repo, "history")
+archived = sorted(f for f in os.listdir(history_dir) if f.endswith(".md")) if os.path.isdir(history_dir) else []
+orphaned = [f for f in archived if f"history/{f}" not in history_text]
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -494,6 +508,12 @@ elif denominator != len(tracked):
         f"profile.md coverage denominator says {denominator} tracked files, "
         f"but git ls-files reports {len(tracked)}"
     )
+if dated_entries:
+    failures.append(f"HISTORY.md holds {len(dated_entries)} dated '### ' entr(ies); rotate them into history/ (AGENTS.md §5)")
+if history_bytes > HISTORY_BUDGET:
+    failures.append(f"HISTORY.md is {history_bytes} bytes, over the {HISTORY_BUDGET}-byte summary budget; archive the narrative")
+if orphaned:
+    failures.append(f"history/ archive(s) not linked from HISTORY.md: {orphaned}")
 
 if failures:
     for f in failures:
@@ -502,6 +522,7 @@ if failures:
 
 print(f"{OK} coverage: all {len(tracked)} tracked files claimed by {len(cov_rows)} manifest rows")
 print(f"{OK} coverage denominator: profile.md states {denominator} tracked files, matches git ls-files")
+print(f"{OK} narrative history: HISTORY.md is a {history_bytes}-byte summary, {len(archived)} archive(s) linked under history/")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)
