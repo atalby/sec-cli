@@ -253,6 +253,16 @@ assert_usage_error "sec run --" run --
 assert_usage_error "sec completion bogus" completion bogus
 assert_usage_error "sec set --type" set --type
 
+echo "[2c] set/create with no value on a non-TTY fails with a tagged error, not a silent read-EOF death (issue #42)"
+set +e
+OUT="$(run_sec "$H" set NEWKEY 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q '^\[ERROR\]' <<<"$OUT"; then pass "set NEWKEY (no value, no TTY) -> exit 1 + tagged error"; else fail "set NEWKEY rc=$RC out=[$OUT]"; fi
+set +e
+OUT="$(run_sec "$H" create NEWNOTE 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q '^\[ERROR\]' <<<"$OUT"; then pass "create NEWNOTE (no value, no TTY) -> exit 1 + tagged error"; else fail "create NEWNOTE rc=$RC out=[$OUT]"; fi
+
 echo "[3] bw get: plain key returns login.password"
 set +e
 OUT="$(run_sec "$H" get MY_API_KEY 2>&1)"

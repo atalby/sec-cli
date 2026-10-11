@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (6 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (43 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (6 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (44 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#2`, `#13`, `#32`) |
@@ -253,6 +253,8 @@ instrument rather than the product but runs the same way:
       ok: unknown cmd exits 2 with a tagged error
     [2b] missing/invalid operand fails loudly: exit 2 + tagged error, not a silent usage/success
       ok: get/set/create/run and --scope/--type/completion guards -> exit 2 + tagged error
+    [2c] set/create with no value on a non-TTY fails with a tagged error, not a silent read-EOF death (issue #42)
+      ok: set NEWKEY (no value, no TTY) -> exit 1 + tagged error
     [3] bw get: plain key returns login.password
       ok: bw get MY_API_KEY -> pw-MY_API_KEY
     [4] bw get: item/field subpath

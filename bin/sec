@@ -567,7 +567,11 @@ EOF
         ensure_tenant_auth "$TARGET_TENANT"
 
         if [[ -z "$value" ]]; then
-            read -rsp "Enter secret value for '$key' ($TARGET_TENANT): " value
+            if ! read -rsp "Enter secret value for '$key' ($TARGET_TENANT): " value; then
+                echo ""
+                echo "[ERROR] no secret value provided for '$key' (stdin closed); pass it as an argument: sec $cmd '$key' <value>." >&2
+                exit 1
+            fi
             echo ""
         fi
 
