@@ -30,9 +30,9 @@ default `auto_rotate=true` leaked the master password into the process
 table (`/proc/<pid>/cmdline`); both paths now unlock in-process via a
 `do_unlock` helper, with regression guards [22j]/[22k]. Then #53 re-truth'd
 the sync controller's own docstring and runtime banner, which still
-advertised a "Single Source of Truth: Bitwarden Vault" even though
-`sec sync` reads values only from the invoking environment (docs already
-said so since #9); a sync_guard guard [15] now fails if the false claim
+advertised a "Single Source of Truth: Bitwarden Vault" although
+`sec sync` reads values only from the invoking environment (as documented
+since #9); a sync_guard guard [15] now fails if the false claim
 returns. Then #54 corrected the README/ARCHITECTURE/install.sh
 runtime-dependency sentence, which understated `jq` as housekeep-only
 although `bin/sec` needs it for auth/get/set too; a sentinel-suite guard
@@ -63,9 +63,9 @@ then passed the encoded blob (embedding the value) as a positional arg to
 `bw create/edit item`; the value now reaches jq via `env.SECVAL` and the
 blob reaches bw on stdin, with dispatch guard 22m pinning it. Then #59
 gave the migrator's bw target the same treatment (jq via `env.SECVAL`,
-blob to `bw create item` on stdin, dispatch guard 22n). Then #59 finished
-the remainder after confirming each backend's stdin/file contract against
-the vendor docs: the `1pass` set path sends an item JSON template to
+blob to `bw create item` on stdin, dispatch guard 22n) and finished the
+remainder after confirming each backend's stdin/file contract against the
+vendor docs: the `1pass` set path sends a JSON template to
 `op item create -` on stdin, the migrator's op arm does the same, and its
 vault arm pipes the value to `vault kv put ... value=-`; infisical has no
 stdin channel, so its arm stages the value in a transient mode-0600 file
@@ -104,13 +104,16 @@ CI env var is gone), and the pre-commit gate was still called "blind to
 the `scripts/tests/` mirror (the no-`uv` residual stays tracked as #64); two
 pre-existing wrong anchors in the skill's own profile (`ADAPTERS.md:238` and
 `:254`, pointing at prose/blank lines where the test-suite heading is at 255)
-were repointed, and the gate blind spot that let them pass (prose and
-comma-list anchors are not content-validated) is filed as #66. All
+were repointed, and the gate blind spot that let them pass is filed as #66. Then #66
+closed that blind spot: `sentinel.sh citations` now also reads a double-quoted
+claim phrase beside an anchor, so bare prose anchors are content-validated
+too (backticked symbols unchanged; the comma-list exemption stays for the
+persona pointer-lists), with three regression cases
+in the sentinel suite. All
 five bash suites pass (install 9 / sync_guard 16 /
 write_honesty 11 / sentinel 10 / dispatch 64), the pytest mirror (29 tests)
-passes, and the GitHub tracker holds #51 (hub-side) plus the new #64 (local
-enforcement requires `uv`) and #66 (harden the sentinel content-anchor check);
-in-repo issues through #65 are closed. Next: advance the highest-value
+passes, and the GitHub tracker holds #51 (hub-side) plus #64 (local enforcement
+requires `uv`); in-repo issues through #66 are closed. Next: advance the highest-value
 unfinished in-repo work.
 
 ## Archive

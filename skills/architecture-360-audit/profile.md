@@ -243,6 +243,9 @@ instrument rather than the product but runs the same way:
       ok: lint exits nonzero on a stale-content anchor
       ok: lint names the stale anchor
       ok: lint accepts a well-formed anchor
+      ok: lint exits nonzero on a stale quoted-prose anchor
+      ok: lint names the stale quoted-prose anchor
+      ok: lint accepts a well-formed quoted-prose anchor
     [6] a phantom identifier claim is detected (claim-existence lint, issue #35)
       ok: lint exits nonzero on a phantom identifier
       ok: lint names the phantom identifier
@@ -572,8 +575,10 @@ highest-value-first**: persona 1 is audited first; a scoped run drops from
 persona 12 upward. Every anchor below was verified against this tree when
 this profile was written; Step 3 re-verifies them at the start of every run,
 and since issue #34 `sentinel.sh citations` also fails in the gate on any
-anchor whose cited line no longer holds the claim's symbol; since issue #35
-it also fails on any identifier-shaped claim that exists nowhere in the tree.
+anchor whose cited line no longer holds the claim's symbol -- whether that
+claim is a backticked identifier or a double-quoted phrase (issue #66); since
+issue #35 it also fails on any identifier-shaped claim that exists nowhere in
+the tree.
 
 Declared-persona taxonomy: `packs/solo-founder-governance` v1.2.0 was read
 before deriving (`packs/solo-founder-governance/PACK.md:24` binds the repo to

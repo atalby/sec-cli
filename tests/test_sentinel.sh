@@ -51,7 +51,7 @@ fi
 
 echo "[3] a broken citation is detected (sentinel fails closed)"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F" "$WORK_G" "$WORK_H" "$WORK_I" "$WORK_J"' EXIT
+trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F" "$WORK_G" "$WORK_H" "$WORK_I" "$WORK_J" "$WORK_K" "$WORK_L"' EXIT
 mkdir -p "$WORK/skills/architecture-360-audit"
 cp "$REPO_ROOT/skills/architecture-360-audit/profile.md" "$WORK/skills/architecture-360-audit/profile.md"
 cp "$REPO_ROOT/skills/architecture-360-audit/SKILL.md" "$WORK/skills/architecture-360-audit/SKILL.md"
@@ -108,6 +108,35 @@ if [[ $RC -eq 0 ]]; then
     ok "lint accepts a well-formed anchor"
 else
     no "lint rejected a well-formed anchor"
+    printf '%s\n' "$OUT"
+fi
+
+WORK_K="$(mktemp -d)"
+WORK_L="$(mktemp -d)"
+for W in "$WORK_K" "$WORK_L"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+printf '\nQuoted stale: "uo pipefail" cited at `tests/test_sentinel.sh:3`\n' >>"$WORK_K/skills/architecture-360-audit/profile.md"
+OUT="$(cd "$WORK_K" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "lint exits nonzero on a stale quoted-prose anchor"
+else
+    no "lint accepted a stale quoted-prose anchor"
+fi
+if grep -q "tests/test_sentinel.sh:3" <<<"$OUT"; then
+    ok "lint names the stale quoted-prose anchor"
+else
+    no "lint did not name the stale quoted-prose anchor"
+fi
+printf '\nQuoted control: "uo pipefail" cited at `tests/test_sentinel.sh:2`\n' >>"$WORK_L/skills/architecture-360-audit/profile.md"
+OUT="$(cd "$WORK_L" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "lint accepts a well-formed quoted-prose anchor"
+else
+    no "lint rejected a well-formed quoted-prose anchor"
     printf '%s\n' "$OUT"
 fi
 

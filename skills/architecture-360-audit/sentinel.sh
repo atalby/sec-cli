@@ -24,7 +24,10 @@
 #     anchor that SKILL.md or profile.md cites. A citation that no longer
 #     resolves -- file gone, or the line beyond the file's end -- is how a
 #     persona with a stale anchor produces a confident wrong finding, so it
-#     exits non-zero and names each one.
+#     exits non-zero and names each one. It also content-checks each anchor
+#     against the claim beside it -- a backticked symbol or a double-quoted
+#     phrase -- so an anchor whose cited line dropped the claim's symbol
+#     fails too (issues #34, #66).
 #
 # Usage:  ./sentinel.sh [coverage] [--list]   check tracked + gitignored
 #                                              surface coverage (default)
@@ -90,6 +93,7 @@ pattern = re.compile(
     r"((?:[A-Za-z0-9_./-]+\.(?:%s)|%s)):(\d+(?:[,-]\d+)*)" % (EXTS, EXTLESS)
 )
 backtick = re.compile(r"`([^`]+)`")
+quote = re.compile(r'"([^"]+)"')
 path_only = re.compile(
     r"^(?:[A-Za-z0-9_./-]+\.(?:%s)|%s|\.gitignore)$" % (EXTS, EXTLESS)
 )
@@ -228,14 +232,15 @@ def stale_content_anchors(src_name, text):
                 lineno += 1
             line_of[i] = lineno
         spans = []
-        for m in backtick.finditer(flat):
-            if "://" in m.group(1):
-                continue
-            if path_only.match(m.group(1)) or path_like.match(m.group(1)):
-                continue
-            if anchor_ish.search(m.group(1)):
-                continue
-            spans.append(m)
+        for finder in (backtick, quote):
+            for m in finder.finditer(flat):
+                if "://" in m.group(1):
+                    continue
+                if path_only.match(m.group(1)) or path_like.match(m.group(1)):
+                    continue
+                if anchor_ish.search(m.group(1)):
+                    continue
+                spans.append(m)
         for m in anchors:
             same_line = sum(
                 1 for a in anchors if line_of[a.start()] == line_of[m.start()]
