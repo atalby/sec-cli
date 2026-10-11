@@ -1207,6 +1207,22 @@ if [[ $RC -eq 0 ]] && grep -q "Vault unlocked successfully" <<<"$OUT"; then pass
 if grep -q "CALLER-CMDLINE:.*rot-pass" "$BWLOG"; then fail "master password present on caller argv: $(grep CALLER-CMDLINE "$BWLOG")"; else pass "master password absent from the keeper's own argv"; fi
 if grep -q 'bw-env-present' "$BWLOG"; then pass "auto-rotate delivers password via BW_UNLOCK_PASS env"; else fail "auto-rotate did not deliver password via env: $(tr '\n' ';' <"$BWLOG")"; fi
 
+echo "[22l] every completion surface offers the create/organize/keep aliases (issue #56)"
+set +e
+ZSH_C="$(bash "$REPO_ROOT/bin/sec" completion zsh 2>&1)"
+BASH_C="$(bash "$REPO_ROOT/bin/sec" completion bash 2>&1)"
+FISH_C="$(bash "$REPO_ROOT/bin/sec" completion fish 2>&1)"
+PS1_C="$(bash "$REPO_ROOT/bin/sec" completion ps1 2>&1)"
+set -e
+_miss=0
+for _a in create organize keep; do
+    grep -qF "'${_a}:" <<<"$ZSH_C" || { fail "zsh completion omits alias '$_a' (issue #56)"; _miss=1; }
+    grep -qE "subcmds=\"[^\"]*\b${_a}\b" <<<"$BASH_C" || { fail "bash completion omits alias '$_a' (issue #56)"; _miss=1; }
+    grep -qF -- "-a '${_a}'" <<<"$FISH_C" || { fail "fish completion omits alias '$_a' (issue #56)"; _miss=1; }
+    grep -qF "'${_a}'" <<<"$PS1_C" || { fail "ps1 completion omits alias '$_a' (issue #56)"; _miss=1; }
+done
+if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer create/organize/keep"; fi
+
 echo
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"

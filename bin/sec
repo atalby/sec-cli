@@ -232,12 +232,15 @@ _sec() {
     local -a subcommands=(
         'get:Retrieve secret value from vault'
         'set:Store / create a new secret in vault'
+        'create:Store / create a new secret in vault (alias of set)'
         'run:Execute command; injection only for bws/op/infisical (bitwarden plain exec)'
         'sync:Push shell-exported keys to GCP Secret Manager & GitLab group'
         'housekeep:Intelligent ML categorization, plan/apply, & instant rollback'
+        'organize:Intelligent ML categorization (alias of housekeep)'
         'migrate:Zero-plaintext vault-to-vault migration engine'
         'unlock:Unlock Bitwarden vault and save session'
         'rotate:Keep-alive / rotate Bitwarden session key'
+        'keep:Keep-alive / rotate Bitwarden session key (alias of rotate)'
         'setup-keychain:Store master password in Keychain for auto-rotation'
         'completion:Generate shell autocompletion script'
     )
@@ -293,7 +296,7 @@ _sec_bash_completion() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    subcmds="get set run sync housekeep migrate unlock rotate setup-keychain completion --help -h --version -v"
+    subcmds="get set create run sync housekeep organize migrate unlock rotate keep setup-keychain completion --help -h --version -v"
     tenants="bitwarden bw 1pass op bws vault infisical keychain"
 
     if [[ ${COMP_CWORD} -eq 1 ]]; then
@@ -333,12 +336,15 @@ end
 
 complete -f -c sec -n '__fish_sec_needs_command' -a 'get' -d 'Retrieve secret value from vault'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'set' -d 'Store / create a new secret in vault'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'create' -d 'Store / create a new secret in vault (alias of set)'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'run' -d 'Execute command; injection only for bws/op/infisical (bitwarden plain exec)'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'sync' -d 'Push shell-exported keys to GCP Secret Manager & GitLab group'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'housekeep' -d 'Intelligent ML categorization plan/apply/revert'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'organize' -d 'Intelligent ML categorization (alias of housekeep)'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'migrate' -d 'Zero-plaintext vault-to-vault migration engine'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'unlock' -d 'Unlock Bitwarden vault and save session'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'rotate' -d 'Keep-alive / rotate Bitwarden session key'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'keep' -d 'Keep-alive / rotate Bitwarden session key (alias of rotate)'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'setup-keychain' -d 'Store master password in Keychain'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'completion' -d 'Generate shell autocompletion script'
 
@@ -355,7 +361,7 @@ EOF
 Register-ArgumentCompleter -Native -CommandName 'sec', 'sec.exe', 'sec.ps1' -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
 
-    $subcommands = @('get', 'set', 'run', 'sync', 'housekeep', 'migrate', 'unlock', 'rotate', 'setup-keychain', 'completion')
+    $subcommands = @('get', 'set', 'create', 'run', 'sync', 'housekeep', 'organize', 'migrate', 'unlock', 'rotate', 'keep', 'setup-keychain', 'completion')
     $tenants = @('bitwarden', 'bw', '1pass', 'op', 'bws', 'vault', 'infisical', 'keychain')
 
     $elements = $commandAst.ArgumentElements

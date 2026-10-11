@@ -8,12 +8,15 @@ _sec() {
     local -a subcommands=(
         'get:Retrieve secret value from vault'
         'set:Store / create a new secret in vault'
+        'create:Store / create a new secret in vault (alias of set)'
         'run:Execute command; injection only for bws/op/infisical (bitwarden plain exec)'
         'sync:Push shell-exported keys to GCP Secret Manager & GitLab group'
         'housekeep:Intelligent ML categorization, plan/apply, & instant rollback'
+        'organize:Intelligent ML categorization (alias of housekeep)'
         'migrate:Zero-plaintext vault-to-vault migration engine'
         'unlock:Unlock Bitwarden vault and save session'
         'rotate:Keep-alive / rotate Bitwarden session key'
+        'keep:Keep-alive / rotate Bitwarden session key (alias of rotate)'
         'setup-keychain:Store master password in Keychain for auto-rotation'
         'completion:Generate shell autocompletion script'
     )

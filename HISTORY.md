@@ -42,9 +42,15 @@ first `=`-field and never skipped comments, so a commented-out key such
 as `# auto_rotate = false` still took effect (a plain default-backend
 lookup could also collide with a longer key name); the parser now skips
 comments/blanks and requires an exact key-name match, with dispatch
-guards [18b]/[18c]. All five bash
+guards [18b]/[18c]. Then #56 completed the completion surfaces: the
+zsh/bash/fish/ps1 generators listed only the ten canonical commands and
+omitted the `create`/`organize`/`keep` aliases the dispatcher arms
+accept and ARCHITECTURE.md documents; all four now offer the aliases
+(with the checked-in `completions/_sec` regenerated from `sec completion
+zsh`), and dispatch guard [22l] fails if any surface drops them. All
+five bash
 suites pass (install 9 / sync_guard 15 / write_honesty 11 / sentinel 10 /
-dispatch 59), the pytest mirror passes, and the GitHub tracker holds only
+dispatch 60), the pytest mirror passes, and the GitHub tracker holds only
 the hub-side handoff #51. Next: advance the highest-value unfinished work.
 
 ## Archive
