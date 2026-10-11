@@ -28,8 +28,13 @@ F003 residual the #16 fix had left behind: the session keeper's keep-alive
 `"$0" unlock <pw>`, so a plain `sec get` on an expired session with the
 default `auto_rotate=true` leaked the master password into the process
 table (`/proc/<pid>/cmdline`); both paths now unlock in-process via a
-`do_unlock` helper, with regression guards [22j]/[22k]. All five bash
-suites pass (install 9 / sync_guard 14 / write_honesty 11 / sentinel 9 /
+`do_unlock` helper, with regression guards [22j]/[22k]. Then #53 re-truth'd
+the sync controller's own docstring and runtime banner, which still
+advertised a "Single Source of Truth: Bitwarden Vault" even though
+`sec sync` reads values only from the invoking environment (docs already
+said so since #9); a sync_guard guard [15] now fails if the false claim
+returns. All five bash
+suites pass (install 9 / sync_guard 15 / write_honesty 11 / sentinel 9 /
 dispatch 57), the pytest mirror passes, and the GitHub tracker holds only
 the hub-side handoff #51. Next: advance the highest-value unfinished work.
 

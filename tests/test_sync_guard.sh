@@ -208,6 +208,18 @@ else
     fail "help advertises $ADV_COUNT target(s) but only $IMPL_COUNT writer(s) implemented: $TARGETS_LINE"
 fi
 
+echo "[15] controller states its true value provenance, not a false Bitwarden 'Single Source of Truth' (issue #53)"
+if grep -qi "Single Source of Truth" "$CTRL"; then
+    fail "controller still advertises a 'Single Source of Truth' — values come from the invoking environment, the vault is not read"
+else
+    pass "no false 'Single Source of Truth' claim in the controller"
+fi
+if grep -q "invoking environment" "$CTRL"; then
+    pass "controller names the invoking environment as the value source"
+else
+    fail "controller does not name the true value source"
+fi
+
 echo ""
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"

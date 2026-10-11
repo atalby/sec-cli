@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Central Secret Sync Controller (sec sync)
-Single Source of Truth: Bitwarden Vault / bws
+Values: read from the invoking environment (shell-exported SYNC_KEYS); the vault is not read
 Targets: GCP Secret Manager, GitLab Group Variables
 """
 
@@ -238,9 +238,7 @@ def main():
     print(
         "================================================================================"
     )
-    print(
-        "[INFO] SEC CENTRAL SECRET SYNC CONTROLLER (Single Source of Truth: Bitwarden)"
-    )
+    print("[INFO] SEC CENTRAL SECRET SYNC CONTROLLER (source: invoking environment)")
     print(
         "================================================================================"
     )
