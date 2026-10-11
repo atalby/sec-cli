@@ -263,6 +263,20 @@ OUT="$(run_sec "$H" create NEWNOTE 2>&1)"; RC=$?
 set -e
 if [[ $RC -eq 1 ]] && grep -q '^\[ERROR\]' <<<"$OUT"; then pass "create NEWNOTE (no value, no TTY) -> exit 1 + tagged error"; else fail "create NEWNOTE rc=$RC out=[$OUT]"; fi
 
+echo "[2d] sec migrate usage/help contract: missing operand/flag -> exit 2 tagged; --help -> exit 0 (issue #48)"
+assert_usage_error "sec migrate" migrate
+assert_usage_error "sec migrate --from" migrate --from
+assert_usage_error "sec migrate --to" migrate --to
+assert_usage_error "sec migrate --bogus" migrate --bogus
+set +e
+OUT="$(run_sec "$H" migrate --help 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "sec migrate --from" <<<"$OUT" && grep -q -- "--plan" <<<"$OUT"; then pass "sec migrate --help prints usage (documents --plan) and exits 0"; else fail "sec migrate --help rc=$RC out=[$OUT]"; fi
+set +e
+OUT="$(run_sec "$H" migrate -h 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 0 ]]; then pass "sec migrate -h exits 0"; else fail "sec migrate -h rc=$RC out=[$OUT]"; fi
+
 echo "[3] bw get: plain key returns login.password"
 set +e
 OUT="$(run_sec "$H" get MY_API_KEY 2>&1)"

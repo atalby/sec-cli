@@ -19,12 +19,18 @@ usage() {
     echo "Fleet Secret Manager Migration Engine (sec migrate)"
     echo ""
     echo "Usage:"
-    echo "  sec migrate --from <src_backend> --to <dst_backend> [--dry-run|--apply]"
+    echo "  sec migrate --from <src_backend> --to <dst_backend> [--plan|--dry-run|--apply]"
     echo "  sec migrate --undo                                    Rollback partially migrated items"
     echo ""
     echo "Supported Migration Source / Target Backends:"
     echo "  bitwarden (bw) | bws | 1password (op) | infisical | vault"
-    exit 1
+    exit 0
+}
+
+usage_error() {
+    echo "[ERROR] $1" >&2
+    echo "Run 'sec migrate --help' for usage." >&2
+    exit 2
 }
 
 # Handle Undo/Rollback
@@ -74,16 +80,21 @@ MODE="plan"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --from) SRC="$2"; shift 2 ;;
-        --to) DST="$2"; shift 2 ;;
+        -h|--help|help) usage ;;
+        --from)
+            if [[ $# -lt 2 ]]; then usage_error "sec migrate --from requires a <src_backend>"; fi
+            SRC="$2"; shift 2 ;;
+        --to)
+            if [[ $# -lt 2 ]]; then usage_error "sec migrate --to requires a <dst_backend>"; fi
+            DST="$2"; shift 2 ;;
         --apply) MODE="apply"; shift ;;
         --dry-run|--plan) MODE="plan"; shift ;;
-        *) usage ;;
+        *) usage_error "unknown migrate flag: '$1'" ;;
     esac
 done
 
 if [[ -z "$SRC" || -z "$DST" ]]; then
-    usage
+    usage_error "sec migrate requires both --from <src_backend> and --to <dst_backend>"
 fi
 
 echo "[INFO] Fleet Secret Vault Migration ($SRC -> $DST, Mode: $MODE)"

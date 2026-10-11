@@ -697,7 +697,7 @@ what happens on a torn snapshot, and does any state file ever carry a
 plaintext secret (zero-plaintext invariant applied to the state layer).
 Read-back verified 2026-10-10: `LATEST_SNAPSHOT` is read at
 `bin/sec-organizer:290` (revert refuses when absent) and the migration
-transaction log is re-read and corruption-checked at `bin/sec-migrator:33-43`.
+transaction log is re-read and corruption-checked at `bin/sec-migrator:39-49`.
 
 ### 8. Supply chain, licensing, and compliance -- `LICENSE:1`, `install.sh:24`, `README.md:29`, `packs/compliance-baseline/PACK.md:1`, `.gitignore:8`
 
@@ -732,7 +732,7 @@ line 8 — establish what happens when Bitwarden locks mid-rotation, whether
 failures are visible to an operator, and whether any runbook exists for it
 (none does — absence is the finding).
 
-### 10. Domain specialist: secret-management correctness -- `bin/sec-classify.py:186`, `bin/sec-organizer:195`, `bin/sec-migrator:136`, `docs/MULTI_TENANCY.md:1`
+### 10. Domain specialist: secret-management correctness -- `bin/sec-classify.py:186`, `bin/sec-organizer:195`, `bin/sec-migrator:147`, `docs/MULTI_TENANCY.md:1`
 
 The dimension this repository exists to own: does the tool do correct secret
 management? Lenses: classification correctness (`classify_item` at
@@ -740,7 +740,7 @@ management? Lenses: classification correctness (`classify_item` at
 classification propagate to an apply?), housekeeping safety (pre-apply
 `snapshot_file` at `bin/sec-organizer:195` — can `revert` lose data if interrupted,
 and does plan/apply use identical classification?), migration atomicity
-(transaction state at `bin/sec-migrator:136` — is a mid-migration crash
+(transaction state at `bin/sec-migrator:147` — is a mid-migration crash
 recoverable, is a secret ever written to both backends in an inconsistent
 order?), and multi-tenant boundary correctness (`docs/MULTI_TENANCY.md:1` —
 can tenant A's key resolve to tenant B's item through the name-matching and
