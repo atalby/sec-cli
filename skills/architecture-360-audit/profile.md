@@ -240,7 +240,7 @@ instrument rather than the product but runs the same way:
       ok: lint names the phantom identifier
       ok: lint accepts a real identifier
     [7] the coverage denominator in profile.md matches the live tracked-file count (issue #46)
-      ok: profile.md denominator (106) matches tracked files (106)
+      ok: profile.md denominator (107) matches tracked files (107)
       ok: coverage exits nonzero on a drifted denominator
       ok: coverage names the denominator mismatch
       ok: control copy (correct denominator) exits 0
@@ -411,9 +411,9 @@ instrument rather than the product but runs the same way:
     ALL TESTS PASSED
     (exit 0)
 
-    $ python3 -m pytest scripts/tests/ -q
-    .........s                                                            [100%]
-    9 passed, 1 skipped in 4.41s
+     $ python3 -m pytest scripts/tests/ -q
+     ........ [100%]
+     24 passed in ~23s
 
   (the skip is the heavy dispatch suite behind SEC_TEST_DISPATCH=1;
   with it set: 10 passed, ~14s)
@@ -786,7 +786,7 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **106 tracked files** (`git ls-files | wc -l`, re-measured
+Denominator: **107 tracked files** (`git ls-files | wc -l`, re-measured
 2026-10-11 after issue #47 split the narrative into `history/`; the issue
 #2 pytest suite (`scripts/tests/`), the `RESUME.md` resume marker, the
 `scripts/` pre-commit runner, and the six `history/*.md` archives are all
