@@ -65,6 +65,7 @@ case "${1:-}" in
         case "${2:-}" in
             template) echo '{"id":"","name":"","type":1,"login":{},"notes":""}' ;;
             item) echo '{"id":"item-1","name":"MY_API_KEY","login":{"password":"pw-MY_API_KEY","username":"me@example.com"},"notes":null,"fields":[]}' ;;
+            attachment) echo "attachment-content" ;;
         esac
         ;;
     encode)
@@ -291,6 +292,20 @@ RC=$?
 set -e
 if [[ $RC -eq 0 ]] && [[ "$OUT" == "gh-pw" ]]; then pass "bw get github-app/password -> gh-pw"; else fail "subpath get rc=$RC out=$OUT"; fi
 
+echo "[4b] bw get: custom-field fallback finds a field across all vault items"
+set +e
+OUT="$(run_sec "$H" get token 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && [[ "$OUT" == "cf-token" ]]; then pass "bw get token -> cf-token (custom-field fallback)"; else fail "custom-field get rc=$RC out=$OUT"; fi
+
+echo "[4c] bw get: item/attachment/filename subpath"
+set +e
+OUT="$(run_sec "$H" get MY_API_KEY/attachment/secret.txt 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && [[ "$OUT" == "attachment-content" ]]; then pass "bw get item/attachment/file -> attachment-content"; else fail "attachment get rc=$RC out=$OUT"; fi
+
 echo "[5] bw get: miss exits 1 with tenant error"
 set +e
 OUT="$(run_sec "$H" get NO_SUCH_KEY 2>&1)"
@@ -344,6 +359,35 @@ set -e
 if [[ $RC -eq 0 ]]; then pass "bw set exits 0"; else fail "bw set rc=$RC out=$OUT"; fi
 if grep -q "^\[ OK \] Secret .* saved to Bitwarden Vault" <<<"$OUT"; then pass "reports [ OK ] saved-to-Bitwarden"; else fail "no tagged saved-to-Bitwarden in: $OUT"; fi
 if grep -q "create item" "$BWLOG"; then pass "bw create item executed"; else fail "no 'create item' in bw log: $(tr '\n' ';' <"$BWLOG")"; fi
+
+echo "[10b] bw set --type note/card/identity dispatches the item type"
+: >"$BWLOG"
+set +e
+OUT="$(run_sec "$H" set --type note NOTE_KEY noteval 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q '"type": 2' "$BWLOG"; then pass "set --type note -> type 2 in create payload"; else fail "set --type note rc=$RC out=$OUT log=$(tr '\n' ';' <"$BWLOG")"; fi
+: >"$BWLOG"
+set +e
+OUT="$(run_sec "$H" set --type card CARD_KEY cardval 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q '"type": 3' "$BWLOG"; then pass "set --type card -> type 3 in create payload"; else fail "set --type card rc=$RC out=$OUT log=$(tr '\n' ';' <"$BWLOG")"; fi
+: >"$BWLOG"
+set +e
+OUT="$(run_sec "$H" set --type identity IDENT_KEY identval 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q '"type": 4' "$BWLOG"; then pass "set --type identity -> type 4 in create payload"; else fail "set --type identity rc=$RC out=$OUT log=$(tr '\n' ';' <"$BWLOG")"; fi
+
+echo "[10c] bw set: item/field subpath updates the field via bw edit"
+: >"$BWLOG"
+set +e
+OUT="$(run_sec "$H" set MY_API_KEY/username newuser 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "edit item" "$BWLOG"; then pass "set item/field -> bw edit item"; else fail "set field rc=$RC out=$OUT log=$(tr '\n' ';' <"$BWLOG")"; fi
+if grep -q "updated in Bitwarden Vault" <<<"$OUT"; then pass "field update reports updated"; else fail "no updated msg: $OUT"; fi
 
 echo "[11] op set create path"
 set +e
