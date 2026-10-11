@@ -52,7 +52,7 @@ fi
 
 for _dep in jq python3; do
     if ! command -v "$_dep" >/dev/null 2>&1; then
-        echo "=== WARNING: '$_dep' not found on PATH — some sec-cli commands need it (jq: housekeep; python3: sync and classification) and will fail at runtime until it is installed. ==="
+        echo "=== WARNING: '$_dep' not found on PATH — some sec-cli commands need it (jq: auth/get/set and housekeep/migrate; python3: sync and classification) and will fail at runtime until it is installed. ==="
     fi
 done
 

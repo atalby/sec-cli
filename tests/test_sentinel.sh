@@ -258,6 +258,36 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[10] the runtime-dependency sentence names jq's real reach, not housekeep alone (issue #54)"
+for f in README.md docs/ARCHITECTURE.md; do
+    line="$(grep -m1 'Runtime dependencies beyond coreutils' "$REPO_ROOT/$f" || true)"
+    if [[ -n "$line" ]]; then
+        ok "$f states its runtime dependencies"
+    else
+        no "$f has no runtime-dependency sentence"
+    fi
+    if grep -qE 'jq` \(housekeep\)' <<<"$line"; then
+        no "$f claims jq is housekeep-only"
+    else
+        ok "$f does not claim jq is housekeep-only"
+    fi
+    if grep -qE 'jq` \([^)]*get[^)]*\)' <<<"$line"; then
+        ok "$f names the get path among jq's uses"
+    else
+        no "$f omits the get path from jq's uses"
+    fi
+done
+if grep -q 'jq: housekeep;' "$REPO_ROOT/install.sh"; then
+    no "install.sh warning claims jq is housekeep-only"
+else
+    ok "install.sh warning does not claim jq is housekeep-only"
+fi
+if grep -qE 'jq: [^;]*get' "$REPO_ROOT/install.sh"; then
+    ok "install.sh warning names the get path among jq's uses"
+else
+    no "install.sh warning omits the get path from jq's uses"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

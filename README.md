@@ -2,7 +2,7 @@
 
 > **Zero-Plaintext Multi-Tenant Secret Manager, Intelligent Housekeeper, Disambiguating Renamer & Vault Migration Engine.**
 
-`sec-cli` is a lightweight, high-leverage CLI control plane that unifies secret management across **Bitwarden Secrets Manager (`bws`)**, **Bitwarden Vault (`bw`)**, **1Password (`op`)**, **Infisical**, and **HashiCorp Vault**, and pushes `sec sync` keys to **GCP Secret Manager** & **GitLab group variables**. Runtime dependencies beyond coreutils: `jq` (housekeep) and `python3` (sync/classify).
+`sec-cli` is a lightweight, high-leverage CLI control plane that unifies secret management across **Bitwarden Secrets Manager (`bws`)**, **Bitwarden Vault (`bw`)**, **1Password (`op`)**, **Infisical**, and **HashiCorp Vault**, and pushes `sec sync` keys to **GCP Secret Manager** & **GitLab group variables**. Runtime dependencies beyond coreutils: `jq` (auth, get, set, housekeep, migrate) and `python3` (sync, classify).
 
 ---
 
