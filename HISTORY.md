@@ -9,6 +9,7 @@
 - **Fix**: reworded the run description in both heredocs to `Execute command; injection only for bws/op/infisical (bitwarden plain exec)` and regenerated `completions/_sec`; the two remain byte-identical. `zsh -n` accepts the generated script.
 - **TDD (`tests/test_dispatch.sh` [22i])**: asserts zsh + fish completions carry the honest phrase, that neither retains the stale `vault secrets injected` text, and that `completions/_sec` equals `sec completion zsh` and is honest. Red (4 fails) -> green.
 - **Verified**: `test_dispatch.sh` ALL TESTS PASSED; `completions/_sec` byte-identical to generated output; `zsh -n` OK.
+- **Count reconciliation**: [22i] makes the dispatch suite 45 top-level sections; `ADAPTERS.md` still said 42 (drifted since #41/#42 added [2b]/[2c]) and `skills/architecture-360-audit/profile.md` said 44. Both repointed to 45; sentinel citations re-verified green.
 - **Closed**: #43.
 - **Next**: tracker empty; advance highest-value unfinished work.
 
