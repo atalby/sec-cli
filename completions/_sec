@@ -8,7 +8,7 @@ _sec() {
     local -a subcommands=(
         'get:Retrieve secret value from vault'
         'set:Store / create a new secret in vault'
-        'run:Execute command with vault secrets injected into memory'
+        'run:Execute command; injection only for bws/op/infisical (bitwarden plain exec)'
         'sync:Push shell-exported keys to GCP Secret Manager & GitLab group'
         'housekeep:Intelligent ML categorization, plan/apply, & instant rollback'
         'migrate:Zero-plaintext vault-to-vault migration engine'

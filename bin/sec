@@ -218,7 +218,7 @@ _sec() {
     local -a subcommands=(
         'get:Retrieve secret value from vault'
         'set:Store / create a new secret in vault'
-        'run:Execute command with vault secrets injected into memory'
+        'run:Execute command; injection only for bws/op/infisical (bitwarden plain exec)'
         'sync:Push shell-exported keys to GCP Secret Manager & GitLab group'
         'housekeep:Intelligent ML categorization, plan/apply, & instant rollback'
         'migrate:Zero-plaintext vault-to-vault migration engine'
@@ -319,7 +319,7 @@ end
 
 complete -f -c sec -n '__fish_sec_needs_command' -a 'get' -d 'Retrieve secret value from vault'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'set' -d 'Store / create a new secret in vault'
-complete -f -c sec -n '__fish_sec_needs_command' -a 'run' -d 'Execute command with vault secrets injected'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'run' -d 'Execute command; injection only for bws/op/infisical (bitwarden plain exec)'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'sync' -d 'Push shell-exported keys to GCP Secret Manager & GitLab group'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'housekeep' -d 'Intelligent ML categorization plan/apply/revert'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'migrate' -d 'Zero-plaintext vault-to-vault migration engine'

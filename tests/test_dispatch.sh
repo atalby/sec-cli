@@ -964,6 +964,19 @@ for _t in bws vault infisical; do
     fi
 done
 
+echo "[22i] completion surfaces tell the truth about 'sec run' injection (issue #43, F001 class)"
+set +e
+ZSH_COMP="$(bash "$REPO_ROOT/bin/sec" completion zsh 2>&1)"
+FISH_COMP="$(bash "$REPO_ROOT/bin/sec" completion fish 2>&1)"
+set -e
+if grep -q "injection only for bws/op/infisical" <<<"$ZSH_COMP"; then pass "zsh completion states per-tenant run truth"; else fail "zsh completion still promises universal injection"; fi
+if grep -q "injection only for bws/op/infisical" <<<"$FISH_COMP"; then pass "fish completion states per-tenant run truth"; else fail "fish completion still promises universal injection"; fi
+if grep -q "vault secrets injected" <<<"$ZSH_COMP$FISH_COMP"; then fail "completion still carries the stale unconditional 'vault secrets injected' claim"; else pass "completion dropped the stale unconditional claim"; fi
+if [[ -f "$REPO_ROOT/completions/_sec" ]]; then
+    if diff -q <(bash "$REPO_ROOT/bin/sec" completion zsh) "$REPO_ROOT/completions/_sec" >/dev/null 2>&1; then pass "completions/_sec matches generated zsh output"; else fail "completions/_sec drifted from 'sec completion zsh'"; fi
+    if grep -q "injection only for bws/op/infisical" "$REPO_ROOT/completions/_sec"; then pass "static _sec completion states per-tenant run truth"; else fail "static _sec completion is stale"; fi
+fi
+
 echo
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"
