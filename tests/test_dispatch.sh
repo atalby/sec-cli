@@ -1294,6 +1294,130 @@ else
     fail "sec-migrator never delivered the secret value via stdin: $(tr '\n' ';' <"$BWLOG")"
 fi
 
+echo "[22o] op/vault/infisical storers keep the value off argv (op,vault via stdin; infisical via file) (#59)"
+SBIN="$WORK/sbin"; mkdir -p "$SBIN"
+OPSLOG="$WORK/op.stdin.log"; VAULTSLOG="$WORK/vault.stdin.log"; INFFLOG="$WORK/inf.file.log"
+cat >"$SBIN/op" <<'EOF'
+#!/usr/bin/env bash
+printf 'op %s\n' "${*//$'\n'/ }" >>"${SEC_TEST_OP_LOG:?SEC_TEST_OP_LOG unset}"
+case "${1:-} ${2:-}" in
+    "item create")
+        _in=""
+        if [ ! -t 0 ]; then _in="$(cat)"; fi
+        printf '%s' "$_in" >>"${SEC_TEST_OP_STDIN_LOG:?SEC_TEST_OP_STDIN_LOG unset}"
+        if [ -n "$_in" ]; then printf '%s' "$_in" | jq -e '.fields[] | select(.id == "password") | .value' >/dev/null 2>&1 || exit 3; fi
+        echo '{"id":"op-created"}'
+        ;;
+    "item list") echo '[]' ;;
+esac
+if [ "${1:-}" = "whoami" ]; then exit 0; fi
+exit 0
+EOF
+chmod +x "$SBIN/op"
+cat >"$SBIN/vault" <<'EOF'
+#!/usr/bin/env bash
+printf 'vault %s\n' "${*//$'\n'/ }" >>"${SEC_TEST_VAULT_LOG:?SEC_TEST_VAULT_LOG unset}"
+if [ "${1:-} ${2:-}" = "kv put" ] && [ ! -t 0 ]; then
+    cat >>"${SEC_TEST_VAULT_STDIN_LOG:?SEC_TEST_VAULT_STDIN_LOG unset}"
+fi
+exit 0
+EOF
+chmod +x "$SBIN/vault"
+cat >"$SBIN/infisical" <<'EOF'
+#!/usr/bin/env bash
+printf 'infisical %s\n' "${*//$'\n'/ }" >>"${SEC_TEST_INF_LOG:?SEC_TEST_INF_LOG unset}"
+if [ "${1:-} ${2:-}" = "secrets set" ]; then
+    for _a in "$@"; do
+        case "$_a" in
+            *@/*) _p="${_a#*@}"; if [ -f "$_p" ]; then cat "$_p" >>"${SEC_TEST_INF_FILE_LOG:?SEC_TEST_INF_FILE_LOG unset}"; fi ;;
+        esac
+    done
+fi
+exit 0
+EOF
+chmod +x "$SBIN/infisical"
+
+: >"$OPLOG"; : >"$OPSLOG"
+G59op="$(new_home "$WORK/h59op")"
+set +e
+printf 'CANARY-OP-59\n' | env -i "PATH=$SBIN:$FAKEBIN:/usr/bin:/bin" "HOME=$G59op" \
+    "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_OP_STDIN_LOG=$OPSLOG" \
+    "$REPO_ROOT/bin/sec" 1pass set OPK59 >/dev/null 2>&1
+RC=$?
+set -e
+if [[ $RC -eq 0 ]]; then pass "1pass set with a stdin-prompted value exits 0"; else fail "1pass set rc=$RC"; fi
+if grep -qF "CANARY-OP-59" "$OPLOG"; then
+    fail "sec set put the secret value on op's argv (issue #59): $(tr '\n' ';' <"$OPLOG")"
+else
+    pass "sec set keeps the secret value off op's argv"
+fi
+if grep -qF "CANARY-OP-59" "$OPSLOG"; then
+    pass "op received the secret value via stdin"
+else
+    fail "op never received the secret value via stdin: $(tr '\n' ';' <"$OPSLOG")"
+fi
+
+MG59='[{"id":"m1","name":"MG59","login":{"password":"CANARY-MIG59"}}]'
+: >"$OPLOG"; : >"$OPSLOG"
+G59mop="$(new_home "$WORK/h59mop")"
+set +e
+env -i "PATH=$SBIN:$FAKEBIN:/usr/bin:/bin" "HOME=$G59mop" \
+    "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_OP_STDIN_LOG=$OPSLOG" "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_ITEMS=$MG59" \
+    "$REPO_ROOT/bin/sec" migrate --from bitwarden --to op --apply >/dev/null 2>&1 </dev/null
+RC=$?
+set -e
+if [[ $RC -eq 0 ]]; then pass "migrate apply (op target) ran"; else fail "migrate apply (op) rc=$RC"; fi
+if grep -qF "CANARY-MIG59" "$OPLOG"; then
+    fail "sec-migrator put the secret value on op's argv (issue #59): $(tr '\n' ';' <"$OPLOG")"
+else
+    pass "sec-migrator keeps the secret value off op's argv"
+fi
+if grep -qF "CANARY-MIG59" "$OPSLOG"; then
+    pass "sec-migrator delivered the secret value to op via stdin"
+else
+    fail "sec-migrator never delivered the secret value to op via stdin"
+fi
+
+: >"$VAULTLOG"; : >"$VAULTSLOG"
+G59v="$(new_home "$WORK/h59v")"
+set +e
+env -i "PATH=$SBIN:$FAKEBIN:/usr/bin:/bin" "HOME=$G59v" \
+    "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_VAULT_STDIN_LOG=$VAULTSLOG" "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_ITEMS=$MG59" \
+    "$REPO_ROOT/bin/sec" migrate --from bitwarden --to vault --apply >/dev/null 2>&1 </dev/null
+RC=$?
+set -e
+if [[ $RC -eq 0 ]]; then pass "migrate apply (vault target) ran"; else fail "migrate apply (vault) rc=$RC"; fi
+if grep -qF "CANARY-MIG59" "$VAULTLOG"; then
+    fail "sec-migrator put the secret value on vault's argv (issue #59): $(tr '\n' ';' <"$VAULTLOG")"
+else
+    pass "sec-migrator keeps the secret value off vault's argv"
+fi
+if grep -qF "CANARY-MIG59" "$VAULTSLOG"; then
+    pass "sec-migrator delivered the secret value to vault via stdin"
+else
+    fail "sec-migrator never delivered the secret value to vault via stdin"
+fi
+
+: >"$INFLOG"; : >"$INFFLOG"
+G59i="$(new_home "$WORK/h59i")"
+set +e
+env -i "PATH=$SBIN:$FAKEBIN:/usr/bin:/bin" "HOME=$G59i" \
+    "SEC_TEST_INF_LOG=$INFLOG" "SEC_TEST_INF_FILE_LOG=$INFFLOG" "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_ITEMS=$MG59" \
+    "$REPO_ROOT/bin/sec" migrate --from bitwarden --to infisical --apply >/dev/null 2>&1 </dev/null
+RC=$?
+set -e
+if [[ $RC -eq 0 ]]; then pass "migrate apply (infisical target) ran"; else fail "migrate apply (infisical) rc=$RC"; fi
+if grep -qF "CANARY-MIG59" "$INFLOG"; then
+    fail "sec-migrator put the secret value on infisical's argv (issue #59): $(tr '\n' ';' <"$INFLOG")"
+else
+    pass "sec-migrator keeps the secret value off infisical's argv"
+fi
+if grep -qF "CANARY-MIG59" "$INFFLOG"; then
+    pass "sec-migrator delivered the secret value to infisical via a 0600 file (@file)"
+else
+    fail "sec-migrator never delivered the secret value to infisical via file"
+fi
+
 echo
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"

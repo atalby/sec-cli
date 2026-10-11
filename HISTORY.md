@@ -63,12 +63,20 @@ then passed the encoded blob (embedding the value) as a positional arg to
 `bw create/edit item`; the value now reaches jq via `env.SECVAL` and the
 blob reaches bw on stdin, with dispatch guard 22m pinning it. Then #59
 gave the migrator's bw target the same treatment (jq via `env.SECVAL`,
-blob to `bw create item` on stdin, dispatch guard 22n); the op/bws set
-paths and the migrator's op/bws arms still carry the value on child argv
-and remain open as #59. All five bash suites pass (install 9 / sync_guard
-15 / write_honesty 11 / sentinel 10 / dispatch 62), the pytest mirror
-passes, and the GitHub tracker holds #59 (op/bws remainder) and the
-hub-side handoff #51. Next: advance the highest-value unfinished work.
+blob to `bw create item` on stdin, dispatch guard 22n). Then #59 finished
+the remainder after confirming each backend's stdin/file contract against
+the vendor docs: the `1pass` set path sends an item JSON template to
+`op item create -` on stdin, the migrator's op arm does the same, and its
+vault arm pipes the value to `vault kv put ... value=-`; infisical has no
+stdin channel, so its arm stages the value in a transient mode-0600 file
+(`KEY=@path`, unlinked immediately). Only `bws secret create` still takes
+the value as a positional argv — a vendor limitation with no stdin/file/env
+alternative (open upstream bitwarden/sdk-sm #1568, CWE-214) — now documented
+as such in `docs/SECURITY.md`; dispatch guard 22o pins all four paths off
+argv and the infisical file delivery. All five bash suites pass (install 9 /
+sync_guard 15 / write_honesty 11 / sentinel 10 / dispatch 63), the pytest
+mirror passes, and the GitHub tracker holds only the hub-side handoff #51.
+Next: advance the highest-value unfinished work.
 
 ## Archive
 

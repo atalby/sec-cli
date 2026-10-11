@@ -186,7 +186,8 @@ while read -r item; do
 
         case "$DST" in
             1password|op)
-                res="$(op item create --category=password --title="$name" "password=$val" --format=json 2>/dev/null || true)"
+                op_template="$(SECVAL="$val" jq -n --arg title "$name" '{title: $title, category: "PASSWORD", fields: [{id: "password", type: "CONCEALED", purpose: "PASSWORD", label: "password", password_details: {strength: ""}, value: env.SECVAL}]}')"
+                res="$(printf '%s' "$op_template" | op item create - --format=json 2>/dev/null || true)"
                 created_id="$(echo "$res" | jq -r '.id // empty')"
                 if [[ -z "$created_id" ]]; then trap_error "$name"; fi
                 ;;
@@ -208,14 +209,25 @@ while read -r item; do
                 ;;
             infisical)
                 if [[ -n "$val" ]]; then
-                    infisical secrets set "$name=$val" >/dev/null 2>&1 || trap_error "$name"
-                    created_id="$name"
+                    inf_tmp="$(mktemp "${TMPDIR:-/tmp}/sec-inf-XXXXXX")"
+                    chmod 600 "$inf_tmp"
+                    printf '%s' "$val" >"$inf_tmp"
+                    if infisical secrets set "$name=@$inf_tmp" >/dev/null 2>&1; then
+                        rm -f "$inf_tmp"
+                        created_id="$name"
+                    else
+                        rm -f "$inf_tmp"
+                        trap_error "$name"
+                    fi
                 fi
                 ;;
             vault)
                 if [[ -n "$val" ]]; then
-                    vault kv put "secret/data/$name" "value=$val" >/dev/null 2>&1 || trap_error "$name"
-                    created_id="$name"
+                    if printf '%s' "$val" | vault kv put "secret/data/$name" value=- >/dev/null 2>&1; then
+                        created_id="$name"
+                    else
+                        trap_error "$name"
+                    fi
                 fi
                 ;;
         esac

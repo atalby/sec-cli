@@ -663,7 +663,8 @@ EOF
                 fi
                 ;;
             1pass|op)
-                if op item create --category=password --title="$key" "password=$value" >/dev/null 2>&1; then
+                op_template="$(SECVAL="$value" jq -n --arg title "$key" '{title: $title, category: "PASSWORD", fields: [{id: "password", type: "CONCEALED", purpose: "PASSWORD", label: "password", password_details: {strength: ""}, value: env.SECVAL}]}')"
+                if printf '%s' "$op_template" | op item create - >/dev/null 2>&1; then
                     echo "[ OK ] Secret '$key' saved to 1Password."
                     exit 0
                 fi
