@@ -21,6 +21,7 @@ cat >/dev/null 2>&1 || true
 echo "gcloud $*" >>"${SEC_TEST_CANARY:?SEC_TEST_CANARY unset}"
 rc=0
 case "$*" in
+    *"secrets describe"*) rc="${SEC_TEST_GCLOUD_DESCRIBE_RC:-0}" ;;
     *"versions add"*) rc="${SEC_TEST_GCLOUD_RC:-0}" ;;
 esac
 if [ "${SEC_TEST_GCLOUD_FAIL:-0}" = "1" ]; then rc=1; fi
@@ -219,6 +220,16 @@ if grep -q "invoking environment" "$CTRL"; then
 else
     fail "controller does not name the true value source"
 fi
+
+echo "[16] describe failure triggers create-if-absent, then the version add (issue #62)"
+rm -f "$CANARY"
+set +e
+OUT16="$(run_ctrl GEMINI_API_KEY=fake-gem-key SEC_TEST_GCLOUD_DESCRIBE_RC=1 -- --yes 2>&1)"
+RC16=$?
+set -e
+if [[ $RC16 -eq 0 ]]; then pass "create-if-absent run exits 0"; else fail "create-if-absent run exited $RC16"; fi
+if grep -q "secrets create gemini-api-key" "$CANARY"; then pass "missing secret is created (gcloud secrets create)"; else fail "create-if-absent branch never ran gcloud secrets create"; fi
+if grep -q "secrets versions add gemini-api-key" "$CANARY"; then pass "secret value is then added as a version"; else fail "no versions add after create"; fi
 
 echo ""
 if [[ $FAILS -eq 0 ]]; then

@@ -84,7 +84,12 @@ group variable that did not yet exist could never be created (the GCP arm
 already creates-if-absent); a new pytest mirror
 `scripts/tests/test_sync_controller.py` mocks `urllib.request.urlopen` to
 cover update/404-create/error/token-skip, and the controller now does a
-defensive create-on-404 upsert. All five bash suites pass (install 9 / sync_guard 15 /
+defensive create-on-404 upsert. Then #62 pinned the GCP create-if-absent
+branch the sync_guard shim had never exercised: it special-cased only
+`versions add`, so `secrets describe` always returned 0 and
+`gcloud secrets create` never ran on a missing secret; the shim now honors
+`SEC_TEST_GCLOUD_DESCRIBE_RC` and guard [16] makes a failing describe
+assert create-then-version-add. All five bash suites pass (install 9 / sync_guard 16 /
 write_honesty 11 / sentinel 10 / dispatch 64), the pytest mirror (29 tests) passes, and
 the GitHub tracker holds only the hub-side handoff #51 (in-repo issues
 exhausted). Next: advance the highest-value unfinished in-repo work.

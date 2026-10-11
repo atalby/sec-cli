@@ -19,10 +19,10 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (15 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (10 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (64 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (10 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (64 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
-| Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#2`, `#13`, `#32`) |
+| Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#51`, `#62`) |
 | Lockfile | **ABSENT (project)** | no project lockfile of any ecosystem; the only lockfile on disk is the harness-managed `.opencode/package-lock.json` (2026-10-10, self-gitignored by `.opencode/.gitignore`) |
 | Dependency manifest | **ABSENT (project)** | no `package.json`, `pyproject.toml`, `requirements.txt`, `Makefile`, or equivalent anywhere in the tracked tree; the only manifests on disk are `.opencode/package.json` + `.opencode/package-lock.json`, opencode's own plugin bootstrap (`@opencode-ai/plugin` 1.18.35, installed 2026-10-10) |
 
@@ -169,6 +169,13 @@ instrument rather than the product but runs the same way:
       ok: --help documents exit 3 (backend write failure)
     [14] every advertised sync target has an implementation (issue #33)
       ok: help advertises 2 target(s), 2 writer(s) implemented
+    [15] controller states its true value provenance, not a false Bitwarden 'Single Source of Truth' (issue #53)
+      ok: no false 'Single Source of Truth' claim in the controller
+      ok: controller names the invoking environment as the value source
+    [16] describe failure triggers create-if-absent, then the version add (issue #62)
+      ok: create-if-absent run exits 0
+      ok: missing secret is created (gcloud secrets create)
+      ok: secret value is then added as a version
 
     ALL TESTS PASSED
     (exit 0)
@@ -553,7 +560,7 @@ How the code reaches each, not merely that it exists.
 | GitLab group CI/CD variables | HTTPS API `PUT` via `urllib.request` | `bin/sec-sync-controller.py:178`, `bin/sec-sync-controller.py:158` |
 | Vercel | claimed as a sync target in `docs/ARCHITECTURE.md:14` — no call site found in the controller this build (candidate smoke finding) | `docs/ARCHITECTURE.md:14` |
 | GitHub (install source) | `REPO_URL` default feeding `git clone`, piped `curl` install source | `install.sh:7`, `README.md:29` |
-| GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:134` |
+| GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:136` |
 | jq | invoked for JSON parsing inside `bin/sec` | `bin/sec:116` |
 | Hyer hub checkers | invoked by the local pre-commit wrapper from `~/sandbox/hyer/scripts/` | `ADAPTERS.md:232` |
 
@@ -588,7 +595,7 @@ six env keys (verified 2026-10-10: GEMINI_API_KEY, OPENAI_API_KEY,
 ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, ATLASSIAN_API_TOKEN, STRIPE_SECRET_KEY),
 and the guards — TTY/`--yes` gate at line 248, dry-run — are
 enforced by `tests/test_sync_guard.sh` (first suite section
-`[1] --dry-run previews` at `tests/test_sync_guard.sh:47`). Re-verify the
+`[1] --dry-run previews` at `tests/test_sync_guard.sh:48`). Re-verify the
 guards actually precede every backend write, and that no other writer exists.
 The most direct leak surface
 is `bin/sec:145` (`eval $(op signin)`): provider-CLI stdout executed as

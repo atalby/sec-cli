@@ -48,8 +48,10 @@ own secrets tool, not just another repo.
   --help/-h/--version/-v; issue #61: the sync controller's GitLab write
   path is now covered by a pytest mirror (`scripts/tests/test_sync_controller.py`)
   and does a defensive create-on-404 upsert (the GCP arm already created
-  if absent); current suites: dispatch 64, write-honesty 11,
-  sentinel 10, sync-guard 15, install 9; earlier 2026-10-10, later
+  if absent); issue #62: the GCP create-if-absent branch itself is now
+  pinned by sync_guard section [16] (the shim reads `SEC_TEST_GCLOUD_DESCRIBE_RC`);
+  current suites: dispatch 64, write-honesty 11,
+  sentinel 10, sync-guard 16, install 9; earlier 2026-10-10, later
   same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
   the four fast bash suites with dispatch opt-in behind `SEC_TEST_DISPATCH=1`,
@@ -253,7 +255,7 @@ per AGENTS.md §5's replace-don't-append rule.
 ## Running this project's test suite
 
 - **Command**: `bash tests/test_install.sh` (9 sections, install path),
-  `bash tests/test_sync_guard.sh` (15 sections, sync guard canaries),
+  `bash tests/test_sync_guard.sh` (16 sections, sync guard canaries),
   `bash tests/test_write_honesty.sh` (11 sections, silent-no-op write
   paths, revert/undo honesty), `bash tests/test_sentinel.sh` (10 cases,
   the 360 audit instrument's coverage/citations sentinel) and
