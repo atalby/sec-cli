@@ -78,8 +78,14 @@ residual: the fish and ps1 surfaces omitted the top-level `--help`/`-h`/
 `--version`/`-v` flags that bash and zsh already offered and `bin/sec`
 accepts — fish now offers all four, ps1 offers them for `sec`/`sec.exe` but
 only `--help`/`-h` for `sec.ps1` (which rejects `--version`/`-v`), with
-dispatch guard 22p. All five bash suites pass (install 9 / sync_guard 15 /
-write_honesty 11 / sentinel 10 / dispatch 64), the pytest mirror passes, and
+dispatch guard 22p. Then #61 closed the sync controller's GitLab write
+path: it was exercised only in `--dry-run` and issued `PUT` alone, so a
+group variable that did not yet exist could never be created (the GCP arm
+already creates-if-absent); a new pytest mirror
+`scripts/tests/test_sync_controller.py` mocks `urllib.request.urlopen` to
+cover update/404-create/error/token-skip, and the controller now does a
+defensive create-on-404 upsert. All five bash suites pass (install 9 / sync_guard 15 /
+write_honesty 11 / sentinel 10 / dispatch 64), the pytest mirror (29 tests) passes, and
 the GitHub tracker holds only the hub-side handoff #51 (in-repo issues
 exhausted). Next: advance the highest-value unfinished in-repo work.
 

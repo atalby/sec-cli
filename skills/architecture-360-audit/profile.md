@@ -240,7 +240,7 @@ instrument rather than the product but runs the same way:
       ok: lint names the phantom identifier
       ok: lint accepts a real identifier
     [7] the coverage denominator in profile.md matches the live tracked-file count (issue #46)
-      ok: profile.md denominator (107) matches tracked files (107)
+      ok: profile.md denominator (108) matches tracked files (108)
       ok: coverage exits nonzero on a drifted denominator
       ok: coverage names the denominator mismatch
       ok: control copy (correct denominator) exits 0
@@ -412,8 +412,8 @@ instrument rather than the product but runs the same way:
     (exit 0)
 
      $ python3 -m pytest scripts/tests/ -q
-     ........ [100%]
-     24 passed in ~23s
+     .............................                                    [100%]
+     29 passed in ~25s
 
   (the skip is the heavy dispatch suite behind SEC_TEST_DISPATCH=1;
   with it set: 10 passed, ~14s)
@@ -549,11 +549,11 @@ How the code reaches each, not merely that it exists.
 | 1Password (`op` CLI) | `op whoami` session check, `op signin`, `op read` | `bin/sec:143`, `bin/sec:145`, `bin/sec:432` |
 | Infisical / HashiCorp Vault / macOS Keychain | dispatcher tenant vocabulary | `bin/sec:79`, `bin/sec:198` |
 | AWS Secrets Manager | claimed in `docs/ARCHITECTURE.md:6` — verify whether any code path reaches it (candidate smoke finding) | `docs/ARCHITECTURE.md:6` |
-| GCP Secret Manager | `gcloud` shell-outs from the sync controller | `bin/sec-sync-controller.py:76`, `bin/sec-sync-controller.py:87` |
-| GitLab group CI/CD variables | HTTPS API `PUT` via `urllib.request` | `bin/sec-sync-controller.py:169`, `bin/sec-sync-controller.py:170` |
+| GCP Secret Manager | `gcloud` shell-outs from the sync controller | `bin/sec-sync-controller.py:77`, `bin/sec-sync-controller.py:88` |
+| GitLab group CI/CD variables | HTTPS API `PUT` via `urllib.request` | `bin/sec-sync-controller.py:178`, `bin/sec-sync-controller.py:158` |
 | Vercel | claimed as a sync target in `docs/ARCHITECTURE.md:14` — no call site found in the controller this build (candidate smoke finding) | `docs/ARCHITECTURE.md:14` |
 | GitHub (install source) | `REPO_URL` default feeding `git clone`, piped `curl` install source | `install.sh:7`, `README.md:29` |
-| GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:131` |
+| GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:134` |
 | jq | invoked for JSON parsing inside `bin/sec` | `bin/sec:116` |
 | Hyer hub checkers | invoked by the local pre-commit wrapper from `~/sandbox/hyer/scripts/` | `ADAPTERS.md:232` |
 
@@ -579,11 +579,11 @@ Hygiene Specialist for dead surface — and routes all output to the Human
 Systems Architect for approval. A persona here is an audit lens, not a
 dispatched worker.
 
-### 1. Security and access control -- `bin/sec-sync-controller.py:19`, `bin/sec-sync-controller.py:248`, `install.sh:50`, `bin/sec:145`, `.gitignore:11`, `docs/SECURITY.md:1`, `tests/test_sync_guard.sh:47`
+### 1. Security and access control -- `bin/sec-sync-controller.py:20`, `bin/sec-sync-controller.py:270`, `install.sh:50`, `bin/sec:145`, `.gitignore:11`, `docs/SECURITY.md:1`, `tests/test_sync_guard.sh:47`
 
 The zero-plaintext claim in `docs/SECURITY.md` and `docs/ARCHITECTURE.md:1`
 is the repo's reason to exist; audit the places it can leak. The production
-path is `sec sync`: `SYNC_KEYS` at `bin/sec-sync-controller.py:19` names the
+path is `sec sync`: `SYNC_KEYS` at `bin/sec-sync-controller.py:20` names the
 six env keys (verified 2026-10-10: GEMINI_API_KEY, OPENAI_API_KEY,
 ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, ATLASSIAN_API_TOKEN, STRIPE_SECRET_KEY),
 and the guards — TTY/`--yes` gate at line 248, dry-run — are
@@ -601,7 +601,7 @@ path `~/.sec/`, which never matches the real `$HOME/.sec` outside the repo —
 vestigial rule with a security-adjacent history; decide whether it hides
 anything (it does not today).
 
-### 2. Architecture and code structure -- `docs/ARCHITECTURE.md:1`, `bin/sec:176`, `bin/sec:212`, `bin/sec-sync-controller.py:72`, `bin/sec-sync-controller.py:5`
+### 2. Architecture and code structure -- `docs/ARCHITECTURE.md:1`, `bin/sec:176`, `bin/sec:212`, `bin/sec-sync-controller.py:73`, `bin/sec-sync-controller.py:5`
 
 One dispatcher, five sibling executables, one Python controller — judge
 whether the documented component table in `docs/ARCHITECTURE.md` matches the
@@ -615,8 +615,8 @@ checks for one line. Smoke finding, resolved 2026-10-10 (issue #33): the sync
 controller's `Targets:` header (`bin/sec-sync-controller.py:5`) had advertised the
 targets "GCP Secret Manager, GitLab Group Variables, Vercel Projects", but
 the only backend writers are `sync_to_gcp_secret_manager`
-(`bin/sec-sync-controller.py:72`) and `sync_to_gitlab_group`
-(`bin/sec-sync-controller.py:156`) — a user-facing contract promising a
+(`bin/sec-sync-controller.py:73`) and `sync_to_gitlab_group`
+(`bin/sec-sync-controller.py:163`) — a user-facing contract promising a
 backend no code implemented. Vercel removed from the help text and
 `tests/test_sync_guard.sh` section [14] now fails when the advertised target
 count and the `def sync_to_` count diverge. Python visibility rule:
@@ -721,15 +721,15 @@ rather than trusting either. Re-verify that no plaintext secret has ever
 reached a tracked file using the hook's own secret scan step rather than
 an impression.
 
-### 9. Observability and resilience -- `bin/bw-session-keeper:8`, `.gitignore:9`, `bin/sec-sync-controller.py:28`
+### 9. Observability and resilience -- `bin/bw-session-keeper:8`, `.gitignore:9`, `bin/sec-sync-controller.py:29`
 
 There is no telemetry: no log shipping, no metrics, no alerting — `*.log`
 is ignored (`*.log` at `.gitignore:9`) rather than produced. What exists
-instead: exit codes. `USAGE` at `bin/sec-sync-controller.py:28` is a
+instead: exit codes. `USAGE` at `bin/sec-sync-controller.py:29` is a
 documented exit-code contract — 0 success (dry-run completed, every attempted
 write succeeded), 1 no syncable keys present, 2 confirmation required but
 not given (or bad usage), 3 one or more backend writes failed, values NOT
-stored there (contract block at `bin/sec-sync-controller.py:36-41`) —
+stored there (contract block at `bin/sec-sync-controller.py:37-42`) —
 audit whether the dispatcher and the suites honor it consistently (the guard
 suite does cover exit 2 and exit 3). The only
 long-running process is `bin/bw-session-keeper` with its session file at
@@ -751,7 +751,7 @@ order?), and multi-tenant boundary correctness (`docs/MULTI_TENANCY.md:1` —
 can tenant A's key resolve to tenant B's item through the name-matching and
 `--scope` folder search in `bin/sec:414-446`?).
 
-### 11. Resilience of the happy path -- `bin/sec-sync-controller.py:17`, `bin/sec-sync-controller.py:83`, `install.sh:24`, `bin/sec:143`
+### 11. Resilience of the happy path -- `bin/sec-sync-controller.py:18`, `bin/sec-sync-controller.py:84`, `install.sh:24`, `bin/sec:143`
 
 Count every external call and check three properties on each: timeout,
 retry, defined behaviour on partial failure. The measured baseline this
@@ -786,8 +786,9 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **107 tracked files** (`git ls-files | wc -l`, re-measured
-2026-10-11 after issue #47 split the narrative into `history/`; the issue
+Denominator: **108 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-11 after issue #47 split the narrative into `history/` and issue #61
+added the GitLab sync-controller pytest mirror; the issue
 #2 pytest suite (`scripts/tests/`), the `RESUME.md` resume marker, the
 `scripts/` pre-commit runner, and the six `history/*.md` archives are all
 counted). First matching row wins, so

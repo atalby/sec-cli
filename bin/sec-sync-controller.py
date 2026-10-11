@@ -9,6 +9,7 @@ import os
 import sys
 import json
 import subprocess
+import urllib.error
 import urllib.request
 
 GCP_PROJECT = os.environ.get("GCP_PROJECT_ID", "sublime-flux-504502-k3")
@@ -153,6 +154,12 @@ def sync_to_gcp_secret_manager(secret_name, secret_value):
         return False
 
 
+def _gitlab_send(method, url, headers, data):
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=BACKEND_TIMEOUT) as resp:
+        return resp.status
+
+
 def sync_to_gitlab_group(secret_name, secret_value):
     if not GITLAB_TOKEN:
         print(
@@ -160,17 +167,32 @@ def sync_to_gitlab_group(secret_name, secret_value):
         )
         return True
     print(f"[INFO] Syncing to GitLab Group Variables: {secret_name}...")
-    url = f"https://gitlab.com/api/v4/groups/{GITLAB_GROUP_ID}/variables/{secret_name}"
+    base = f"https://gitlab.com/api/v4/groups/{GITLAB_GROUP_ID}/variables"
+    url = f"{base}/{secret_name}"
     headers = {"PRIVATE-TOKEN": GITLAB_TOKEN, "Content-Type": "application/json"}
-    data = json.dumps(
+    update_body = json.dumps(
         {"value": secret_value, "masked": True, "protected": True}
     ).encode("utf-8")
     try:
-        req = urllib.request.Request(url, data=data, headers=headers, method="PUT")
-        with urllib.request.urlopen(req, timeout=BACKEND_TIMEOUT) as resp:
+        try:
+            status = _gitlab_send("PUT", url, headers, update_body)
+        except urllib.error.HTTPError as e:
+            if e.code != 404:
+                raise
+            create_body = json.dumps(
+                {
+                    "key": secret_name,
+                    "value": secret_value,
+                    "masked": True,
+                    "protected": True,
+                }
+            ).encode("utf-8")
+            status = _gitlab_send("POST", base, headers, create_body)
             print(
-                f"[ OK ] GitLab Group Variable {secret_name}: Updated (HTTP {resp.status})"
+                f"[ OK ] GitLab Group Variable {secret_name}: Created (HTTP {status})"
             )
+            return True
+        print(f"[ OK ] GitLab Group Variable {secret_name}: Updated (HTTP {status})")
         return True
     except Exception as e:
         print(f"[ERROR] GitLab sync FAILED for {secret_name}: {e}")

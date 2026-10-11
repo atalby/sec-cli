@@ -45,7 +45,10 @@ own secrets tool, not just another repo.
   op/vault/infisical storers (stdin/`value=-`/transient 0600 `@file`; only
   `bws secret create` retains an argv value — vendor limitation, upstream
   bitwarden/sdk-sm #1568), and the fish/ps1 completions now offer
-  --help/-h/--version/-v; current suites: dispatch 64, write-honesty 11,
+  --help/-h/--version/-v; issue #61: the sync controller's GitLab write
+  path is now covered by a pytest mirror (`scripts/tests/test_sync_controller.py`)
+  and does a defensive create-on-404 upsert (the GCP arm already created
+  if absent); current suites: dispatch 64, write-honesty 11,
   sentinel 10, sync-guard 15, install 9; earlier 2026-10-10, later
   same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
