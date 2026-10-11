@@ -36,7 +36,17 @@ own secrets tool, not just another repo.
   commands; issue #48: `sec migrate` tagged usage/help exit-code parity; issue #49:
   re-measured the profile.md tagged-output census; dispatch 48, write-honesty 11, sentinel 9; issue #54:
   README/ARCHITECTURE/install.sh no longer understate jq as a housekeep-only
-  dependency (it drives auth/get/set too), guarded by sentinel case [10]; earlier 2026-10-10, later
+  dependency (it drives auth/get/set too), guarded by sentinel case [10];
+  issues #55–#60: the sec.conf parser now skips comments/blanks and matches
+  the key name exactly, all four completion surfaces offer the
+  create/organize/keep aliases (ps1 scoped to what `sec.ps1` implements),
+  the secret value moved off child argv on the bitwarden path (jq via
+  `env.SECVAL`, blob on stdin), then the migrator's bw target, then the
+  op/vault/infisical storers (stdin/`value=-`/transient 0600 `@file`; only
+  `bws secret create` retains an argv value — vendor limitation, upstream
+  bitwarden/sdk-sm #1568), and the fish/ps1 completions now offer
+  --help/-h/--version/-v; current suites: dispatch 64, write-honesty 11,
+  sentinel 10, sync-guard 15, install 9; earlier 2026-10-10, later
   same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
   the four fast bash suites with dispatch opt-in behind `SEC_TEST_DISPATCH=1`,
