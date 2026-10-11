@@ -12,8 +12,7 @@ controller's targets drift from the documented ones, install instructions
 that claim a one-liner and cannot survive a piped shell, tests that pass
 because they assert against the same hardcoded tenant list the dispatcher
 uses, issues marked closed whose implementing code never landed, and a
-pre-commit gate whose test step silently skips this repository's only test
-suites.
+pre-commit gate that enforces the suites only while `uv` is on PATH.
 
 The procedure is fixed. `profile.md` beside this file holds every
 repository-specific binding: the commands, the maturity tier, the twelve
@@ -445,7 +444,9 @@ Stated so a reader can calibrate the findings rather than over-trust them.
   read, which is itself a persona 8 finding rather than a clean bill.
 - Persona anchors are only as current as the last refresh. Step 3 exists to
   catch drift, but a run that skips Step 3 has no drift detection at all.
-- This repository's open backlog is small but its gate is partially blind
-  (the hook's test step does not recognize `tests/*.sh`, issue #2). An audit
-  that treats "the hook is green" as "the suite ran" will systematically
-  over-report the testing state.
+- This repository's gate runs the suites only through the `scripts/tests/`
+  pytest mirror, and only while `uv` is on PATH (issue #64). With `uv`, the
+  pre-commit Step 5 executes all five bash suites (29 passed, verified on the
+  #63 commit's gate); a host without `uv` falls through to Step 5's
+  no-suite-present warning and enforces nothing. An audit that treats "the
+  hook is green" as "the suite ran" must first confirm `uv` is present.

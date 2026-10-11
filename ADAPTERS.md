@@ -29,7 +29,7 @@ own secrets tool, not just another repo.
   Engineer) — this repo's opted-in `packs/solo-founder-governance`
   names a single final approver, and no other opted-in pack or doc here
   names a different owner.
-- **Last updated**: 2026-10-11 (issue #47: the 103 KB `HISTORY.md` narrative was
+- **Last updated**: 2026-10-11 (issue #65: corrected the stale `SEC_TEST_DISPATCH` opt-in and pre-commit "blind to `tests/*.sh`" claims across ADAPTERS.md, the 360-audit skill, and CI; issue #47: the 103 KB `HISTORY.md` narrative was
   split losslessly into per-date `history/` archives and guarded against re-bloat;
   issue #46: sentinel now guards the profile.md
   coverage denominator against the live tracked-file count; issue #44: sec.ps1 doc parity + non-zero exit on unimplemented
@@ -289,20 +289,23 @@ per AGENTS.md §5's replace-don't-append rule.
   with sec.ps1 scoped to --help/-h).
   A sixth, zero-dependency pytest suite lives at `scripts/tests/`
   (`python3 -m pytest scripts/tests/ -q`, added in 00b1a65 under issue
-  #2); since #31 it also **executes** the four fast bash suites
+  #2); since #31 it also **executes** all five bash suites
   (`test_install`, `test_sync_guard`, `test_write_honesty`,
-  `test_sentinel` — a regression in any of them fails pytest, verified
-  by injection). The heavy `tests/test_dispatch.sh` (~14s, stub
-  backends) is opt-in: `SEC_TEST_DISPATCH=1 python3 -m pytest
-  scripts/tests/ -q` (10 passed), keeping the pre-commit gate fast.
-- **Note**: the shared pre-commit's Step 5 still does **not** auto-run
-  `tests/*.sh` — it only recognizes `scripts/tests/`+uv,
-  `pytest.ini`/`pyproject.toml`, or `package.json` — which is why the
-  `scripts/tests/` pytest mirror exists (issue #2). Since 2026-10-09
-  GitHub Actions runs the five bash suites plus the pytest mirror (with
-  `SEC_TEST_DISPATCH=1`, so the dispatch suite runs in both) on push and
-  PR to main (`.github/workflows/test.yml`, issue #8; checkout pinned by
-  full commit SHA).
+  `test_sentinel`, `test_dispatch` — a regression in any of them fails
+  pytest, verified by injection). The heavy `tests/test_dispatch.sh`
+  (~14s, stub backends) runs in that mirror unconditionally: commit
+  0284d39 removed the former `SEC_TEST_DISPATCH=1` opt-in (issue #65),
+  so plain `python3 -m pytest scripts/tests/ -q` is now 29 passed.
+- **Note**: the shared pre-commit's Step 5 does **not** glob `tests/*.sh`
+  itself — it recognizes `scripts/tests/`+uv, `pytest.ini`/
+  `pyproject.toml`, or `package.json` — which is why the `scripts/tests/`
+  pytest mirror exists (issue #2, closed). With `uv` on PATH it therefore
+  *does* run all five suites at commit time through that mirror (verified
+  on the #63 commit's gate: 29 passed); with `uv` absent Step 5 warns
+  that no suite applies and enforces nothing (issue #64). Since 2026-10-09
+  GitHub Actions runs the five bash suites plus the pytest mirror on push
+  and PR to main (`.github/workflows/test.yml`, issue #8; checkout pinned
+  by full commit SHA).
 
 ## Cloud provider
 

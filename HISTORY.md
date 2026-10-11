@@ -96,11 +96,22 @@ file, and the untracked local hook meant to call it resolved `SCRIPT_DIR` to
 ran its claimed fast-suite step; the script is deleted and the local hook
 restored to the documented pristine thin wrapper (the real enforcement is the
 `scripts/tests/` pytest mirror, run by the hub gate's Step 5, plus GitHub
-Actions CI on push). All five bash suites pass (install 9 / sync_guard 16 /
+Actions CI on push). Then #65 corrected the 360-audit skill's own stale claim
+surface: `SEC_TEST_DISPATCH` was documented as a live opt-in although
+`0284d39` had removed it (dispatch now runs unconditionally, and the inert
+CI env var is gone), and the pre-commit gate was still called "blind to
+`tests/*.sh`" although with `uv` present Step 5 runs all five suites through
+the `scripts/tests/` mirror (the no-`uv` residual stays tracked as #64); two
+pre-existing wrong anchors in the skill's own profile (`ADAPTERS.md:238` and
+`:254`, pointing at prose/blank lines where the test-suite heading is at 255)
+were repointed, and the gate blind spot that let them pass (prose and
+comma-list anchors are not content-validated) is filed as #66. All
+five bash suites pass (install 9 / sync_guard 16 /
 write_honesty 11 / sentinel 10 / dispatch 64), the pytest mirror (29 tests)
-passes, and the GitHub tracker holds the hub-side handoff #51 plus the new #64
-(local enforcement requires `uv`) — in-repo issues exhausted. Next: advance the
-highest-value unfinished in-repo work.
+passes, and the GitHub tracker holds #51 (hub-side) plus the new #64 (local
+enforcement requires `uv`) and #66 (harden the sentinel content-anchor check);
+in-repo issues through #65 are closed. Next: advance the highest-value
+unfinished in-repo work.
 
 ## Archive
 

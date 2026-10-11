@@ -46,15 +46,16 @@ The two partials are themselves findings, not tier annotations:
    `.opencode/.gitignore`), which is tooling, not this project's supply
    chain. Per prior art C that absence is the persona 8 finding, not an
    excuse to skip the dimension.
-2. **The local pre-commit gate still never runs the test suites.** The
-   hook's test step only recognizes `scripts/tests/`+uv, `pytest.ini`/
-   `pyproject`, and `package.json` — never `tests/*.sh` (stated in
-   `ADAPTERS.md:254`, tracked as open issue `#2`). Since 2026-10-09
-   GitHub Actions runs the five bash suites and the pytest mirror on
-   push and PR to main
+2. **The local pre-commit gate runs the suites only while `uv` is on
+   PATH.** The hook's test step recognizes `scripts/tests/`+uv,
+   `pytest.ini`/`pyproject`, and `package.json` — not `tests/*.sh`
+   directly — so this repo's mirror at `scripts/tests/` is what runs all
+   five bash suites at commit time (`ADAPTERS.md:300`; issue #2 closed).
+   With `uv` absent, Step 5 warns that no suite applies and enforces
+   nothing (issue #64). Since 2026-10-09 GitHub Actions runs the five
+   bash suites and the pytest mirror on push and PR to main
    (`.github/workflows/test.yml`, issue #8), so an unhooked push is
-   caught by CI after the fact rather than prevented. Owned by
-   personas 3 and 6.
+   caught by CI. Owned by personas 3 and 6.
 
 ## Commands (executed)
 
@@ -66,9 +67,9 @@ CI configuration, and contributor documentation before recording an absence.
 **Test suite** (four-source discovery: manifest — absent; `Makefile` —
 absent; CI — `.github/workflows/test.yml` since 2026-10-09 (issue #8), runs
 the five bash suites below and nothing else; contributor documentation —
-`ADAPTERS.md:238` "Running this project's test suite", which also names the
+`ADAPTERS.md:255` "Running this project's test suite", which also names the
 pytest mirror at `scripts/tests/`). All quotes below current as of the
-2026-10-10 profile pass. `tests/test_sentinel.sh` belongs to the audit
+2026-10-11 profile pass. `tests/test_sentinel.sh` belongs to the audit
 instrument rather than the product but runs the same way:
 
     $ bash tests/test_install.sh
@@ -420,10 +421,10 @@ instrument rather than the product but runs the same way:
 
      $ python3 -m pytest scripts/tests/ -q
      .............................                                    [100%]
-     29 passed in ~25s
+     29 passed in 22.48s
 
-  (the skip is the heavy dispatch suite behind SEC_TEST_DISPATCH=1;
-  with it set: 10 passed, ~14s)
+  (the dispatch suite runs in this mirror unconditionally: commit
+  0284d39 removed the former SEC_TEST_DISPATCH opt-in, issue #65)
 
 **Tracked file count** (the manifest denominator):
 
@@ -629,19 +630,19 @@ backend no code implemented. Vercel removed from the help text and
 count and the `def sync_to_` count diverge. Python visibility rule:
 module-level public, leading underscore private.
 
-### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:254`, `ADAPTERS.md:238`
+### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:255`
 
 Nine install sections, fourteen guard sections, eleven write-honesty
 sections, and the audit instrument's own nine sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
-executes the four fast suites and gates the dispatch suite behind
-`SEC_TEST_DISPATCH=1`); establish what they do not cover. Structural
+executes all five bash suites — the former dispatch opt-in was removed in
+0284d39, issue #65); establish what they do not cover. Structural
 gaps to quantify, not merely note: GitHub Actions CI exists since
 2026-10-09 (issue #8, `.github/workflows/test.yml`) and since 2026-10-10
-runs the five bash suites **and** the pytest mirror
-(`SEC_TEST_DISPATCH=1`) on push and PR to main — but the pre-commit
-hook's test step is still blind to `tests/*.sh`
-(`ADAPTERS.md:254`, open issue `#2`); and there is zero
+runs the five bash suites **and** the pytest mirror on push and PR to
+main; the pre-commit hook's Step 5 runs those same suites through the
+mirror only while `uv` is on PATH (issue #2 closed; #64 the `uv`-absent
+residual); and there is zero
 coverage tooling. Then cross-reference suites against the hotspots:
 `bin/sec-organizer`, `bin/sec-migrator`, `bin/sec-classify.py`, and
 `bin/bw-session-keeper` have no suite of their own, but they are exercised
