@@ -257,7 +257,8 @@ per AGENTS.md §5's replace-don't-append rule.
   sentinel suite, then #55 tightened the sec.conf parser (`get_cfg_val`
   now skips comments/blanks and matches the key name exactly) with
   dispatch guards 18b/18c, then #56 added the completion-alias guard
-  [22l] (all four completion surfaces must offer create/organize/keep).
+  (suite case 22l; all four completion surfaces must offer
+  create/organize/keep).
   A sixth, zero-dependency pytest suite lives at `scripts/tests/`
   (`python3 -m pytest scripts/tests/ -q`, added in 00b1a65 under issue
   #2); since #31 it also **executes** the four fast bash suites
