@@ -33,7 +33,8 @@ own secrets tool, not just another repo.
   split losslessly into per-date `history/` archives and guarded against re-bloat;
   issue #46: sentinel now guards the profile.md
   coverage denominator against the live tracked-file count; issue #44: sec.ps1 doc parity + non-zero exit on unimplemented
-  commands; dispatch 47, write-honesty 11, sentinel 8; earlier 2026-10-10, later
+  commands; issue #48: `sec migrate` tagged usage/help exit-code parity; issue #49:
+  re-measured the profile `[ TAG ]` census; dispatch 48, write-honesty 11, sentinel 8; earlier 2026-10-10, later
   same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
   the four fast bash suites with dispatch opt-in behind `SEC_TEST_DISPATCH=1`,
@@ -241,7 +242,7 @@ per AGENTS.md §5's replace-don't-append rule.
   `bash tests/test_write_honesty.sh` (11 sections, silent-no-op write
   paths, revert/undo honesty), `bash tests/test_sentinel.sh` (8 cases,
   the 360 audit instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (47 sections, every `sec` dispatch arm
+  `bash tests/test_dispatch.sh` (48 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed

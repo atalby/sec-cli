@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (8 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (47 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (8 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (48 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#2`, `#13`, `#32`) |
@@ -49,7 +49,7 @@ The two partials are themselves findings, not tier annotations:
 2. **The local pre-commit gate still never runs the test suites.** The
    hook's test step only recognizes `scripts/tests/`+uv, `pytest.ini`/
    `pyproject`, and `package.json` — never `tests/*.sh` (stated in
-   `ADAPTERS.md:253`, tracked as open issue `#2`). Since 2026-10-09
+   `ADAPTERS.md:254`, tracked as open issue `#2`). Since 2026-10-09
    GitHub Actions runs the five bash suites and the pytest mirror on
    push and PR to main
    (`.github/workflows/test.yml`, issue #8), so an unhooked push is
@@ -66,7 +66,7 @@ CI configuration, and contributor documentation before recording an absence.
 **Test suite** (four-source discovery: manifest — absent; `Makefile` —
 absent; CI — `.github/workflows/test.yml` since 2026-10-09 (issue #8), runs
 the five bash suites below and nothing else; contributor documentation —
-`ADAPTERS.md:237` "Running this project's test suite", which also names the
+`ADAPTERS.md:238` "Running this project's test suite", which also names the
 pytest mirror at `scripts/tests/`). All quotes below current as of the
 2026-10-10 profile pass. `tests/test_sentinel.sh` belongs to the audit
 instrument rather than the product but runs the same way:
@@ -549,9 +549,9 @@ How the code reaches each, not merely that it exists.
 | GitLab group CI/CD variables | HTTPS API `PUT` via `urllib.request` | `bin/sec-sync-controller.py:169`, `bin/sec-sync-controller.py:170` |
 | Vercel | claimed as a sync target in `docs/ARCHITECTURE.md:14` — no call site found in the controller this build (candidate smoke finding) | `docs/ARCHITECTURE.md:14` |
 | GitHub (install source) | `REPO_URL` default feeding `git clone`, piped `curl` install source | `install.sh:7`, `README.md:29` |
-| GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:118` |
+| GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:119` |
 | jq | invoked for JSON parsing inside `bin/sec` | `bin/sec:102` |
-| Hyer hub checkers | invoked by the local pre-commit wrapper from `~/sandbox/hyer/scripts/` | `ADAPTERS.md:231` |
+| Hyer hub checkers | invoked by the local pre-commit wrapper from `~/sandbox/hyer/scripts/` | `ADAPTERS.md:232` |
 
 ## Personas
 
@@ -618,7 +618,7 @@ backend no code implemented. Vercel removed from the help text and
 count and the `def sync_to_` count diverge. Python visibility rule:
 module-level public, leading underscore private.
 
-### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:253`, `ADAPTERS.md:237`
+### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:254`, `ADAPTERS.md:238`
 
 Nine install sections, fourteen guard sections, eleven write-honesty
 sections, and the audit instrument's own eight sentinel cases pass today
@@ -630,7 +630,7 @@ gaps to quantify, not merely note: GitHub Actions CI exists since
 runs the five bash suites **and** the pytest mirror
 (`SEC_TEST_DISPATCH=1`) on push and PR to main — but the pre-commit
 hook's test step is still blind to `tests/*.sh`
-(`ADAPTERS.md:253`, open issue `#2`); and there is zero
+(`ADAPTERS.md:254`, open issue `#2`); and there is zero
 coverage tooling. Then cross-reference suites against the hotspots:
 `bin/sec-organizer`, `bin/sec-migrator`, `bin/sec-classify.py`, and
 `bin/bw-session-keeper` have no suite of their own, but they are exercised

@@ -11,15 +11,21 @@ default, not the whole history.
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
 split losslessly into per-date archives under `history/`, this summary
 was reduced to a few sentences, and `sentinel.sh coverage` gained a guard
-so the file cannot silently re-bloat. Immediately before, #46 closed the
-last audit-instrument gap (the coverage denominator is now validated
-against `git ls-files`), #45 fixed the F048 residual (`sec-organizer`
-classifies `op`/`bws` from full item detail; `apply` re-checks
-staleness), and #40–#44 closed the dispatcher/completion/ps1 honesty
-residuals. All five bash suites pass (install 9 / sync_guard 14 /
-write_honesty 11 / sentinel 8 / dispatch 47), the pytest mirror passes,
-and the GitHub tracker holds only hub-side items (#2, #13 — both handed
-upstream). Next: advance the highest-value unfinished work.
+so the file cannot silently re-bloat. Two honesty residuals followed:
+#48 brought `sec migrate`'s usage/help handling onto the same tagged
+exit-code contract as the `bin/sec` dispatcher (a missing `--from`/`--to`
+operand, an unknown flag, or a missing pair is now a tagged `[ERROR]`
+that exits 2 instead of leaking a raw `set -u` unbound-variable error,
+while `--help`/`-h` print usage and exit 0), and #49 re-measured the
+persona-4 `[ TAG ]` census in `profile.md` that had drifted since
+2026-10-10. Immediately before, #46 closed the last audit-instrument gap
+(the coverage denominator is now validated against `git ls-files`), #45
+fixed the F048 residual (`sec-organizer` classifies `op`/`bws` from full
+item detail; `apply` re-checks staleness), and #40–#44 closed the
+dispatcher/completion/ps1 honesty residuals. All five bash suites pass
+(install 9 / sync_guard 14 / write_honesty 11 / sentinel 8 / dispatch
+48), the pytest mirror passes, and the GitHub tracker is empty. Next:
+advance the highest-value unfinished work.
 
 ## Archive
 
