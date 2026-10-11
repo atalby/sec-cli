@@ -6,6 +6,8 @@
 .agents/skills/*
 !.agents/skills/architecture-360-audit
 __pycache__/
+.venv/
+venv/
 *.log
 .cache/
 ~/.sec/
