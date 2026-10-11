@@ -33,8 +33,11 @@ the sync controller's own docstring and runtime banner, which still
 advertised a "Single Source of Truth: Bitwarden Vault" even though
 `sec sync` reads values only from the invoking environment (docs already
 said so since #9); a sync_guard guard [15] now fails if the false claim
-returns. All five bash
-suites pass (install 9 / sync_guard 15 / write_honesty 11 / sentinel 9 /
+returns. Then #54 corrected the README/ARCHITECTURE/install.sh
+runtime-dependency sentence, which understated `jq` as housekeep-only
+although `bin/sec` needs it for auth/get/set too; a sentinel-suite guard
+[10] fails if that understatement returns. All five bash
+suites pass (install 9 / sync_guard 15 / write_honesty 11 / sentinel 10 /
 dispatch 57), the pytest mirror passes, and the GitHub tracker holds only
 the hub-side handoff #51. Next: advance the highest-value unfinished work.
 
