@@ -157,6 +157,10 @@ case "${1:-} ${2:-}" in
         fi
         echo '{"id":"bws-created"}'
         ;;
+    "run --")
+        shift 2
+        exec "$@"
+        ;;
 esac
 exit 0
 EOF
@@ -177,6 +181,11 @@ cat >"$FAKEBIN/infisical" <<'EOF'
 echo "infisical $*" >>"${SEC_TEST_INF_LOG:?SEC_TEST_INF_LOG unset}"
 if [ "${1:-}" = "secrets" ] && [ "${2:-}" = "get" ]; then
     echo "inf-pw-${3:-}"
+fi
+if [ "${1:-}" = "run" ]; then
+    shift
+    [ "${1:-}" = "--" ] && shift
+    exec "$@"
 fi
 exit 0
 EOF
@@ -397,6 +406,27 @@ set -e
 if [[ $RC -eq 0 ]]; then pass "op set exits 0"; else fail "op set rc=$RC out=$OUT"; fi
 if grep -q "saved to 1Password" <<<"$OUT"; then pass "reports saved-to-1Password"; else fail "no saved-to-1Password in: $OUT"; fi
 
+echo "[11b] bws set create path"
+: >"$BWSLOG"
+set +e
+OUT="$(run_sec "$H" bws set BWS_KEY bwsval 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "saved to Bitwarden Secrets Manager" <<<"$OUT"; then pass "bws set reports saved-to-BWS"; else fail "bws set rc=$RC out=$OUT"; fi
+if grep -q "secret create BWS_KEY bwsval proj-1" "$BWSLOG"; then pass "bws secret create called with key/value/proj"; else fail "unexpected bws create call: $(tr '\n' ';' <"$BWSLOG")"; fi
+
+echo "[11c] vault/infisical set refuse honestly (unsupported tenant)"
+set +e
+OUT="$(run_sec "$H" vault set KEY val 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "set not supported for tenant 'vault'" <<<"$OUT"; then pass "vault set exits 1 with unsupported-tenant error"; else fail "vault set rc=$RC out=$OUT"; fi
+set +e
+OUT="$(run_sec "$H" infisical set KEY val 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "set not supported for tenant 'infisical'" <<<"$OUT"; then pass "infisical set exits 1 with unsupported-tenant error"; else fail "infisical set rc=$RC out=$OUT"; fi
+
 echo "[12] run dispatch: default exec + op delegation"
 set +e
 OUT="$(run_sec "$H" run -- echo run-ok 2>&1)"
@@ -408,6 +438,18 @@ OUT="$(run_sec "$H" op run -- echo op-run-ok 2>&1)"
 RC=$?
 set -e
 if [[ $RC -eq 0 ]] && grep -q "op-run-ok" <<<"$OUT"; then pass "sec op run -- echo op-run-ok"; else fail "op run rc=$RC out=$OUT"; fi
+
+echo "[12b] run dispatch: bws + infisical delegation"
+set +e
+OUT="$(run_sec "$H" bws run -- echo bws-run-ok 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "bws-run-ok" <<<"$OUT"; then pass "sec bws run -- echo bws-run-ok"; else fail "bws run rc=$RC out=$OUT"; fi
+set +e
+OUT="$(run_sec "$H" infisical run -- echo inf-run-ok 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "inf-run-ok" <<<"$OUT"; then pass "sec infisical run -- echo inf-run-ok"; else fail "infisical run rc=$RC out=$OUT"; fi
 
 echo "[13] sync dispatch reaches the controller (dry-run)"
 set +e
@@ -829,6 +871,15 @@ mkdir -p "$H27"
 BWLOG27="$WORK/bw27.log"
 : >"$BWLOG27"
 ITEMS27='[{"id":"api-1","name":"api-key","notes":null,"login":{"password":"scoped-val","username":"","uris":[]},"fields":[],"folderId":"f-aaa"},{"id":"api-2","name":"api-key","notes":null,"login":{"password":"other-val","username":"","uris":[]},"fields":[],"folderId":"f-bbb"}]'
+set +e
+ERR27N="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H27" "SEC_TEST_BW_LOG=$BWLOG27" "SEC_TEST_BW_ITEMS=$ITEMS27" "$REPO_ROOT/bin/sec" bw get --scope null api-key 2>&1)"
+RC27N=$?
+set -e
+if [[ $RC27N -eq 1 ]] && grep -q "^\[ERROR\] scope folder name 'null' is reserved" <<<"$ERR27N"; then
+    pass "reserved 'null' scope name: exit 1, tagged reserved error"
+else
+    fail "null-scope path wrong (rc=$RC27N): $ERR27N"
+fi
 set +e
 OUT27="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H27" "SEC_TEST_BW_LOG=$BWLOG27" "SEC_TEST_BW_ITEMS=$ITEMS27" "$REPO_ROOT/bin/sec" bw get --scope work api-key 2>&1)"
 RC27=$?
