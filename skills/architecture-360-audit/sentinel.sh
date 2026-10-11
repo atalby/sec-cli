@@ -467,6 +467,26 @@ history_dir = os.path.join(repo, "history")
 archived = sorted(f for f in os.listdir(history_dir) if f.endswith(".md")) if os.path.isdir(history_dir) else []
 orphaned = [f for f in archived if f"history/{f}" not in history_text]
 
+# --- 7. cited suite section counts must match the live suites -----------------
+suite_counts = {}
+for _s in ("install", "sync_guard", "write_honesty", "sentinel", "dispatch"):
+    _p = os.path.join(repo, "tests", f"test_{_s}.sh")
+    if os.path.exists(_p):
+        with open(_p, encoding="utf-8") as _fh:
+            suite_counts[_s] = sum(1 for _ln in _fh if _ln.startswith('echo "['))
+suite_mismatches = []
+for _s, _live in suite_counts.items():
+    _i = profile_text.find(f"test_{_s}.sh")
+    if _i < 0:
+        suite_mismatches.append(f"profile.md does not cite tests/test_{_s}.sh")
+        continue
+    _m = re.search(r"\((\d+)\s+(?:sections|cases)\b", profile_text[_i:])
+    if not _m:
+        suite_mismatches.append(f"profile.md cites no '(N sections|cases)' count for tests/test_{_s}.sh")
+        continue
+    if int(_m.group(1)) != _live:
+        suite_mismatches.append(f"profile.md says {_m.group(1)} for tests/test_{_s}.sh, live suites have {_live}")
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -514,6 +534,10 @@ if history_bytes > HISTORY_BUDGET:
     failures.append(f"HISTORY.md is {history_bytes} bytes, over the {HISTORY_BUDGET}-byte summary budget; archive the narrative")
 if orphaned:
     failures.append(f"history/ archive(s) not linked from HISTORY.md: {orphaned}")
+if suite_mismatches:
+    failures.append(f"{len(suite_mismatches)} cited suite section count(s) drifted from the live suites")
+    for _m in suite_mismatches:
+        print(f"{ERROR} suite count: {_m}")
 
 if failures:
     for f in failures:
@@ -523,6 +547,7 @@ if failures:
 print(f"{OK} coverage: all {len(tracked)} tracked files claimed by {len(cov_rows)} manifest rows")
 print(f"{OK} coverage denominator: profile.md states {denominator} tracked files, matches git ls-files")
 print(f"{OK} narrative history: HISTORY.md is a {history_bytes}-byte summary, {len(archived)} archive(s) linked under history/")
+print(f"{OK} suite counts: profile.md matches the live suites ({', '.join(f'{s} {n}' for s, n in sorted(suite_counts.items()))})")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

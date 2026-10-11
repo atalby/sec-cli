@@ -51,7 +51,7 @@ fi
 
 echo "[3] a broken citation is detected (sentinel fails closed)"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F" "$WORK_G" "$WORK_H"' EXIT
+trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F" "$WORK_G" "$WORK_H" "$WORK_I" "$WORK_J"' EXIT
 mkdir -p "$WORK/skills/architecture-360-audit"
 cp "$REPO_ROOT/skills/architecture-360-audit/profile.md" "$WORK/skills/architecture-360-audit/profile.md"
 cp "$REPO_ROOT/skills/architecture-360-audit/SKILL.md" "$WORK/skills/architecture-360-audit/SKILL.md"
@@ -210,6 +210,49 @@ OUT="$(cd "$WORK_H" && git init -q . && git add -A && "skills/architecture-360-a
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (rotated history) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[9] cited suite section counts must match the live suites (the #48 drift class)"
+WORK_I="$(mktemp -d)"
+WORK_J="$(mktemp -d)"
+for W in "$WORK_I" "$WORK_J"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_I/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"(test_dispatch\.sh` -> ALL TESTS PASSED \()[0-9]+( sections\))",
+    r"\g<1>999\g<2>",
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("dispatch count row not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_I" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted suite count"
+else
+    no "coverage accepted a drifted suite count"
+fi
+if grep -q "test_dispatch.sh" <<<"$OUT"; then
+    ok "coverage names the drifted suite"
+else
+    no "coverage did not name the drifted suite"
+fi
+OUT="$(cd "$WORK_J" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct suite counts) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"

@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (8 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (48 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (9 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (48 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#2`, `#13`, `#32`) |
@@ -248,6 +248,10 @@ instrument rather than the product but runs the same way:
       ok: coverage exits nonzero on a dated entry in HISTORY.md
       ok: coverage names HISTORY.md
       ok: control copy (rotated history) exits 0
+    [9] cited suite section counts must match the live suites (the #48 drift class)
+      ok: coverage exits nonzero on a drifted suite count
+      ok: coverage names the drifted suite
+      ok: control copy (correct suite counts) exits 0
 
     ALL TESTS PASSED
     (exit 0)
@@ -621,7 +625,7 @@ module-level public, leading underscore private.
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:254`, `ADAPTERS.md:238`
 
 Nine install sections, fourteen guard sections, eleven write-honesty
-sections, and the audit instrument's own eight sentinel cases pass today
+sections, and the audit instrument's own nine sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes the four fast suites and gates the dispatch suite behind
 `SEC_TEST_DISPATCH=1`); establish what they do not cover. Structural

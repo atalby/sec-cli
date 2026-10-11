@@ -23,7 +23,7 @@ persona-4 `[ TAG ]` census in `profile.md` that had drifted since
 fixed the F048 residual (`sec-organizer` classifies `op`/`bws` from full
 item detail; `apply` re-checks staleness), and #40–#44 closed the
 dispatcher/completion/ps1 honesty residuals. All five bash suites pass
-(install 9 / sync_guard 14 / write_honesty 11 / sentinel 8 / dispatch
+(install 9 / sync_guard 14 / write_honesty 11 / sentinel 9 / dispatch
 48), the pytest mirror passes, and the GitHub tracker is empty. Next:
 advance the highest-value unfinished work.
 
