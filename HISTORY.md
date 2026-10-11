@@ -22,10 +22,16 @@ persona-4 `[ TAG ]` census in `profile.md` that had drifted since
 (the coverage denominator is now validated against `git ls-files`), #45
 fixed the F048 residual (`sec-organizer` classifies `op`/`bws` from full
 item detail; `apply` re-checks staleness), and #40–#44 closed the
-dispatcher/completion/ps1 honesty residuals. All five bash suites pass
-(install 9 / sync_guard 14 / write_honesty 11 / sentinel 9 / dispatch
-48), the pytest mirror passes, and the GitHub tracker is empty. Next:
-advance the highest-value unfinished work.
+dispatcher/completion/ps1 honesty residuals. Then #52 closed a confirmed
+F003 residual the #16 fix had left behind: the session keeper's keep-alive
+`rotate` and `setup-keychain` paths re-exec'd the helper as
+`"$0" unlock <pw>`, so a plain `sec get` on an expired session with the
+default `auto_rotate=true` leaked the master password into the process
+table (`/proc/<pid>/cmdline`); both paths now unlock in-process via a
+`do_unlock` helper, with regression guards [22j]/[22k]. All five bash
+suites pass (install 9 / sync_guard 14 / write_honesty 11 / sentinel 9 /
+dispatch 57), the pytest mirror passes, and the GitHub tracker holds only
+the hub-side handoff #51. Next: advance the highest-value unfinished work.
 
 ## Archive
 

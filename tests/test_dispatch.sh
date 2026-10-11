@@ -1132,6 +1132,57 @@ if [[ -f "$REPO_ROOT/completions/_sec" ]]; then
     if grep -q "injection only for bws/op/infisical" "$REPO_ROOT/completions/_sec"; then pass "static _sec completion states per-tenant run truth"; else fail "static _sec completion is stale"; fi
 fi
 
+echo "[22j] F003 residual: keeper never re-execs itself with the password on argv"
+if grep -qF '"$0" unlock' "$REPO_ROOT/bin/bw-session-keeper"; then
+    fail "keeper self-invokes with the password on argv: $(grep -nF '"$0" unlock' "$REPO_ROOT/bin/bw-session-keeper")"
+else
+    pass "no '\"\$0\" unlock' self-exec with password in keeper source"
+fi
+if grep -qF 'do_unlock "$pass"' "$REPO_ROOT/bin/bw-session-keeper" && grep -qF 'do_unlock "$password"' "$REPO_ROOT/bin/bw-session-keeper"; then
+    pass "rotate and setup-keychain unlock in-process via do_unlock"
+else
+    fail "rotate/setup-keychain do not call do_unlock in-process"
+fi
+
+echo "[22k] F003 residual: auto-rotate never exposes the master password on the keeper's own argv"
+PPBIN="$WORK/ppbin"
+mkdir -p "$PPBIN"
+for _b in bash cat chmod mkdir uname tr grep jq; do
+    ln -s "$(command -v "$_b")" "$PPBIN/$_b"
+done
+cat >"$PPBIN/bw" <<'EOF'
+#!/usr/bin/env bash
+echo "bw $*" >>"${SEC_TEST_BW_LOG:?SEC_TEST_BW_LOG unset}"
+case "${1:-}" in
+    unlock)
+        if [ -n "${BW_UNLOCK_PASS:-}" ]; then
+            echo "bw-env-present" >>"${SEC_TEST_BW_LOG:?SEC_TEST_BW_LOG unset}"
+        fi
+        if [ -r "/proc/$PPID/cmdline" ]; then
+            { printf 'CALLER-CMDLINE: '; tr '\0' ' ' <"/proc/$PPID/cmdline"; echo; } >>"${SEC_TEST_BW_LOG:?SEC_TEST_BW_LOG unset}"
+        fi
+        echo "session-tok-123"
+        ;;
+    *) exit 0 ;;
+esac
+EOF
+chmod +x "$PPBIN/bw"
+H11="$(new_home "$WORK/h11")"
+mkdir -p "$H11/.cache/bitwarden"
+printf 'rot-pass' >"$H11/.cache/bitwarden/master_pass"
+chmod 600 "$H11/.cache/bitwarden/master_pass"
+: >"$BWLOG"
+set +e
+OUT="$(env -i "PATH=$PPBIN" "HOME=$H11" "SEC_ALLOW_PLAINTEXT_MASTER_PASS=1" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "$REPO_ROOT/bin/bw-session-keeper" rotate 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "Vault unlocked successfully" <<<"$OUT"; then pass "auto-rotate unlocks via stored pass"; else fail "auto-rotate rc=$RC out=$OUT"; fi
+if grep -q "CALLER-CMDLINE:.*rot-pass" "$BWLOG"; then fail "master password present on caller argv: $(grep CALLER-CMDLINE "$BWLOG")"; else pass "master password absent from the keeper's own argv"; fi
+if grep -q 'bw-env-present' "$BWLOG"; then pass "auto-rotate delivers password via BW_UNLOCK_PASS env"; else fail "auto-rotate did not deliver password via env: $(tr '\n' ';' <"$BWLOG")"; fi
+
 echo
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"

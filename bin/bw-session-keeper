@@ -94,6 +94,25 @@ validate_session() {
     fi
 }
 
+# 6. Perform the actual vault unlock; the password is delivered to bw via the
+# BW_UNLOCK_PASS environment variable, never as an argv element of any process.
+do_unlock() {
+    local password="$1"
+    local raw_session
+    echo "[INFO] Unlocking Bitwarden vault..."
+    raw_session="$(BW_UNLOCK_PASS="$password" bw unlock --passwordenv BW_UNLOCK_PASS --raw 2>/dev/null || true)"
+
+    if [[ -n "$raw_session" ]]; then
+        save_session "$raw_session"
+        echo "[ OK ] Vault unlocked successfully. Session key saved to $SESSION_FILE."
+        BW_SESSION="$raw_session" bw sync >/dev/null 2>&1 || true
+        return 0
+    else
+        echo "[ERROR] Failed to unlock vault. Check master password." >&2
+        return 1
+    fi
+}
+
 # Commands
 cmd="${1:-status}"
 
@@ -136,17 +155,7 @@ case "$cmd" in
             fi
         fi
 
-        echo "[INFO] Unlocking Bitwarden vault..."
-        raw_session="$(BW_UNLOCK_PASS="$password" bw unlock --passwordenv BW_UNLOCK_PASS --raw 2>/dev/null || true)"
-
-        if [[ -n "$raw_session" ]]; then
-            save_session "$raw_session"
-            echo "[ OK ] Vault unlocked successfully. Session key saved to $SESSION_FILE."
-            BW_SESSION="$raw_session" bw sync >/dev/null 2>&1 || true
-        else
-            echo "[ERROR] Failed to unlock vault. Check master password." >&2
-            exit 1
-        fi
+        do_unlock "$password" || exit 1
         ;;
 
     rotate|keep)
@@ -159,7 +168,7 @@ case "$cmd" in
             echo "[INFO] Session expired/missing. Attempting auto-rotation..."
             pass="$(get_master_password)"
             if [[ -n "$pass" ]]; then
-                "$0" unlock "$pass"
+                do_unlock "$pass"
             else
                 echo "[ERROR] No stored master password found. Run 'bw-session-keeper setup-keychain' or 'bw-session-keeper unlock'." >&2
                 exit 1
@@ -181,7 +190,7 @@ case "$cmd" in
         fi
 
         save_master_password "$password"
-        "$0" unlock "$password"
+        do_unlock "$password"
         ;;
 
     *)
