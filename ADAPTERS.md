@@ -244,7 +244,7 @@ per AGENTS.md §5's replace-don't-append rule.
   `bash tests/test_write_honesty.sh` (11 sections, silent-no-op write
   paths, revert/undo honesty), `bash tests/test_sentinel.sh` (10 cases,
   the 360 audit instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (61 sections, every `sec` dispatch arm
+  `bash tests/test_dispatch.sh` (62 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed
@@ -261,7 +261,8 @@ per AGENTS.md §5's replace-don't-append rule.
   create/organize/keep), then #58 moved the sec.conf value delivery off
   child argv (`sec set` now feeds jq via `env.SECVAL` and pipes the
   encoded blob to `bw create/edit item` via stdin instead of positional
-  args) with dispatch guard 22m.
+  args) with dispatch guard 22m, then #59 kept the migrator's bw target off
+  jq/bw argv too (dispatch guard 22n).
   A sixth, zero-dependency pytest suite lives at `scripts/tests/`
   (`python3 -m pytest scripts/tests/ -q`, added in 00b1a65 under issue
   #2); since #31 it also **executes** the four fast bash suites

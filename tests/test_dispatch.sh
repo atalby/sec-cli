@@ -14,7 +14,7 @@ mkdir -p "$FAKEBIN"
 
 cat >"$FAKEBIN/bw" <<'EOF'
 #!/usr/bin/env bash
-echo "bw $*" >>"${SEC_TEST_BW_LOG:?SEC_TEST_BW_LOG unset}"
+printf 'bw %s\n' "${*//$'\n'/ }" >>"${SEC_TEST_BW_LOG:?SEC_TEST_BW_LOG unset}"
 DEFAULT_ITEMS='[{"id":"item-1","name":"MY_API_KEY","notes":null,"login":{"password":"pw-MY_API_KEY","username":"me@example.com","uris":[]},"fields":[],"folderId":""},{"id":"item-2","name":"github-app","notes":null,"login":{"password":"gh-pw","username":"gh-user","uris":[]},"fields":[{"type":0,"name":"token","value":"cf-token"}],"folderId":""}]'
 ITEMS="${SEC_TEST_BW_ITEMS:-$DEFAULT_ITEMS}"
 case "${1:-}" in
@@ -1265,6 +1265,33 @@ if grep -q "CANARY-SECRET-58b1" "$BWLOG"; then
     pass "bw received the secret value via stdin"
 else
     fail "bw never received the secret value (stdin capture empty): $(tr '\n' ';' <"$BWLOG")"
+fi
+
+echo "[22n] sec-migrator (bw target) keeps the value off jq and bw argv (#59)"
+: >"$JQLOG"; : >"$BWLOG"
+MG_ITEMS='[{"id":"m1","name":"MGITEM","login":{"password":"CANARY-MIG-59"}}]'
+G59="$(new_home "$WORK/h59")"
+set +e
+OUT="$(env -i "PATH=$JQGUARD:$FAKEBIN:/usr/bin:/bin" "HOME=$G59" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_JQ_LOG=$JQLOG" "SEC_TEST_BW_ITEMS=$MG_ITEMS" \
+    "$REPO_ROOT/bin/sec" migrate --from bitwarden --to bw --apply 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "MIGRATING" <<<"$OUT"; then pass "migrate apply (bw target) ran"; else fail "migrate apply rc=$RC out=$OUT"; fi
+if grep -q "CANARY-MIG-59" "$JQLOG"; then
+    fail "sec-migrator put the secret value on jq's argv (issue #59): $(tr '\n' ';' <"$JQLOG")"
+else
+    pass "sec-migrator keeps the secret value off jq's argv"
+fi
+if grep -qE "^bw .*CANARY-MIG-59" "$BWLOG"; then
+    fail "sec-migrator put the secret value on bw's argv (issue #59)"
+else
+    pass "sec-migrator keeps the secret value off bw's argv"
+fi
+if grep -q "CANARY-MIG-59" "$BWLOG"; then
+    pass "sec-migrator delivered the secret value to bw via stdin"
+else
+    fail "sec-migrator never delivered the secret value via stdin: $(tr '\n' ';' <"$BWLOG")"
 fi
 
 echo

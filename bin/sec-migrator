@@ -191,9 +191,9 @@ while read -r item; do
                 if [[ -z "$created_id" ]]; then trap_error "$name"; fi
                 ;;
             bitwarden|bw)
-                encoded="$(bw get template item 2>/dev/null | jq --arg name "$name" --arg val "$val" '.name=$name | .type=1 | .login.password=$val' | bw encode 2>/dev/null || true)"
+                encoded="$(bw get template item 2>/dev/null | SECVAL="$val" jq --arg name "$name" '.name=$name | .type=1 | .login.password=env.SECVAL' | bw encode 2>/dev/null || true)"
                 if [[ -n "$encoded" ]]; then
-                    res="$(bw create item "$encoded" 2>/dev/null || true)"
+                    res="$(printf '%s' "$encoded" | bw create item 2>/dev/null || true)"
                     created_id="$(echo "$res" | jq -r '.id // empty')"
                 fi
                 if [[ -z "$created_id" ]]; then trap_error "$name"; fi
