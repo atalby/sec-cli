@@ -47,7 +47,15 @@ zsh/bash/fish/ps1 generators listed only the ten canonical commands and
 omitted the `create`/`organize`/`keep` aliases the dispatcher arms
 accept and ARCHITECTURE.md documents; all four now offer the aliases
 (with the checked-in `completions/_sec` regenerated from `sec completion
-zsh`), and dispatch guard [22l] fails if any surface drops them. All
+zsh`), and dispatch guard [22l] fails if any surface drops them. Then #57
+fixed a completion-honesty residual on the PowerShell side: `bin/sec.ps1`
+implements only get/set/run/housekeep/migrate (a core subset since #44),
+yet the ps1 completer registered `sec.ps1` under the full `$subcommands`
+array, so tab-completion advertised `sync`/`create`/`organize`/`keep`/…
+that the wrapper rejects with `[ERROR]`; the completer now offers
+`sec.ps1` only its implemented set (via a `GetCommandName() -ieq
+'sec.ps1'` branch) while `sec`/`sec.exe` keep the full list, and dispatch
+guard [22l] checks the ps1 scoping. All
 five bash
 suites pass (install 9 / sync_guard 15 / write_honesty 11 / sentinel 10 /
 dispatch 60), the pytest mirror passes, and the GitHub tracker holds only

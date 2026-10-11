@@ -543,10 +543,10 @@ How the code reaches each, not merely that it exists.
 
 | Integration | Reached via | Anchors |
 |---|---|---|
-| Bitwarden (`bw` CLI) | dispatcher shells out (`bw status`, `bw list items`, `bw get attachment`) | `bin/sec:116`, `bin/sec:164`, `bin/sec:480` |
+| Bitwarden (`bw` CLI) | dispatcher shells out (`bw status`, `bw list items`, `bw get attachment`) | `bin/sec:116`, `bin/sec:164`, `bin/sec:481` |
 | bw-session-keeper (session freshness) | dispatcher shells out for `unlock` and `rotate` | `bin/sec:121`, `bin/sec:135` |
 | Bitwarden Secrets Manager (`bws`) | dispatcher tenant vocabulary | `bin/sec:79` |
-| 1Password (`op` CLI) | `op whoami` session check, `op signin`, `op read` | `bin/sec:143`, `bin/sec:145`, `bin/sec:431` |
+| 1Password (`op` CLI) | `op whoami` session check, `op signin`, `op read` | `bin/sec:143`, `bin/sec:145`, `bin/sec:432` |
 | Infisical / HashiCorp Vault / macOS Keychain | dispatcher tenant vocabulary | `bin/sec:79`, `bin/sec:198` |
 | AWS Secrets Manager | claimed in `docs/ARCHITECTURE.md:6` — verify whether any code path reaches it (candidate smoke finding) | `docs/ARCHITECTURE.md:6` |
 | GCP Secret Manager | `gcloud` shell-outs from the sync controller | `bin/sec-sync-controller.py:76`, `bin/sec-sync-controller.py:87` |
@@ -749,7 +749,7 @@ and does plan/apply use identical classification?), migration atomicity
 recoverable, is a secret ever written to both backends in an inconsistent
 order?), and multi-tenant boundary correctness (`docs/MULTI_TENANCY.md:1` —
 can tenant A's key resolve to tenant B's item through the name-matching and
-`--scope` folder search in `bin/sec:413-445`?).
+`--scope` folder search in `bin/sec:414-446`?).
 
 ### 11. Resilience of the happy path -- `bin/sec-sync-controller.py:17`, `bin/sec-sync-controller.py:83`, `install.sh:24`, `bin/sec:143`
 

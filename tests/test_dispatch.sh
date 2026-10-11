@@ -1219,9 +1219,13 @@ for _a in create organize keep; do
     grep -qF "'${_a}:" <<<"$ZSH_C" || { fail "zsh completion omits alias '$_a' (issue #56)"; _miss=1; }
     grep -qE "subcmds=\"[^\"]*\b${_a}\b" <<<"$BASH_C" || { fail "bash completion omits alias '$_a' (issue #56)"; _miss=1; }
     grep -qF -- "-a '${_a}'" <<<"$FISH_C" || { fail "fish completion omits alias '$_a' (issue #56)"; _miss=1; }
-    grep -qF "'${_a}'" <<<"$PS1_C" || { fail "ps1 completion omits alias '$_a' (issue #56)"; _miss=1; }
 done
-if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer create/organize/keep"; fi
+if grep -qF "GetCommandName() -ieq 'sec.ps1'" <<<"$PS1_C" && grep -qF "@('get', 'set', 'run', 'housekeep', 'migrate')" <<<"$PS1_C"; then
+    pass "ps1 completion scopes sec.ps1 to the commands it implements (get/set/run/housekeep/migrate, issue #57)"
+else
+    fail "ps1 completion advertises commands sec.ps1 rejects (issue #57)"; _miss=1
+fi
+if [[ $_miss -eq 0 ]]; then pass "zsh/bash/fish completion surfaces offer create/organize/keep; ps1 scoped to sec.ps1's subset"; fi
 
 echo
 if [[ $FAILS -eq 0 ]]; then
