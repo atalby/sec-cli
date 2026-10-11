@@ -29,7 +29,10 @@ own secrets tool, not just another repo.
   Engineer) — this repo's opted-in `packs/solo-founder-governance`
   names a single final approver, and no other opted-in pack or doc here
   names a different owner.
-- **Last updated**: 2026-10-10 (later same day: issues #30–#35 —
+- **Last updated**: 2026-10-11 (issue #43: `sec run` completion surfaces
+  reworded to the per-tenant truth — injection only for bws/op/infisical;
+  dispatch suite section count reconciled to 45; earlier 2026-10-10, later
+  same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
   the four fast bash suites with dispatch opt-in behind `SEC_TEST_DISPATCH=1`,
   GitHub Actions runs the mirror in a venv (issue #2 half), Vercel phantom
