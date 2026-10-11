@@ -73,10 +73,15 @@ stdin channel, so its arm stages the value in a transient mode-0600 file
 the value as a positional argv — a vendor limitation with no stdin/file/env
 alternative (open upstream bitwarden/sdk-sm #1568, CWE-214) — now documented
 as such in `docs/SECURITY.md`; dispatch guard 22o pins all four paths off
-argv and the infisical file delivery. All five bash suites pass (install 9 /
-sync_guard 15 / write_honesty 11 / sentinel 10 / dispatch 63), the pytest
-mirror passes, and the GitHub tracker holds only the hub-side handoff #51.
-Next: advance the highest-value unfinished work.
+argv and the infisical file delivery. Then #60 closed a completion-parity
+residual: the fish and ps1 surfaces omitted the top-level `--help`/`-h`/
+`--version`/`-v` flags that bash and zsh already offered and `bin/sec`
+accepts — fish now offers all four, ps1 offers them for `sec`/`sec.exe` but
+only `--help`/`-h` for `sec.ps1` (which rejects `--version`/`-v`), with
+dispatch guard 22p. All five bash suites pass (install 9 / sync_guard 15 /
+write_honesty 11 / sentinel 10 / dispatch 64), the pytest mirror passes, and
+the GitHub tracker holds only the hub-side handoff #51 (in-repo issues
+exhausted). Next: advance the highest-value unfinished in-repo work.
 
 ## Archive
 

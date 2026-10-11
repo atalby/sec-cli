@@ -1232,6 +1232,25 @@ else
 fi
 if [[ $_miss -eq 0 ]]; then pass "zsh/bash/fish completion surfaces offer create/organize/keep; ps1 scoped to sec.ps1's subset"; fi
 
+echo "[22p] every completion surface offers --help/-h and --version/-v, scoped to what each target accepts"
+_miss=0
+if ! { grep -qF -- "--help" <<<"$ZSH_C" && grep -qF -- "--version" <<<"$ZSH_C"; }; then
+    fail "zsh completion omits --help/--version"; _miss=1
+fi
+if ! grep -qF -- "--help -h --version -v" <<<"$BASH_C"; then
+    fail "bash completion omits --help/-h/--version/-v"; _miss=1
+fi
+if ! grep -qF -- "-a '--help -h --version -v'" <<<"$FISH_C"; then
+    fail "fish completion omits --help/-h/--version/-v (issue #60)"; _miss=1
+fi
+if ! grep -qF -- "\$flags = @('--help', '-h', '--version', '-v')" <<<"$PS1_C"; then
+    fail "ps1 completion omits --help/-h/--version/-v for sec/sec.exe (issue #60)"; _miss=1
+fi
+if ! grep -qF -- "\$corecommands + @('--help', '-h')" <<<"$PS1_C"; then
+    fail "ps1 completion does not scope sec.ps1 to --help/-h only (bin/sec.ps1 rejects --version, issue #60)"; _miss=1
+fi
+if [[ $_miss -eq 0 ]]; then pass "all four surfaces offer --help/-h/--version/-v; sec.ps1 limited to --help/-h"; fi
+
 echo "[22m] bw set: the secret value reaches jq via env and bw via stdin, never argv (#58)"
 JQGUARD="$WORK/jqguard"; mkdir -p "$JQGUARD"
 REAL_JQ="$(command -v jq)"

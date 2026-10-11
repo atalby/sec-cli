@@ -244,7 +244,7 @@ per AGENTS.md §5's replace-don't-append rule.
   `bash tests/test_write_honesty.sh` (11 sections, silent-no-op write
   paths, revert/undo honesty), `bash tests/test_sentinel.sh` (10 cases,
   the 360 audit instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (63 sections, every `sec` dispatch arm
+  `bash tests/test_dispatch.sh` (64 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed
@@ -269,7 +269,9 @@ per AGENTS.md §5's replace-don't-append rule.
   mode-0600 file (`KEY=@path`) since it has no stdin channel — only
   `bws secret create` still takes the value on argv (vendor limitation, no
   stdin/file/env; upstream bitwarden/sdk-sm #1568), documented in
-  docs/SECURITY.md, with dispatch guard 22o.
+  docs/SECURITY.md, with dispatch guard 22o, then #60 added the
+  completion-flag guard 22p (fish/ps1 now offer --help/-h/--version/-v,
+  with sec.ps1 scoped to --help/-h).
   A sixth, zero-dependency pytest suite lives at `scripts/tests/`
   (`python3 -m pytest scripts/tests/ -q`, added in 00b1a65 under issue
   #2); since #31 it also **executes** the four fast bash suites
