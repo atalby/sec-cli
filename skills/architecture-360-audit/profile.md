@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (6 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (42 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (14 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (6 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (43 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#2`, `#13`, `#32`) |
@@ -251,6 +251,8 @@ instrument rather than the product but runs the same way:
       ok: no-args exits 0 with Usage
     [2] unknown command fails loudly: exit 2 + tagged error, not a silent usage + exit 0
       ok: unknown cmd exits 2 with a tagged error
+    [2b] missing/invalid operand fails loudly: exit 2 + tagged error, not a silent usage/success
+      ok: get/set/create/run and --scope/--type/completion guards -> exit 2 + tagged error
     [3] bw get: plain key returns login.password
       ok: bw get MY_API_KEY -> pw-MY_API_KEY
     [4] bw get: item/field subpath
@@ -526,11 +528,11 @@ How the code reaches each, not merely that it exists.
 
 | Integration | Reached via | Anchors |
 |---|---|---|
-| Bitwarden (`bw` CLI) | dispatcher shells out (`bw status`, `bw list items`, `bw get attachment`) | `bin/sec:102`, `bin/sec:150`, `bin/sec:457` |
+| Bitwarden (`bw` CLI) | dispatcher shells out (`bw status`, `bw list items`, `bw get attachment`) | `bin/sec:102`, `bin/sec:150`, `bin/sec:466` |
 | bw-session-keeper (session freshness) | dispatcher shells out for `unlock` and `rotate` | `bin/sec:107`, `bin/sec:121` |
 | Bitwarden Secrets Manager (`bws`) | dispatcher tenant vocabulary | `bin/sec:65` |
-| 1Password (`op` CLI) | `op whoami` session check, `op signin`, `op read` | `bin/sec:129`, `bin/sec:131`, `bin/sec:408` |
-| Infisical / HashiCorp Vault / macOS Keychain | dispatcher tenant vocabulary | `bin/sec:65`, `bin/sec:191` |
+| 1Password (`op` CLI) | `op whoami` session check, `op signin`, `op read` | `bin/sec:129`, `bin/sec:131`, `bin/sec:417` |
+| Infisical / HashiCorp Vault / macOS Keychain | dispatcher tenant vocabulary | `bin/sec:65`, `bin/sec:184` |
 | AWS Secrets Manager | claimed in `docs/ARCHITECTURE.md:6` — verify whether any code path reaches it (candidate smoke finding) | `docs/ARCHITECTURE.md:6` |
 | GCP Secret Manager | `gcloud` shell-outs from the sync controller | `bin/sec-sync-controller.py:76`, `bin/sec-sync-controller.py:87` |
 | GitLab group CI/CD variables | HTTPS API `PUT` via `urllib.request` | `bin/sec-sync-controller.py:169`, `bin/sec-sync-controller.py:170` |
@@ -584,15 +586,15 @@ path `~/.sec/`, which never matches the real `$HOME/.sec` outside the repo —
 vestigial rule with a security-adjacent history; decide whether it hides
 anything (it does not today).
 
-### 2. Architecture and code structure -- `docs/ARCHITECTURE.md:1`, `bin/sec:162`, `bin/sec:192`, `bin/sec-sync-controller.py:72`, `bin/sec-sync-controller.py:5`
+### 2. Architecture and code structure -- `docs/ARCHITECTURE.md:1`, `bin/sec:162`, `bin/sec:198`, `bin/sec-sync-controller.py:72`, `bin/sec-sync-controller.py:5`
 
 One dispatcher, five sibling executables, one Python controller — judge
 whether the documented component table in `docs/ARCHITECTURE.md` matches the
 tree and the call graph matches the docs. Structural smells to quantify: the
 tenant vocabulary is re-spelled at `bin/sec:65` (regex dispatch),
-`bin/sec:184`, `bin/sec:211`, `bin/sec:277`, and `bin/sec:339` (three
+`bin/sec:184`, `bin/sec:217`, `bin/sec:283`, and `bin/sec:345` (three
 completion tables plus the setup-keychain echo) with no
-single source; `case "$cmd" in` at `bin/sec:192` is the real command router
+single source; `case "$cmd" in` at `bin/sec:198` is the real command router
 while usage text at `bin/sec:162` is a parallel declaration that only a test
 checks for one line. Smoke finding, resolved 2026-10-10 (issue #33): the sync
 controller's `Targets:` header (`bin/sec-sync-controller.py:5`) had advertised the
@@ -627,12 +629,12 @@ coverage. Check for assertions that
 pin the same hardcoded constants the implementation uses. The suites' value
 is real but partial — measure the gap, do not dismiss either side.
 
-### 4. Interface and developer experience -- `bin/sec:162`, `bin/sec:276`, `completions/_sec:1`, `SKILL.md:1`, `CLAUDE.md:1`, `skills/REGISTRY.md:1`, `docs/OPERATOR_MANUAL.md:1`
+### 4. Interface and developer experience -- `bin/sec:162`, `bin/sec:282`, `completions/_sec:1`, `SKILL.md:1`, `CLAUDE.md:1`, `skills/REGISTRY.md:1`, `docs/OPERATOR_MANUAL.md:1`
 
 The operator surface is `usage()` at `bin/sec:162` (the subcommand contract,
 including the `sec sync [--dry-run|--yes]` line at `bin/sec:174`), the zsh
 completion `completions/_sec`, `bin/sec.ps1`, and the docs. Measure: does
-every advertised subcommand (`subcmds` list at `bin/sec:276`) exist in the
+every advertised subcommand (`subcmds` list at `bin/sec:282`) exist in the
 dispatch, does every dispatched command appear in usage, do the completions
 agree? AGENTS §8 mandates one `[ TAG ]` line per event for machine-parsed
 stdout — measured 2026-10-10: 7 of the 8 tracked `bin/` entries emit tagged
@@ -729,7 +731,7 @@ and does plan/apply use identical classification?), migration atomicity
 recoverable, is a secret ever written to both backends in an inconsistent
 order?), and multi-tenant boundary correctness (`docs/MULTI_TENANCY.md:1` —
 can tenant A's key resolve to tenant B's item through the name-matching and
-`--scope` folder search in `bin/sec:393-425`?).
+`--scope` folder search in `bin/sec:399-431`?).
 
 ### 11. Resilience of the happy path -- `bin/sec-sync-controller.py:17`, `bin/sec-sync-controller.py:83`, `install.sh:24`, `bin/sec:129`
 

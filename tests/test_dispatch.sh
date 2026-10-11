@@ -230,6 +230,29 @@ RC=$?
 set -e
 if [[ $RC -eq 2 ]] && grep -q "^\[ERROR\] unknown command" <<<"$OUT"; then pass "unknown cmd exits 2 with a tagged error"; else fail "unknown cmd rc=$RC out=$OUT"; fi
 
+echo "[2b] missing/invalid operand fails loudly: exit 2 + tagged error, not a silent usage/success"
+assert_usage_error() {
+    local label="$1"; shift
+    local out rc
+    set +e
+    out="$(run_sec "$H" "$@" 2>&1)"
+    rc=$?
+    set -e
+    if [[ $rc -eq 2 ]] && grep -q "^\[ERROR\]" <<<"$out"; then
+        pass "$label -> exit 2 + tagged error"
+    else
+        fail "$label rc=$rc out=$out"
+    fi
+}
+assert_usage_error "sec get" get
+assert_usage_error "sec set" set
+assert_usage_error "sec create" create
+assert_usage_error "sec run" run
+assert_usage_error "sec get --scope" get --scope
+assert_usage_error "sec run --" run --
+assert_usage_error "sec completion bogus" completion bogus
+assert_usage_error "sec set --type" set --type
+
 echo "[3] bw get: plain key returns login.password"
 set +e
 OUT="$(run_sec "$H" get MY_API_KEY 2>&1)"
