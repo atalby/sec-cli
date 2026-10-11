@@ -50,7 +50,7 @@ Bind these into every run. They are not style preferences.
    without both is dropped, not softened.
 2. Every finding states the **concrete consequence**, never the rule it
    violates. "Should validate" is not a finding. "`eval $(op signin)` at
-   `bin/sec:131` executes whatever text the 1Password CLI prints on stdout
+   `bin/sec:145` executes whatever text the 1Password CLI prints on stdout
    as shell code in the user's session" is.
 3. Severity is one of three values only: `blocking`, `important`, `nit`.
    Formatting taste and "I would have written it differently" are not

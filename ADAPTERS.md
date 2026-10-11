@@ -244,7 +244,7 @@ per AGENTS.md §5's replace-don't-append rule.
   `bash tests/test_write_honesty.sh` (11 sections, silent-no-op write
   paths, revert/undo honesty), `bash tests/test_sentinel.sh` (10 cases,
   the 360 audit instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (57 sections, every `sec` dispatch arm
+  `bash tests/test_dispatch.sh` (59 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed
@@ -254,7 +254,9 @@ per AGENTS.md §5's replace-don't-append rule.
   2026-10-11 after #52 added the F003-residual keeper argv guards
   (suite cases 22j and 22k), then #53 added the sync-provenance guard
   [15], then #54 added the runtime-dependency-truth guard [10] to the
-  sentinel suite.
+  sentinel suite, then #55 tightened the sec.conf parser (`get_cfg_val`
+  now skips comments/blanks and matches the key name exactly) with
+  dispatch guards 18b/18c.
   A sixth, zero-dependency pytest suite lives at `scripts/tests/`
   (`python3 -m pytest scripts/tests/ -q`, added in 00b1a65 under issue
   #2); since #31 it also **executes** the four fast bash suites

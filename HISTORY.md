@@ -36,9 +36,15 @@ said so since #9); a sync_guard guard [15] now fails if the false claim
 returns. Then #54 corrected the README/ARCHITECTURE/install.sh
 runtime-dependency sentence, which understated `jq` as housekeep-only
 although `bin/sec` needs it for auth/get/set too; a sentinel-suite guard
-[10] fails if that understatement returns. All five bash
+[10] fails if that understatement returns. Then #55 fixed a sec.conf
+parser bug: `get_cfg_val` matched the key as an unanchored regex on the
+first `=`-field and never skipped comments, so a commented-out key such
+as `# auto_rotate = false` still took effect (a plain default-backend
+lookup could also collide with a longer key name); the parser now skips
+comments/blanks and requires an exact key-name match, with dispatch
+guards [18b]/[18c]. All five bash
 suites pass (install 9 / sync_guard 15 / write_honesty 11 / sentinel 10 /
-dispatch 57), the pytest mirror passes, and the GitHub tracker holds only
+dispatch 59), the pytest mirror passes, and the GitHub tracker holds only
 the hub-side handoff #51. Next: advance the highest-value unfinished work.
 
 ## Archive

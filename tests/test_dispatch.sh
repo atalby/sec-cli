@@ -593,6 +593,30 @@ RC=$?
 set -e
 if [[ $RC -eq 0 ]] && [[ "$OUT" == "bws-pw-ANY_KEY" ]]; then pass "default_backend=bws routes get to bws"; else fail "default backend rc=$RC out=$OUT"; fi
 
+echo "[18b] sec.conf: a commented-out key must NOT take effect (issue #55)"
+H18B="$(new_home "$WORK/h18b")"
+printf '[global]\n# default_backend = bws\n\n[bitwarden]\nauto_rotate = false\n' >"$H18B/.sec/sec.conf"
+set +e
+OUT18B="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H18B" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "$REPO_ROOT/bin/sec" get MY_API_KEY 2>&1 </dev/null)"
+RC18B=$?
+set -e
+if [[ $RC18B -eq 0 ]] && [[ "$OUT18B" == "pw-MY_API_KEY" ]]; then pass "commented default_backend ignored; default bitwarden used"; else fail "commented key was honored (rc=$RC18B out=$OUT18B)"; fi
+
+echo "[18c] sec.conf: a substring key must not collide with the real key (issue #55)"
+H18C="$(new_home "$WORK/h18c")"
+printf '[global]\ndefault_backend_extra = bws\n\n[bitwarden]\nauto_rotate = false\n' >"$H18C/.sec/sec.conf"
+set +e
+OUT18C="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H18C" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "$REPO_ROOT/bin/sec" get MY_API_KEY 2>&1 </dev/null)"
+RC18C=$?
+set -e
+if [[ $RC18C -eq 0 ]] && [[ "$OUT18C" == "pw-MY_API_KEY" ]]; then pass "substring key default_backend_extra did not set default_backend"; else fail "substring key collided (rc=$RC18C out=$OUT18C)"; fi
+
 MINBIN="$WORK/minbin"
 mkdir -p "$MINBIN"
 for _b in bash cat chmod mkdir uname tr grep jq; do

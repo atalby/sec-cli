@@ -50,10 +50,24 @@ get_cfg_val() {
     local section="$1"
     local key="$2"
     local default_val="$3"
-    awk -F '=' -v s="[$section]" -v k="$key" '
+    awk -v s="[$section]" -v k="$key" '
+        /^[ \t]*#/ { next }
+        /^[ \t]*$/ { next }
         $0 == s { in_s=1; next }
         /^\[/ { in_s=0 }
-        in_s && $1 ~ k { gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2; found=1; exit }
+        in_s {
+            eq = index($0, "=")
+            if (eq == 0) next
+            name = substr($0, 1, eq - 1)
+            gsub(/^[ \t]+|[ \t]+$/, "", name)
+            if (name == k) {
+                val = substr($0, eq + 1)
+                gsub(/^[ \t]+|[ \t]+$/, "", val)
+                print val
+                found = 1
+                exit
+            }
+        }
         END { if (!found) print "'"$default_val"'" }
     ' "$CONFIG_FILE" 2>/dev/null || echo "$default_val"
 }

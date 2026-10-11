@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (15 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (10 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (57 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (15 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (10 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (59 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#2`, `#13`, `#32`) |
@@ -543,18 +543,18 @@ How the code reaches each, not merely that it exists.
 
 | Integration | Reached via | Anchors |
 |---|---|---|
-| Bitwarden (`bw` CLI) | dispatcher shells out (`bw status`, `bw list items`, `bw get attachment`) | `bin/sec:102`, `bin/sec:150`, `bin/sec:466` |
-| bw-session-keeper (session freshness) | dispatcher shells out for `unlock` and `rotate` | `bin/sec:107`, `bin/sec:121` |
-| Bitwarden Secrets Manager (`bws`) | dispatcher tenant vocabulary | `bin/sec:65` |
-| 1Password (`op` CLI) | `op whoami` session check, `op signin`, `op read` | `bin/sec:129`, `bin/sec:131`, `bin/sec:417` |
-| Infisical / HashiCorp Vault / macOS Keychain | dispatcher tenant vocabulary | `bin/sec:65`, `bin/sec:184` |
+| Bitwarden (`bw` CLI) | dispatcher shells out (`bw status`, `bw list items`, `bw get attachment`) | `bin/sec:116`, `bin/sec:164`, `bin/sec:480` |
+| bw-session-keeper (session freshness) | dispatcher shells out for `unlock` and `rotate` | `bin/sec:121`, `bin/sec:135` |
+| Bitwarden Secrets Manager (`bws`) | dispatcher tenant vocabulary | `bin/sec:79` |
+| 1Password (`op` CLI) | `op whoami` session check, `op signin`, `op read` | `bin/sec:143`, `bin/sec:145`, `bin/sec:431` |
+| Infisical / HashiCorp Vault / macOS Keychain | dispatcher tenant vocabulary | `bin/sec:79`, `bin/sec:198` |
 | AWS Secrets Manager | claimed in `docs/ARCHITECTURE.md:6` — verify whether any code path reaches it (candidate smoke finding) | `docs/ARCHITECTURE.md:6` |
 | GCP Secret Manager | `gcloud` shell-outs from the sync controller | `bin/sec-sync-controller.py:76`, `bin/sec-sync-controller.py:87` |
 | GitLab group CI/CD variables | HTTPS API `PUT` via `urllib.request` | `bin/sec-sync-controller.py:169`, `bin/sec-sync-controller.py:170` |
 | Vercel | claimed as a sync target in `docs/ARCHITECTURE.md:14` — no call site found in the controller this build (candidate smoke finding) | `docs/ARCHITECTURE.md:14` |
 | GitHub (install source) | `REPO_URL` default feeding `git clone`, piped `curl` install source | `install.sh:7`, `README.md:29` |
 | GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:121` |
-| jq | invoked for JSON parsing inside `bin/sec` | `bin/sec:102` |
+| jq | invoked for JSON parsing inside `bin/sec` | `bin/sec:116` |
 | Hyer hub checkers | invoked by the local pre-commit wrapper from `~/sandbox/hyer/scripts/` | `ADAPTERS.md:232` |
 
 ## Personas
@@ -579,7 +579,7 @@ Hygiene Specialist for dead surface — and routes all output to the Human
 Systems Architect for approval. A persona here is an audit lens, not a
 dispatched worker.
 
-### 1. Security and access control -- `bin/sec-sync-controller.py:19`, `bin/sec-sync-controller.py:248`, `install.sh:50`, `bin/sec:131`, `.gitignore:11`, `docs/SECURITY.md:1`, `tests/test_sync_guard.sh:47`
+### 1. Security and access control -- `bin/sec-sync-controller.py:19`, `bin/sec-sync-controller.py:248`, `install.sh:50`, `bin/sec:145`, `.gitignore:11`, `docs/SECURITY.md:1`, `tests/test_sync_guard.sh:47`
 
 The zero-plaintext claim in `docs/SECURITY.md` and `docs/ARCHITECTURE.md:1`
 is the repo's reason to exist; audit the places it can leak. The production
@@ -591,7 +591,7 @@ enforced by `tests/test_sync_guard.sh` (first suite section
 `[1] --dry-run previews` at `tests/test_sync_guard.sh:47`). Re-verify the
 guards actually precede every backend write, and that no other writer exists.
 The most direct leak surface
-is `bin/sec:131` (`eval $(op signin)`): provider-CLI stdout executed as
+is `bin/sec:145` (`eval $(op signin)`): provider-CLI stdout executed as
 shell. Config confidentiality: `install.sh:50` creates `$HOME/.sec/sec.conf`
 mode 600 — the test that claims it is section `[5]` of
 `tests/test_install.sh` (assert at `tests/test_install.sh:104`), and it still
@@ -601,16 +601,16 @@ path `~/.sec/`, which never matches the real `$HOME/.sec` outside the repo —
 vestigial rule with a security-adjacent history; decide whether it hides
 anything (it does not today).
 
-### 2. Architecture and code structure -- `docs/ARCHITECTURE.md:1`, `bin/sec:162`, `bin/sec:198`, `bin/sec-sync-controller.py:72`, `bin/sec-sync-controller.py:5`
+### 2. Architecture and code structure -- `docs/ARCHITECTURE.md:1`, `bin/sec:176`, `bin/sec:212`, `bin/sec-sync-controller.py:72`, `bin/sec-sync-controller.py:5`
 
 One dispatcher, five sibling executables, one Python controller — judge
 whether the documented component table in `docs/ARCHITECTURE.md` matches the
 tree and the call graph matches the docs. Structural smells to quantify: the
-tenant vocabulary is re-spelled at `bin/sec:65` (regex dispatch),
-`bin/sec:184`, `bin/sec:217`, `bin/sec:283`, and `bin/sec:345` (three
+tenant vocabulary is re-spelled at `bin/sec:79` (regex dispatch),
+`bin/sec:198`, `bin/sec:231`, `bin/sec:297`, and `bin/sec:359` (three
 completion tables plus the setup-keychain echo) with no
-single source; `case "$cmd" in` at `bin/sec:198` is the real command router
-while usage text at `bin/sec:162` is a parallel declaration that only a test
+single source; `case "$cmd" in` at `bin/sec:212` is the real command router
+while usage text at `bin/sec:176` is a parallel declaration that only a test
 checks for one line. Smoke finding, resolved 2026-10-10 (issue #33): the sync
 controller's `Targets:` header (`bin/sec-sync-controller.py:5`) had advertised the
 targets "GCP Secret Manager, GitLab Group Variables, Vercel Projects", but
@@ -644,12 +644,12 @@ coverage. Check for assertions that
 pin the same hardcoded constants the implementation uses. The suites' value
 is real but partial — measure the gap, do not dismiss either side.
 
-### 4. Interface and developer experience -- `bin/sec:162`, `bin/sec:282`, `completions/_sec:1`, `SKILL.md:1`, `CLAUDE.md:1`, `skills/REGISTRY.md:1`, `docs/OPERATOR_MANUAL.md:1`
+### 4. Interface and developer experience -- `bin/sec:176`, `bin/sec:296`, `completions/_sec:1`, `SKILL.md:1`, `CLAUDE.md:1`, `skills/REGISTRY.md:1`, `docs/OPERATOR_MANUAL.md:1`
 
-The operator surface is `usage()` at `bin/sec:162` (the subcommand contract,
-including the `sec sync [--dry-run|--yes]` line at `bin/sec:174`), the zsh
+The operator surface is `usage()` at `bin/sec:176` (the subcommand contract,
+including the `sec sync [--dry-run|--yes]` line at `bin/sec:188`), the zsh
 completion `completions/_sec`, `bin/sec.ps1`, and the docs. Measure: does
-every advertised subcommand (`subcmds` list at `bin/sec:282`) exist in the
+every advertised subcommand (`subcmds` list at `bin/sec:296`) exist in the
 dispatch, does every dispatched command appear in usage, do the completions
 agree? AGENTS §8 mandates one `[ TAG ]` line per event for machine-parsed
 stdout — measured 2026-10-11 (`grep -cE '\[ ?(OK|INFO|WARN|ERROR) ?\]'`; re-measured
@@ -749,9 +749,9 @@ and does plan/apply use identical classification?), migration atomicity
 recoverable, is a secret ever written to both backends in an inconsistent
 order?), and multi-tenant boundary correctness (`docs/MULTI_TENANCY.md:1` —
 can tenant A's key resolve to tenant B's item through the name-matching and
-`--scope` folder search in `bin/sec:399-431`?).
+`--scope` folder search in `bin/sec:413-445`?).
 
-### 11. Resilience of the happy path -- `bin/sec-sync-controller.py:17`, `bin/sec-sync-controller.py:83`, `install.sh:24`, `bin/sec:129`
+### 11. Resilience of the happy path -- `bin/sec-sync-controller.py:17`, `bin/sec-sync-controller.py:83`, `install.sh:24`, `bin/sec:143`
 
 Count every external call and check three properties on each: timeout,
 retry, defined behaviour on partial failure. The measured baseline this
@@ -768,15 +768,15 @@ is the production write path and an install hang is a user's first
 impression. Contrast: the guard tests do exercise the refusal paths
 (exit 2/1), so policy-failure is covered while network-failure is not.
 
-### 12. Untrusted input reaching a trusted sink -- `bin/sec:65`, `bin/sec:131`, `bin/sec-sync-controller.py:120`, `install.sh:7`, `.mcp.json.example:1`
+### 12. Untrusted input reaching a trusted sink -- `bin/sec:79`, `bin/sec:145`, `bin/sec-sync-controller.py:120`, `install.sh:7`, `.mcp.json.example:1`
 
-Trace each external input to its sink. CLI argv: `bin/sec:65` regex-selects
-a tenant from user input, then dispatch (`bin/sec:172`) chooses the
+Trace each external input to its sink. CLI argv: `bin/sec:79` regex-selects
+a tenant from user input, then dispatch (`bin/sec:186`) chooses the
 subprocess — state what constrains item names and field names before they
 reach provider CLIs. Environment: `SEC_REPO_URL` at `install.sh:7` flows
 into `git clone` unchecked (an env var is attacker-controlled in any
-compromised CI or hostile dotfile). Provider output: `bin/sec:131` executes
-it (`eval`), `bin/sec:102` and friends parse it with `jq`; sync controller
+compromised CI or hostile dotfile). Provider output: `bin/sec:145` executes
+it (`eval`), `bin/sec:116` and friends parse it with `jq`; sync controller
 URL-constructs with the `secret_name` at `bin/sec-sync-controller.py:163` —
 what chars can a `SYNC_KEYS` value carry into an API path? Config-adjacent:
 `.mcp.json.example` wires the host-local (gitignored) `.mcp.json` through
