@@ -351,7 +351,7 @@ complete -f -c sec -n '__fish_sec_needs_command' -a 'bitwarden bw 1pass op bws v
 complete -f -c sec -n '__fish_sec_needs_command' -a '--help -h --version -v'
 
 complete -f -c sec -n '__fish_seen_subcommand_from sync' -a '-n --dry-run -y --yes'
-complete -f -c sec -n '__fish_seen_subcommand_from housekeep' -a 'plan apply revert'
+complete -f -c sec -n '__fish_seen_subcommand_from housekeep organize' -a 'plan apply revert'
 complete -f -c sec -n '__fish_seen_subcommand_from migrate' -a '--from --to --plan --apply --undo'
 complete -f -c sec -n '__fish_seen_subcommand_from completion' -a 'zsh bash fish ps1'
 EOF

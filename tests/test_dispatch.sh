@@ -1383,6 +1383,22 @@ if ! grep -qF -- "\$tenants = @('bitwarden', 'bw', '1pass', 'op', 'bws', 'vault'
 fi
 if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer the tenant-prefix words"; fi
 
+echo "[22r] every completion surface routes the organize alias to the housekeep subcommands (issue #79)"
+_miss=0
+if ! grep -qF -- "-n '__fish_seen_subcommand_from housekeep organize'" <<<"$FISH_C"; then
+    fail "fish completion omits the housekeep subcommands for the organize alias (issue #79)"; _miss=1
+fi
+if ! grep -qF -- "housekeep|organize)" <<<"$BASH_C"; then
+    fail "bash completion omits the organize alias from the housekeep subcommand arm"; _miss=1
+fi
+if ! grep -qF -- "housekeep|organize)" <<<"$ZSH_C"; then
+    fail "zsh completion omits the organize alias from the housekeep subcommand arm"; _miss=1
+fi
+if ! grep -qF -- "-in @('housekeep', 'organize')" <<<"$PS1_C"; then
+    fail "ps1 completion omits the organize alias from the housekeep subcommand arm"; _miss=1
+fi
+if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces route organize to the housekeep subcommands"; fi
+
 echo "[22m] bw set: the secret value reaches jq via env and bw via stdin, never argv (#58)"
 JQGUARD="$WORK/jqguard"; mkdir -p "$JQGUARD"
 REAL_JQ="$(command -v jq)"

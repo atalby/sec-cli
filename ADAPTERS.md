@@ -29,9 +29,9 @@ own secrets tool, not just another repo.
   Engineer) — this repo's opted-in `packs/solo-founder-governance`
   names a single final approver, and no other opted-in pack or doc here
   names a different owner.
-- **Last updated**: 2026-10-12 (issue #78: the fish completion surface now
-  offers the tenant-prefix words every other surface already had (dispatch
-  guard 22q); issue #65: corrected the stale `SEC_TEST_DISPATCH` opt-in and pre-commit "blind to `tests/*.sh`" claims across ADAPTERS.md, the 360-audit skill, and CI; issue #47: the 103 KB `HISTORY.md` narrative was
+- **Last updated**: 2026-10-12 (issues #78/#79: the fish completion surface
+  now offers the tenant-prefix words and routes the organize alias to the
+  housekeep subcommands, dispatch guards 22q/22r); issue #65: corrected the stale `SEC_TEST_DISPATCH` opt-in and pre-commit "blind to `tests/*.sh`" claims across ADAPTERS.md, the 360-audit skill, and CI; issue #47: the 103 KB `HISTORY.md` narrative was
   split losslessly into per-date `history/` archives and guarded against re-bloat;
   issue #46: sentinel now guards the profile.md
   coverage denominator against the live tracked-file count; issue #44: sec.ps1 doc parity + non-zero exit on unimplemented
@@ -261,7 +261,7 @@ per AGENTS.md §5's replace-don't-append rule.
   `bash tests/test_write_honesty.sh` (13 sections, silent-no-op write
   paths, revert/undo honesty, keeper sync-failure + non-TTY honesty), `bash tests/test_sentinel.sh` (10 cases,
   the 360 audit instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (73 sections, every `sec` dispatch arm
+  `bash tests/test_dispatch.sh` (74 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed
@@ -291,7 +291,7 @@ per AGENTS.md §5's replace-don't-append rule.
   with sec.ps1 scoped to --help/-h), then #78 added the completion-tenant
   guard 22q (all four surfaces must offer the tenant-prefix words
   bitwarden/bw/1pass/op/bws/vault/infisical/keychain; the fish surface
-  had omitted them).
+  had omitted them), then #79 guarded the organize-alias case 22r (fish had omitted both).
   A sixth, zero-dependency pytest suite lives at `scripts/tests/`
   (`python3 -m pytest scripts/tests/ -q`, added in 00b1a65 under issue
   #2); since #31 it also **executes** all five bash suites
