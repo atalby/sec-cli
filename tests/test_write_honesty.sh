@@ -18,6 +18,7 @@ if [ -n "${SEC_TEST_BW_LOG:-}" ]; then echo "bw $*" >>"$SEC_TEST_BW_LOG"; fi
 BW_ITEM_JSON="${SEC_TEST_BW_ITEM_JSON:-{\"id\":\"a\",\"name\":\"a\",\"folderId\":null}}"
 case "$*" in
     "sync --nostatus") exit 0 ;;
+    "sync") exit "${SEC_TEST_BW_SYNC_RC:-0}" ;;
     "list items") echo '[{"name":"k","notes":"'"${SEC_TEST_BW_NOTES-v}"'"}]' ;;
     get\ item*) echo "$BW_ITEM_JSON" ;;
     edit\ item*) exit "${SEC_TEST_BW_EDIT_RC:-0}" ;;
@@ -214,6 +215,28 @@ if grep -q "Successfully Applied" <<<"$OUT10"; then fail "bw reported success wh
 if grep -q "^\[WARN\] Skipping" <<<"$OUT10"; then pass "bw tagged [WARN] skip explains staleness"; else fail "bw no skip message: $OUT10"; fi
 if grep -q "edit item" "$BWLOG10"; then fail "bw edit item invoked for a stale action"; else pass "bw no write attempted for the stale action"; fi
 if [[ -f "$PLAN10" ]]; then pass "bw plan kept when nothing applied"; else fail "bw plan DELETED despite zero applied"; fi
+
+echo "[11] bw-session-keeper rotate: a failed vault sync is surfaced, a successful one confirmed"
+H11="$WORK/h11"
+mkdir -p "$H11/.cache/bitwarden"
+printf 'fakesession' >"$H11/.cache/bitwarden/session"
+set +e
+OUT11="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H11" "SEC_TEST_BW_SYNC_RC=1" "$REPO_ROOT/bin/bw-session-keeper" rotate 2>&1)"
+RC11=$?
+set -e
+if [[ $RC11 -eq 1 ]]; then pass "failed refresh exits 1 (no silent success)"; else fail "failed refresh exited $RC11, expected 1: $OUT11"; fi
+if grep -q "^\[ OK \] Vault synced successfully." <<<"$OUT11"; then fail "reported 'Vault synced successfully' after a failed sync"; else pass "no false success banner on a failed sync"; fi
+if grep -q "^\[ERROR\] Session is valid but the vault sync failed" <<<"$OUT11"; then pass "tagged [ERROR] explains the failed refresh"; else fail "no tagged sync-failure notice: $OUT11"; fi
+
+H11b="$WORK/h11b"
+mkdir -p "$H11b/.cache/bitwarden"
+printf 'fakesession' >"$H11b/.cache/bitwarden/session"
+set +e
+OUT11b="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H11b" "SEC_TEST_BW_SYNC_RC=0" "$REPO_ROOT/bin/bw-session-keeper" rotate 2>&1)"
+RC11b=$?
+set -e
+if [[ $RC11b -eq 0 ]]; then pass "successful refresh exits 0"; else fail "successful refresh exited $RC11b: $OUT11b"; fi
+if grep -q "^\[ OK \] Vault synced successfully." <<<"$OUT11b"; then pass "tagged success banner on real success"; else fail "no success banner on a working refresh: $OUT11b"; fi
 
 echo
 if [[ $FAILS -eq 0 ]]; then

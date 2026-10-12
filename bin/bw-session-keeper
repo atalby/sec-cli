@@ -162,8 +162,12 @@ case "$cmd" in
         if validate_session; then
             session="$(get_stored_session)"
             echo "[INFO] Session is valid. Refreshing vault sync..."
-            BW_SESSION="$session" bw sync >/dev/null 2>&1
-            echo "[ OK ] Vault synced successfully."
+            if BW_SESSION="$session" bw sync >/dev/null 2>&1; then
+                echo "[ OK ] Vault synced successfully."
+            else
+                echo "[ERROR] Session is valid but the vault sync failed; the session key is unchanged. Re-run 'sec keep' once connectivity returns." >&2
+                exit 1
+            fi
         else
             echo "[INFO] Session expired/missing. Attempting auto-rotation..."
             pass="$(get_master_password)"

@@ -29,8 +29,13 @@ call; `rotate`/`keep` reject any positional, `unlock`/`setup-keychain`
 still take one optional password; `run` stays variadic). Tests: dispatch
 suite 68 -> 72 sections ([2e], [2f], [2g], [2h]); profile.md + ADAPTERS
 counts updated. All five bash suites pass (install 9 / sync_guard 16 /
-write_honesty 11 / sentinel 10 / dispatch 72), pytest mirror 29 passed,
-sentinel citations + coverage green. Open items: #67 (360 audit — needs
+write_honesty 12 / sentinel 10 / dispatch 72), pytest mirror 29 passed,
+sentinel citations + coverage green. Issue #77 then fixed the last
+audit-flagged silent abort (scratchpad C25): a valid-session
+`bw-session-keeper` `rotate`/`keep` whose vault refresh failed died under
+`set -e` with no message — it now exits 1 with a tagged `[ERROR]`;
+write_honesty 11 -> 12 sections and this is the keeper's first behavioral
+test. Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.
 
