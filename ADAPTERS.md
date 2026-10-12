@@ -52,7 +52,7 @@ own secrets tool, not just another repo.
   and does a defensive create-on-404 upsert (the GCP arm already created
   if absent); issue #62: the GCP create-if-absent branch itself is now
   pinned by sync_guard section [16] (the shim reads `SEC_TEST_GCLOUD_DESCRIBE_RC`);
-  current suites: dispatch 73, write-honesty 13,
+  current suites: dispatch 74, write-honesty 13,
   sentinel 10, sync-guard 16, install 9; earlier 2026-10-10, later
   same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
