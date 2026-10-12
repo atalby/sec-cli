@@ -637,8 +637,8 @@ module-level public, leading underscore private.
 
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:255`
 
-Nine install sections, fourteen guard sections, twelve write-honesty
-sections, and the audit instrument's own nine sentinel cases pass today
+Nine install sections, sixteen guard sections, twelve write-honesty
+sections, and the audit instrument's own ten sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes all five bash suites — the former dispatch opt-in was removed in
 0284d39, issue #65); establish what they do not cover. Structural
