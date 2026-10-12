@@ -1196,6 +1196,12 @@ for W in "$WORK_Y1" "$WORK_Y2" "$WORK_Y3" "$WORK_Y4" "$WORK_YCTRL"; do
     cp -a "$REPO_ROOT/." "$W/"
     rm -rf "$W/.git"
 done
+if python3 -c "import pytest" >/dev/null 2>&1; then
+    PYTEST_OK=1
+else
+    PYTEST_OK=0
+    echo "  skip: pytest unavailable; section 17 skips the pytest-mirror count check (issue #97)"
+fi
 python3 - "$WORK_Y1/skills/architecture-360-audit/profile.md" <<'PY'
 import re
 import sys
@@ -1262,31 +1268,33 @@ else
     no "coverage did not name the drifted profile.md §3 install count"
     printf '%s\n' "$OUT"
 fi
-OUT="$(cd "$WORK_Y3" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
-RC=$?
-if [[ $RC -ne 0 ]]; then
-    ok "coverage exits nonzero on a drifted ADAPTERS.md pytest count"
-else
-    no "coverage accepted a drifted ADAPTERS.md pytest count"
-fi
-if grep -q "ADAPTERS.md says pytest mirror is 28 passed, live collection counts 29" <<<"$OUT"; then
-    ok "coverage names the drifted ADAPTERS.md pytest count"
-else
-    no "coverage did not name the drifted ADAPTERS.md pytest count"
-    printf '%s\n' "$OUT"
-fi
-OUT="$(cd "$WORK_Y4" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
-RC=$?
-if [[ $RC -ne 0 ]]; then
-    ok "coverage exits nonzero on a drifted SKILL.md pytest count"
-else
-    no "coverage accepted a drifted SKILL.md pytest count"
-fi
-if grep -q "SKILL.md says pytest mirror is 30 passed, live collection counts 29" <<<"$OUT"; then
-    ok "coverage names the drifted SKILL.md pytest count"
-else
-    no "coverage did not name the drifted SKILL.md pytest count"
-    printf '%s\n' "$OUT"
+if [[ "$PYTEST_OK" -eq 1 ]]; then
+    OUT="$(cd "$WORK_Y3" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+    RC=$?
+    if [[ $RC -ne 0 ]]; then
+        ok "coverage exits nonzero on a drifted ADAPTERS.md pytest count"
+    else
+        no "coverage accepted a drifted ADAPTERS.md pytest count"
+    fi
+    if grep -q "ADAPTERS.md says pytest mirror is 28 passed, live collection counts 29" <<<"$OUT"; then
+        ok "coverage names the drifted ADAPTERS.md pytest count"
+    else
+        no "coverage did not name the drifted ADAPTERS.md pytest count"
+        printf '%s\n' "$OUT"
+    fi
+    OUT="$(cd "$WORK_Y4" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+    RC=$?
+    if [[ $RC -ne 0 ]]; then
+        ok "coverage exits nonzero on a drifted SKILL.md pytest count"
+    else
+        no "coverage accepted a drifted SKILL.md pytest count"
+    fi
+    if grep -q "SKILL.md says pytest mirror is 30 passed, live collection counts 29" <<<"$OUT"; then
+        ok "coverage names the drifted SKILL.md pytest count"
+    else
+        no "coverage did not name the drifted SKILL.md pytest count"
+        printf '%s\n' "$OUT"
+    fi
 fi
 OUT="$(cd "$WORK_YCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
 RC=$?

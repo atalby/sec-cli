@@ -70,7 +70,10 @@ three-value severity set (section 16; sentinel 20 -> 21 cases).
 Issue #97 then bound the last unguarded count claims: profile.md §3's four
 suite count-words and the pytest mirror's "29 passed" (ADAPTERS.md:305,
 SKILL.md:451), all re-derived from the live suites (section 17; sentinel
-21 -> 22 cases).
+21 -> 22 cases). CI then went red: the `Run bash suites` step has no pytest,
+so section 17's pytest-mirror check skips and case [22]'s two pytest
+corruptions went unwitnessed; the case now mirrors the guard's own
+`_pytest_available` precondition (#98).
 Open items: #67 (360 audit —
 needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
