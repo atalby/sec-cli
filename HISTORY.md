@@ -87,6 +87,9 @@ Issue #101 then tied `sec --help` to the dispatcher: a dispatch section asserts
 the usage screen prints a line for every canonical subcommand and every
 non-flag dispatch arm parsed from bin/sec, backing ADAPTERS.md's claim that it
 lists every subcommand (dispatch 82 -> 83 sections).
+Issue #102 pinned the tenant set: one dispatch section asserts the identical
+canonical list in the dispatcher, `sec --help`, and all four completions
+(dispatch 83 -> 84 sections).
 Open items: #67 (360 audit —
 needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:

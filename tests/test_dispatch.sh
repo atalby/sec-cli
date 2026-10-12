@@ -409,6 +409,20 @@ while IFS= read -r arm; do
 done <<<"$_ARMS"
 if [[ $_miss -eq 0 ]]; then pass "sec --help lists a usage line for every canonical subcommand and every non-flag dispatch arm"; fi
 
+echo "[2l] the canonical tenant set is identical across dispatch, usage, and all four completions (issue #102)"
+ZF="$(bash "$REPO_ROOT/bin/sec" completion zsh 2>&1)"
+BF="$(bash "$REPO_ROOT/bin/sec" completion bash 2>&1)"
+FF="$(bash "$REPO_ROOT/bin/sec" completion fish 2>&1)"
+PF="$(bash "$REPO_ROOT/bin/sec" completion ps1 2>&1)"
+_miss=0
+grep -qF '^(bitwarden|bw|1pass|op|bws|vault|infisical|keychain)$' "$REPO_ROOT/bin/sec" || { fail "dispatch tenant-prefix regex drifted from the canonical set (issue #102)"; _miss=1; }
+grep -qF 'Configured Tenants: bitwarden (bw), 1pass (op), bws, vault, infisical, keychain' <<<"$U" || { fail "sec --help 'Configured Tenants' line drifted from the canonical set (issue #102)"; _miss=1; }
+grep -qF 'tenants=(bitwarden bw 1pass op bws vault infisical keychain)' <<<"$ZF" || { fail "zsh completion tenant list drifted from the canonical set (issue #102)"; _miss=1; }
+grep -qF 'tenants="bitwarden bw 1pass op bws vault infisical keychain"' <<<"$BF" || { fail "bash completion tenant list drifted from the canonical set (issue #102)"; _miss=1; }
+grep -qF -- "-a 'bitwarden bw 1pass op bws vault infisical keychain'" <<<"$FF" || { fail "fish completion tenant list drifted from the canonical set (issue #102)"; _miss=1; }
+grep -qF "@('bitwarden', 'bw', '1pass', 'op', 'bws', 'vault', 'infisical', 'keychain')" <<<"$PF" || { fail "ps1 completion tenant list drifted from the canonical set (issue #102)"; _miss=1; }
+if [[ $_miss -eq 0 ]]; then pass "the canonical tenant set is identical across the dispatcher, usage, and all four completions"; fi
+
 echo "[2g] sec get --scope rejects a flag-like folder name (issue #75)"
 assert_usage_error "sec get --scope --bogus <key>" get --scope --bogus MY_API_KEY
 assert_usage_error "sec get --scope -x <key>" get --scope -x MY_API_KEY
