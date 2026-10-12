@@ -665,12 +665,7 @@ else:
                 f"ARCHITECTURE.md lists producers {_cited_set}, live emitters are {_live_producers}"
             )
 
-# --- 12. ADAPTERS.md's skills registry census must match the live tree (#89) --
-# ADAPTERS.md's "Skills registry" section carries five numbers (skill dirs,
-# adopter-distributable, project-specific, hub-internal rows, total rows) and
-# skills/REGISTRY.md is the table they describe. Both are hand-maintained, so a
-# new skill silently invalidates five claims. This re-measures the tree and the
-# registry and fails closed on any disagreement.
+# --- 12. ADAPTERS.md's skills registry census must match skills/ + REGISTRY.md (#89) --
 registry_mismatches = []
 _skill_root = os.path.join(repo, "skills")
 _live_skill_dirs = set()

@@ -33,6 +33,16 @@ if grep -q "personas: all 12 reachable" <<<"$OUT"; then
 else
     no "persona reachability line missing"
 fi
+if grep -q "\[ OK \] skills tree: .* skill dir(s), registry .* row(s)" <<<"$OUT"; then
+    ok "--list reports the live skills tree and registry row census"
+else
+    no "--list skills tree census line missing"
+fi
+if grep -q "\[ OK \] skills registry: ADAPTERS.md's census matches" <<<"$OUT"; then
+    ok "--list reports the ADAPTERS.md skills registry census verdict"
+else
+    no "--list skills registry verdict line missing"
+fi
 
 echo "[2] citations subcommand resolves every file:line anchor"
 OUT="$("$SENTINEL" citations 2>&1)"
