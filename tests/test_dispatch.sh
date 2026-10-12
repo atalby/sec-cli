@@ -371,6 +371,16 @@ OUT="$(run_sec "$H" rotate TRAILING 2>&1)"; RC=$?
 set -e
 if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec rotate: unexpected trailing argument' <<<"$OUT" && [[ "$(wc -c <"$BWLOG")" -eq "$BPROG_BEFORE" ]]; then pass "rotate TRAILING refused before any keeper/backend call"; else fail "rotate TRAILING rc=$RC bwlog_changed=$([[ "$(wc -c <"$BWLOG")" -eq "$BPROG_BEFORE" ]] && echo no || echo yes) out=[$OUT]"; fi
 
+echo "[2i] sec completion rejects trailing operands instead of silently dropping them (issue #99)"
+assert_usage_error "sec completion zsh EXTRA" completion zsh EXTRA
+assert_usage_error "sec completion bash EXTRA" completion bash EXTRA
+assert_usage_error "sec completion fish EXTRA" completion fish EXTRA
+assert_usage_error "sec completion ps1 EXTRA" completion ps1 EXTRA
+set +e
+OUT="$(run_sec "$H" completion zsh EXTRA 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec completion: unexpected trailing argument' <<<"$OUT" && ! grep -qE '#compdef|completion for sec-cli|_sec_bash_completion' <<<"$OUT"; then pass "completion zsh EXTRA refused before emitting a script"; else fail "completion zsh EXTRA rc=$RC out=[$OUT]"; fi
+
 echo "[2g] sec get --scope rejects a flag-like folder name (issue #75)"
 assert_usage_error "sec get --scope --bogus <key>" get --scope --bogus MY_API_KEY
 assert_usage_error "sec get --scope -x <key>" get --scope -x MY_API_KEY

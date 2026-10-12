@@ -219,6 +219,9 @@ case "$cmd" in
         ;;
     completion)
         shell="${1:-zsh}"
+        if [[ $# -gt 1 ]]; then
+            usage_error "sec completion: unexpected trailing argument '$2' (usage: sec completion [shell])"
+        fi
         case "$shell" in
             zsh)
                 cat <<'EOF'

@@ -74,6 +74,11 @@ SKILL.md:451), all re-derived from the live suites (section 17; sentinel
 so section 17's pytest-mirror check skips and case [22]'s two pytest
 corruptions went unwitnessed; the case now mirrors the guard's own
 `_pytest_available` precondition (#98).
+Issue #99 then closed the last silent-drop arm in the same #74/#76 class:
+`sec completion <shell> <extra>` had printed a completion script and exited
+0, dropping the extra operand; the arm now rejects a trailing argument with
+a tagged `[ERROR]` + exit 2 before emitting anything, and the four shifted
+profile.md `bin/sec:` anchors were re-pinned (dispatch 80 -> 81 sections).
 Open items: #67 (360 audit —
 needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
