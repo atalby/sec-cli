@@ -1062,6 +1062,58 @@ if _pytest_available:
                 f"{_label} says pytest mirror is {_m.group(1)} passed, live collection counts {_collected}"
             )
 
+# RESUME.md is itself a hand-bumped count mirror (its 'suite counts ... mirrors
+# in sync' line + the 'Sentinel = N cases / M assertions' total) with no guard.
+try:
+    with open(os.path.join(repo, "RESUME.md"), encoding="utf-8") as _fh:
+        _resume_text = _fh.read()
+except OSError:
+    _resume_text = ""
+
+_resume_counts_m = re.search(
+    r"mirrors in sync\): ([a-z_]+) (\d+), ([a-z_]+) (\d+), ([a-z_]+) (\d+),"
+    r" ([a-z_]+) (\d+),\s*\n([a-z_]+) (\d+)\.",
+    _resume_text,
+)
+if not _resume_counts_m:
+    count_claim_mismatches.append("RESUME.md carries no 'suite counts ... mirrors in sync' line")
+else:
+    _rg = _resume_counts_m.groups()
+    for _i in range(0, len(_rg), 2):
+        _key, _num = _rg[_i], int(_rg[_i + 1])
+        _live = suite_counts.get(_key)
+        if _live is None:
+            count_claim_mismatches.append(
+                f"RESUME.md cites suite '{_key}' but no tests/test_{_key}.sh exists"
+            )
+        elif _live != _num:
+            count_claim_mismatches.append(
+                f"RESUME.md says {_key} {_num}, live suite has {_live}"
+            )
+
+_resume_assert_m = re.search(r"Sentinel = (\d+) cases / (\d+) assertions", _resume_text)
+if not _resume_assert_m:
+    count_claim_mismatches.append("RESUME.md carries no 'Sentinel = N cases / M assertions' line")
+else:
+    _rcases, _rasserts = int(_resume_assert_m.group(1)), int(_resume_assert_m.group(2))
+    _live_cases = suite_counts.get("sentinel")
+    try:
+        with open(os.path.join(repo, "tests", "test_sentinel.sh"), encoding="utf-8") as _fh:
+            _tsent_text = _fh.read()
+    except OSError:
+        _tsent_text = ""
+    _live_asserts = sum(
+        1 for _ln in _tsent_text.splitlines() if re.match(r"\s*(ok|no) ", _ln)
+    )
+    if _live_cases is not None and _rcases != _live_cases:
+        count_claim_mismatches.append(
+            f"RESUME.md says Sentinel = {_rcases} cases, live suite has {_live_cases}"
+        )
+    if _rasserts != _live_asserts:
+        count_claim_mismatches.append(
+            f"RESUME.md says Sentinel = {_rasserts} assertions, live suite has {_live_asserts}"
+        )
+
 # --- 18. README.md's quoted `sec --help` + default sec.conf blocks + migrate backend list
 #         must match the live CLI (issue #107) ---------------------------------
 readme_mismatches = []
@@ -1327,7 +1379,7 @@ print(f"{OK} bin/ helper census: profile.md + ADAPTERS.md match {_live_bin_helpe
 print(f"{OK} suite census: profile.md + ARCHITECTURE.md + SKILL.md match {_live_suite_count} tracked bash suite(s), ARCHITECTURE.md's suite list matches the tracked names")
 print(f"{OK} structural prose: MULTI_TENANCY.md tenant aliases + profile.md CI checkout pin + OPERATOR_MANUAL.md principle count match the live tree")
 print(f"{OK} skill structure: SKILL.md steps + personas + scopes + severity set match the live skill files")
-print(f"{OK} count claims: profile.md §3 count-words + ADAPTERS.md/SKILL.md pytest-mirror count match the live suites")
+print(f"{OK} count claims: profile.md §3 count-words + ADAPTERS.md/SKILL.md pytest-mirror count + RESUME.md suite counts match the live suites")
 print(f"{OK} README: quoted `sec --help` + sec.conf sample + migrate backend list match the live CLI")
 print(f"{OK} migrate surfaces: source/destination backend sets agree across migrator, 4 shells + OPERATOR_MANUAL")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
