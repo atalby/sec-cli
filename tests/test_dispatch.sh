@@ -343,6 +343,18 @@ OUT="$(run_sec "$H" get --bogus MY_API_KEY 2>&1)"; RC=$?
 set -e
 if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec get: unknown flag' <<<"$OUT" && [[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]]; then pass "get --bogus refused before any backend call"; else fail "get --bogus rc=$RC bwlog_changed=$([[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]] && echo no || echo yes) out=[$OUT]"; fi
 
+echo "[2f] get/set/create reject trailing operands instead of silently dropping them (issue #74)"
+assert_usage_error "sec get <key> extra" get MY_API_KEY extra
+assert_usage_error "sec get --scope work <key> extra" get --scope work MY_API_KEY extra
+assert_usage_error "sec set <key> <val> extra" set MY_KEY someval extra
+assert_usage_error "sec create <key> <val> extra" create MY_KEY someval extra
+assert_usage_error "sec set --type note <key> <val> extra" set --type note MY_KEY someval extra
+set +e
+BWLOG_BEFORE="$(wc -c <"$BWLOG")"
+OUT="$(run_sec "$H" get MY_API_KEY extra 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec get: unexpected trailing argument' <<<"$OUT" && [[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]]; then pass "get <key> extra refused before any backend call"; else fail "get <key> extra rc=$RC bwlog_changed=$([[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]] && echo no || echo yes) out=[$OUT]"; fi
+
 echo "[3] bw get: plain key returns login.password"
 set +e
 OUT="$(run_sec "$H" get MY_API_KEY 2>&1)"

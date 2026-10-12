@@ -412,6 +412,9 @@ EOF
         fi
         if [[ $# -lt 1 ]]; then usage_error "sec get requires a <key>"; fi
         key="$1"
+        if [[ $# -gt 1 ]]; then
+            usage_error "sec get: unexpected trailing argument '$2' (usage: sec get [--scope <name>] <key>)"
+        fi
         case "$TARGET_TENANT" in
             bitwarden|bw|1pass|op) ;;
             *)
@@ -595,6 +598,9 @@ EOF
         if [[ $# -lt 1 ]]; then usage_error "sec $cmd requires a <key>"; fi
         key="$1"; shift || true
         value="${1:-}"
+        if [[ $# -gt 1 ]]; then
+            usage_error "sec $cmd: unexpected trailing argument '$2' (usage: sec $cmd [--type <type>] <key> <value>)"
+        fi
         ensure_tenant_auth "$TARGET_TENANT"
 
         if [[ -z "$value" ]]; then
