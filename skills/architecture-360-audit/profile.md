@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (10 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (68 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (11 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (10 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (69 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#51`, `#62`) |
@@ -799,8 +799,9 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **107 tracked files** (`git ls-files | wc -l`, re-measured
-2026-10-11 after issue #63 removed the dead `scripts/pre-commit-test-suites.sh`
+Denominator: **108 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-12 after issue #71 added the `history/2026-10-12.md` narrative;
+previously 2026-10-11 after issue #63 removed the dead `scripts/pre-commit-test-suites.sh`
 (no tracked caller; its only would-be caller, the untracked local hook,
 resolved to a nonexistent `.git/scripts/...` path), after issue #47 split the
 narrative into `history/` and issue #61 added the GitLab sync-controller pytest

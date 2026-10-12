@@ -407,6 +407,9 @@ EOF
             SCOPE_NAME="$2"
             shift 2
         fi
+        if [[ $# -ge 1 && ( "$1" == --* || "$1" == -[a-zA-Z]* ) ]]; then
+            usage_error "sec get: unknown flag '$1' (expected: [--scope <name>] <key>)"
+        fi
         if [[ $# -lt 1 ]]; then usage_error "sec get requires a <key>"; fi
         key="$1"
         case "$TARGET_TENANT" in
@@ -586,6 +589,9 @@ EOF
             esac
         fi
 
+        if [[ $# -ge 1 && ( "$1" == --* || "$1" == -[a-zA-Z]* ) ]]; then
+            usage_error "sec $cmd: unknown flag '$1' (expected: [--type <type>] <key> <value>)"
+        fi
         if [[ $# -lt 1 ]]; then usage_error "sec $cmd requires a <key>"; fi
         key="$1"; shift || true
         value="${1:-}"
@@ -746,6 +752,11 @@ EOF
         ;;
 
     unlock|rotate|keep|setup-keychain)
+        for _arg in "$@"; do
+            if [[ "$_arg" == --* || "$_arg" == -[a-zA-Z]* ]]; then
+                usage_error "sec $cmd: unknown flag '$_arg' (usage: sec $cmd [password])"
+            fi
+        done
         if [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
             exec "$SCRIPT_DIR/bw-session-keeper" "$cmd" "$@"
         fi

@@ -324,6 +324,25 @@ set -e
 if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] Destination backend 'bogus' not supported" <<<"$OUT"; then pass "migrate --to bogus --apply -> exit 1 + tagged error"; else fail "migrate --to bogus --apply rc=$RC out=[$OUT]"; fi
 if grep -q "Migration Successfully Completed" <<<"$OUT"; then fail "migrate --to bogus --apply still reported success: $OUT"; else pass "migrate --to bogus --apply reported no false success"; fi
 
+echo "[2e] get/set/unlock reject unknown -flags at the operand position instead of misparsing them (issue #71)"
+assert_usage_error "sec get --bogus <key>" get --bogus MY_API_KEY
+assert_usage_error "sec get --bogus (no key)" get --bogus
+assert_usage_error "sec get -x <key>" get -x MY_API_KEY
+assert_usage_error "sec get --scope work --bogus <key>" get --scope work --bogus MY_API_KEY
+assert_usage_error "sec set --bogus <key> <val>" set --bogus MY_KEY someval
+assert_usage_error "sec create --bogus <key> <val>" create --bogus MY_KEY someval
+assert_usage_error "sec set --type note --bogus <key> <val>" set --type note --bogus MY_KEY someval
+assert_usage_error "sec set -t <key> <val>" set -t MY_KEY someval
+assert_usage_error "sec unlock --bogus" unlock --bogus
+assert_usage_error "sec rotate --bogus" rotate --bogus
+assert_usage_error "sec keep --bogus" keep --bogus
+assert_usage_error "sec unlock -x" unlock -x
+set +e
+BWLOG_BEFORE="$(wc -c <"$BWLOG")"
+OUT="$(run_sec "$H" get --bogus MY_API_KEY 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec get: unknown flag' <<<"$OUT" && [[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]]; then pass "get --bogus refused before any backend call"; else fail "get --bogus rc=$RC bwlog_changed=$([[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]] && echo no || echo yes) out=[$OUT]"; fi
+
 echo "[3] bw get: plain key returns login.password"
 set +e
 OUT="$(run_sec "$H" get MY_API_KEY 2>&1)"

@@ -7,6 +7,18 @@ record is archived per period under `history/` (append-only, nothing
 deleted, every file searchable). A new session reads this summary by
 default, not the whole history.
 
+**2026-10-12**: issue #71 closed the flag-misparse class — `sec get`,
+`set`/`create` and `unlock`/`rotate`/`keep` now reject an unknown
+`--flag`/`-f*` at the operand position with a tagged `[ERROR]` + exit 2
+before any backend call (same contract #73 shipped for `sec.ps1`;
+keys/passwords must not begin with `-`). Tests: dispatch suite 68 -> 69
+sections ([2e]); profile.md count updated. All five bash suites pass
+(install 9 / sync_guard 16 / write_honesty 11 / sentinel 10 / dispatch 69),
+pytest mirror 29 passed, sentinel citations + coverage green. Open items:
+#67 (360 audit — needs human scope approval), #64 (pre-commit enforcement
+silently disappears when `uv` is absent), #51 (hub-side). Full narrative:
+`history/2026-10-12.md`.
+
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
 split losslessly into per-date archives under `history/`, this summary
@@ -32,14 +44,15 @@ and failed the coverage denominator (#68; `.venv/`/`venv/` are now
 ignored). A fresh full 360 audit (#67) is queued for the next interactive
 session because the audit skill's Step-1 gate requires an explicit human
 scope approval. All five bash suites pass (install 9 / sync_guard 16 /
-write_honesty 11 / sentinel 10 / dispatch 68) and the pytest mirror (29
+write_honesty 11 / sentinel 10 / dispatch 69) and the pytest mirror (29
 tests) passes. The GitHub tracker holds #51 (hub-side) and #64 (local
 enforcement requires `uv`), plus the queued #67. Each issue's full
-narrative lives in `history/2026-10-11.md`. Next: advance the
-highest-value unfinished in-repo work.
+narrative lives in `history/2026-10-11.md` / `history/2026-10-12.md`.
+Next: advance the highest-value unfinished in-repo work.
 
 ## Archive
 
+- [2026-10-12](history/2026-10-12.md)
 - [2026-10-11](history/2026-10-11.md)
 - [2026-10-10](history/2026-10-10.md)
 - [2026-10-09](history/2026-10-09.md)
