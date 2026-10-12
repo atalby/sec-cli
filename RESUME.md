@@ -1,26 +1,33 @@
 # Resume point - sec-cli
 
-Written 2026-10-12 after closing #102 (commit `a9cff4b`, pushed). Working tree
-clean on `main`. This session shipped five guard/fix units (#98, #99, #100,
-#101, #102); the only remaining open issue with an autonomous in-repo remedy is
-**#103**.
+Written 2026-10-12 after closing #104 (commit `1647604`) and #103 (commit
+`c5c909d`), both pushed. Working tree clean on `main`; `origin/main` == local
+`main`. Across the two most recent sessions this lane shipped eight guard/fix
+units (#97, #98, #99, #100, #101, #102, #103, #104), all CI-green.
+
+There is now **no open issue with an unnotified autonomous in-repo remedy**.
+The remaining open items are hub-side, human-gated, or a freshly filed perf
+follow-on that needs scoping (see below).
 
 ## Next autonomous work
 
-**#103 - guard that every completion surface offers every dispatcher subcommand.**
-The four surfaces (zsh/bash/fish/ps1) currently list all 15 subcommands (verified
-this session: no live drift), but nothing ties them to the dispatcher arms; a newly
-added arm can be added to `bin/sec` (and to `sec --help`, now guarded by #101)
-while silently missing from one or more completion scripts. Existing coverage is
-partial only: #56 (bash `subcmds` alias tokens), #82 (bare `help`/`version`), #83
-(`get --scope` / `set --type`). Implementation: a `tests/test_dispatch.sh` section
-iterating the dispatcher's non-flag arms (parse them as section [2k] does:
-`grep -oE '^    [a-z][a-z|-]*\)$' bin/sec | sed -E 's/^ +//; s/\)$//'`) and
-asserting each surface's subcommand list contains every arm's primary token.
-One new `echo "["` line bumps the dispatch section count - see the mirror gotcha.
+**#105 - perf(sentinel): test_sentinel.sh is ~97s because each of ~40 cases
+full-copies the repo.** Filed this session with a measured root cause (per-case
+`git init` + `git add -A` + `cp -a "$REPO_ROOT/."` incl. `.git`, x40) and three
+candidate fixes (`cp -al` hardlink template, `git clone --shared`, or
+`GIT_INDEX_FILE`-scoped cases). It is the only in-repo engineering task left; it
+was NOT pre-scoped or approved, so it is the next unit to plan + approve before
+editing the harness.
 
-Resume command:
-`cd /home/opc/sandbox/sec-cli && gh --repo atalby/sec-cli issue view 103`
+Everything else open is not autonomously actionable here:
+- **#67** (fresh 360 audit) - its Step-1 gate needs explicit human scope approval.
+- **#92** (hub-side: two unguarded counts in hub-owned files) - gotcha 6; no
+  in-repo remedy.
+- **#51** (hub-side handoff items tracked upstream) - unfixable in-repo.
+
+Resume commands:
+`cd /home/opc/sandbox/sec-cli && gh --repo atalby/sec-cli issue view 105`
+`cd /home/opc/sandbox/sec-cli && gh --repo atalby/sec-cli issue view 67`
 
 ## Where things stand
 
@@ -28,24 +35,35 @@ Resume command:
 - Tracker: **GitHub** (`gh --repo atalby/sec-cli`), not glab. Remote is
   `git@github.com:atalby/sec-cli.git`; `glab` errors "None of the git remotes
   configured for this repository point to a known GitLab host".
-- Open issues: **#103** (autonomous guard, next unit); **#67** (fresh 360 audit -
-  its Step-1 gate needs explicit human scope approval, so not autonomous); **#51**
-  (hub-side handoff, tracked upstream, unfixable in-repo); **#92** (hub-side: two
-  unguarded counts in hub-owned files; gotcha 10).
+- Open issues: **#105** (sentinel perf, next unit, needs scoping); **#67** (fresh
+  360 audit - human scope gate); **#92** (hub-side unguarded counts); **#51**
+  (hub-side handoff, tracked upstream).
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #103 `test(dispatch)` -> `c5c909d` - guard that all four completion surfaces
+  (zsh/bash/fish/ps1) list every dispatcher subcommand; derives the canonical
+  token set from `bin/sec` arms and asserts each surface's own parsed list
+  contains all 15, pinning each parse to exactly 15 (dispatch 84 -> 85). Mirrors
+  bumped at `profile.md:22`, `ADAPTERS.md:55`, `ADAPTERS.md:264`.
+- #104 `fix(test)` -> `1647604` - root cause of a pre-commit
+  `subprocess.TimeoutExpired` in the pytest mirror: `scripts/tests/test_install.py`
+  hardcoded `timeout=120`, below sentinel's real ~97s (->165s under contention).
+  Added `_SUITE_TIMEOUT = int(os.environ.get("SEC_TEST_SUITE_TIMEOUT", "300"))`.
+
+### Prior session (same lane, already shipped)
+
 - #97 `test(sentinel)` -> `e588f0c` - guarded profile.md §3 count-words + the
-  pytest-mirror "29 passed" (sentinel section 17 + test case [22]).
+  pytest-mirror "29 passed" (sentinel section 17 + case [22]).
 - #98 `fix(ci)` -> `2344f6c` - mirrored section 17's `_pytest_available`
-  precondition in case [22] (the `Run bash suites` CI step has no pytest, so the
-  pytest-mirror corruption was unwitnessed and CI went red).
+  precondition in case [22] (the `Run bash suites` CI step has no pytest, so CI
+  went red unwitnessed).
 - #99 `fix(sec)` -> `201531a` - `sec completion <shell> <extra>` rejected a
-  trailing operand (was: printed a script, exit 0); four shifted profile.md
-  `bin/sec:` anchors re-pinned (dispatch 80 -> 81).
+  trailing operand; four shifted profile.md `bin/sec:` anchors re-pinned
+  (dispatch 80 -> 81).
 - #100 `fix(sec)` -> `d743c93` - `sec help`/`sec version` rejected a trailing
-  operand (were: exit 0, silent drop). Folded into an existing line per arm, so
-  `bin/sec` line count is unchanged and no anchor shifted (dispatch 81 -> 82).
+  operand (were: exit 0, silent drop); folded into existing lines, no anchor
+  shift (dispatch 81 -> 82).
 - #101 `test(dispatch)` -> `0813bf4` - `sec --help` prints a usage line for every
   canonical subcommand and every non-flag dispatch arm (dispatch 82 -> 83).
 - #102 `test(dispatch)` -> `a9cff4b` - the canonical tenant set is identical in
@@ -61,10 +79,11 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 84, install 9, sentinel 22, sync_guard 16,
+mirrors in sync): dispatch 85, install 9, sentinel 22, sync_guard 16,
 write_honesty 13. Sentinel = 22 cases / 116 assertions. HISTORY.md is at
-8154/8192 bytes - the **next** narrative addition must compact an older clause
-first (it is nearly full). 108 tracked files, 12 personas, 5 bash suites.
+8038/8192 bytes - the next narrative addition must compact an older clause first.
+108 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
+No real TODO/FIXME debt in tracked files.
 
 ## Gotchas worth not rediscovering
 
@@ -81,10 +100,12 @@ first (it is nearly full). 108 tracked files, 12 personas, 5 bash suites.
    net-zero edit (replace an existing line, e.g. fold a guard into an existing
    line with `A && B; C`) so no re-pin is needed - that is how #100 avoided it.
    Otherwise re-run `sentinel.sh citations` and re-pin each N>=222 by +k.
-4. **pre-commit HIAE runs the pytest suite (~95-153s)** and rejects ADDED
-   comments/docstrings, checks plain-text + TDD + granularity. It cannot see
-   commit ordering inside one commit, so stage a test file with any impl change.
-   Advisory WARNING when staged changes span 2 categories is recurring and benign.
+4. **pre-commit HIAE runs the pytest suite and rejects ADDED comments/docstrings**,
+   checks plain-text + TDD + granularity. It cannot see commit ordering inside one
+   commit, so stage a test file with any impl change. Advisory WARNING when staged
+   changes span 2 categories is recurring and benign; it also emits a
+   "Step 23 (doc path refs)" advisory (issue #179) that does not block. The mirror
+   now uses `SEC_TEST_SUITE_TIMEOUT` (default 300s) - see #104/#105.
 5. **`gh issue close --comment` with a long heredoc can hang.** Write the body to
    a file: `gh issue close N --comment "$(cat f)"` (worked this session) or
    comment then close separately; verify state after.
@@ -105,9 +126,13 @@ first (it is nearly full). 108 tracked files, 12 personas, 5 bash suites.
    create/edit runners.
 10. **`sentinel.sh citations` scans only SKILL.md and profile.md** (not
     ARCHITECTURE.md); piping it to `tail` masks the real exit code - check `$?`.
+11. **NEVER copy the tree with a bare `$REPO_ROOT`.** A prior profiling probe ran
+    `cp -a "$REPO_ROOT/." "$W/"` with `REPO_ROOT` unset -> copied `/` and filled
+    the disk. Always set and verify `REPO_ROOT` first; use the repo's own test
+    helpers rather than ad-hoc copies.
 
 ## Ownership boundaries
 
 `AGENTS.md`, `methodology/` and `packs/` are hub-synced - do not hand-edit.
-`ADAPTERS.md`, `profile.md`, `RESUME.md`, `docs/`, `tests/`, `bin/sec` and
-`HISTORY.md` are project-owned and safe to edit.
+`ADAPTERS.md`, `profile.md`, `RESUME.md`, `docs/`, `tests/`, `bin/sec`,
+`HISTORY.md`, `history/` and `scripts/` are project-owned and safe to edit.
