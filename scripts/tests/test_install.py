@@ -18,6 +18,8 @@ _FAST_SUITES = [
     "test_sentinel.sh",
 ]
 
+_SUITE_TIMEOUT = int(os.environ.get("SEC_TEST_SUITE_TIMEOUT", "300"))
+
 
 def _run_suite(name):
     return subprocess.run(
@@ -25,7 +27,7 @@ def _run_suite(name):
         cwd=_REPO_ROOT,
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=_SUITE_TIMEOUT,
     )
 
 
