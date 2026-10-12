@@ -9,6 +9,10 @@ fail=0
 ok() { echo "  ok: $1"; pass=$((pass + 1)); }
 no() { echo "  fail: $1"; fail=$((fail + 1)); }
 
+SEED_TAR="$(mktemp)"
+(cd "$REPO_ROOT" && git ls-files -z | tar --null -T - -cf "$SEED_TAR")
+seed() { tar -C "$1" -xf "$SEED_TAR"; }
+
 echo "[1] coverage subcommand accounts for every tracked file"
 if [[ -x "$SENTINEL" ]]; then
     ok "sentinel.sh exists and is executable"
@@ -61,7 +65,7 @@ fi
 
 echo "[3] a broken citation is detected (sentinel fails closed)"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F" "$WORK_G" "$WORK_H" "$WORK_I" "$WORK_J" "$WORK_K" "$WORK_L" "$WORK_Y1" "$WORK_Y2" "$WORK_Y3" "$WORK_Y4" "$WORK_YCTRL"' EXIT
+trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F" "$WORK_G" "$WORK_H" "$WORK_I" "$WORK_J" "$WORK_K" "$WORK_L" "$WORK_Y1" "$WORK_Y2" "$WORK_Y3" "$WORK_Y4" "$WORK_YCTRL" "$SEED_TAR"' EXIT
 mkdir -p "$WORK/skills/architecture-360-audit"
 cp "$REPO_ROOT/skills/architecture-360-audit/profile.md" "$WORK/skills/architecture-360-audit/profile.md"
 cp "$REPO_ROOT/skills/architecture-360-audit/SKILL.md" "$WORK/skills/architecture-360-audit/SKILL.md"
@@ -94,8 +98,7 @@ echo "[5] a stale-content citation is detected (anchor-content lint, issue #34)"
 WORK_A="$(mktemp -d)"
 WORK_B="$(mktemp -d)"
 for W in "$WORK_A" "$WORK_B"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 printf '\nStale anchor: `usage()` at `bin/sec:1`\n' >>"$WORK_A/skills/architecture-360-audit/profile.md"
 OUT="$(cd "$WORK_A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
@@ -124,8 +127,7 @@ fi
 WORK_K="$(mktemp -d)"
 WORK_L="$(mktemp -d)"
 for W in "$WORK_K" "$WORK_L"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 printf '\nQuoted stale: "uo pipefail" cited at `tests/test_sentinel.sh:3`\n' >>"$WORK_K/skills/architecture-360-audit/profile.md"
 OUT="$(cd "$WORK_K" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
@@ -155,8 +157,7 @@ PH="SEC_$(printf 'PHANTOM')_$(printf 'BACKEND')_KEY"
 WORK_C="$(mktemp -d)"
 WORK_D="$(mktemp -d)"
 for W in "$WORK_C" "$WORK_D"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 printf '\nPhantom claim: `%s` read at startup\n' "$PH" >>"$WORK_C/skills/architecture-360-audit/profile.md"
 OUT="$(cd "$WORK_C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
@@ -185,8 +186,7 @@ echo "[7] the coverage denominator in profile.md matches the live tracked-file c
 WORK_E="$(mktemp -d)"
 WORK_F="$(mktemp -d)"
 for W in "$WORK_E" "$WORK_F"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 REAL_COUNT="$(cd "$REPO_ROOT" && git ls-files | wc -l | tr -d ' ')"
 DOC_COUNT="$(grep -oE 'Denominator: \*\*[0-9]+ tracked files' "$REPO_ROOT/skills/architecture-360-audit/profile.md" | grep -oE '[0-9]+' | head -1)"
@@ -229,8 +229,7 @@ echo "[8] HISTORY.md must stay rotated into history/ archives (issue #47)"
 WORK_G="$(mktemp -d)"
 WORK_H="$(mktemp -d)"
 for W in "$WORK_G" "$WORK_H"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 printf '\n### 2026-99-99 — injected dated entry\n- x\n' >>"$WORK_G/HISTORY.md"
 OUT="$(cd "$WORK_G" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
@@ -258,8 +257,7 @@ echo "[9] cited suite section counts must match the live suites (the #48 drift c
 WORK_I="$(mktemp -d)"
 WORK_J="$(mktemp -d)"
 for W in "$WORK_I" "$WORK_J"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_I/skills/architecture-360-audit/profile.md" <<'PY'
 import re
@@ -332,8 +330,7 @@ WORK_K="$(mktemp -d)"
 WORK_L="$(mktemp -d)"
 WORK_M="$(mktemp -d)"
 for W in "$WORK_K" "$WORK_L" "$WORK_M"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_K/skills/architecture-360-audit/profile.md" <<'PY'
 import re
@@ -392,8 +389,7 @@ echo "[12] ADAPTERS.md's 'current suites' snapshot matches the live suites (issu
 WORK_N="$(mktemp -d)"
 WORK_O="$(mktemp -d)"
 for W in "$WORK_N" "$WORK_O"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_N/ADAPTERS.md" <<'PY'
 import re
@@ -431,8 +427,7 @@ WORK_P="$(mktemp -d)"
 WORK_Q="$(mktemp -d)"
 WORK_R="$(mktemp -d)"
 for W in "$WORK_P" "$WORK_Q" "$WORK_R"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_P/skills/architecture-360-audit/profile.md" <<'PY'
 import re
@@ -491,8 +486,7 @@ echo "[14] ADAPTERS.md's per-suite '(N sections|cases)' counts match the live su
 WORK_S="$(mktemp -d)"
 WORK_T="$(mktemp -d)"
 for W in "$WORK_S" "$WORK_T"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_S/ADAPTERS.md" <<'PY'
 import re
@@ -530,8 +524,7 @@ WORK_U="$(mktemp -d)"
 WORK_V="$(mktemp -d)"
 WORK_W="$(mktemp -d)"
 for W in "$WORK_U" "$WORK_V" "$WORK_W"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_U/docs/ARCHITECTURE.md" <<'PY'
 import re
@@ -593,8 +586,7 @@ WORK_Z="$(mktemp -d)"
 WORK_V2="$(mktemp -d)"
 WORK_CTRL="$(mktemp -d)"
 for W in "$WORK_X" "$WORK_Y" "$WORK_Z" "$WORK_V2" "$WORK_CTRL"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_X/ADAPTERS.md" <<'PY'
 import re
@@ -703,8 +695,7 @@ WORK_S2="$(mktemp -d)"
 WORK_S3="$(mktemp -d)"
 WORK_SCTRL="$(mktemp -d)"
 for W in "$WORK_S1" "$WORK_S2" "$WORK_S3" "$WORK_SCTRL"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_S1/skills/architecture-360-audit/profile.md" <<'PY'
 import re
@@ -793,8 +784,7 @@ WORK_T3="$(mktemp -d)"
 WORK_T4="$(mktemp -d)"
 WORK_TCTRL="$(mktemp -d)"
 for W in "$WORK_T1" "$WORK_T2" "$WORK_T3" "$WORK_T4" "$WORK_TCTRL"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_T1/skills/architecture-360-audit/profile.md" <<'PY'
 import re
@@ -906,8 +896,7 @@ WORK_U3="$(mktemp -d)"
 WORK_U4="$(mktemp -d)"
 WORK_UCTRL="$(mktemp -d)"
 for W in "$WORK_U1" "$WORK_U2" "$WORK_U3" "$WORK_U4" "$WORK_UCTRL"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_U1/docs/MULTI_TENANCY.md" <<'PY'
 import re
@@ -1017,8 +1006,7 @@ WORK_W1="$(mktemp -d)"
 WORK_W2="$(mktemp -d)"
 WORK_WCTRL="$(mktemp -d)"
 for W in "$WORK_W1" "$WORK_W2" "$WORK_WCTRL"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_W1/skills/architecture-360-audit/SKILL.md" <<'PY'
 import re
@@ -1082,8 +1070,7 @@ WORK_X3="$(mktemp -d)"
 WORK_X4="$(mktemp -d)"
 WORK_XCTRL="$(mktemp -d)"
 for W in "$WORK_X1" "$WORK_X2" "$WORK_X3" "$WORK_X4" "$WORK_XCTRL"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 python3 - "$WORK_X1/skills/architecture-360-audit/SKILL.md" <<'PY'
 import re
@@ -1193,8 +1180,7 @@ WORK_Y3="$(mktemp -d)"
 WORK_Y4="$(mktemp -d)"
 WORK_YCTRL="$(mktemp -d)"
 for W in "$WORK_Y1" "$WORK_Y2" "$WORK_Y3" "$WORK_Y4" "$WORK_YCTRL"; do
-    cp -a "$REPO_ROOT/." "$W/"
-    rm -rf "$W/.git"
+    seed "$W"
 done
 if python3 -c "import pytest" >/dev/null 2>&1; then
     PYTEST_OK=1
