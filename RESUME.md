@@ -1,8 +1,30 @@
 # Resume Point
 
 ## Live Resume Point (durable)
-- **Status (2026-10-12, verified 2026-10-12):** In-repo tracker: #71 closed this run. #71: `sec get --bogus k` silently used `--bogus` as the key (real key dropped, exit 1); `sec set --bogus k v` "stored" a secret named `--bogus`; `sec unlock --bogus` forwarded the flag as the password. Fix: tokens matching `--*` or `-[a-zA-Z]*` at the operand position are rejected via `usage_error` (tagged `[ERROR]`, exit 2) before any backend/auth call — in `get` (after the `--scope` parse), `set|create` (after the `--type` parse; the explicit value position is untouched), and `unlock|rotate|keep|setup-keychain` (pre-exec loop over `"$@"`). Same contract #73 shipped for sec.ps1; keys/passwords must not begin with `-`. Tests: dispatch suite [2e] (12 usage-error assertions + a bw-log canary proving `get --bogus` exits 2 before any `bw` call); suite count 68 -> 69 mirrored in profile.md; coverage denominator 107 -> 108 (new `history/2026-10-12.md`). Committed `e0fe752` (pushed to origin/main; rebased over `004a200`). Note: the HIAE pre-commit gate re-commits with a stale subject once — after `git commit`, always verify `git log -1 --oneline` shows the intended message before pushing.
-- **Next action:** highest-value open item is #64 (local pre-commit test enforcement silently disappears when `uv` is absent — hub Step 5 gates `scripts/tests` on `command -v uv`). Also open: #67 (fresh 360 audit; Step-1 gate needs explicit human scope approval — not autonomous), #51 (hub-side handoff items tracked upstream). Candidate autonomous next work: #64.
-- **Verification:** `gh issue list --repo atalby/sec-cli --state open` (this repo tracks on GitHub, not GitLab — `ADAPTERS.md` "Git host"/"Issue tracker"; `glab` has no sec-cli project among the fleet projects it can see), `bash tests/test_*.sh` all pass (dispatch 69, install 9, sentinel 10, sync_guard 16, write_honesty 11), `python3 -m pytest scripts/tests/ -q` (29 passed), `bash skills/architecture-360-audit/sentinel.sh citations && bash skills/architecture-360-audit/sentinel.sh coverage`.
+- **Status (2026-10-12, verified 2026-10-12):** This run closed #71, #64
+  (duplicate), #74, #75 — the dispatch-surface misparse sweep (#41,
+  #69–#75) is complete. State: `get`/`set`/`create` reject unknown flags at
+  the operand position (#71, [2e]) and trailing operands (#74, [2f]);
+  `unlock`/`rotate`/`keep` reject flag-like args pre-exec (#71); `get
+  --scope` rejects flag-like folder names (#75, [2g]). All rejections are
+  tagged `[ERROR]` + exit 2 before any backend call. #64 was verified a
+  duplicate of #51's hub-side payload (the `uv` gate lives in
+  `~/sandbox/hyer/scripts/pre-commit-hiae.sh:197`; unfixable in-repo per
+  the frozen-fork-risk rejection) and closed. Latest commit `fc2a0cc`
+  (pushed to origin/main).
+- **Next action:** remaining open items are #67 (fresh 360 audit — the
+  audit skill's Step-1 gate requires explicit human scope approval, not
+  autonomous) and #51 (hub-side handoff items #2/#13 tracked upstream).
+  No autonomous in-repo work remains in the tracker; the next autonomous
+  run should re-check for new drift (sentinel guards, suite counts,
+  profile.md anchors) or take #67 once a human approves scope.
+- **Verification:** `gh issue list --repo atalby/sec-cli --state open`
+  (this repo tracks on GitHub, not GitLab — see `ADAPTERS.md` "Git
+  host"/"Issue tracker"; `glab` has no sec-cli project among the fleet
+  projects it can see). Five bash suites ALL TESTS PASSED (dispatch 71 /
+  install 9 / sentinel 10 / sync_guard 16 / write_honesty 11); pytest
+  mirror 29 passed; `bash skills/architecture-360-audit/sentinel.sh
+  citations` + `sentinel.sh coverage` green (108 tracked files, 7
+  archives, HISTORY.md 3722 bytes).
 
 (End of file)
