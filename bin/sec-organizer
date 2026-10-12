@@ -365,5 +365,5 @@ case "${1:-plan}" in
     plan)          cmd_plan ;;
     apply)         cmd_apply ;;
     revert|undo|restore) cmd_revert ;;
-    *)             echo "Usage: sec-organizer {plan|apply|revert}"; exit 1 ;;
+    *)             echo "[ERROR] sec-organizer: unknown subcommand '$1' (expected: plan, apply, revert)" >&2; echo "Run 'sec housekeep --help' for usage." >&2; exit 2 ;;
 esac

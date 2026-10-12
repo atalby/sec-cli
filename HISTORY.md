@@ -32,7 +32,7 @@ and failed the coverage denominator (#68; `.venv/`/`venv/` are now
 ignored). A fresh full 360 audit (#67) is queued for the next interactive
 session because the audit skill's Step-1 gate requires an explicit human
 scope approval. All five bash suites pass (install 9 / sync_guard 16 /
-write_honesty 11 / sentinel 10 / dispatch 64) and the pytest mirror (29
+write_honesty 11 / sentinel 10 / dispatch 66) and the pytest mirror (29
 tests) passes. The GitHub tracker holds #51 (hub-side) and #64 (local
 enforcement requires `uv`), plus the queued #67. Each issue's full
 narrative lives in `history/2026-10-11.md`. Next: advance the

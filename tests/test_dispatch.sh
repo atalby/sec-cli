@@ -267,6 +267,24 @@ assert_usage_error "sec get --scope" get --scope
 assert_usage_error "sec run --" run --
 assert_usage_error "sec completion bogus" completion bogus
 assert_usage_error "sec set --type" set --type
+assert_usage_error "sec housekeep bogus" housekeep bogus
+assert_usage_error "sec organize bogus" organize bogus
+
+echo "[2b2] housekeep/organize --help exits 0 with usage (issue #69)"
+set +e
+OUT="$(run_sec "$H" housekeep --help 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "housekeep {plan|apply|revert}" <<<"$OUT"; then pass "sec housekeep --help exits 0 with usage"; else fail "sec housekeep --help rc=$RC out=[$OUT]"; fi
+set +e
+OUT="$(run_sec "$H" organize --help 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "organize {plan|apply|revert}" <<<"$OUT"; then pass "sec organize --help exits 0 with usage"; else fail "sec organize --help rc=$RC out=[$OUT]"; fi
+
+echo "[2b3] sec-organizer direct invalid subcommand fails loudly (tagged, exit 2) (issue #69)"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H" "$REPO_ROOT/bin/sec-organizer" frobnicate 2>&1 </dev/null)"; RC=$?
+set -e
+if [[ $RC -eq 2 ]] && grep -q "^\[ERROR\]" <<<"$OUT"; then pass "sec-organizer frobnicate -> exit 2 + tagged error"; else fail "sec-organizer frobnicate rc=$RC out=[$OUT]"; fi
 
 echo "[2c] set/create with no value on a non-TTY fails with a tagged error, not a silent read-EOF death (issue #42)"
 set +e

@@ -714,8 +714,23 @@ EOF
         ;;
 
     housekeep|organize)
+        sub="${1:-plan}"
+        case "$sub" in
+            plan|apply|revert|undo|restore) ;;
+            -h|--help)
+                echo "Usage: sec $cmd {plan|apply|revert}"
+                echo ""
+                echo "  plan     Generate ML categorization plan (default)"
+                echo "  apply    Execute organization with pre-apply backup"
+                echo "  revert   Rollback last housekeeping operation"
+                exit 0
+                ;;
+            *)
+                usage_error "sec $cmd: unknown subcommand '$sub' (expected: plan, apply, revert)"
+                ;;
+        esac
         if [[ -x "$SCRIPT_DIR/sec-organizer" ]]; then
-            exec "$SCRIPT_DIR/sec-organizer" "${1:-plan}"
+            exec "$SCRIPT_DIR/sec-organizer" "$sub"
         fi
         echo "[ERROR] organizer module not found or not executable: $SCRIPT_DIR/sec-organizer" >&2
         exit 1
