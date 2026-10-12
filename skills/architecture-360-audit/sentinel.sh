@@ -1062,6 +1062,68 @@ if _pytest_available:
                 f"{_label} says pytest mirror is {_m.group(1)} passed, live collection counts {_collected}"
             )
 
+# --- 18. README.md's quoted `sec --help` + default sec.conf blocks + migrate backend list
+#         must match the live CLI (issue #107) ---------------------------------
+readme_mismatches = []
+try:
+    with open(os.path.join(repo, "README.md"), encoding="utf-8") as _fh:
+        _readme_text = _fh.read()
+except OSError:
+    _readme_text = ""
+
+try:
+    _live_help = subprocess.run(
+        ["bash", os.path.join(repo, "bin", "sec"), "--help"],
+        capture_output=True, text=True, check=True,
+    ).stdout.rstrip("\n")
+except Exception as _exc:
+    _live_help = None
+    readme_mismatches.append(f"could not run 'bin/sec --help' to compare README.md against: {_exc}")
+
+_readme_fence_m = re.search(r"```text\n(sec-cli v[^\n]*\n[\s\S]*?)\n```", _readme_text)
+if _readme_fence_m is None:
+    readme_mismatches.append("README.md carries no fenced ```text sec-cli help block")
+elif _live_help is not None and _readme_fence_m.group(1) != _live_help:
+    readme_mismatches.append(
+        "README.md's quoted `sec --help` block is not byte-identical to live 'bin/sec --help' output"
+    )
+
+_readme_ini_m = re.search(r"```ini\n([\s\S]*?)\n```", _readme_text)
+_sec_conf_m = re.search(r'cat <<EOF > "\$CONFIG_FILE"\n([\s\S]*?)\nEOF', _sec_text)
+if _readme_ini_m is None:
+    readme_mismatches.append("README.md carries no fenced ```ini sec.conf sample")
+elif _sec_conf_m is None:
+    readme_mismatches.append("bin/sec carries no 'cat <<EOF > $CONFIG_FILE' default-config heredoc")
+elif _readme_ini_m.group(1) != _sec_conf_m.group(1):
+    readme_mismatches.append(
+        "README.md's sec.conf sample is not byte-identical to bin/sec's ensure_config heredoc"
+    )
+
+try:
+    with open(os.path.join(repo, "bin", "sec-migrator"), encoding="utf-8") as _fh:
+        _mig_text = _fh.read()
+except OSError:
+    _mig_text = ""
+_ALIAS = {
+    "bitwarden": "bitwarden", "bw": "bitwarden", "bws": "bws",
+    "1password": "1password", "1pass": "1password", "op": "1password",
+    "infisical": "infisical", "vault": "vault",
+}
+_mig_dst_m = re.search(r'case "\$DST" in\n\s*([a-z0-9|]+)\)', _mig_text)
+_readme_mig_m = re.search(r"^- .*`sec migrate`.*$", _readme_text, re.M)
+if _mig_dst_m is None:
+    readme_mismatches.append("bin/sec-migrator carries no 'case \"$DST\" in' backend allow-list")
+elif _readme_mig_m is None:
+    readme_mismatches.append("README.md carries no 'sec migrate' feature bullet")
+else:
+    _live_dst = {_ALIAS[_t] for _t in _mig_dst_m.group(1).split("|") if _t in _ALIAS}
+    _missing = sorted(_b for _b in _live_dst if _b not in _readme_mig_m.group(0).lower())
+    if _missing:
+        readme_mismatches.append(
+            "README.md's 'sec migrate' bullet omits live destination backend(s): "
+            + ", ".join(_missing)
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -1160,6 +1222,10 @@ if count_claim_mismatches:
     failures.append(f"{len(count_claim_mismatches)} profile.md §3 / pytest-mirror count claim(s) drifted from the live suites")
     for _m in count_claim_mismatches:
         print(f"{ERROR} count claim: {_m}")
+if readme_mismatches:
+    failures.append(f"{len(readme_mismatches)} README.md drift(s) vs the live CLI")
+    for _m in readme_mismatches:
+        print(f"{ERROR} README: {_m}")
 
 if failures:
     for f in failures:
@@ -1180,6 +1246,7 @@ print(f"{OK} suite census: profile.md + ARCHITECTURE.md + SKILL.md match {_live_
 print(f"{OK} structural prose: MULTI_TENANCY.md tenant aliases + profile.md CI checkout pin + OPERATOR_MANUAL.md principle count match the live tree")
 print(f"{OK} skill structure: SKILL.md steps + personas + scopes + severity set match the live skill files")
 print(f"{OK} count claims: profile.md §3 count-words + ADAPTERS.md/SKILL.md pytest-mirror count match the live suites")
+print(f"{OK} README: quoted `sec --help` + sec.conf sample + migrate backend list match the live CLI")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

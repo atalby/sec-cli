@@ -10,13 +10,13 @@
 
 - 🛡️ **Zero-Plaintext Security**: Eliminates `.env` files and hardcoded API keys. For `bws`, `op` and `infisical`, `sec run -- <cmd>` delegates to the vendor run-wrapper so credentials are injected into process memory without appearing in terminal command-line history; under `bitwarden` (the default tenant) `sec run` is a plain exec — fetch values with `sec get` and supply them yourself.
 - 🏢 **Multi-Tenant Configuration (`~/.sec/sec.conf`)**: Configure default vaults and override target tenants per command (`sec 1pass get KEY` vs `sec bitwarden get KEY`).
-- 🔄 **Smart Session Auto-Rotation**: Keeps Bitwarden/1Password sessions alive in background RAM using OS Keychains (`security` / `secret-tool`), with fallback to interactive prompts when locked.
+- 🔄 **Smart Session Auto-Rotation**: For `bitwarden`, keeps the session alive in background RAM via `bw-session-keeper`, storing the master password in the OS Keychain (`security` / `secret-tool`) for zero-touch rotation; `1pass` and `vault` re-authenticate interactively on demand, and any locked tenant falls back to an interactive prompt.
 - 🧹 **Intelligent Housekeeping (`sec housekeep plan` / `apply`)**:
   - Uses an embedded zero-dependency **Naive Bayes ML Classifier** ([`bin/sec-classify.py`](bin/sec-classify.py)) to categorize secrets into clean folder structures (`cloud/aws`, `database`, `integrations`, `infrastructure/ssh`).
   - Displays **ML Confidence Scores (%)** and **Matched Signal Triggers**.
   - **Intelligent Disambiguating Renamer**: Differentiates generic titles (e.g. 4 entries named `Gmail`) into distinct, readable names (e.g. `Gmail (anass.personal@gmail.com)`).
   - **Pre-Apply Backup Snapshots & Instant Rollback (`sec housekeep revert`)**: Saves mode `0600` metadata-only snapshots before every move/rename.
-- 🚀 **Zero-Plaintext Vault Migration (`sec migrate`)**: Streams secrets directly between vault providers in memory (`Bitwarden` $\iff$ `1Password` $\iff$ `Vault`) with error trapping and single-command rollback (`sec migrate --undo`).
+- 🚀 **Zero-Plaintext Vault Migration (`sec migrate`)**: Streams secrets directly between vault providers in memory (`Bitwarden` `↔` `1Password` `↔` `Bitwarden Secrets Manager (bws)` `↔` `Infisical` `↔` `Vault`) with error trapping and single-command rollback (`sec migrate --undo`).
 - 🌍 **100% Cross-Platform**: Native execution on **macOS**, **Linux**, **Windows WSL 2**, and **Windows Native PowerShell** (`sec.ps1`).
 
 ---
@@ -48,19 +48,29 @@ export PATH="$HOME/.local/bin:$PATH"
 `sec-cli` automatically initializes `~/.sec/sec.conf` (mode `0600`) upon first run:
 
 ```ini
+# ~/.sec/sec.conf: Fleet Multi-Tenant Secret Manager Configuration
 [global]
 default_backend = bitwarden
+auto_rotate = true
 
 [bitwarden]
+cli = bw
 auto_rotate = true
 
 [1pass]
+cli = op
 auto_rotate = false
 
 [bws]
+cli = bws
 auto_rotate = true
 
 [vault]
+cli = vault
+auto_rotate = false
+
+[infisical]
+cli = infisical
 auto_rotate = false
 ```
 
@@ -72,6 +82,7 @@ auto_rotate = false
 
 ```text
 sec-cli v1.0.0 — Multi-Tenant Zero-Plaintext Secret Manager & Housekeeper
+Config File: ~/.sec/sec.conf (Default Tenant: bitwarden)
 
 Usage:
   sec [<tenant>] get <key>                 Retrieve secret value from tenant or default vault
@@ -79,9 +90,9 @@ Usage:
   sec [<tenant>] get --scope <name> <key>  Scope lookup to a bw folder or op vault (bw/op only; others: exit 2)
   sec [<tenant>] set <key> [<val>]         Store / create new secret in tenant vault (prompts if <val> omitted)
   sec [<tenant>] run -- <cmd>              Run command; env injection only for bws/op/infisical (bitwarden: plain exec)
-  sec sync [--dry-run|--yes]          Central Secret Sync Engine: push shell-exported SYNC_KEYS to GCP Secret Manager & GitLab group variables (--dry-run previews, --yes confirms)
   sec housekeep {plan|apply|revert}        Intelligent ML categorization, plan/apply, & instant rollback engine
   sec migrate --from <src> --to <dst>     Zero-plaintext vault-to-vault migration engine
+  sec sync [--dry-run|--yes]          Central Secret Sync Engine: push shell-exported SYNC_KEYS to GCP Secret Manager & GitLab group variables (--dry-run previews, --yes confirms)
   sec unlock                               Unlock Bitwarden vault and save session
   sec rotate                               Keep-alive / rotate Bitwarden session key
   sec setup-keychain                       Store master password in Keychain for auto-rotation
@@ -90,6 +101,8 @@ Usage:
 Flags:
   -h, --help     Display this help menu
   -v, --version  Display version
+
+Configured Tenants: bitwarden (bw), 1pass (op), bws, vault, infisical, keychain
 ```
 
 ---

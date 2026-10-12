@@ -1194,7 +1194,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"own twenty-two sentinel cases", "own twelve sentinel cases", s)
+s2, n = re.subn(r"own twenty-three sentinel cases", "own twelve sentinel cases", s)
 if n != 1:
     sys.exit("profile.md §3 sentinel count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1236,7 +1236,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md §3 sentinel count"
 fi
-if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 22" <<<"$OUT"; then
+if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 23" <<<"$OUT"; then
     ok "coverage names the drifted profile.md §3 sentinel count"
 else
     no "coverage did not name the drifted profile.md §3 sentinel count"
@@ -1287,6 +1287,102 @@ OUT="$(cd "$WORK_YCTRL" && git init -q . && git add -A && "skills/architecture-3
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (correct §3 count-words + pytest count) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[23] README.md's quoted CLI help + sec.conf sample + migrate backends must match the live code (issue #107)"
+WORK_Z1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_Z2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_Z3="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_ZCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_Z1" "$WORK_Z2" "$WORK_Z3" "$WORK_ZCTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_Z1/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+m = re.search(r"(```text\n)([\s\S]*?)(\n```)", s)
+if not m:
+    sys.exit("README.md text fence not found to corrupt")
+body, n = re.subn(r"sec housekeep", "sec housekeepX", m.group(2), count=1)
+if n < 1:
+    sys.exit("README.md help line not found to corrupt")
+open(p, "w", encoding="utf-8").write(s[:m.start()] + m.group(1) + body + m.group(3) + s[m.end():])
+PY
+python3 - "$WORK_Z2/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+m = re.search(r"(```ini\n)([\s\S]*?)(\n```)", s)
+if not m:
+    sys.exit("README.md ini fence not found to corrupt")
+body, n = re.subn(r"default_backend = bitwarden", "default_backend = 1password", m.group(2), count=1)
+if n < 1:
+    sys.exit("README.md ini sample not found to corrupt")
+open(p, "w", encoding="utf-8").write(s[:m.start()] + m.group(1) + body + m.group(3) + s[m.end():])
+PY
+python3 - "$WORK_Z3/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"^- .*`sec migrate`.*$",
+    "- `sec migrate`: stream secrets between Bitwarden and 1Password only.",
+    s, count=1, flags=re.M,
+)
+if n < 1:
+    sys.exit("README.md migrate bullet not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_Z1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted README help block"
+else
+    no "coverage accepted a drifted README help block"
+fi
+if grep -q "not byte-identical to live 'bin/sec --help' output" <<<"$OUT"; then
+    ok "coverage names the drifted README help block"
+else
+    no "coverage did not name the drifted README help block"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_Z2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted README sec.conf sample"
+else
+    no "coverage accepted a drifted README sec.conf sample"
+fi
+if grep -q "sec.conf sample is not byte-identical to bin/sec's ensure_config heredoc" <<<"$OUT"; then
+    ok "coverage names the drifted README sec.conf sample"
+else
+    no "coverage did not name the drifted README sec.conf sample"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_Z3" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a README migrate bullet missing live backends"
+else
+    no "coverage accepted a README migrate bullet missing live backends"
+fi
+if grep -q "bullet omits live destination backend(s): bws, infisical" <<<"$OUT"; then
+    ok "coverage names the backends missing from the README migrate bullet"
+else
+    no "coverage did not name the backends missing from the README migrate bullet"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_ZCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct README help + sec.conf + migrate bullet) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"
