@@ -866,7 +866,7 @@ if command -v pwsh >/dev/null 2>&1; then
     if [[ $RC73C -eq 2 ]] && grep -q 'unexpected trailing' <<<"$OUT73C"; then pass "sec.ps1 set trailing arg refused (rc=2)"; else fail "sec.ps1 set trailing arg not refused (rc=$RC73C): $OUT73C"; fi
     rm -rf "$H73PS" "$FB73" "$BWLOG73"
 else
-    echo "[INFO] pwsh not present on this host; sec.ps1 #73 functional assertions run on any pwsh host (CI does not install pwsh)"
+    echo "[INFO] pwsh not present on this host; sec.ps1 #73 functional assertions run in CI"
 fi
 
 echo "[24] F039: hyer MCP wiring is env-resolved, PAT via env only, no sh -c"
