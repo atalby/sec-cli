@@ -9,9 +9,11 @@ fail=0
 ok() { echo "  ok: $1"; pass=$((pass + 1)); }
 no() { echo "  fail: $1"; fail=$((fail + 1)); }
 
-SEED_TAR="$(mktemp)"
+WORK_ROOT="$(mktemp -d)"
+SEED_TAR="$(mktemp "$WORK_ROOT/seed.XXXXXX")"
 (cd "$REPO_ROOT" && git ls-files -z | tar --null -T - -cf "$SEED_TAR")
 seed() { tar -C "$1" -xf "$SEED_TAR"; }
+trap 'rm -rf "$WORK_ROOT"' EXIT
 
 echo "[1] coverage subcommand accounts for every tracked file"
 if [[ -x "$SENTINEL" ]]; then
@@ -64,8 +66,7 @@ else
 fi
 
 echo "[3] a broken citation is detected (sentinel fails closed)"
-WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F" "$WORK_G" "$WORK_H" "$WORK_I" "$WORK_J" "$WORK_K" "$WORK_L" "$WORK_Y1" "$WORK_Y2" "$WORK_Y3" "$WORK_Y4" "$WORK_YCTRL" "$SEED_TAR"' EXIT
+WORK="$(mktemp -d "$WORK_ROOT/XXXX")"
 mkdir -p "$WORK/skills/architecture-360-audit"
 cp "$REPO_ROOT/skills/architecture-360-audit/profile.md" "$WORK/skills/architecture-360-audit/profile.md"
 cp "$REPO_ROOT/skills/architecture-360-audit/SKILL.md" "$WORK/skills/architecture-360-audit/SKILL.md"
@@ -95,8 +96,8 @@ else
 fi
 
 echo "[5] a stale-content citation is detected (anchor-content lint, issue #34)"
-WORK_A="$(mktemp -d)"
-WORK_B="$(mktemp -d)"
+WORK_A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_B="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_A" "$WORK_B"; do
     seed "$W"
 done
@@ -124,8 +125,8 @@ else
     printf '%s\n' "$OUT"
 fi
 
-WORK_K="$(mktemp -d)"
-WORK_L="$(mktemp -d)"
+WORK_K="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_L="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_K" "$WORK_L"; do
     seed "$W"
 done
@@ -154,8 +155,8 @@ fi
 
 echo "[6] a phantom identifier claim is detected (claim-existence lint, issue #35)"
 PH="SEC_$(printf 'PHANTOM')_$(printf 'BACKEND')_KEY"
-WORK_C="$(mktemp -d)"
-WORK_D="$(mktemp -d)"
+WORK_C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_D="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_C" "$WORK_D"; do
     seed "$W"
 done
@@ -183,8 +184,8 @@ else
 fi
 
 echo "[7] the coverage denominator in profile.md matches the live tracked-file count (issue #46)"
-WORK_E="$(mktemp -d)"
-WORK_F="$(mktemp -d)"
+WORK_E="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_F="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_E" "$WORK_F"; do
     seed "$W"
 done
@@ -226,8 +227,8 @@ else
 fi
 
 echo "[8] HISTORY.md must stay rotated into history/ archives (issue #47)"
-WORK_G="$(mktemp -d)"
-WORK_H="$(mktemp -d)"
+WORK_G="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_H="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_G" "$WORK_H"; do
     seed "$W"
 done
@@ -254,8 +255,8 @@ else
 fi
 
 echo "[9] cited suite section counts must match the live suites (the #48 drift class)"
-WORK_I="$(mktemp -d)"
-WORK_J="$(mktemp -d)"
+WORK_I="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_J="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_I" "$WORK_J"; do
     seed "$W"
 done
@@ -326,9 +327,9 @@ else
 fi
 
 echo "[11] cited census counts match the live tree (the #49 drift class, issue #84)"
-WORK_K="$(mktemp -d)"
-WORK_L="$(mktemp -d)"
-WORK_M="$(mktemp -d)"
+WORK_K="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_L="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_M="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_K" "$WORK_L" "$WORK_M"; do
     seed "$W"
 done
@@ -386,8 +387,8 @@ else
 fi
 
 echo "[12] ADAPTERS.md's 'current suites' snapshot matches the live suites (issue #85)"
-WORK_N="$(mktemp -d)"
-WORK_O="$(mktemp -d)"
+WORK_N="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_O="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_N" "$WORK_O"; do
     seed "$W"
 done
@@ -423,9 +424,9 @@ else
 fi
 
 echo "[13] profile.md's cited pack taxonomy matches PACK.md (issue #86)"
-WORK_P="$(mktemp -d)"
-WORK_Q="$(mktemp -d)"
-WORK_R="$(mktemp -d)"
+WORK_P="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_Q="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_R="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_P" "$WORK_Q" "$WORK_R"; do
     seed "$W"
 done
@@ -483,8 +484,8 @@ else
 fi
 
 echo "[14] ADAPTERS.md's per-suite '(N sections|cases)' counts match the live suites (issue #87)"
-WORK_S="$(mktemp -d)"
-WORK_T="$(mktemp -d)"
+WORK_S="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_S" "$WORK_T"; do
     seed "$W"
 done
@@ -520,9 +521,9 @@ else
 fi
 
 echo "[15] docs/ARCHITECTURE.md's producer census matches the live bin/ emitters (issue #88)"
-WORK_U="$(mktemp -d)"
-WORK_V="$(mktemp -d)"
-WORK_W="$(mktemp -d)"
+WORK_U="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_V="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_W="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_U" "$WORK_V" "$WORK_W"; do
     seed "$W"
 done
@@ -580,11 +581,11 @@ else
 fi
 
 echo "[16] ADAPTERS.md's skills registry census matches the live skills/ tree + REGISTRY.md (issue #89)"
-WORK_X="$(mktemp -d)"
-WORK_Y="$(mktemp -d)"
-WORK_Z="$(mktemp -d)"
-WORK_V2="$(mktemp -d)"
-WORK_CTRL="$(mktemp -d)"
+WORK_X="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_Y="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_Z="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_V2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_X" "$WORK_Y" "$WORK_Z" "$WORK_V2" "$WORK_CTRL"; do
     seed "$W"
 done
@@ -690,10 +691,10 @@ else
 fi
 
 echo "[17] bin/ helper counts cited in profile.md + ADAPTERS.md match the live tree (issue #90)"
-WORK_S1="$(mktemp -d)"
-WORK_S2="$(mktemp -d)"
-WORK_S3="$(mktemp -d)"
-WORK_SCTRL="$(mktemp -d)"
+WORK_S1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S3="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_SCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_S1" "$WORK_S2" "$WORK_S3" "$WORK_SCTRL"; do
     seed "$W"
 done
@@ -778,11 +779,11 @@ else
 fi
 
 echo "[18] bash suite count + list cited in profile.md + docs/ARCHITECTURE.md match the live tree (issue #91)"
-WORK_T1="$(mktemp -d)"
-WORK_T2="$(mktemp -d)"
-WORK_T3="$(mktemp -d)"
-WORK_T4="$(mktemp -d)"
-WORK_TCTRL="$(mktemp -d)"
+WORK_T1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T3="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T4="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_TCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_T1" "$WORK_T2" "$WORK_T3" "$WORK_T4" "$WORK_TCTRL"; do
     seed "$W"
 done
@@ -890,11 +891,11 @@ else
 fi
 
 echo "[19] structural prose claims (tenant aliases, CI checkout pin, principle count) match the live tree (issue #94)"
-WORK_U1="$(mktemp -d)"
-WORK_U2="$(mktemp -d)"
-WORK_U3="$(mktemp -d)"
-WORK_U4="$(mktemp -d)"
-WORK_UCTRL="$(mktemp -d)"
+WORK_U1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_U2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_U3="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_U4="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_UCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_U1" "$WORK_U2" "$WORK_U3" "$WORK_U4" "$WORK_UCTRL"; do
     seed "$W"
 done
@@ -1002,9 +1003,9 @@ else
 fi
 
 echo "[20] bash suite counts cited in SKILL.md match the live tree (issue #95)"
-WORK_W1="$(mktemp -d)"
-WORK_W2="$(mktemp -d)"
-WORK_WCTRL="$(mktemp -d)"
+WORK_W1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_W2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_WCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_W1" "$WORK_W2" "$WORK_WCTRL"; do
     seed "$W"
 done
@@ -1064,11 +1065,11 @@ else
 fi
 
 echo "[21] SKILL.md's own step/persona/scope/severity counts match the live skill files (issue #96)"
-WORK_X1="$(mktemp -d)"
-WORK_X2="$(mktemp -d)"
-WORK_X3="$(mktemp -d)"
-WORK_X4="$(mktemp -d)"
-WORK_XCTRL="$(mktemp -d)"
+WORK_X1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_X2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_X3="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_X4="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_XCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_X1" "$WORK_X2" "$WORK_X3" "$WORK_X4" "$WORK_XCTRL"; do
     seed "$W"
 done
@@ -1174,11 +1175,11 @@ else
 fi
 
 echo "[22] profile.md §3 count-words + pytest-mirror count match the live suites (issue #97)"
-WORK_Y1="$(mktemp -d)"
-WORK_Y2="$(mktemp -d)"
-WORK_Y3="$(mktemp -d)"
-WORK_Y4="$(mktemp -d)"
-WORK_YCTRL="$(mktemp -d)"
+WORK_Y1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_Y2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_Y3="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_Y4="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_YCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_Y1" "$WORK_Y2" "$WORK_Y3" "$WORK_Y4" "$WORK_YCTRL"; do
     seed "$W"
 done
