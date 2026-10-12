@@ -1367,6 +1367,22 @@ if ! grep -qF -- "\$corecommands + @('--help', '-h')" <<<"$PS1_C"; then
 fi
 if [[ $_miss -eq 0 ]]; then pass "all four surfaces offer --help/-h/--version/-v; sec.ps1 limited to --help/-h"; fi
 
+echo "[22q] every completion surface offers the tenant-prefix words (issue #78)"
+_miss=0
+if ! grep -qF -- "local -a tenants=(bitwarden bw 1pass op bws vault infisical keychain)" <<<"$ZSH_C"; then
+    fail "zsh completion omits the tenant-prefix words"; _miss=1
+fi
+if ! grep -qF -- 'tenants="bitwarden bw 1pass op bws vault infisical keychain"' <<<"$BASH_C"; then
+    fail "bash completion omits the tenant-prefix words"; _miss=1
+fi
+if ! grep -qF -- "-a 'bitwarden bw 1pass op bws vault infisical keychain'" <<<"$FISH_C"; then
+    fail "fish completion omits the tenant-prefix words (issue #78)"; _miss=1
+fi
+if ! grep -qF -- "\$tenants = @('bitwarden', 'bw', '1pass', 'op', 'bws', 'vault', 'infisical', 'keychain')" <<<"$PS1_C"; then
+    fail "ps1 completion omits the tenant-prefix words"; _miss=1
+fi
+if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer the tenant-prefix words"; fi
+
 echo "[22m] bw set: the secret value reaches jq via env and bw via stdin, never argv (#58)"
 JQGUARD="$WORK/jqguard"; mkdir -p "$JQGUARD"
 REAL_JQ="$(command -v jq)"

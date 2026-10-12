@@ -29,7 +29,9 @@ own secrets tool, not just another repo.
   Engineer) — this repo's opted-in `packs/solo-founder-governance`
   names a single final approver, and no other opted-in pack or doc here
   names a different owner.
-- **Last updated**: 2026-10-11 (issue #65: corrected the stale `SEC_TEST_DISPATCH` opt-in and pre-commit "blind to `tests/*.sh`" claims across ADAPTERS.md, the 360-audit skill, and CI; issue #47: the 103 KB `HISTORY.md` narrative was
+- **Last updated**: 2026-10-12 (issue #78: the fish completion surface now
+  offers the tenant-prefix words every other surface already had (dispatch
+  guard 22q); issue #65: corrected the stale `SEC_TEST_DISPATCH` opt-in and pre-commit "blind to `tests/*.sh`" claims across ADAPTERS.md, the 360-audit skill, and CI; issue #47: the 103 KB `HISTORY.md` narrative was
   split losslessly into per-date `history/` archives and guarded against re-bloat;
   issue #46: sentinel now guards the profile.md
   coverage denominator against the live tracked-file count; issue #44: sec.ps1 doc parity + non-zero exit on unimplemented
@@ -50,7 +52,7 @@ own secrets tool, not just another repo.
   and does a defensive create-on-404 upsert (the GCP arm already created
   if absent); issue #62: the GCP create-if-absent branch itself is now
   pinned by sync_guard section [16] (the shim reads `SEC_TEST_GCLOUD_DESCRIBE_RC`);
-  current suites: dispatch 64, write-honesty 11,
+  current suites: dispatch 73, write-honesty 13,
   sentinel 10, sync-guard 16, install 9; earlier 2026-10-10, later
   same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
@@ -259,7 +261,7 @@ per AGENTS.md §5's replace-don't-append rule.
   `bash tests/test_write_honesty.sh` (13 sections, silent-no-op write
   paths, revert/undo honesty, keeper sync-failure + non-TTY honesty), `bash tests/test_sentinel.sh` (10 cases,
   the 360 audit instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (72 sections, every `sec` dispatch arm
+  `bash tests/test_dispatch.sh` (73 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed
@@ -286,7 +288,10 @@ per AGENTS.md §5's replace-don't-append rule.
   stdin/file/env; upstream bitwarden/sdk-sm #1568), documented in
   docs/SECURITY.md, with dispatch guard 22o, then #60 added the
   completion-flag guard 22p (fish/ps1 now offer --help/-h/--version/-v,
-  with sec.ps1 scoped to --help/-h).
+  with sec.ps1 scoped to --help/-h), then #78 added the completion-tenant
+  guard 22q (all four surfaces must offer the tenant-prefix words
+  bitwarden/bw/1pass/op/bws/vault/infisical/keychain; the fish surface
+  had omitted them).
   A sixth, zero-dependency pytest suite lives at `scripts/tests/`
   (`python3 -m pytest scripts/tests/ -q`, added in 00b1a65 under issue
   #2); since #31 it also **executes** all five bash suites

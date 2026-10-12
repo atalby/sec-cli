@@ -36,6 +36,13 @@ audit-flagged silent abort (scratchpad C25): a valid-session
 `set -e` with no message — it now exits 1 with a tagged `[ERROR]`;
 write_honesty 11 -> 13 sections (the keeper's first behavioral coverage:
 rotate sync-failure [11], non-TTY unlock/setup-keychain honesty [12]).
+Issue #78 then closed the last completion-surface parity gap: `sec
+completion fish` omitted the tenant-prefix words
+(bitwarden/bw/1pass/op/bws/vault/infisical/keychain) that zsh/bash/ps1 all
+offer; the fish block now lists them and dispatch guard [22q] asserts the
+parity across all four surfaces (dispatch 72 -> 73 sections;
+profile.md + ADAPTERS counts updated; the ADAPTERS "Last updated" stamp
+and stale suite snapshot were truth-up'd in the same pass).
 Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.

@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (10 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (72 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (10 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (73 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#51`, `#62`) |
@@ -50,7 +50,7 @@ The two partials are themselves findings, not tier annotations:
    PATH.** The hook's test step recognizes `scripts/tests/`+uv,
    `pytest.ini`/`pyproject`, and `package.json` — not `tests/*.sh`
    directly — so this repo's mirror at `scripts/tests/` is what runs all
-   five bash suites at commit time (`ADAPTERS.md:300`; issue #2 closed).
+   five bash suites at commit time (`ADAPTERS.md:305`; issue #2 closed).
    With `uv` absent, Step 5 warns that no suite applies and enforces
    nothing (issue #64). Since 2026-10-09 GitHub Actions runs the five
    bash suites and the pytest mirror on push and PR to main
@@ -67,7 +67,7 @@ CI configuration, and contributor documentation before recording an absence.
 **Test suite** (four-source discovery: manifest — absent; `Makefile` —
 absent; CI — `.github/workflows/test.yml` since 2026-10-09 (issue #8), runs
 the five bash suites below and nothing else; contributor documentation —
-`ADAPTERS.md:255` "Running this project's test suite", which also names the
+`ADAPTERS.md:257` "Running this project's test suite", which also names the
 pytest mirror at `scripts/tests/`). All quotes below current as of the
 2026-10-11 profile pass. `tests/test_sentinel.sh` belongs to the audit
 instrument rather than the product but runs the same way:
@@ -564,7 +564,7 @@ How the code reaches each, not merely that it exists.
 | GitLab group CI/CD variables | HTTPS API `PUT` via `urllib.request` | `bin/sec-sync-controller.py:178`, `bin/sec-sync-controller.py:158` |
 | Vercel | claimed as a sync target in `docs/ARCHITECTURE.md:14` — no call site found in the controller this build (candidate smoke finding) | `docs/ARCHITECTURE.md:14` |
 | GitHub (install source) | `REPO_URL` default feeding `git clone`, piped `curl` install source | `install.sh:7`, `README.md:29` |
-| GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:136` |
+| GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:138` |
 | jq | invoked for JSON parsing inside `bin/sec` | `bin/sec:116` |
 | Hyer hub checkers | invoked by the local pre-commit wrapper from `~/sandbox/hyer/scripts/` | `ADAPTERS.md:232` |
 
