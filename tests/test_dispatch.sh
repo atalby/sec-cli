@@ -391,6 +391,24 @@ OUT="$(run_sec "$H" help EXTRA 2>&1)"; RC=$?
 set -e
 if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec help: unexpected trailing argument' <<<"$OUT" && ! grep -q 'Usage:' <<<"$OUT"; then pass "sec help EXTRA refused before printing the help menu"; else fail "sec help EXTRA rc=$RC out=[$OUT]"; fi
 
+echo "[2k] sec --help lists a usage line for every canonical subcommand (issue #101)"
+U="$(run_sec "$H" --help 2>&1)"
+_miss=0
+for t in get set run sync housekeep migrate unlock rotate setup-keychain completion; do
+    grep -qE "^  sec (\[<tenant>\] )?$t([ {]|\$)" <<<"$U" || { fail "sec --help omits the '$t' subcommand; ADAPTERS.md:101 claims it lists every subcommand (issue #101)"; _miss=1; }
+done
+_ARMS="$(grep -oE '^    [a-z][a-z|-]*\)$' "$REPO_ROOT/bin/sec" | sed -E 's/^ +//; s/\)$//')"
+_ARM_N="$(grep -c . <<<"$_ARMS")"
+if [[ "$_ARM_N" -lt 8 ]]; then
+    fail "expected at least 8 non-flag dispatch arms parsed from bin/sec, got $_ARM_N (issue #101)"; _miss=1
+fi
+while IFS= read -r arm; do
+    [[ -n "$arm" ]] || continue
+    tok="${arm%%|*}"
+    grep -qE "^  sec (\[<tenant>\] )?$tok([ {]|\$)" <<<"$U" || { fail "dispatch arm '$arm' has no usage line in sec --help (issue #101)"; _miss=1; }
+done <<<"$_ARMS"
+if [[ $_miss -eq 0 ]]; then pass "sec --help lists a usage line for every canonical subcommand and every non-flag dispatch arm"; fi
+
 echo "[2g] sec get --scope rejects a flag-like folder name (issue #75)"
 assert_usage_error "sec get --scope --bogus <key>" get --scope --bogus MY_API_KEY
 assert_usage_error "sec get --scope -x <key>" get --scope -x MY_API_KEY
