@@ -1,9 +1,9 @@
 # Resume point - sec-cli
 
-Written 2026-10-12 after closing #109 (commit `eaf4c0a`), #108 (commit
-`9750ef5`) and #107 (commit `1d61880`), all pushed. Working tree clean on
-`main`; `origin/main` == local `main`. This lane shipped a long run of
-guard/fix/perf units (#97..#109), all CI-green.
+Written 2026-10-12 after closing #110 (commit pending), #109 (commit
+`eaf4c0a`), #108 (commit `9750ef5`) and #107 (commit `1d61880`), all pushed.
+Working tree clean on `main`; `origin/main` == local `main`. This lane shipped
+a long run of guard/fix/perf units (#97..#110), all CI-green.
 
 There is now **no open issue with an autonomous in-repo remedy**. The remaining
 open items are hub-side or human-gated (see below). If the lane is run again,
@@ -37,6 +37,13 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #110 `fix(migrate)` -> pending - `sec migrate undo|revert|--undo` short-circuited
+  the migrator's arg parse (bin/sec-migrator:37), so `sec migrate undo EXTRA`
+  silently dropped the operand and proceeded to the rollback path. The undo
+  branch now rejects trailing operands with a tagged `[ERROR]` + exit 2 before
+  any transaction-log access. Dispatch section [2d3] pins it (undo EXTRA /
+  --undo EXTRA / revert EXTRA all refused pre-TX-check). Mirrors 85 -> 86 at
+  `profile.md:22`, `ADAPTERS.md:55`, `ADAPTERS.md:264`, `RESUME.md:103`.
 - #109 `test(sentinel)` -> `eaf4c0a` - sentinel section 17 now guards RESUME.md's
   suite-count line + `Sentinel = N cases / M assertions` total against the live
   suites (they were hand-bumped, unguarded). Case [25] proves it. Mirrors
@@ -100,7 +107,7 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 85, install 9, sentinel 25, sync_guard 16,
+mirrors in sync): dispatch 86, install 9, sentinel 25, sync_guard 16,
 write_honesty 13. Sentinel = 25 cases / 260 assertions. HISTORY.md is at
 8038/8192 bytes - the next narrative addition must compact an older clause first.
 108 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

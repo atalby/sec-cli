@@ -31,23 +31,16 @@ pinned the `powershell` shell word plus the migrate backend values; #82
 added the bare `help`/`version` subcommands; #83 added `get --scope` /
 `set|create --type`; guards [22t]-[22w] pin them (dispatch 75 -> 79;
 `completions/_sec` regenerated each time). The top-level `usage()` stays
-canonical. Issues #84-#90 closed
-the census-drift class wholesale, one guard per claim: profile.md's
-ecosystem and `[ TAG ]` per-file censuses (#84), ADAPTERS.md's
-`current suites:` snapshot (#85), the audit profile's stale pack taxonomy,
-corrected (#86), ADAPTERS.md's per-suite `(N sections|cases)` counts (#87),
-docs/ARCHITECTURE.md's producer census, 'six' -> seven with `sec.ps1`
-omitted (#88), ADAPTERS.md's skills/registry census — 23 skill dirs / 35
-registry rows / 12 hub-internal, already correct but unguarded (#89) — and
-the class's last two *drifted* prose counts: profile.md's "five sibling
-dispatchers" (live 7, contradicting its own line 669) and ADAPTERS.md's
-"four helper scripts" (live 7, one static-only), both wrong at birth;
-section 13 now also asserts every tracked `bin/` helper is referenced by
-`tests/test_dispatch.sh`. Issue #91 then guarded the three bash-suite-count
-prose claims — all correct but unguarded — re-deriving the count from
-tracked `tests/*.sh` and checking profile.md's tests/ census, its CI row,
-and ARCHITECTURE.md's count plus its cited suite-name list (section 14;
-sentinel 17 -> 18 cases).
+canonical. Issues #84-#91 closed
+the census-drift class: profile.md's ecosystem + per-file censuses (#84),
+ADAPTERS.md's `current suites:` snapshot (#85), the audit profile's stale
+pack taxonomy (#86), ADAPTERS.md's per-suite `(N sections|cases)` counts
+(#87), ARCHITECTURE.md's producer census (#88), the skills/registry census
+(#89), and two *drifted* prose counts — "five sibling dispatchers" (live
+7) and "four helper scripts" (live 7) (#90); section 13 also asserts every
+tracked `bin/` helper is referenced by `tests/test_dispatch.sh`. #91 guarded
+the three bash-suite-count claims, re-derived from tracked `tests/*.sh`
+(section 14; sentinel 17 -> 18 cases).
 Issue #93 then repaired README.md's `sec housekeep` sample output, which
 the shipped classifier could never produce (`[token:gmail]` is not a real
 token, and confidence is `max/(max+2)*100`, so 94/89 were unreachable):
@@ -88,6 +81,11 @@ prints a line for every subcommand and non-flag arm, the tenant set is identical
 across the dispatcher, usage and all four completions, and each surface offers
 every subcommand token (#103 parses each surface's own list and asserts all 15)
 (dispatch 83 -> 85 sections).
+Issue #110 closed the last silent-drop arm in the migrator: `sec migrate
+undo|revert|--undo` short-circuited the argument parse, so `sec migrate undo
+EXTRA` dropped the operand and proceeded to the rollback path; the undo
+branch now rejects trailing operands with a tagged `[ERROR]` + exit 2 before
+any transaction-log access (dispatch 85 -> 86 sections).
 Open items: #67 (360 audit —
 needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:

@@ -35,6 +35,9 @@ usage_error() {
 
 # Handle Undo/Rollback
 if [[ "${1:-}" == "--undo" || "${1:-}" == "undo" || "${1:-}" == "revert" ]]; then
+    if [[ $# -gt 1 ]]; then
+        usage_error "sec migrate undo: unexpected trailing argument '$2' (usage: sec migrate --undo)"
+    fi
     echo "[INFO] Reverting Last Secret Migration Operation"
     if [[ ! -f "$TX_FILE" ]]; then
         echo "[ERROR] No active migration transaction log found ($TX_FILE)." >&2

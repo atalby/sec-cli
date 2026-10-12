@@ -324,6 +324,15 @@ set -e
 if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] Destination backend 'bogus' not supported" <<<"$OUT"; then pass "migrate --to bogus --apply -> exit 1 + tagged error"; else fail "migrate --to bogus --apply rc=$RC out=[$OUT]"; fi
 if grep -q "Migration Successfully Completed" <<<"$OUT"; then fail "migrate --to bogus --apply still reported success: $OUT"; else pass "migrate --to bogus --apply reported no false success"; fi
 
+echo "[2d3] sec migrate undo/revert/--undo reject trailing operands before any rollback (issue #110)"
+assert_usage_error "sec migrate undo EXTRA" migrate undo EXTRA
+assert_usage_error "sec migrate --undo EXTRA" migrate --undo EXTRA
+assert_usage_error "sec migrate revert EXTRA" migrate revert EXTRA
+set +e
+OUT="$(run_sec "$H" migrate undo EXTRA 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec migrate undo: unexpected trailing argument' <<<"$OUT" && ! grep -q 'Reverting Last Secret Migration Operation' <<<"$OUT"; then pass "undo EXTRA refused before the rollback banner"; else fail "undo EXTRA rc=$RC out=[$OUT]"; fi
+
 echo "[2e] get/set/unlock reject unknown -flags at the operand position instead of misparsing them (issue #71)"
 assert_usage_error "sec get --bogus <key>" get --bogus MY_API_KEY
 assert_usage_error "sec get --bogus (no key)" get --bogus
