@@ -665,10 +665,98 @@ else:
                 f"ARCHITECTURE.md lists producers {_cited_set}, live emitters are {_live_producers}"
             )
 
+# --- 12. ADAPTERS.md's skills registry census must match the live tree (#89) --
+# ADAPTERS.md's "Skills registry" section carries five numbers (skill dirs,
+# adopter-distributable, project-specific, hub-internal rows, total rows) and
+# skills/REGISTRY.md is the table they describe. Both are hand-maintained, so a
+# new skill silently invalidates five claims. This re-measures the tree and the
+# registry and fails closed on any disagreement.
+registry_mismatches = []
+_skill_root = os.path.join(repo, "skills")
+_live_skill_dirs = set()
+if os.path.isdir(_skill_root):
+    for _d in os.listdir(_skill_root):
+        _dp = os.path.join(_skill_root, _d)
+        if os.path.isdir(_dp) and os.path.exists(os.path.join(_dp, "SKILL.md")):
+            _live_skill_dirs.add(_d)
+_live_skill_count = len(_live_skill_dirs)
+
+try:
+    with open(os.path.join(_skill_root, "REGISTRY.md"), encoding="utf-8") as _fh:
+        _reg_text = _fh.read()
+except OSError:
+    _reg_text = ""
+_registry_rows = []
+for _ln in _reg_text.splitlines():
+    if not _ln.startswith("|"):
+        continue
+    _cells = [c.strip() for c in _ln.strip().strip("|").split("|")]
+    if len(_cells) < 4:
+        continue
+    if _cells[0] == "Skill" or (_cells[0] and set(_cells[0]) == {"-"}):
+        continue
+    _registry_rows.append(_cells)
+
+_row_dirs = {}
+_dist_counts = {}
+for _c in _registry_rows:
+    _dm = re.match(r"`skills/([^/]+)/SKILL\.md`", _c[1])
+    if _dm:
+        _row_dirs[_dm.group(1)] = _c[0]
+    _dist_counts[_c[3]] = _dist_counts.get(_c[3], 0) + 1
+
+_live_rows = len(_registry_rows)
+_live_hub = _dist_counts.get("hub-internal", 0)
+_live_local = _dist_counts.get("adopter", 0) + _dist_counts.get("project-specific", 0)
+
+for _d in sorted(_row_dirs):
+    if _d not in _live_skill_dirs:
+        registry_mismatches.append(
+            f"REGISTRY.md lists a skills/ row for a skill dir that does not exist: {_d}"
+        )
+for _d in sorted(_live_skill_dirs):
+    if _d not in _row_dirs:
+        registry_mismatches.append(f"live skill dir skills/{_d} has no skills/ row in REGISTRY.md")
+
+if not _registry_rows:
+    registry_mismatches.append("skills/REGISTRY.md holds no parseable skill rows")
+else:
+    _sk_sec = re.search(r"^##\s+Skills registry\s*$(.*?)^##\s", _adapters_text, re.S | re.M)
+    if not _sk_sec:
+        registry_mismatches.append("ADAPTERS.md carries no '## Skills registry' section")
+    else:
+        _sk_text = _sk_sec.group(1)
+
+        def _check_registry(label, pattern, live):
+            _rm = re.search(pattern, _sk_text)
+            if not _rm:
+                registry_mismatches.append(f"ADAPTERS.md's skills registry census states no {label}")
+            elif int(_rm.group(1)) != live:
+                registry_mismatches.append(
+                    f"ADAPTERS.md's skills registry census says {_rm.group(1)} {label}, live tree has {live}"
+                )
+
+        _check_registry("skill dirs", r"(\d+) skill dirs under `skills/`", _live_skill_count)
+        _adopt_m = re.search(r"(\d+) adopter-distributable", _sk_text)
+        _own_m = re.search(r"plus (\d+) project-specific", _sk_text)
+        if not _adopt_m or not _own_m:
+            registry_mismatches.append(
+                "ADAPTERS.md's skills registry census states no adopter-distributable/"
+                "project-specific split"
+            )
+        elif int(_adopt_m.group(1)) + int(_own_m.group(1)) != _live_local:
+            registry_mismatches.append(
+                f"ADAPTERS.md's skills registry census says {int(_adopt_m.group(1))} adopter-distributable "
+                f"plus {int(_own_m.group(1))} project-specific, live registry has {_live_local}"
+            )
+        _check_registry("hub-internal rows", r"plus (\d+)\s+`?\.hyer/skills/`?\s+hub-internal rows", _live_hub)
+        _check_registry("skill rows", r"(\d+) skill rows", _live_rows)
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
     print(f"{OK} personas reachable from the manifest: {sorted(used)}")
+    print(f"{OK} skills tree: {len(_live_skill_dirs)} skill dir(s), registry {len(_registry_rows)} row(s)")
     for label, owner, n in present_surfaces:
         print(f"{OK} surface present: {label} ({n} location(s)) -> {owner}")
     for m in found_manifests:
@@ -732,6 +820,10 @@ if producers_mismatches:
     failures.append(f"{len(producers_mismatches)} producer-census drift(s) vs docs/ARCHITECTURE.md")
     for _m in producers_mismatches:
         print(f"{ERROR} producers: {_m}")
+if registry_mismatches:
+    failures.append(f"{len(registry_mismatches)} skills registry drift(s) vs ADAPTERS.md + skills/REGISTRY.md")
+    for _m in registry_mismatches:
+        print(f"{ERROR} registry: {_m}")
 
 if failures:
     for f in failures:
@@ -746,6 +838,7 @@ print(f"{OK} census counts: profile.md matches the live tree (markdown, python, 
 print(f"{OK} adapters suite counts: ADAPTERS.md 'current suites' snapshot + per-suite mentions match the live suites")
 print(f"{OK} pack prose: profile.md's cited pack version + role count match PACK.md")
 print(f"{OK} producer census: docs/ARCHITECTURE.md's producer count + list match the live bin/ emitters")
+print(f"{OK} skills registry: ADAPTERS.md's census matches {len(_live_skill_dirs)} live skill dir(s) + {len(_registry_rows)} REGISTRY.md row(s)")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

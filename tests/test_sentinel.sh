@@ -576,6 +576,117 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[16] ADAPTERS.md's skills registry census matches the live skills/ tree + REGISTRY.md (issue #89)"
+WORK_X="$(mktemp -d)"
+WORK_Y="$(mktemp -d)"
+WORK_Z="$(mktemp -d)"
+WORK_V2="$(mktemp -d)"
+WORK_CTRL="$(mktemp -d)"
+for W in "$WORK_X" "$WORK_Y" "$WORK_Z" "$WORK_V2" "$WORK_CTRL"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_X/ADAPTERS.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(\d+) skill dirs under `skills/`", "99 skill dirs under `skills/`", s)
+if n != 1:
+    sys.exit("ADAPTERS skill-dir count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_Y/ADAPTERS.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(\d+) skill rows", "99 skill rows", s)
+if n != 1:
+    sys.exit("ADAPTERS skill-row count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_Z/skills/REGISTRY.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+lines = open(p, encoding="utf-8").read().splitlines(keepends=True)
+kept = [ln for ln in lines if not ln.startswith("| moving-stable-tag |")]
+if len(kept) == len(lines):
+    sys.exit("REGISTRY hub-internal row not found to drop")
+open(p, "w", encoding="utf-8").write("".join(kept))
+PY
+python3 - "$WORK_V2/skills/REGISTRY.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s3, n3 = re.subn(r"`skills/adopt-persona/SKILL\.md`", "`skills/adopt-persona-drifted/SKILL.md`", s)
+if n3 != 1:
+    sys.exit("REGISTRY skills/ row not found to corrupt")
+open(p, "w", encoding="utf-8").write(s3)
+PY
+OUT="$(cd "$WORK_X" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted ADAPTERS skill-dir count"
+else
+    no "coverage accepted a drifted ADAPTERS skill-dir count"
+fi
+if grep -q "ADAPTERS.md's skills registry census says 99 skill dirs" <<<"$OUT"; then
+    ok "coverage names the drifted ADAPTERS skill-dir count"
+else
+    no "coverage did not name the drifted ADAPTERS skill-dir count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_Y" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted ADAPTERS skill-row count"
+else
+    no "coverage accepted a drifted ADAPTERS skill-row count"
+fi
+if grep -q "ADAPTERS.md's skills registry census says 99 skill rows" <<<"$OUT"; then
+    ok "coverage names the drifted ADAPTERS skill-row count"
+else
+    no "coverage did not name the drifted ADAPTERS skill-row count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_Z" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when REGISTRY.md drops a hub-internal row"
+else
+    no "coverage accepted a REGISTRY.md missing a hub-internal row"
+fi
+if grep -q "hub-internal rows" <<<"$OUT"; then
+    ok "coverage names the drifted hub-internal row count"
+else
+    no "coverage did not name the drifted hub-internal row count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_V2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a REGISTRY.md skills/ row points at no live skill dir"
+else
+    no "coverage accepted a REGISTRY.md skills/ row pointing at no live skill dir"
+fi
+if grep -q "lists a skills/ row for a skill dir that does not exist" <<<"$OUT"; then
+    ok "coverage names the REGISTRY.md skills/ row with no live dir"
+else
+    no "coverage did not name the REGISTRY.md skills/ row with no live dir"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct skills registry census) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
