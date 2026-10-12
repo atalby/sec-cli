@@ -5,15 +5,15 @@
   audit-flagged silent abort in `bw-session-keeper` `rotate`/`keep` is
   fixed. A valid session whose vault refresh failed used to die under
   `set -e` with exit 1 and no message; it now prints a tagged `[ERROR]`
-  and exits 1 (contract unchanged). Regression test added at
-  `tests/test_write_honesty.sh` section [11] (fake-`bw` `SEC_TEST_BW_SYNC_RC`
-  knob; RED without the fix) — the keeper's first behavioral coverage.
+  and exits 1 (contract unchanged). The keeper gained its first behavioral
+  coverage: `tests/test_write_honesty.sh` section [11] (rotate sync-failure,
+  fake-`bw` `SEC_TEST_BW_SYNC_RC` knob; RED without the fix) and [12]
+  (non-TTY `unlock`/`setup-keychain` honesty, issue #22/C26 residual).
   Five bash suites ALL TESTS PASSED (dispatch 72 / install 9 / sentinel 10
   / sync_guard 16 / write_honesty 13); pytest mirror 29 passed; sentinel
   citations + coverage green (suite counts match); HISTORY.md under budget;
   gitignored surfaces claimed; 12 personas reachable. Working tree clean at
-  `a410d56` (fix commit pushed). No unmerged branches, no open PRs, no
-  TODO/FIXME debt in tracked files.
+  `82b9b97`. No unmerged branches, no open PRs, no TODO/FIXME debt.
 - **Next action:** tracker holds only #67 (fresh 360 audit — the audit
   skill's Step-1 gate requires explicit human scope approval, not
   autonomous) and #51 (hub-side handoff items #2/#13 tracked upstream).
