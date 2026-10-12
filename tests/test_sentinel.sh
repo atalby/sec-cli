@@ -61,7 +61,7 @@ fi
 
 echo "[3] a broken citation is detected (sentinel fails closed)"
 WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F" "$WORK_G" "$WORK_H" "$WORK_I" "$WORK_J" "$WORK_K" "$WORK_L"' EXIT
+trap 'rm -rf "$WORK" "$WORK_A" "$WORK_B" "$WORK_C" "$WORK_D" "$WORK_E" "$WORK_F" "$WORK_G" "$WORK_H" "$WORK_I" "$WORK_J" "$WORK_K" "$WORK_L" "$WORK_Y1" "$WORK_Y2" "$WORK_Y3" "$WORK_Y4" "$WORK_YCTRL"' EXIT
 mkdir -p "$WORK/skills/architecture-360-audit"
 cp "$REPO_ROOT/skills/architecture-360-audit/profile.md" "$WORK/skills/architecture-360-audit/profile.md"
 cp "$REPO_ROOT/skills/architecture-360-audit/SKILL.md" "$WORK/skills/architecture-360-audit/SKILL.md"
@@ -1181,6 +1181,117 @@ OUT="$(cd "$WORK_XCTRL" && git init -q . && git add -A && "skills/architecture-3
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (correct SKILL.md structural counts) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[22] profile.md §3 count-words + pytest-mirror count match the live suites (issue #97)"
+WORK_Y1="$(mktemp -d)"
+WORK_Y2="$(mktemp -d)"
+WORK_Y3="$(mktemp -d)"
+WORK_Y4="$(mktemp -d)"
+WORK_YCTRL="$(mktemp -d)"
+for W in "$WORK_Y1" "$WORK_Y2" "$WORK_Y3" "$WORK_Y4" "$WORK_YCTRL"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_Y1/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"own twenty-two sentinel cases", "own twelve sentinel cases", s)
+if n != 1:
+    sys.exit("profile.md §3 sentinel count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_Y2/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"Nine install sections", "Eight install sections", s)
+if n != 1:
+    sys.exit("profile.md §3 install count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_Y3/ADAPTERS.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"is now 29 passed", "is now 28 passed", s)
+if n != 1:
+    sys.exit("ADAPTERS.md pytest count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_Y4/skills/architecture-360-audit/SKILL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"suites \(29 passed", "suites (30 passed", s)
+if n != 1:
+    sys.exit("SKILL.md pytest count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_Y1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted profile.md §3 sentinel count"
+else
+    no "coverage accepted a drifted profile.md §3 sentinel count"
+fi
+if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 22" <<<"$OUT"; then
+    ok "coverage names the drifted profile.md §3 sentinel count"
+else
+    no "coverage did not name the drifted profile.md §3 sentinel count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_Y2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted profile.md §3 install count"
+else
+    no "coverage accepted a drifted profile.md §3 install count"
+fi
+if grep -q "profile.md §3 says 'Eight' for tests/test_install.sh, live suite has 9" <<<"$OUT"; then
+    ok "coverage names the drifted profile.md §3 install count"
+else
+    no "coverage did not name the drifted profile.md §3 install count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_Y3" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted ADAPTERS.md pytest count"
+else
+    no "coverage accepted a drifted ADAPTERS.md pytest count"
+fi
+if grep -q "ADAPTERS.md says pytest mirror is 28 passed, live collection counts 29" <<<"$OUT"; then
+    ok "coverage names the drifted ADAPTERS.md pytest count"
+else
+    no "coverage did not name the drifted ADAPTERS.md pytest count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_Y4" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted SKILL.md pytest count"
+else
+    no "coverage accepted a drifted SKILL.md pytest count"
+fi
+if grep -q "SKILL.md says pytest mirror is 30 passed, live collection counts 29" <<<"$OUT"; then
+    ok "coverage names the drifted SKILL.md pytest count"
+else
+    no "coverage did not name the drifted SKILL.md pytest count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_YCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct §3 count-words + pytest count) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"

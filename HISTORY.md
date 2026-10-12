@@ -20,40 +20,18 @@ name, `sec housekeep`/`organize` no longer drops extra operands, and a
 `set -e` with no message — now exit 1 + tagged `[ERROR]`. Issue #64
 (local pre-commit enforcement vanishing when `uv` is absent) was verified
 as a duplicate of #51's hub-side payload and closed as duplicate. Issue
-#78 closed the last completion-surface parity gap: `sec completion fish`
-omitted the tenant-prefix words (bitwarden/bw/1pass/op/bws/vault/
-infisical/keychain) the other three surfaces offer; #79 closed the sibling
-gap (no housekeep subcommands after the `organize` alias); #80 resolved
-the class by accepting `undo`/`restore` as aliases of `revert` (which
-sec-organizer has mapped since v1.0.0), but all four completions
-advertised only
-`plan/apply/revert`; the aliases are now offered in the housekeep completion
-on every surface — matching how the create/organize/keep aliases are
-advertised — with guard [22s] pinning the parity and the checked-in
-`completions/_sec` golden regenerated (dispatch 74 -> 75 sections). The
-`sec housekeep --help` / error text stays canonical (plan/apply/revert),
-consistent with the top-level help, which also lists no aliases.
-Issue #81 then repaired the ps1 completion's runtime: it read
-`$commandAst.ArgumentElements`, a property that does not exist on
-`System.Management.Automation.Language.CommandAst` (only `CommandElements`
-does, "never null"), so `$elements` was null, the `Count -le 1` branch
-always won, and the ps1 subcommand completions were dead code at runtime.
-It now reads `CommandElements`; guard [22t] pins that plus the
-`powershell` shell word on all four surfaces (bin/sec always accepted
-`sec completion powershell` but never completed it), and guard [22u]
-pins the migrate backend values (bitwarden 1password bws vault infisical)
-on bash/fish/ps1 to match zsh (dispatch 75 -> 77 sections; the
-`completions/_sec` golden was regenerated for the zsh shells list).
-Issue #82 then completed the bare `help`/`version` subcommands the
-dispatcher accepts (`bin/sec` `-h|--help|help)`, `-v|--version|version)`)
-on all four surfaces; guard [22v] pins the parity (dispatch 77 -> 78
-sections; the `completions/_sec` golden was regenerated for the added
-zsh subcommands). The top-level `usage()` stays canonical.
-Issue #83 then completed the `get --scope` and `set/create --type` flags
-the dispatcher accepts (bin/sec get arm and set|create `--type`
-login/note/card/identity) on all four surfaces; guard [22w] pins the
-parity (dispatch 78 -> 79 sections; the `completions/_sec` golden was
-regenerated for the added zsh `_arguments` arms). Issues #84-#90 closed
+#78-#80 closed the completion-parity class: fish omitted the tenant-prefix
+words the other surfaces offer; no housekeep subcommands followed the
+`organize` alias; and all four surfaces advertised only `plan/apply/revert`
+(now `undo`/`restore` too, matching `sec-organizer`); guard [22s] pins it
+(dispatch 74 -> 75; `completions/_sec` regenerated).
+Issue #81 fixed the ps1 completion runtime (`$commandAst.ArgumentElements`
+-> `CommandElements`, so ps1 subcommand completion had been dead code) and
+pinned the `powershell` shell word plus the migrate backend values; #82
+added the bare `help`/`version` subcommands; #83 added `get --scope` /
+`set|create --type`; guards [22t]-[22w] pin them (dispatch 75 -> 79;
+`completions/_sec` regenerated each time). The top-level `usage()` stays
+canonical. Issues #84-#90 closed
 the census-drift class wholesale, one guard per claim: profile.md's
 ecosystem and `[ TAG ]` per-file censuses (#84), ADAPTERS.md's
 `current suites:` snapshot (#85), the audit profile's stale pack taxonomy,
@@ -89,6 +67,10 @@ Issue #96 then guarded SKILL.md's remaining structural counts — its step
 count (11) and persona count (12, cross-checked against profile.md's
 "Twelve, numbered 1 through 12"), the two Step-1 scopes, and the
 three-value severity set (section 16; sentinel 20 -> 21 cases).
+Issue #97 then bound the last unguarded count claims: profile.md §3's four
+suite count-words and the pytest mirror's "29 passed" (ADAPTERS.md:305,
+SKILL.md:451), all re-derived from the live suites (section 17; sentinel
+21 -> 22 cases).
 Open items: #67 (360 audit —
 needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:

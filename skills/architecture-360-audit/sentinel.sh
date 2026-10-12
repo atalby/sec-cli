@@ -600,6 +600,10 @@ pack_mismatches = []
 _NUM_WORDS = {
     "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
     "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
+    "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16,
+    "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
+    "twenty-one": 21, "twenty-two": 22, "twenty-three": 23,
+    "twenty-four": 24, "twenty-five": 25,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -994,6 +998,70 @@ else:
             f"SKILL.md's severity set is {sorted(_sev_cited)}, canonical is {sorted(_sev_set)}"
         )
 
+
+# --- 17. profile.md's §3 count-words + the pytest mirror's collected count must match (#97) --
+count_claim_mismatches = []
+
+# profile.md:640-641 — "Nine install sections, sixteen guard sections,
+# thirteen write-honesty sections, and the audit instrument's own ten
+# sentinel cases pass today". Section 7 guards profile.md:22's counts; this
+# is the unguarded second site.
+_sec3 = re.search(
+    r"([\w-]+) install sections, ([\w-]+) guard sections, ([\w-]+) write-honesty"
+    r"\s+sections, and the audit instrument's own ([\w-]+) sentinel cases",
+    profile_text,
+    re.S,
+)
+if not _sec3:
+    count_claim_mismatches.append(
+        "profile.md carries no 'N install sections, N guard sections, "
+        "N write-honesty sections, N sentinel cases' sentence"
+    )
+else:
+    for _word, _key in (
+        (_sec3.group(1), "install"),
+        (_sec3.group(2), "sync_guard"),
+        (_sec3.group(3), "write_honesty"),
+        (_sec3.group(4), "sentinel"),
+    ):
+        _live = suite_counts.get(_key)
+        if _live is None:
+            count_claim_mismatches.append(
+                f"profile.md §3 cites tests/test_{_key}.sh but no such suite exists"
+            )
+        elif _NUM_WORDS.get(_word.lower()) != _live:
+            count_claim_mismatches.append(
+                f"profile.md §3 says '{_word}' for tests/test_{_key}.sh, live suite has {_live}"
+            )
+
+# The pytest mirror's collected count, cited as "29 passed" in ADAPTERS.md
+# and SKILL.md. Live count comes from pytest --collect-only.
+try:
+    import pytest  # noqa: F401
+    _pytest_available = True
+except ImportError:
+    _pytest_available = False
+
+if _pytest_available:
+    _collect = subprocess.run(
+        [sys.executable, "-m", "pytest", "scripts/tests/", "--collect-only", "-q",
+         "-c", os.devnull, "--confcutdir", "scripts/tests"],
+        cwd=repo, capture_output=True, text=True,
+        env={**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"},
+    )
+    _collected = sum(1 for _ln in _collect.stdout.splitlines() if "::" in _ln)
+    for _label, _pattern, _text in (
+        ("ADAPTERS.md", r"pytest scripts/tests/ -q` is now (\d+) passed", _adapters_text),
+        ("SKILL.md", r"all five bash suites \((\d+) passed", _skill_text),
+    ):
+        _m = re.search(_pattern, _text)
+        if not _m:
+            count_claim_mismatches.append(f"{_label} carries no pytest 'N passed' claim")
+        elif int(_m.group(1)) != _collected:
+            count_claim_mismatches.append(
+                f"{_label} says pytest mirror is {_m.group(1)} passed, live collection counts {_collected}"
+            )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -1088,6 +1156,10 @@ if skill_struct_mismatches:
     failures.append(f"{len(skill_struct_mismatches)} SKILL.md/profile.md structural count(s) drifted from the live skill files")
     for _m in skill_struct_mismatches:
         print(f"{ERROR} skill structure: {_m}")
+if count_claim_mismatches:
+    failures.append(f"{len(count_claim_mismatches)} profile.md §3 / pytest-mirror count claim(s) drifted from the live suites")
+    for _m in count_claim_mismatches:
+        print(f"{ERROR} count claim: {_m}")
 
 if failures:
     for f in failures:
@@ -1107,6 +1179,7 @@ print(f"{OK} bin/ helper census: profile.md + ADAPTERS.md match {_live_bin_helpe
 print(f"{OK} suite census: profile.md + ARCHITECTURE.md + SKILL.md match {_live_suite_count} tracked bash suite(s), ARCHITECTURE.md's suite list matches the tracked names")
 print(f"{OK} structural prose: MULTI_TENANCY.md tenant aliases + profile.md CI checkout pin + OPERATOR_MANUAL.md principle count match the live tree")
 print(f"{OK} skill structure: SKILL.md steps + personas + scopes + severity set match the live skill files")
+print(f"{OK} count claims: profile.md §3 count-words + ADAPTERS.md/SKILL.md pytest-mirror count match the live suites")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

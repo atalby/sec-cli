@@ -19,10 +19,10 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (21 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (80 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (22 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (80 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
-| Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#51`, `#67`) |
+| Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#51`, `#67`, `#92`) |
 | Lockfile | **ABSENT (project)** | no project lockfile of any ecosystem; the only lockfile on disk is the harness-managed `.opencode/package-lock.json` (2026-10-10, self-gitignored by `.opencode/.gitignore`) |
 | Dependency manifest | **ABSENT (project)** | no `package.json`, `pyproject.toml`, `requirements.txt`, `Makefile`, or equivalent anywhere in the tracked tree; the only manifests on disk are `.opencode/package.json` + `.opencode/package-lock.json`, opencode's own plugin bootstrap (`@opencode-ai/plugin` 1.18.35, installed 2026-10-10) |
 
@@ -251,7 +251,7 @@ instrument rather than the product but runs the same way:
       ok: lint names the phantom identifier
       ok: lint accepts a real identifier
     [7] the coverage denominator in profile.md matches the live tracked-file count (issue #46)
-       ok: profile.md denominator (107) matches tracked files (107)
+       ok: profile.md denominator (108) matches tracked files (108)
       ok: coverage exits nonzero on a drifted denominator
       ok: coverage names the denominator mismatch
       ok: control copy (correct denominator) exits 0
@@ -638,7 +638,7 @@ module-level public, leading underscore private.
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:255`
 
 Nine install sections, sixteen guard sections, thirteen write-honesty
-sections, and the audit instrument's own ten sentinel cases pass today
+sections, and the audit instrument's own twenty-two sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes all five bash suites — the former dispatch opt-in was removed in
 0284d39, issue #65); establish what they do not cover. Structural
