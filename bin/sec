@@ -271,7 +271,7 @@ _sec() {
                     ;;
                 migrate)
                     _arguments \
-                        '--from[Source vault backend]:backend:(bitwarden 1password bws vault infisical)' \
+                        '--from[Source vault backend]:backend:(bitwarden 1password bws)' \
                         '--to[Target vault backend]:backend:(bitwarden 1password bws vault infisical)' \
                         '--plan[Generate migration plan]' \
                         '--apply[Execute vault migration]' \
@@ -327,7 +327,7 @@ _sec_bash_completion() {
             ;;
         migrate)
             if [[ ${prev} == "--from" || ${prev} == "--to" ]]; then
-                COMPREPLY=( $(compgen -W "bitwarden 1password bws vault infisical" -- ${cur}) )
+                _mb="bitwarden 1password bws"; [[ ${prev} == "--to" ]] && _mb="bitwarden 1password bws vault infisical"; COMPREPLY=( $(compgen -W "$_mb" -- ${cur}) )
             else
                 COMPREPLY=( $(compgen -W "--from --to --plan --apply --undo" -- ${cur}) )
             fi
@@ -376,7 +376,7 @@ complete -f -c sec -n '__fish_sec_needs_command' -a '--help -h --version -v'
 complete -f -c sec -n '__fish_seen_subcommand_from sync' -a '-n --dry-run -y --yes'
 complete -f -c sec -n '__fish_seen_subcommand_from housekeep organize' -a 'plan apply revert undo restore'
 complete -f -c sec -n '__fish_seen_subcommand_from migrate' -a '--from --to --plan --apply --undo'
-complete -f -c sec -n '__fish_seen_subcommand_from migrate; and contains --from (commandline -opc)' -a 'bitwarden 1password bws vault infisical'
+complete -f -c sec -n '__fish_seen_subcommand_from migrate; and contains --from (commandline -opc)' -a 'bitwarden 1password bws'
 complete -f -c sec -n '__fish_seen_subcommand_from migrate; and contains --to (commandline -opc)' -a 'bitwarden 1password bws vault infisical'
 complete -f -c sec -n '__fish_seen_subcommand_from completion' -a 'zsh bash fish ps1 powershell'
 complete -f -c sec -n '__fish_seen_subcommand_from get' -a '--scope'
@@ -421,7 +421,7 @@ Register-ArgumentCompleter -Native -CommandName 'sec', 'sec.exe', 'sec.ps1' -Scr
     } elseif ($elements[1].Value -eq 'migrate') {
         $migrateWords = @('--from', '--to', '--plan', '--apply', '--undo')
         if (($elements[-1].Value -in @('--from', '--to')) -or ($elements[-2].Value -in @('--from', '--to'))) {
-            $migrateWords = @('bitwarden', '1password', 'bws', 'vault', 'infisical')
+            $migrateWords = @('bitwarden', '1password', 'bws'); if (($elements[-1].Value -eq '--to') -or ($elements[-2].Value -eq '--to')) { $migrateWords += @('vault', 'infisical') }
         }
         $migrateWords | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
             [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)

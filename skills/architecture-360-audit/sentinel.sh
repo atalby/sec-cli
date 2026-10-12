@@ -1124,6 +1124,84 @@ else:
             + ", ".join(_missing)
         )
 
+# --- 19. sec migrate's source vs destination backend sets must agree across
+#         the migrator allow-lists, all four shells, and OPERATOR_MANUAL (issue #108) --
+migrate_mismatches = []
+
+
+def _mig_canon(_s):
+    return {_ALIAS[_t] for _t in re.findall(r"[a-z0-9]+", _s.lower()) if _t in _ALIAS}
+
+
+_mig_src_block_m = re.search(
+    r'fetch_source_items\(\) \{\n\s*case "\$SRC" in\n([\s\S]*?)\n\s*\*\)', _mig_text
+)
+_mig_src_set = None
+if _mig_src_block_m is None:
+    migrate_mismatches.append("bin/sec-migrator carries no fetch_source_items() source case block")
+else:
+    _mig_src_set = set()
+    for _ln in _mig_src_block_m.group(1).splitlines():
+        _am = re.match(r"\s*([a-z0-9|]+)\)", _ln)
+        if _am:
+            _mig_src_set |= _mig_canon(_am.group(1))
+
+_mig_dst_set = None
+if _mig_dst_m is None:
+    migrate_mismatches.append("bin/sec-migrator carries no destination ('case \"$DST\" in') allow-list")
+else:
+    _mig_dst_set = _mig_canon(_mig_dst_m.group(1))
+
+if _mig_src_set is not None and _mig_dst_set is not None:
+    _mig_surfaces = [
+        ("bin/sec zsh --from", re.search(r"--from\[[^\]]*\]:backend:\(([^)]*)\)", _sec_text), "src"),
+        ("bin/sec zsh --to", re.search(r"--to\[[^\]]*\]:backend:\(([^)]*)\)", _sec_text), "dst"),
+        ("bin/sec fish --from", re.search(r"contains --from \(commandline -opc\)' -a '([^']*)'", _sec_text), "src"),
+        ("bin/sec fish --to", re.search(r"contains --to \(commandline -opc\)' -a '([^']*)'", _sec_text), "dst"),
+        ("bin/sec bash --from", re.search(r'_mb="([^"]*)"; \[\[ \$\{prev\} == "--to" \]\] && _mb="([^"]*)"', _sec_text), "bash"),
+        ("bin/sec ps1", re.search(r"\$migrateWords = @\(([^)]*)\);.*?\+= @\(([^)]*)\)", _sec_text), "ps1"),
+        ("OPERATOR_MANUAL.md --from", re.search(r"- `--from <src>`:[^\n]*?\(([^)]*)\)", _op_text), "src"),
+        ("OPERATOR_MANUAL.md --to", re.search(r"- `--to <dst>`:[^\n]*?\(([^)]*)\)", _op_text), "dst"),
+        ("bin/sec-migrator usage --from", re.search(r"source \(--from\):[^\"]*", _mig_text), "src"),
+        ("bin/sec-migrator usage --to", re.search(r"target \(--to\):[^\"]*", _mig_text), "dst"),
+    ]
+    for _name, _m, _kind in _mig_surfaces:
+        if _m is None:
+            migrate_mismatches.append(f"{_name} surface not found to compare against the migrator allow-lists")
+            continue
+        if _kind == "src":
+            _got = _mig_canon(_m.group(1) if _m.groups() else _m.group(0))
+            if _got != _mig_src_set:
+                migrate_mismatches.append(
+                    f"{_name} lists {sorted(_got)}, migrator source allow-list is {sorted(_mig_src_set)}"
+                )
+        elif _kind == "dst":
+            _got = _mig_canon(_m.group(1) if _m.groups() else _m.group(0))
+            if _got != _mig_dst_set:
+                migrate_mismatches.append(
+                    f"{_name} lists {sorted(_got)}, migrator destination allow-list is {sorted(_mig_dst_set)}"
+                )
+        elif _kind == "bash":
+            _s, _d = _mig_canon(_m.group(1)), _mig_canon(_m.group(2))
+            if _s != _mig_src_set:
+                migrate_mismatches.append(
+                    f"{_name} lists {sorted(_s)}, migrator source allow-list is {sorted(_mig_src_set)}"
+                )
+            if _d != _mig_dst_set:
+                migrate_mismatches.append(
+                    f"{_name} lists {sorted(_d)}, migrator destination allow-list is {sorted(_mig_dst_set)}"
+                )
+        elif _kind == "ps1":
+            _s, _add = _mig_canon(_m.group(1)), _mig_canon(_m.group(2))
+            if _s != _mig_src_set:
+                migrate_mismatches.append(
+                    f"{_name} source list is {sorted(_s)}, migrator source allow-list is {sorted(_mig_src_set)}"
+                )
+            if _s | _add != _mig_dst_set:
+                migrate_mismatches.append(
+                    f"{_name} destination list is {sorted(_s | _add)}, migrator destination allow-list is {sorted(_mig_dst_set)}"
+                )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -1226,6 +1304,10 @@ if readme_mismatches:
     failures.append(f"{len(readme_mismatches)} README.md drift(s) vs the live CLI")
     for _m in readme_mismatches:
         print(f"{ERROR} README: {_m}")
+if migrate_mismatches:
+    failures.append(f"{len(migrate_mismatches)} sec migrate source/destination drift(s) across surfaces")
+    for _m in migrate_mismatches:
+        print(f"{ERROR} migrate: {_m}")
 
 if failures:
     for f in failures:
@@ -1247,6 +1329,7 @@ print(f"{OK} structural prose: MULTI_TENANCY.md tenant aliases + profile.md CI c
 print(f"{OK} skill structure: SKILL.md steps + personas + scopes + severity set match the live skill files")
 print(f"{OK} count claims: profile.md §3 count-words + ADAPTERS.md/SKILL.md pytest-mirror count match the live suites")
 print(f"{OK} README: quoted `sec --help` + sec.conf sample + migrate backend list match the live CLI")
+print(f"{OK} migrate surfaces: source/destination backend sets agree across migrator, 4 shells + OPERATOR_MANUAL")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

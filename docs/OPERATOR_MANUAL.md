@@ -78,8 +78,8 @@ Executes the ML classification and disambiguating renamer engine across your vau
 Executes zero-plaintext vault-to-vault migration in ephemeral memory.
 
 - **Sub-actions**:
-  - `--from <src>`: Source vault provider (`bitwarden`/`bw`, `bws`, `1password`/`op`, `infisical`, `vault`).
-  - `--to <dst>`: Target vault provider.
+  - `--from <src>`: Source vault provider, readable backends only (`bitwarden`/`bw`, `1password`/`op`, `bws`).
+  - `--to <dst>`: Target vault provider (`bitwarden`/`bw`, `1password`/`op`, `bws`, `infisical`, `vault`).
   - `--plan` / `--dry-run`: Previews migration without modifying target vault.
   - `--apply`: Executes in-memory secret creation in target vault.
   - `--undo`: Reverts created items from target vault using transaction state log.

@@ -1194,7 +1194,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"own twenty-three sentinel cases", "own twelve sentinel cases", s)
+s2, n = re.subn(r"own twenty-four sentinel cases", "own twelve sentinel cases", s)
 if n != 1:
     sys.exit("profile.md §3 sentinel count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1236,7 +1236,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md §3 sentinel count"
 fi
-if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 23" <<<"$OUT"; then
+if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 24" <<<"$OUT"; then
     ok "coverage names the drifted profile.md §3 sentinel count"
 else
     no "coverage did not name the drifted profile.md §3 sentinel count"
@@ -1383,6 +1383,76 @@ OUT="$(cd "$WORK_ZCTRL" && git init -q . && git add -A && "skills/architecture-3
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (correct README help + sec.conf + migrate bullet) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[24] sec migrate's --from/--to backend sets must agree across completions + OPERATOR_MANUAL + migrator (issue #108)"
+WORK_M1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_M2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_MCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_M1" "$WORK_M2" "$WORK_MCTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_M1/bin/sec" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"--from\[Source vault backend\]:backend:\(bitwarden 1password bws\)",
+    "--from[Source vault backend]:backend:(bitwarden 1password bws vault infisical)",
+    s, count=1,
+)
+if n < 1:
+    sys.exit("bin/sec zsh --from completion not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_M2/docs/OPERATOR_MANUAL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"- `--from <src>`:.*",
+    "- `--from <src>`: Source vault provider (`bitwarden`/`bw`, `1password`/`op`, `bws`, `infisical`, `vault`).",
+    s, count=1,
+)
+if n < 1:
+    sys.exit("OPERATOR_MANUAL --from line not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_M1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a shell --from completion drifts from the migrator source allow-list"
+else
+    no "coverage accepted a drifted shell --from completion"
+fi
+if grep -q "migrate: bin/sec zsh --from lists" <<<"$OUT"; then
+    ok "coverage names the drifted zsh --from completion"
+else
+    no "coverage did not name the drifted zsh --from completion"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_M2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when OPERATOR_MANUAL's --from set drifts from the migrator"
+else
+    no "coverage accepted a drifted OPERATOR_MANUAL --from set"
+fi
+if grep -q "migrate: OPERATOR_MANUAL.md --from lists" <<<"$OUT"; then
+    ok "coverage names the drifted OPERATOR_MANUAL --from set"
+else
+    no "coverage did not name the drifted OPERATOR_MANUAL --from set"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_MCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (consistent migrate source/destination sets) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"

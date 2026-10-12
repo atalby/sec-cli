@@ -1539,24 +1539,30 @@ if grep -qF -- "ArgumentElements" <<<"$PS1_C"; then
 fi
 if [[ $_miss -eq 0 ]]; then pass "all four surfaces offer the powershell shell word; ps1 reads CommandElements only"; fi
 
-echo "[22u] every completion surface offers the migrate backend value words (issue #81)"
+echo "[22u] every completion surface splits migrate source (--from) vs destination (--to) backend values (issue #108)"
 _miss=0
-if ! grep -qF -- "backend:(bitwarden 1password bws vault infisical)" <<<"$ZSH_C"; then
-    fail "zsh completion omits the migrate backend values (issue #81)"; _miss=1
+if ! grep -qF -- "backend:(bitwarden 1password bws)" <<<"$ZSH_C"; then
+    fail "zsh --from completion omits the source migrate backend values (issue #108)"; _miss=1
 fi
-if ! grep -qF -- 'compgen -W "bitwarden 1password bws vault infisical"' <<<"$BASH_C"; then
-    fail "bash completion omits the migrate backend values (issue #81)"; _miss=1
+if ! grep -qF -- "backend:(bitwarden 1password bws vault infisical)" <<<"$ZSH_C"; then
+    fail "zsh --to completion omits the destination migrate backend values (issue #108)"; _miss=1
+fi
+if ! grep -qF -- '_mb="bitwarden 1password bws"; [[ ${prev} == "--to" ]] && _mb="bitwarden 1password bws vault infisical"' <<<"$BASH_C"; then
+    fail "bash completion does not split migrate source vs destination backends (issue #108)"; _miss=1
+fi
+if ! grep -qF -- "-a 'bitwarden 1password bws'" <<<"$FISH_C"; then
+    fail "fish --from completion omits the source migrate backend values (issue #108)"; _miss=1
 fi
 if ! grep -qF -- "-a 'bitwarden 1password bws vault infisical'" <<<"$FISH_C"; then
-    fail "fish completion omits the migrate backend values (issue #81)"; _miss=1
+    fail "fish --to completion omits the destination migrate backend values (issue #108)"; _miss=1
 fi
-if ! grep -qF -- "@('bitwarden', '1password', 'bws', 'vault', 'infisical')" <<<"$PS1_C"; then
-    fail "ps1 completion omits the migrate backend values (issue #81)"; _miss=1
+if ! grep -qF -- "@('bitwarden', '1password', 'bws'); if" <<<"$PS1_C"; then
+    fail "ps1 completion does not offer the migrate source backends (issue #108)"; _miss=1
 fi
-if ! grep -qF -- ':backend:(bitwarden 1password bws vault infisical)' <<<"$ZSH_C"; then
-    fail "zsh migrate backend completion drifted from the canonical list (issue #81)"; _miss=1
+if ! grep -qF -- "+= @('vault', 'infisical')" <<<"$PS1_C"; then
+    fail "ps1 completion does not offer the migrate destination backends (issue #108)"; _miss=1
 fi
-if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer the migrate backend values"; fi
+if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces split migrate source vs destination backend values"; fi
 
 echo "[22v] every completion surface offers the bare help/version subcommands (issue #82)"
 _miss=0

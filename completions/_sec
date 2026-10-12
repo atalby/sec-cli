@@ -44,7 +44,7 @@ _sec() {
                     ;;
                 migrate)
                     _arguments \
-                        '--from[Source vault backend]:backend:(bitwarden 1password bws vault infisical)' \
+                        '--from[Source vault backend]:backend:(bitwarden 1password bws)' \
                         '--to[Target vault backend]:backend:(bitwarden 1password bws vault infisical)' \
                         '--plan[Generate migration plan]' \
                         '--apply[Execute vault migration]' \

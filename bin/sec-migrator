@@ -22,8 +22,8 @@ usage() {
     echo "  sec migrate --from <src_backend> --to <dst_backend> [--plan|--dry-run|--apply]"
     echo "  sec migrate --undo                                    Rollback partially migrated items"
     echo ""
-    echo "Supported Migration Source / Target Backends:"
-    echo "  bitwarden (bw) | bws | 1password (op) | infisical | vault"
+    echo "  source (--from): bitwarden (bw) | 1password (op) | bws"
+    echo "  target (--to):   bitwarden (bw) | 1password (op) | bws | infisical | vault"
     exit 0
 }
 
