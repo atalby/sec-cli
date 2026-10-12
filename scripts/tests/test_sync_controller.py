@@ -159,12 +159,37 @@ class _FakePopen:
         return (b"", b"")
 
 
-def _install_gcp(monkeypatch, describe_rc=0, add_rc=0, popen_raises=None):
+class _TimeoutPopen:
+    def __init__(self):
+        self.returncode = 0
+        self.killed = False
+        self._calls = 0
+
+    def communicate(self, input=None, timeout=None):
+        self._calls += 1
+        if self._calls == 1:
+            raise subprocess.TimeoutExpired(cmd="gcloud", timeout=60)
+        return (b"", b"")
+
+    def kill(self):
+        self.killed = True
+
+
+def _install_gcp(
+    monkeypatch,
+    describe_rc=0,
+    add_rc=0,
+    popen_raises=None,
+    run_raises=None,
+    popen_factory=None,
+):
     calls = {"describe": [], "create": [], "add": []}
 
     def fake_run(cmd, **kwargs):
         if "describe" in cmd:
             calls["describe"].append(cmd)
+            if run_raises is not None:
+                raise run_raises
             return _FakeCompleted(describe_rc)
         if "create" in cmd:
             calls["create"].append(cmd)
@@ -175,6 +200,8 @@ def _install_gcp(monkeypatch, describe_rc=0, add_rc=0, popen_raises=None):
         calls["add"].append((cmd, kwargs))
         if popen_raises:
             raise popen_raises
+        if popen_factory is not None:
+            return popen_factory()
         return _FakePopen(add_rc)
 
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -220,6 +247,32 @@ def test_gcp_communicate_timeout_returns_false(ctrl, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "[ERROR] GCP Secret Manager sync FAILED" in out
     assert "timed out" in out
+    assert "topsecret" not in out
+
+
+def test_gcp_add_version_call_timeout_returns_false(ctrl, monkeypatch, capsys):
+    _install_gcp(monkeypatch, popen_factory=_TimeoutPopen)
+    assert ctrl.sync_to_gcp_secret_manager("my-key", "topsecret") is False
+    out = capsys.readouterr().out
+    assert "[ERROR] GCP Secret Manager sync FAILED" in out
+    assert "timed out" in out
+    assert "topsecret" not in out
+
+
+def test_gcp_missing_binary_is_reported(ctrl, monkeypatch, capsys):
+    _install_gcp(monkeypatch, run_raises=FileNotFoundError("gcloud"))
+    assert ctrl.sync_to_gcp_secret_manager("my-key", "topsecret") is False
+    out = capsys.readouterr().out
+    assert "[ERROR] GCP Secret Manager sync FAILED" in out
+    assert "topsecret" not in out
+
+
+def test_gcp_error_includes_stderr_detail(ctrl, monkeypatch, capsys):
+    err = subprocess.CalledProcessError(1, "gcloud", stderr=b"permission denied")
+    _install_gcp(monkeypatch, run_raises=err)
+    assert ctrl.sync_to_gcp_secret_manager("my-key", "topsecret") is False
+    out = capsys.readouterr().out
+    assert "permission denied" in out
     assert "topsecret" not in out
 
 
@@ -273,3 +326,56 @@ def test_main_push_failure_returns_3(ctrl, monkeypatch, capsys):
     )
     out = capsys.readouterr().out
     assert "SYNC FAILED" in out
+
+
+def test_main_help_returns_0(ctrl, monkeypatch, capsys):
+    assert _run_main(ctrl, monkeypatch, ["sec", "--help"], {}) == 0
+    out = capsys.readouterr().out
+    assert "Usage:" in out
+
+
+def test_main_usage_error_returns_2(ctrl, monkeypatch, capsys):
+    assert _run_main(ctrl, monkeypatch, ["sec", "bogus"], {}) == 2
+    err = capsys.readouterr().err
+    assert "unknown argument: bogus" in err
+
+
+def test_main_push_gitlab_failure_returns_3(ctrl, monkeypatch, capsys):
+    monkeypatch.setattr(ctrl, "sync_to_gcp_secret_manager", lambda *a: True)
+    monkeypatch.setattr(ctrl, "sync_to_gitlab_group", lambda *a: False)
+    assert (
+        _run_main(ctrl, monkeypatch, ["sec", "--yes"], {"OPENAI_API_KEY": "sk-1"}) == 3
+    )
+    out = capsys.readouterr().out
+    assert "backend write(s) failed" in out
+    assert "sk-1" not in out
+
+
+def test_main_interactive_abort_returns_2(ctrl, monkeypatch, capsys):
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda *a: "n")
+    assert _run_main(ctrl, monkeypatch, ["sec"], {"OPENAI_API_KEY": "sk-1"}) == 2
+    out = capsys.readouterr().out
+    assert "Aborted by user" in out
+
+
+def test_main_interactive_confirm_pushes(ctrl, monkeypatch, capsys):
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
+    monkeypatch.setattr("builtins.input", lambda *a: "y")
+    monkeypatch.setattr(ctrl, "sync_to_gcp_secret_manager", lambda *a: True)
+    monkeypatch.setattr(ctrl, "sync_to_gitlab_group", lambda *a: True)
+    assert _run_main(ctrl, monkeypatch, ["sec"], {"OPENAI_API_KEY": "sk-1"}) == 0
+    out = capsys.readouterr().out
+    assert "COMPLETED" in out
+
+
+def test_cli_entrypoint_help_exits_0():
+    proc = subprocess.run(
+        [sys.executable, str(CONTROLLER_PATH), "--help"],
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0
+    assert "Usage:" in proc.stdout

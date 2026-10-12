@@ -162,3 +162,19 @@ def test_cli_stdin_stdout_contract():
     assert proc.returncode == 0
     out = json.loads(proc.stdout)
     assert out["category"] == "database"
+
+
+def test_cli_invalid_json_falls_back_not_crash():
+    import subprocess
+
+    proc = subprocess.run(
+        ["python3", str(CLASSIFY_PATH)],
+        input="this is not json",
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0
+    out = json.loads(proc.stdout)
+    assert out["category"] == "general"
+    assert out["confidence"] == 0
+    assert out["needs_rename"] is False
