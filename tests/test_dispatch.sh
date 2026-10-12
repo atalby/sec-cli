@@ -841,6 +841,34 @@ else
     echo "[INFO] pwsh not present on this host; sec.ps1 F027 functional assertion runs in CI"
 fi
 
+echo "[23e] #73: sec.ps1 rejects unknown -flags and trailing args instead of misparsing them as operands"
+if grep -q -- '-prefixed operands are rejected' "$REPO_ROOT/bin/sec.ps1"; then pass "sec.ps1 rejects -prefixed operands loudly"; else fail "sec.ps1 still treats unknown -flags as operands (#73)"; fi
+if grep -q 'unexpected trailing argument' "$REPO_ROOT/bin/sec.ps1"; then pass "sec.ps1 rejects trailing args instead of dropping them"; else fail "sec.ps1 silently drops trailing args (#73)"; fi
+if command -v pwsh >/dev/null 2>&1; then
+    H73PS="$(new_home "$WORK/h73ps")"
+    FB73="$WORK/fb73"
+    mkdir -p "$FB73"
+    BWLOG73="$WORK/bw73.log"
+    printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >>"${SEC_TEST_BW_LOG:?}"\nprintf "%%s\\n" "[]"\n' >"$FB73/bw"
+    chmod +x "$FB73/bw"
+    PWSH73="$(command -v pwsh)"
+    set +e
+    OUT73A="$(env -i "PATH=$FB73:/usr/bin:/bin" "HOME=$H73PS" "SEC_TEST_BW_LOG=$BWLOG73" "$PWSH73" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" set --type note mykey myval 2>&1)"
+    RC73A=$?
+    OUT73B="$(env -i "PATH=$FB73:/usr/bin:/bin" "HOME=$H73PS" "SEC_TEST_BW_LOG=$BWLOG73" "$PWSH73" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" get --bogus mykey 2>&1)"
+    RC73B=$?
+    OUT73C="$(env -i "PATH=$FB73:/usr/bin:/bin" "HOME=$H73PS" "SEC_TEST_BW_LOG=$BWLOG73" "$PWSH73" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" set mykey myval extra 2>&1)"
+    RC73C=$?
+    set -e
+    if [[ $RC73A -eq 2 ]] && grep -q '\[ERROR\]' <<<"$OUT73A"; then pass "sec.ps1 set --type refused (rc=2, tagged)"; else fail "sec.ps1 set --type not refused (rc=$RC73A): $OUT73A"; fi
+    if [[ -f "$BWLOG73" ]] && grep -q 'create' "$BWLOG73"; then fail "sec.ps1 created a secret despite the rejected flag: $(cat "$BWLOG73")"; else pass "no secret created on the rejected set"; fi
+    if [[ $RC73B -eq 2 ]] && grep -q '\[ERROR\]' <<<"$OUT73B"; then pass "sec.ps1 get --bogus refused (rc=2, tagged)"; else fail "sec.ps1 get --bogus not refused (rc=$RC73B): $OUT73B"; fi
+    if [[ $RC73C -eq 2 ]] && grep -q 'unexpected trailing' <<<"$OUT73C"; then pass "sec.ps1 set trailing arg refused (rc=2)"; else fail "sec.ps1 set trailing arg not refused (rc=$RC73C): $OUT73C"; fi
+    rm -rf "$H73PS" "$FB73" "$BWLOG73"
+else
+    echo "[INFO] pwsh not present on this host; sec.ps1 #73 functional assertions run on any pwsh host (CI does not install pwsh)"
+fi
+
 echo "[24] F039: hyer MCP wiring is env-resolved, PAT via env only, no sh -c"
 HMW="$WORK/hmw"
 mkdir -p "$HMW/hyer-mcp/dist"

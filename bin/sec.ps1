@@ -39,6 +39,20 @@ switch ($Command) {
             $Key = if ($PositionalRest.Count -gt 0) { $PositionalRest[0] } else { $null }
             if (-not $Key) { Write-Error "Usage: sec.ps1 get [--scope <name>] <key>"; exit 1 }
         }
+        if ($ScopeName -like "-*") {
+            Write-Error "[ERROR] sec.ps1 get: flag '$ScopeName' is not supported by sec.ps1; -prefixed operands are rejected (see bin/sec for the full surface)."
+            exit 2
+        }
+        foreach ($t in $PositionalRest) {
+            if ($t -like "-*") {
+                Write-Error "[ERROR] sec.ps1 get: flag '$t' is not supported by sec.ps1; -prefixed operands are rejected (see bin/sec for the full surface)."
+                exit 2
+            }
+        }
+        if ($PositionalRest.Count -gt 1) {
+            Write-Error "[ERROR] sec.ps1 get: unexpected trailing argument '$($PositionalRest[1])' (usage: sec.ps1 get [--scope <name>] <key>)."
+            exit 2
+        }
         if (-not $Key) { Write-Error "Usage: sec.ps1 get <key> or sec.ps1 get <item>/<field>"; exit 1 }
         Ensure-BwSession
 
@@ -93,6 +107,16 @@ switch ($Command) {
     }
     "set" {
         if (-not $Key) { Write-Error "Usage: sec.ps1 set <key> [<val>]"; exit 1 }
+        foreach ($t in $PositionalRest) {
+            if ($t -like "-*") {
+                Write-Error "[ERROR] sec.ps1 set: flag '$t' is not supported by sec.ps1; -prefixed operands are rejected (type flags such as --type are not implemented in the PowerShell wrapper; use bin/sec via Git Bash or WSL for the full surface)."
+                exit 2
+            }
+        }
+        if ($Rest.Count -gt 0) {
+            Write-Error "[ERROR] sec.ps1 set: unexpected trailing argument '$($Rest[0])' (usage: sec.ps1 set <key> [<value>])."
+            exit 2
+        }
         Ensure-BwSession
         if (-not $Value) {
             $Value = Read-Host -Prompt "Enter secret value for '$Key'" -AsSecureString
