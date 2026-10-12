@@ -1,9 +1,9 @@
 # Resume point - sec-cli
 
-Written 2026-10-12 after closing #106 (commit `e309d3e`), #105 (commit
-`794751d`) and #104 (commit `1647604`), all pushed. Working tree clean on
-`main`; `origin/main` == local `main`. Across the three most recent sessions
-this lane shipped ten guard/fix/perf units (#97..#106), all CI-green.
+Written 2026-10-12 after closing #108 (commit `9750ef5`, resume `3df3b0a`)
+and #107 (commit `1d61880`, resume `e1dffcc`), both pushed. Working tree clean
+on `main`; `origin/main` == local `main`. This lane shipped a long run of
+guard/fix/perf units (#97..#108), all CI-green.
 
 There is now **no open issue with an autonomous in-repo remedy**. The remaining
 open items are hub-side or human-gated (see below). If the lane is run again,
@@ -37,6 +37,18 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #108 `fix(migrate)` -> `9750ef5` (resume `3df3b0a`) - sec migrate's source
+  set (bitwarden/bw, 1password/op, bws) vs destination set (+infisical +vault)
+  now agree across all four completions, `sec-migrator` usage and
+  OPERATOR_MANUAL; `completions/_sec` regenerated. Sentinel section 19 +
+  case [24] pin the 10 surfaces; dispatch `[22u]` updated off the old union
+  guard. Mirrors 23 -> 24 at `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`,
+  `RESUME.md:87`; suite now 24 cases / 250 assertions.
+- #107 `fix(readme)` -> `1d61880` (resume `e1dffcc`) - README front page
+  pinned to the live CLI: quoted `sec --help` + sec.conf sample byte-identical
+  to `bin/sec`, migrate bullet lists all 5 destination backends, session
+  rotation claim corrected. Sentinel section 18 + case [23] guard it. Mirrors
+  22 -> 23.
 - #106 `fix(test)` -> `e309d3e` - single `WORK_ROOT="$(mktemp -d)"` +
   one `trap 'rm -rf "$WORK_ROOT"' EXIT`; every `WORK_*="$(mktemp -d)"` across
   all 22 sections creates under the root. Previously the trap cleaned only 18 of
