@@ -211,10 +211,10 @@ cmd="$1"; shift
 
 case "$cmd" in
     -h|--help|help)
-        usage
+        [[ $# -gt 0 ]] && usage_error "sec help: unexpected trailing argument '$1' (usage: sec help)"; usage
         ;;
     -v|--version|version)
-        echo "sec-cli version $VERSION"
+        [[ $# -gt 0 ]] && usage_error "sec version: unexpected trailing argument '$1' (usage: sec version)"; echo "sec-cli version $VERSION"
         exit 0
         ;;
     completion)

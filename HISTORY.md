@@ -79,6 +79,10 @@ Issue #99 then closed the last silent-drop arm in the same #74/#76 class:
 0, dropping the extra operand; the arm now rejects a trailing argument with
 a tagged `[ERROR]` + exit 2 before emitting anything, and the four shifted
 profile.md `bin/sec:` anchors were re-pinned (dispatch 80 -> 81 sections).
+Issue #100 then guarded the two argument-less arms: `sec help <x>` and
+`sec version <x>` had exited 0, silently dropping the operand; both now
+reject it with a tagged `[ERROR]` + exit 2 before printing (dispatch 81 -> 82
+sections).
 Open items: #67 (360 audit —
 needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:

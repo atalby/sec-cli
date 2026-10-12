@@ -381,6 +381,16 @@ OUT="$(run_sec "$H" completion zsh EXTRA 2>&1)"; RC=$?
 set -e
 if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec completion: unexpected trailing argument' <<<"$OUT" && ! grep -qE '#compdef|completion for sec-cli|_sec_bash_completion' <<<"$OUT"; then pass "completion zsh EXTRA refused before emitting a script"; else fail "completion zsh EXTRA rc=$RC out=[$OUT]"; fi
 
+echo "[2j] sec help/version reject trailing operands instead of silently dropping them (issue #100)"
+assert_usage_error "sec help EXTRA" help EXTRA
+assert_usage_error "sec --help EXTRA" --help EXTRA
+assert_usage_error "sec version EXTRA" version EXTRA
+assert_usage_error "sec -v EXTRA" -v EXTRA
+set +e
+OUT="$(run_sec "$H" help EXTRA 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec help: unexpected trailing argument' <<<"$OUT" && ! grep -q 'Usage:' <<<"$OUT"; then pass "sec help EXTRA refused before printing the help menu"; else fail "sec help EXTRA rc=$RC out=[$OUT]"; fi
+
 echo "[2g] sec get --scope rejects a flag-like folder name (issue #75)"
 assert_usage_error "sec get --scope --bogus <key>" get --scope --bogus MY_API_KEY
 assert_usage_error "sec get --scope -x <key>" get --scope -x MY_API_KEY
