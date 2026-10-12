@@ -1,33 +1,29 @@
 # Resume point - sec-cli
 
-Written 2026-10-12 after closing #104 (commit `1647604`) and #103 (commit
-`c5c909d`), both pushed. Working tree clean on `main`; `origin/main` == local
-`main`. Across the two most recent sessions this lane shipped eight guard/fix
-units (#97, #98, #99, #100, #101, #102, #103, #104), all CI-green.
+Written 2026-10-12 after closing #106 (commit `e309d3e`), #105 (commit
+`794751d`) and #104 (commit `1647604`), all pushed. Working tree clean on
+`main`; `origin/main` == local `main`. Across the three most recent sessions
+this lane shipped ten guard/fix/perf units (#97..#106), all CI-green.
 
-There is now **no open issue with an unnotified autonomous in-repo remedy**.
-The remaining open items are hub-side, human-gated, or a freshly filed perf
-follow-on that needs scoping (see below).
+There is now **no open issue with an autonomous in-repo remedy**. The remaining
+open items are hub-side or human-gated (see below). If the lane is run again,
+the highest-value candidates are the fresh 360 audit (#67, after human scope
+approval) and re-running the verified baseline to catch any drift.
 
 ## Next autonomous work
 
-**#105 - perf(sentinel): test_sentinel.sh is ~97s because each of ~40 cases
-full-copies the repo.** Filed this session with a measured root cause (per-case
-`git init` + `git add -A` + `cp -a "$REPO_ROOT/."` incl. `.git`, x40) and three
-candidate fixes (`cp -al` hardlink template, `git clone --shared`, or
-`GIT_INDEX_FILE`-scoped cases). It is the only in-repo engineering task left; it
-was NOT pre-scoped or approved, so it is the next unit to plan + approve before
-editing the harness.
-
-Everything else open is not autonomously actionable here:
+None until a human un-sticks one of the gated items:
 - **#67** (fresh 360 audit) - its Step-1 gate needs explicit human scope approval.
 - **#92** (hub-side: two unguarded counts in hub-owned files) - gotcha 6; no
   in-repo remedy.
 - **#51** (hub-side handoff items tracked upstream) - unfixable in-repo.
 
 Resume commands:
-`cd /home/opc/sandbox/sec-cli && gh --repo atalby/sec-cli issue view 105`
 `cd /home/opc/sandbox/sec-cli && gh --repo atalby/sec-cli issue view 67`
+
+If picking un-tracked work instead, the cheapest high-value items are: re-run the
+verified baseline below to confirm no drift, and the sentinel suite is now ~40s
+(was ~97s) so full-suite runs are cheap enough to do on every check.
 
 ## Where things stand
 
@@ -35,12 +31,21 @@ Resume commands:
 - Tracker: **GitHub** (`gh --repo atalby/sec-cli`), not glab. Remote is
   `git@github.com:atalby/sec-cli.git`; `glab` errors "None of the git remotes
   configured for this repository point to a known GitLab host".
-- Open issues: **#105** (sentinel perf, next unit, needs scoping); **#67** (fresh
-  360 audit - human scope gate); **#92** (hub-side unguarded counts); **#51**
-  (hub-side handoff, tracked upstream).
+- Open issues: **#67** (fresh 360 audit - human scope gate); **#92** (hub-side
+  unguarded counts); **#51** (hub-side handoff, tracked upstream). None are
+  autonomously actionable in-repo.
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #106 `fix(test)` -> `e309d3e` - single `WORK_ROOT="$(mktemp -d)"` +
+  one `trap 'rm -rf "$WORK_ROOT"' EXIT`; every `WORK_*="$(mktemp -d)"` across
+  all 22 sections creates under the root. Previously the trap cleaned only 18 of
+  53 names, leaking ~35 `/tmp` dirs per run. Measured leak delta after fix: 0.
+- #105 `perf(test)` -> `794751d` - root cause of the ~97s sentinel suite: each
+  of 18 `cp -a "$REPO_ROOT/." "$W/"` sites (expanding to ~55 work dirs) copied
+  `.git` (15M) + `.venv` (29M) + worktree (~4GB/run, IO-bound). Fix: build one
+  tar of `git ls-files` (1.2M) once, `seed()` extracts per work dir. Sentinel
+  suite 97s -> ~40s; pytest mirror ~95-160s -> ~85s (still 29 passed).
 - #103 `test(dispatch)` -> `c5c909d` - guard that all four completion surfaces
   (zsh/bash/fish/ps1) list every dispatcher subcommand; derives the canonical
   token set from `bin/sec` arms and asserts each surface's own parsed list
@@ -83,7 +88,8 @@ mirrors in sync): dispatch 85, install 9, sentinel 22, sync_guard 16,
 write_honesty 13. Sentinel = 22 cases / 116 assertions. HISTORY.md is at
 8038/8192 bytes - the next narrative addition must compact an older clause first.
 108 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
-No real TODO/FIXME debt in tracked files.
+No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
+#105; full-suite + pytest-mirror check is cheap enough to run on every touch.
 
 ## Gotchas worth not rediscovering
 
