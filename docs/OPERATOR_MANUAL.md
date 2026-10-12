@@ -28,7 +28,7 @@ sec [<tenant_prefix>] <subcommand> [flags] [arguments]
 | Flag | Long Flag | Description |
 | :--- | :--- | :--- |
 | `-h` | `--help` | Displays the comprehensive help menu and configured tenant list. |
-| `-v` | `--version` | Displays `sec-cli` version information (`sec-cli v1.0.0`). |
+| `-v` | `--version` | Displays `sec-cli` version information (`sec-cli version 1.0.0`). |
 
 ---
 

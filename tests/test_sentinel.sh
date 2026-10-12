@@ -1194,7 +1194,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"own twenty-five sentinel cases", "own twelve sentinel cases", s)
+s2, n = re.subn(r"own twenty-six sentinel cases", "own twelve sentinel cases", s)
 if n != 1:
     sys.exit("profile.md §3 sentinel count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1236,7 +1236,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md §3 sentinel count"
 fi
-if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 25" <<<"$OUT"; then
+if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 26" <<<"$OUT"; then
     ok "coverage names the drifted profile.md §3 sentinel count"
 else
     no "coverage did not name the drifted profile.md §3 sentinel count"
@@ -1521,6 +1521,44 @@ OUT="$(cd "$WORK_RCTRL" && git init -q . && git add -A && "skills/architecture-3
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (correct RESUME.md counts) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[26] OPERATOR_MANUAL.md's documented --version output must match the live sec version (issue #114)"
+WORK_V1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_VCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_V1" "$WORK_VCTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_V1/docs/OPERATOR_MANUAL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"\(`sec-cli version [^`]*`\)", "(`sec-cli v9.9.9`)", s, count=1)
+if n != 1:
+    sys.exit("OPERATOR_MANUAL.md --version parenthetical not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_V1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted OPERATOR_MANUAL.md --version output"
+else
+    no "coverage accepted a drifted OPERATOR_MANUAL.md --version output"
+fi
+if grep -q "version: OPERATOR_MANUAL.md documents" <<<"$OUT"; then
+    ok "coverage names the drifted OPERATOR_MANUAL.md --version output"
+else
+    no "coverage did not name the drifted OPERATOR_MANUAL.md --version output"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_VCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct OPERATOR_MANUAL.md --version) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"

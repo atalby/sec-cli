@@ -603,7 +603,7 @@ _NUM_WORDS = {
     "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16,
     "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
     "twenty-one": 21, "twenty-two": 22, "twenty-three": 23,
-    "twenty-four": 24, "twenty-five": 25,
+    "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1254,6 +1254,34 @@ if _mig_src_set is not None and _mig_dst_set is not None:
                     f"{_name} destination list is {sorted(_s | _add)}, migrator destination allow-list is {sorted(_mig_dst_set)}"
                 )
 
+# --- 20. OPERATOR_MANUAL.md's documented `-v/--version` output must match the
+#         live `sec version` (issue #114) --------------------------------
+version_mismatches = []
+try:
+    _live_version = subprocess.run(
+        ["bash", os.path.join(repo, "bin", "sec"), "version"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+except Exception as _exc:
+    _live_version = None
+    version_mismatches.append(
+        f"could not run 'bin/sec version' to compare OPERATOR_MANUAL.md against: {_exc}"
+    )
+
+_op_version_m = re.search(
+    r"\| `-v` \| `--version` \| Displays `sec-cli` version information \(`([^`]*)`\)",
+    _op_text,
+)
+if _op_version_m is None:
+    version_mismatches.append(
+        "OPERATOR_MANUAL.md carries no `-v`/`--version` 'Displays ...' row"
+    )
+elif _live_version is not None and _op_version_m.group(1) != _live_version:
+    version_mismatches.append(
+        f"OPERATOR_MANUAL.md documents `--version` as '{_op_version_m.group(1)}', "
+        f"live 'bin/sec version' prints '{_live_version}'"
+    )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -1360,6 +1388,10 @@ if migrate_mismatches:
     failures.append(f"{len(migrate_mismatches)} sec migrate source/destination drift(s) across surfaces")
     for _m in migrate_mismatches:
         print(f"{ERROR} migrate: {_m}")
+if version_mismatches:
+    failures.append(f"{len(version_mismatches)} OPERATOR_MANUAL.md --version drift(s) vs the live CLI")
+    for _m in version_mismatches:
+        print(f"{ERROR} version: {_m}")
 
 if failures:
     for f in failures:
@@ -1382,6 +1414,7 @@ print(f"{OK} skill structure: SKILL.md steps + personas + scopes + severity set 
 print(f"{OK} count claims: profile.md §3 count-words + ADAPTERS.md/SKILL.md pytest-mirror count + RESUME.md suite counts match the live suites")
 print(f"{OK} README: quoted `sec --help` + sec.conf sample + migrate backend list match the live CLI")
 print(f"{OK} migrate surfaces: source/destination backend sets agree across migrator, 4 shells + OPERATOR_MANUAL")
+print(f"{OK} version claim: OPERATOR_MANUAL.md's documented `--version` output matches live 'bin/sec version'")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)
