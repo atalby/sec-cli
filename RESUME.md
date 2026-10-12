@@ -1,14 +1,14 @@
 # Resume point - sec-cli
 
-Written 2026-10-12 after closing #110 (commit `8ba4a49`), #109 (commit
-`eaf4c0a`), #108 (commit `9750ef5`) and #107 (commit `1d61880`), all pushed.
+Written 2026-10-12 after closing #113 (commit `d4890c3`), #112 (commit
+`d9fb2d3`), #111 (commit `84c3ee6`) and #110 (commit `8ba4a49`), all pushed.
 Working tree clean on `main`; `origin/main` == local `main`. This lane shipped
-a long run of guard/fix/perf units (#97..#110), all CI-green.
+a long run of guard/fix/perf units (#97..#113), all CI-green.
 
-There is now **no open issue with an autonomous in-repo remedy**. The remaining
-open items are hub-side or human-gated (see below). If the lane is run again,
-the highest-value candidates are the fresh 360 audit (#67, after human scope
-approval) and re-running the verified baseline to catch any drift.
+There is again **no open issue with an autonomous in-repo remedy**. The
+remaining open items are hub-side or human-gated (see below). If the lane is
+run again, the highest-value candidates are the fresh 360 audit (#67, after
+human scope approval) and re-running the verified baseline to catch any drift.
 
 ## Next autonomous work
 
@@ -37,7 +37,15 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
-- #112 `test(classify)` -> pending - 2 new pytest cases covering
+- #113 `test(sync)` -> `d4890c3` - 10 new pytest cases covering the untested
+  user-facing error contract of the two Python entrypoints: sync controller
+  GCP add-version timeout / missing-binary / stderr-detail, `main()` help (0),
+  usage-error (2), gitlab-failure (3), interactive abort (2) / confirm (0),
+  and a real CLI `--help` subprocess; classify invalid-JSON fallback (exit 0,
+  no crash). pytest mirror 43 -> 53; mirrors bumped at `ADAPTERS.md:305`,
+  `skills/architecture-360-audit/SKILL.md:451`, `profile.md:427` transcript,
+  `RESUME.md:117`. Sentinel control [3] drift regexes re-pinned 43 -> 53.
+- #112 `test(classify)` -> `d9fb2d3` - 2 new pytest cases covering
   `infer_suggested_name`'s env/project tag branch (generic name + notes with
   `env: tag` -> `name (tag)`, needs_rename). pytest mirror 41 -> 43; mirrors
   bumped at `ADAPTERS.md:305`, `skills/architecture-360-audit/SKILL.md:451`,
@@ -114,7 +122,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ```
 for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_$s.sh; done   # all ALL TESTS PASSED
-.venv/bin/python -m pytest -q                                                               # 43 passed
+.venv/bin/python -m pytest -q                                                               # 53 passed
 ./skills/architecture-360-audit/sentinel.sh coverage                                        # exit 0
 ./skills/architecture-360-audit/sentinel.sh citations                                       # exit 0
 ```
