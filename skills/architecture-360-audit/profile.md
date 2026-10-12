@@ -9,7 +9,7 @@ moves.
 
 **TIER B, established: tests plus CI, no project dependency manifest.**
 
-Ecosystems present: Bash (`bin/sec` and five sibling dispatchers, `install.sh`,
+Ecosystems present: Bash (`bin/sec` and seven sibling dispatchers, `install.sh`,
 five suites under `tests/`), Python 3 (6 files: `bin/sec-sync-controller.py`,
 `bin/sec-classify.py`, and four under `scripts/tests/`), PowerShell (`bin/sec.ps1`),
 zsh completion (`completions/_sec`), Markdown (71 files), JSON/YAML/TOML
@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (16 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (79 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (17 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (79 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#51`, `#67`) |
@@ -50,7 +50,7 @@ The two partials are themselves findings, not tier annotations:
    PATH.** The hook's test step recognizes `scripts/tests/`+uv,
    `pytest.ini`/`pyproject`, and `package.json` — not `tests/*.sh`
    directly — so this repo's mirror at `scripts/tests/` is what runs all
-   five bash suites at commit time (`ADAPTERS.md:305`; issue #2 closed).
+   five bash suites at commit time (`ADAPTERS.md:307`; issue #2 closed).
    With `uv` absent, Step 5 warns that no suite applies and enforces
    nothing (issue #64). Since 2026-10-09 GitHub Actions runs the five
    bash suites and the pytest mirror on push and PR to main

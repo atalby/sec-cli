@@ -85,6 +85,12 @@ counts (section 9 + [14]); #88 docs/ARCHITECTURE.md's producer census
 ('six' -> seven, sec.ps1 omitted; section 11 + [15]); #89 ADAPTERS.md's
 skills/registry census (23 skill dirs / 35 registry rows / 12
 hub-internal, all already correct but unguarded; section 12 + [16]).
+Issue #90 then closed the last two drifted prose counts in the class:
+profile.md's "five sibling dispatchers" (live 7, contradicting line
+669's own "7 of the 8 tracked `bin/` entries") and ADAPTERS.md's "four
+helper scripts" (live 7, one static-only) — both wrong at birth;
+section 13 now also asserts every tracked `bin/` helper is referenced by
+`tests/test_dispatch.sh` (sentinel 16 -> 17 cases).
 Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.

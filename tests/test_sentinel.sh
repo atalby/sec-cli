@@ -697,6 +697,95 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[17] bin/ helper counts cited in profile.md + ADAPTERS.md match the live tree (issue #90)"
+WORK_S1="$(mktemp -d)"
+WORK_S2="$(mktemp -d)"
+WORK_S3="$(mktemp -d)"
+WORK_SCTRL="$(mktemp -d)"
+for W in "$WORK_S1" "$WORK_S2" "$WORK_S3" "$WORK_SCTRL"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_S1/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"`bin/sec` and (\w+) sibling dispatchers",
+                "`bin/sec` and nine sibling dispatchers", s)
+if n != 1:
+    sys.exit("profile.md bin/ sibling-dispatcher count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_S2/ADAPTERS.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"plus the (\w+) sibling `bin/` helpers the suite references",
+                "plus the nine sibling `bin/` helpers the suite references", s)
+if n != 1:
+    sys.exit("ADAPTERS.md dispatch-suite helper count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_S3/tests/test_dispatch.sh" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"hyer-mcp\.sh", "hyer-mcp-unreferenced.sh", s)
+if n < 1:
+    sys.exit("test_dispatch.sh bin/hyer-mcp.sh references not found to unhook")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_S1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted profile.md bin/ sibling-dispatcher count"
+else
+    no "coverage accepted a drifted profile.md bin/ sibling-dispatcher count"
+fi
+if grep -q "profile.md's bin/ sibling-dispatcher census says 9" <<<"$OUT"; then
+    ok "coverage names the drifted profile.md bin/ sibling-dispatcher count"
+else
+    no "coverage did not name the drifted profile.md bin/ sibling-dispatcher count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_S2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted ADAPTERS.md dispatch-suite helper count"
+else
+    no "coverage accepted a drifted ADAPTERS.md dispatch-suite helper count"
+fi
+if grep -q "ADAPTERS.md says nine helper scripts, live tree has" <<<"$OUT"; then
+    ok "coverage names the drifted ADAPTERS.md dispatch-suite helper count"
+else
+    no "coverage did not name the drifted ADAPTERS.md dispatch-suite helper count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_S3" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a tracked bin/ helper is unreferenced by the dispatch suite"
+else
+    no "coverage accepted an unreferenced tracked bin/ helper"
+fi
+if grep -q "is not referenced by tests/test_dispatch.sh" <<<"$OUT"; then
+    ok "coverage names the bin/ helper the dispatch suite no longer references"
+else
+    no "coverage did not name the bin/ helper the dispatch suite no longer references"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_SCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct bin/ helper census) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

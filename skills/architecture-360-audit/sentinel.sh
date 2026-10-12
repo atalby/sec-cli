@@ -747,11 +747,63 @@ else:
         _check_registry("hub-internal rows", r"plus (\d+)\s+`?\.hyer/skills/`?\s+hub-internal rows", _live_hub)
         _check_registry("skill rows", r"(\d+) skill rows", _live_rows)
 
+# --- 13. profile.md + ADAPTERS.md's bin/ helper census must match the live tree (#90) --
+bin_helper_mismatches = []
+_bin_helpers = sorted(
+    f for f in tracked if f.startswith("bin/") and f.count("/") == 1 and f != "bin/sec"
+)
+_live_bin_helpers = len(_bin_helpers)
+
+_dispatch_suite_path = os.path.join(repo, "tests", "test_dispatch.sh")
+try:
+    with open(_dispatch_suite_path, encoding="utf-8") as _fh:
+        _dispatch_text = _fh.read()
+except OSError:
+    _dispatch_text = ""
+if not _dispatch_text:
+    bin_helper_mismatches.append("tests/test_dispatch.sh is missing or empty")
+else:
+    _referenced = set(
+        re.findall(r"(?:REPO_ROOT/)?bin/([A-Za-z0-9._-]+)", _dispatch_text)
+    )
+    for _h in _bin_helpers:
+        if os.path.basename(_h) not in _referenced:
+            bin_helper_mismatches.append(
+                f"tracked bin/ helper {_h} is not referenced by tests/test_dispatch.sh"
+            )
+    _live_dispatch_helpers = sum(
+        1 for _h in _bin_helpers if os.path.basename(_h) in _referenced
+    )
+    _ad_helper_m = re.search(
+        r"plus the (\w+) sibling `bin/` helpers the suite references", _adapters_text
+    )
+    if not _ad_helper_m:
+        bin_helper_mismatches.append(
+            "ADAPTERS.md states no dispatch-suite helper census for tests/test_dispatch.sh"
+        )
+    elif _NUM_WORDS.get(_ad_helper_m.group(1)) != _live_dispatch_helpers:
+        bin_helper_mismatches.append(
+            f"ADAPTERS.md says {_ad_helper_m.group(1)} helper scripts, "
+            f"live tree has {_live_dispatch_helpers}"
+        )
+
+_prof_bin_m = re.search(r"`bin/sec` and (\w+) sibling dispatchers", profile_text)
+if not _prof_bin_m:
+    bin_helper_mismatches.append(
+        "profile.md carries no 'bin/sec and N sibling dispatchers' census line"
+    )
+elif _NUM_WORDS.get(_prof_bin_m.group(1)) != _live_bin_helpers:
+    bin_helper_mismatches.append(
+        f"profile.md's bin/ sibling-dispatcher census says {_NUM_WORDS.get(_prof_bin_m.group(1))}, "
+        f"live tree has {_live_bin_helpers}"
+    )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
     print(f"{OK} personas reachable from the manifest: {sorted(used)}")
     print(f"{OK} skills tree: {len(_live_skill_dirs)} skill dir(s), registry {len(_registry_rows)} row(s)")
+    print(f"{OK} bin/ helpers: {_live_bin_helpers} tracked sibling(s), all referenced by tests/test_dispatch.sh")
     for label, owner, n in present_surfaces:
         print(f"{OK} surface present: {label} ({n} location(s)) -> {owner}")
     for m in found_manifests:
@@ -819,6 +871,12 @@ if registry_mismatches:
     failures.append(f"{len(registry_mismatches)} skills registry drift(s) vs ADAPTERS.md + skills/REGISTRY.md")
     for _m in registry_mismatches:
         print(f"{ERROR} registry: {_m}")
+if bin_helper_mismatches:
+    failures.append(
+        f"{len(bin_helper_mismatches)} bin/ helper census drift(s) vs profile.md + ADAPTERS.md + tests/test_dispatch.sh"
+    )
+    for _m in bin_helper_mismatches:
+        print(f"{ERROR} bin helper: {_m}")
 
 if failures:
     for f in failures:
@@ -834,6 +892,7 @@ print(f"{OK} adapters suite counts: ADAPTERS.md 'current suites' snapshot + per-
 print(f"{OK} pack prose: profile.md's cited pack version + role count match PACK.md")
 print(f"{OK} producer census: docs/ARCHITECTURE.md's producer count + list match the live bin/ emitters")
 print(f"{OK} skills registry: ADAPTERS.md's census matches {len(_live_skill_dirs)} live skill dir(s) + {len(_registry_rows)} REGISTRY.md row(s)")
+print(f"{OK} bin/ helper census: profile.md + ADAPTERS.md match {_live_bin_helpers} tracked sibling helper(s), all referenced by tests/test_dispatch.sh")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)
