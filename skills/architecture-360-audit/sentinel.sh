@@ -550,13 +550,14 @@ else:
         )
 
 
-# --- 9. ADAPTERS.md's mirrored suite snapshot must match the live suites ------
+# --- 9. ADAPTERS.md's mirrored suite counts must match the live suites --------
 adapters_mismatches = []
 try:
     with open(os.path.join(repo, "ADAPTERS.md"), encoding="utf-8") as _fh:
-        _cs_scope = re.search(r"current suites:([^;]*)", _fh.read())
+        _adapters_text = _fh.read()
 except OSError:
-    _cs_scope = None
+    _adapters_text = ""
+_cs_scope = re.search(r"current suites:([^;]*)", _adapters_text)
 if not _cs_scope:
     adapters_mismatches.append("ADAPTERS.md carries no 'current suites:' snapshot line")
 else:
@@ -575,6 +576,23 @@ else:
             adapters_mismatches.append(
                 f"ADAPTERS.md says {_label} {_am.group(1)}, live suite has {_live}"
             )
+# The Test-suites bullets carry the same counts a second time (issue #87).
+if _adapters_text:
+    for _s, _live in suite_counts.items():
+        _counts = re.findall(
+            r"test_%s\.sh`?\s*\((\d+)\s+(?:sections|cases)\b" % re.escape(_s),
+            _adapters_text,
+        )
+        if not _counts:
+            adapters_mismatches.append(
+                f"ADAPTERS.md cites no '(N sections|cases)' count for tests/test_{_s}.sh"
+            )
+            continue
+        for _c in _counts:
+            if int(_c) != _live:
+                adapters_mismatches.append(
+                    f"ADAPTERS.md says {_c} for tests/test_{_s}.sh, live suite has {_live}"
+                )
 
 
 # --- 10. profile.md's cited pack taxonomy must match PACK.md (issue #86) ------
@@ -683,7 +701,7 @@ print(f"{OK} coverage denominator: profile.md states {denominator} tracked files
 print(f"{OK} narrative history: HISTORY.md is a {history_bytes}-byte summary, {len(archived)} archive(s) linked under history/")
 print(f"{OK} suite counts: profile.md matches the live suites ({', '.join(f'{s} {n}' for s, n in sorted(suite_counts.items()))})")
 print(f"{OK} census counts: profile.md matches the live tree (markdown, python, config, [ TAG ] per-file)")
-print(f"{OK} adapters suite snapshot: ADAPTERS.md 'current suites' matches the live suites")
+print(f"{OK} adapters suite counts: ADAPTERS.md 'current suites' snapshot + per-suite mentions match the live suites")
 print(f"{OK} pack prose: profile.md's cited pack version + role count match PACK.md")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")

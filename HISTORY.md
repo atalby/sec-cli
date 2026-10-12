@@ -89,6 +89,8 @@ twice: #79/#84) via `sentinel.sh` section 9 and `test_sentinel.sh` [12].
 Issue #86 then fixed the audit profile's stale pack taxonomy (cited
 solo-founder-governance v1.2.0/'eight roles' after #1 re-synced it to
 v1.4.0/9 personas) and guarded it (sentinel section 10 + test [13]).
+Issue #87 then guarded ADAPTERS.md's per-suite `(N sections|cases)`
+counts (sentinel section 9 + test [14]).
 Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.
@@ -112,13 +114,10 @@ corrected the 360-audit skill's stale `SEC_TEST_DISPATCH` claims (#65),
 hardened `sentinel.sh citations` (#66), and fixed a baseline-red defect — a local `.venv/` was not
 gitignored, so the sentinel control copies swept it into the tracked set
 and failed the coverage denominator (#68; `.venv/`/`venv/` are now
-ignored). A fresh full 360 audit (#67) is queued for the next interactive
-session because the audit skill's Step-1 gate requires an explicit human
-scope approval. All five bash suites pass; the pytest mirror (29
-tests) passes. The GitHub tracker holds #51 (hub-side) and the queued
-#67. Each issue's full narrative lives in `history/2026-10-11.md` /
-`history/2026-10-12.md`. Next: advance the highest-value unfinished
-in-repo work.
+ignored). A fresh full 360 audit (#67) stays queued (its Step-1 gate needs
+human scope approval). All five bash suites pass; the pytest mirror (29
+tests) passes. The tracker holds #51 (hub-side) and #67. Full narrative:
+`history/2026-10-11.md` / `history/2026-10-12.md`.
 
 ## Archive
 

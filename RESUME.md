@@ -18,10 +18,10 @@
   login/note/card/identity flags are completed on all four surfaces
   (guard [22w]). The tracked `completions/_sec` golden
   was regenerated (zsh shells list + help/version entries + get/set flag arms).
-  Five bash suites ALL TESTS PASSED (dispatch 79 / install 9 / sentinel 13
+  Five bash suites ALL TESTS PASSED (dispatch 79 / install 9 / sentinel 14
   / sync_guard 16 / write_honesty 13); pytest mirror 29 passed; sentinel
   citations + coverage green (suite counts + census counts + ADAPTERS
-  snapshot + pack prose match); HISTORY.md under budget.
+  snapshot + pack prose + per-suite counts match); HISTORY.md under budget.
   Drift re-check pass: profile.md open-issue reference corrected (#62 -> #67,
   commit 4227431). #84: the profile.md ecosystem counts (Markdown 64 -> 71,
   Python 2 -> 6) and `[ TAG ]`-emission per-file census (sec-organizer
@@ -36,7 +36,11 @@
   the audit profile's stale pack-taxonomy description (`packs/solo-founder-
   governance` v1.2.0 -> v1.4.0, "eight roles" -> "nine roles") was corrected,
   and `sentinel.sh coverage` gained a section-10 pack guard with a RED/GREEN
-  test (`test_sentinel.sh` [13]). No
+  test (`test_sentinel.sh` [13]). #87: ADAPTERS.md's Test-suites bullets
+  mirror each suite's `(N sections|cases)` count, which `sentinel.sh`
+  section 9 (from #85) left unguarded; those per-suite counts are now
+  cross-checked against the live suites by section 9 with the RED/GREEN
+  test `test_sentinel.sh` [14]. No
   other drift found — completions match golden, no TODOs, no unmerged branches.
 - **Open issues:** #67 (fresh 360 audit — Step-1 gate needs explicit human
   scope approval, not autonomous), #51 (hub-side handoff items #2/#13,
