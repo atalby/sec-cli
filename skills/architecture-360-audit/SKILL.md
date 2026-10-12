@@ -276,7 +276,7 @@ because it feels thin. If a dimension genuinely has nothing, it is marked N/A
 in `profile.md` with its reason and is reported as such.
 
 Mechanical dimensions are decided by scanner, not by reading. Use this
-repository's own scanners where they exist — the two `tests/*.sh` suites and
+repository's own scanners where they exist — the five `tests/*.sh` suites and
 the hub checkers — and say which one you ran; where none exists, say that the
 verdict is a reading and not a scan.
 

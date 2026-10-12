@@ -798,7 +798,7 @@ elif _NUM_WORDS.get(_prof_bin_m.group(1)) != _live_bin_helpers:
         f"live tree has {_live_bin_helpers}"
     )
 
-# --- 14. profile.md + ARCHITECTURE.md's bash suite census must match the live tree (#91) --
+# --- 14. profile.md + ARCHITECTURE.md + SKILL.md's bash suite census must match the live tree (#91/#95) --
 suite_census_mismatches = []
 _live_suites = sorted(f for f in tracked if f.startswith("tests/") and f.endswith(".sh"))
 _live_suite_count = len(_live_suites)
@@ -840,6 +840,31 @@ else:
         suite_census_mismatches.append(
             "ARCHITECTURE.md lists suites that are not the live tracked suites: "
             f"cited-but-absent {_orphan_cited or 'none'}, present-but-uncited {_uncited_live or 'none'}"
+        )
+
+try:
+    with open(os.path.join(os.path.dirname(profile), "SKILL.md"), encoding="utf-8") as _fh:
+        _skill_text = _fh.read()
+except OSError:
+    _skill_text = ""
+if not _skill_text:
+    suite_census_mismatches.append("skills/architecture-360-audit/SKILL.md not found")
+else:
+    _skill_scanners_m = re.search(r"the (\w+) `tests/\*\.sh` suites", _skill_text)
+    if not _skill_scanners_m:
+        suite_census_mismatches.append("SKILL.md carries no 'the N `tests/*.sh` suites' scanner claim")
+    elif _NUM_WORDS.get(_skill_scanners_m.group(1)) != _live_suite_count:
+        suite_census_mismatches.append(
+            f"SKILL.md says the {_skill_scanners_m.group(1)} `tests/*.sh` suites, "
+            f"live tree has {_live_suite_count}"
+        )
+    _skill_gate_m = re.search(r"executes all (\w+) bash suites", _skill_text)
+    if not _skill_gate_m:
+        suite_census_mismatches.append("SKILL.md carries no 'executes all N bash suites' claim")
+    elif _NUM_WORDS.get(_skill_gate_m.group(1)) != _live_suite_count:
+        suite_census_mismatches.append(
+            f"SKILL.md says the gate executes all {_skill_gate_m.group(1)} bash suites, "
+            f"live tree has {_live_suite_count}"
         )
 
 # --- 15. structural prose claims (tenant aliases, CI checkout pin, principle count) must match (#94) --
@@ -1001,7 +1026,7 @@ if bin_helper_mismatches:
         print(f"{ERROR} bin helper: {_m}")
 if suite_census_mismatches:
     failures.append(
-        f"{len(suite_census_mismatches)} bash suite census drift(s) vs profile.md + docs/ARCHITECTURE.md"
+        f"{len(suite_census_mismatches)} bash suite census drift(s) vs profile.md + docs/ARCHITECTURE.md + SKILL.md"
     )
     for _m in suite_census_mismatches:
         print(f"{ERROR} suite census: {_m}")
@@ -1025,7 +1050,7 @@ print(f"{OK} pack prose: profile.md's cited pack version + role count match PACK
 print(f"{OK} producer census: docs/ARCHITECTURE.md's producer count + list match the live bin/ emitters")
 print(f"{OK} skills registry: ADAPTERS.md's census matches {len(_live_skill_dirs)} live skill dir(s) + {len(_registry_rows)} REGISTRY.md row(s)")
 print(f"{OK} bin/ helper census: profile.md + ADAPTERS.md match {_live_bin_helpers} tracked sibling helper(s), all referenced by tests/test_dispatch.sh")
-print(f"{OK} suite census: profile.md + ARCHITECTURE.md match {_live_suite_count} tracked bash suite(s), ARCHITECTURE.md's suite list matches the tracked names")
+print(f"{OK} suite census: profile.md + ARCHITECTURE.md + SKILL.md match {_live_suite_count} tracked bash suite(s), ARCHITECTURE.md's suite list matches the tracked names")
 print(f"{OK} structural prose: MULTI_TENANCY.md tenant aliases + profile.md CI checkout pin + OPERATOR_MANUAL.md principle count match the live tree")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")

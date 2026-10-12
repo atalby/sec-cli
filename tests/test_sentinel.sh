@@ -1012,6 +1012,69 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[20] bash suite counts cited in SKILL.md match the live tree (issue #95)"
+WORK_W1="$(mktemp -d)"
+WORK_W2="$(mktemp -d)"
+WORK_WCTRL="$(mktemp -d)"
+for W in "$WORK_W1" "$WORK_W2" "$WORK_WCTRL"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_W1/skills/architecture-360-audit/SKILL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"the \w+ `tests/\*\.sh` suites", "the nine `tests/*.sh` suites", s)
+if n != 1:
+    sys.exit("SKILL.md scanner suite count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_W2/skills/architecture-360-audit/SKILL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"executes all \w+ bash suites", "executes all nine bash suites", s)
+if n != 1:
+    sys.exit("SKILL.md gate suite count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_W1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted SKILL.md scanner suite count"
+else
+    no "coverage accepted a drifted SKILL.md scanner suite count"
+fi
+if grep -q 'SKILL.md says the nine `tests/\*\.sh` suites, live tree has 5' <<<"$OUT"; then
+    ok "coverage names the drifted SKILL.md scanner suite count"
+else
+    no "coverage did not name the drifted SKILL.md scanner suite count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_W2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted SKILL.md gate suite count"
+else
+    no "coverage accepted a drifted SKILL.md gate suite count"
+fi
+if grep -q "SKILL.md says the gate executes all nine bash suites, live tree has 5" <<<"$OUT"; then
+    ok "coverage names the drifted SKILL.md gate suite count"
+else
+    no "coverage did not name the drifted SKILL.md gate suite count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_WCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct SKILL.md suite counts) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

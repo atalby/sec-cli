@@ -1,7 +1,7 @@
 # Resume point — sec-cli
 
-Written 2026-10-12 after closing #94. Working tree clean on `main`; last push
-will be the #94 docs commit.
+Written 2026-10-12 after closing #95. Working tree clean on `main`; last push
+will be the #95 docs commit.
 
 ## Where things stand
 
@@ -15,6 +15,18 @@ will be the #94 docs commit.
   upstream in the hyer hub, unfixable in-repo), and **#92** (hub-side: two
   unguarded counts in hub-owned files, filed by the #90/#91 sweep).
 - No autonomous in-repo work item remains.
+
+## Just shipped (#95 — SKILL.md's own suite-count prose was stale and unguarded)
+
+The post-#94 sweep of agent-facing markdown for numeric claims found the audit
+instrument's *own* skill file had never been guarded. `SKILL.md:279` said "the
+two `tests/*.sh` suites" (written at `0d64844` when the tree had two; live is
+5); `SKILL.md:451` said the gate "executes all five bash suites" (correct, but
+unguarded). Corrected `two` -> `five` in place (same line, so `citations` held)
+and **extended sentinel section 14** to derive the live count and check both
+places SKILL.md states it. Test case [20] covers two corruptions plus a control;
+sentinel is now 20 cases / 98 assertions. RED proven against the pre-fix `HEAD`
+sentinel: exit 0 on a drifted SKILL.md.
 
 ## Just shipped (#94 — the last correct-but-unguarded structural prose claims)
 
@@ -98,7 +110,7 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ./skills/architecture-360-audit/sentinel.sh citations                                        # exit 0
 ```
 
-Suites: dispatch 80 sections / 239 assertions, install 9 / 30, sentinel 19 / 93,
+Suites: dispatch 80 sections / 239 assertions, install 9 / 30, sentinel 20 / 98,
 sync_guard 16 / 44, write_honesty 13 / 49. 108 tracked files, 40 manifest rows,
 12 personas, 7 tracked `bin/` sibling helpers, 5 bash suites, 23 skill dirs /
 35 registry rows, HISTORY.md within the 8192-byte budget (sentinel section 6

@@ -83,6 +83,10 @@ bin/sec's tenant regex, profile.md's CI row ("full commit SHA of v4.2.2")
 vs the pinned `actions/checkout`, and OPERATOR_MANUAL.md's "four core
 principles" count vs its numbered list (section 15; sentinel 18 -> 19
 cases).
+Issue #95 then guarded SKILL.md's own suite-count prose, which had drifted:
+"the two `tests/*.sh` suites" was written when the tree had two and silently
+understated the live five, so the count is now derived and checked in both
+places SKILL.md states it (section 14 extended; sentinel 19 -> 20 cases).
 Open items: #67 (360 audit —
 needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
