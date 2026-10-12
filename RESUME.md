@@ -1,64 +1,69 @@
-# Resume Point
+# Resume point — sec-cli
 
-## Live Resume Point (durable)
-- **Status (2026-10-12, verified 2026-10-12):** Issues #78-#83 closed — the
-  completion-parity class and the ps1 completion runtime are complete. #78:
-  fish omitted the tenant-prefix words (guard [22q]). #79: fish offered no
-  housekeep subcommands after the `organize` alias (guard [22r]). #80: the
-  housekeep `undo`/`restore` aliases advertised on all four surfaces (guard
-  [22s]). #81: the ps1 completion read
-  `$commandAst.ArgumentElements`, a property that does not exist on
-  `CommandAst` (only `CommandElements` does), so its subcommand branches
-  were dead code at runtime; it now reads `CommandElements`, the
-  `powershell` shell word is completed on all four surfaces, and the migrate
-  backend values (bitwarden 1password bws vault infisical) match zsh on
-  bash/fish/ps1 — guards [22t]/[22u]. #82: the bare `help`/`version`
-  subcommands the dispatcher accepts are now completed on all four surfaces
-  (guard [22v]). #83: the `get --scope` and `set/create --type`
-  login/note/card/identity flags are completed on all four surfaces
-  (guard [22w]). The tracked `completions/_sec` golden
-  was regenerated (zsh shells list + help/version entries + get/set flag arms).
-  Five bash suites ALL TESTS PASSED (dispatch 79 / install 9 / sentinel 15
-  / sync_guard 16 / write_honesty 13); pytest mirror 29 passed; sentinel
-  citations + coverage green (suite counts + census counts + ADAPTERS
-  snapshot + pack prose + per-suite counts + producer census match);
-  HISTORY.md under budget.
-  Drift re-check pass: profile.md open-issue reference corrected (#62 -> #67,
-  commit 4227431). #84: the profile.md ecosystem counts (Markdown 64 -> 71,
-  Python 2 -> 6) and `[ TAG ]`-emission per-file census (sec-organizer
-  36 -> 37, sec-sync-controller.py 29 -> 30, sec-migrator 23 -> 24,
-  bw-session-keeper 16 -> 17, sec.ps1 6 -> 11) were re-measured, and
-  `sentinel.sh coverage` gained a section-8 census guard with a RED/GREEN
-  test (`test_sentinel.sh` [11]) — the #46/#48/#49 drift mode is now closed
-  for the census counts too. #85: ADAPTERS.md's `current suites` snapshot
-  (hand-fixed twice before, #79/#84) is now cross-checked by `sentinel.sh
-  coverage` section 9, with the RED/GREEN test `test_sentinel.sh` [12], and
-  the same ADAPTERS "Last updated" bullet's two stray `)` were removed. #86:
-  the audit profile's stale pack-taxonomy description (`packs/solo-founder-
-  governance` v1.2.0 -> v1.4.0, "eight roles" -> "nine roles") was corrected,
-  and `sentinel.sh coverage` gained a section-10 pack guard with a RED/GREEN
-  test (`test_sentinel.sh` [13]). #87: ADAPTERS.md's Test-suites bullets
-  mirror each suite's `(N sections|cases)` count, which `sentinel.sh`
-  section 9 (from #85) left unguarded; those per-suite counts are now
-  cross-checked against the live suites by section 9 with the RED/GREEN
-  test `test_sentinel.sh` [14]. #88: docs/ARCHITECTURE.md's producer census
-  ("All six producers", omitting `bin/sec.ps1`; live: seven emitters, only
-  sec-classify.py is a non-emitter) was corrected to seven and is
-  cross-checked by coverage section 11 with the RED/GREEN test
-  `test_sentinel.sh` [15]. No
-  other drift found — completions match golden, no TODOs, no unmerged branches.
-- **Open issues:** #67 (fresh 360 audit — Step-1 gate needs explicit human
-  scope approval, not autonomous), #51 (hub-side handoff items #2/#13,
-  upstream). No held-for-decision item remains.
-- **Next action:** no autonomous in-repo work remains (no failing test, no
-  untested path, no unmerged branch: only origin/main exists). The next run
-  should re-check for new drift, or take #67 once a human approves scope.
-- **Resume command:** `gh issue list --repo atalby/sec-cli --state open` then
-  `bash tests/test_dispatch.sh` (expect ALL TESTS PASSED, 79 sections).
-- **Verification:** `gh issue list --repo atalby/sec-cli --state open`
-  (this repo tracks on GitHub, not GitLab — see `ADAPTERS.md` "Git
-  host"/"Issue tracker"; `glab` has no sec-cli project among the fleet
-  projects it can see). Operator prompt says GitLab/glab; ADAPTERS + prior
-  RESUME runs document GitHub as the real tracker — use `gh`.
+Written 2026-10-12 after closing #89. Working tree clean, `main` pushed at
+`ec4ac1b`.
 
-(End of file)
+## Where things stand
+
+- `git status` clean on `main`; `origin/main` == local `main`.
+- Tracker: **GitHub** (`gh --repo atalby/sec-cli`), not glab. The remote is
+  `git@github.com:atalby/sec-cli.git`; `glab` is authenticated to gitlab.com
+  but errors with "None of the git remotes configured for this repository
+  point to a known GitLab host".
+- Open issues: **#67** (fresh 360 audit — its Step-1 gate needs explicit human
+  scope approval, so it is *not* autonomous) and **#51** (hub-side handoff,
+  tracked upstream in the hyer hub, unfixable in-repo).
+- No autonomous in-repo work item remains.
+
+## Just shipped (#89, the last of the census-drift class)
+
+`sentinel.sh coverage` section 12 now fails closed on ADAPTERS.md's
+"Skills registry" census vs. the live `skills/` tree and `skills/REGISTRY.md`.
+Section 12 is the twelfth and final section; `tests/test_sentinel.sh` case
+[16] covers it with five isolated work copies.
+
+The **#46/#48/#49/#84-#89 census-drift class is now closed end to end**:
+profile.md's ecosystem + `[ TAG ]` censuses (#84), ADAPTERS.md's
+`current suites:` snapshot (#85) and per-suite counts (#87), the audit
+profile's pack taxonomy (#86), docs/ARCHITECTURE.md's producer census (#88),
+and ADAPTERS.md's skills/registry census (#89).
+
+## Verified baseline (re-run before trusting anything)
+
+```
+for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_$s.sh; done   # all ALL TESTS PASSED
+.venv/bin/python -m pytest -q                                                               # 29 passed
+./skills/architecture-360-audit/sentinel.sh coverage                                        # exit 0
+./skills/architecture-360-audit/sentinel.sh citations                                        # exit 0
+```
+
+Suites: dispatch 79 sections / 237 assertions, install 9 / 30, sentinel 16 / 68,
+sync_guard 16 / 44, write_honesty 13 / 49. 108 tracked files, 40 manifest rows,
+12 personas, HISTORY.md 7734 bytes against the 8192-byte budget.
+
+## Gotchas worth not rediscovering
+
+1. **pre-commit Step 21 ignores `TDD-Red:` trailers.**
+   `/home/opc/sandbox/hyer/scripts/pre-commit-hiae.sh:458` calls
+   `check_tdd_evidence.py "$STAGED_ALL" --repo-root "$REPO_ROOT"` with **no**
+   `--message-file`, so `message` is always `None` and the trailer is never
+   parsed at pre-commit time. A commit that touches only an impl file (e.g.
+   `sentinel.sh`) is blocked no matter what the trailer says. The only path is
+   to stage a test file in the same commit. Do not burn three commits on this.
+2. **Counting census numbers: filter to data rows.** `grep -c "\.hyer/skills/"`
+   returns 14 and `grep -c '`skills/`'` returns 40 because both also match
+   prose. Only `^| ` rows may be counted.
+3. **Test work copies need their own `git init`.** Cases that `cp -a` the repo
+   root must `rm -rf "$W/.git"` then `git init -q . && git add -A`, or the
+   coverage denominator comes from the parent's index. Give every case a fresh
+   `mktemp -d` — reusing one across cases inherits the earlier corruption.
+4. **HISTORY.md is force-loaded by every session** (sentinel section 6 guards
+   the 8192-byte budget). Adding narrative means compacting an older clause in
+   the same edit; the full text goes in `history/<date>.md`.
+
+## If resuming the drift sweep
+
+The census class is closed. Remaining numeric-drift risk is prose that has no
+guard yet — worth a `sentinel.sh coverage` section each, filed as a real issue
+first (AGENTS.md §4). Everything else open needs a human: #67 needs an explicit
+scope approval, #51 lives in the hub repo.
