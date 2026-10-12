@@ -1,7 +1,8 @@
 # Resume point — sec-cli
 
-Written 2026-10-12 after closing #96. Working tree clean on `main`; last push
-will be the #96 docs commit.
+Written 2026-10-12 after closing #96 (commit `faeeee7`, pushed). Working tree
+clean on `main`; all autonomous in-repo work is done and the remaining open
+issues (#92, #67, #51) are all non-autonomous.
 
 ## Where things stand
 
