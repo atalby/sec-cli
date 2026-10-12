@@ -21,12 +21,18 @@ Issue #74 then closed the last gap in the same sweep class: `get`/
 Issue #75 closed the last soft spot in the sweep class: `sec get --scope`
 rejects a flag-like folder name (`--*`/`-[a-zA-Z]*`, tagged `[ERROR]` +
 exit 2 before any backend call; sec.ps1 already did this, bin/sec was the
-laggard). Tests: dispatch suite 68 -> 71 sections ([2e], [2f], [2g]);
-profile.md counts updated. All five bash suites pass (install 9 /
-sync_guard 16 / write_honesty 11 / sentinel 10 / dispatch 71), pytest
-mirror 29 passed, sentinel citations + coverage green. Open items: #67
-(360 audit — needs human scope approval), #51 (hub-side, tracked
-upstream). Full narrative: `history/2026-10-12.md`.
+laggard). Issue #76 then closed the same trailing-operand gap in the arms
+the #74/#75 sweep had skipped: `sec housekeep`/`organize` and `sec
+unlock`/`rotate`/`keep`/`setup-keychain` no longer silently drop extra
+operands (tagged `[ERROR]` + exit 2 before any organizer/keeper/backend
+call; `rotate`/`keep` reject any positional, `unlock`/`setup-keychain`
+still take one optional password; `run` stays variadic). Tests: dispatch
+suite 68 -> 72 sections ([2e], [2f], [2g], [2h]); profile.md + ADAPTERS
+counts updated. All five bash suites pass (install 9 / sync_guard 16 /
+write_honesty 11 / sentinel 10 / dispatch 72), pytest mirror 29 passed,
+sentinel citations + coverage green. Open items: #67 (360 audit — needs
+human scope approval), #51 (hub-side, tracked upstream). Full narrative:
+`history/2026-10-12.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was

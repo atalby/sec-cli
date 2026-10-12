@@ -355,6 +355,22 @@ OUT="$(run_sec "$H" get MY_API_KEY extra 2>&1)"; RC=$?
 set -e
 if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec get: unexpected trailing argument' <<<"$OUT" && [[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]]; then pass "get <key> extra refused before any backend call"; else fail "get <key> extra rc=$RC bwlog_changed=$([[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]] && echo no || echo yes) out=[$OUT]"; fi
 
+echo "[2h] housekeep/organize + unlock/rotate/keep/setup-keychain reject trailing operands pre-exec (issue #76)"
+assert_usage_error "sec housekeep plan trailing" housekeep plan TRAILING
+assert_usage_error "sec housekeep plan --bogus" housekeep plan --bogus
+assert_usage_error "sec housekeep apply trailing" housekeep apply TRAILING
+assert_usage_error "sec housekeep revert trailing" housekeep revert TRAILING
+assert_usage_error "sec organize apply --bogus" organize apply --bogus
+assert_usage_error "sec rotate trailing" rotate TRAILING
+assert_usage_error "sec keep trailing" keep TRAILING
+assert_usage_error "sec unlock pw1 pw2" unlock pw1 pw2
+assert_usage_error "sec setup-keychain pw1 pw2" setup-keychain pw1 pw2
+set +e
+BPROG_BEFORE="$(wc -c <"$BWLOG")"
+OUT="$(run_sec "$H" rotate TRAILING 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec rotate: unexpected trailing argument' <<<"$OUT" && [[ "$(wc -c <"$BWLOG")" -eq "$BPROG_BEFORE" ]]; then pass "rotate TRAILING refused before any keeper/backend call"; else fail "rotate TRAILING rc=$RC bwlog_changed=$([[ "$(wc -c <"$BWLOG")" -eq "$BPROG_BEFORE" ]] && echo no || echo yes) out=[$OUT]"; fi
+
 echo "[2g] sec get --scope rejects a flag-like folder name (issue #75)"
 assert_usage_error "sec get --scope --bogus <key>" get --scope --bogus MY_API_KEY
 assert_usage_error "sec get --scope -x <key>" get --scope -x MY_API_KEY

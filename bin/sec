@@ -745,6 +745,9 @@ EOF
                 usage_error "sec $cmd: unknown subcommand '$sub' (expected: plan, apply, revert)"
                 ;;
         esac
+        if [[ $# -gt 1 ]]; then
+            usage_error "sec $cmd: unexpected trailing argument '$2' (usage: sec $cmd {plan|apply|revert})"
+        fi
         if [[ -x "$SCRIPT_DIR/sec-organizer" ]]; then
             exec "$SCRIPT_DIR/sec-organizer" "$sub"
         fi
@@ -766,6 +769,18 @@ EOF
                 usage_error "sec $cmd: unknown flag '$_arg' (usage: sec $cmd [password])"
             fi
         done
+        case "$cmd" in
+            rotate|keep)
+                if [[ $# -ge 1 ]]; then
+                    usage_error "sec $cmd: unexpected trailing argument '$1' (usage: sec $cmd)"
+                fi
+                ;;
+            unlock|setup-keychain)
+                if [[ $# -gt 1 ]]; then
+                    usage_error "sec $cmd: unexpected trailing argument '$2' (usage: sec $cmd [password])"
+                fi
+                ;;
+        esac
         if [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
             exec "$SCRIPT_DIR/bw-session-keeper" "$cmd" "$@"
         fi
