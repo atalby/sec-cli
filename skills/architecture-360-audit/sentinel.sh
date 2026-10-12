@@ -940,9 +940,59 @@ _live_principles = len(re.findall(r"^\d+\. \*\*", _op_text, re.M))
 if not _op_m:
     struct_mismatches.append("docs/OPERATOR_MANUAL.md carries no 'N core principles' claim")
 elif _NUM_WORDS.get(_op_m.group(1)) != _live_principles:
-    struct_mismatches.append(
-        f"OPERATOR_MANUAL.md says {_op_m.group(1)} core principles, live doc lists {_live_principles}"
+        struct_mismatches.append(
+            f"OPERATOR_MANUAL.md says {_op_m.group(1)} core principles, live doc lists {_live_principles}"
+        )
+
+# --- 16. SKILL.md's own structural counts (steps, personas, scopes, severity set) must match (#96) --
+skill_struct_mismatches = []
+
+_norm_skill = re.sub(r"\s+", " ", _skill_text)
+_skill_step_count = len(re.findall(r"(?m)^## Step ", _skill_text))
+for _word in re.findall(r"\b(\w+) steps\b", _norm_skill):
+    if _word in _NUM_WORDS and _NUM_WORDS[_word] != _skill_step_count:
+        skill_struct_mismatches.append(
+            f"SKILL.md says '{_word} steps', live SKILL.md has {_skill_step_count} '## Step' headings"
+        )
+
+_live_personas = len(re.findall(r"(?m)^### \d+\. ", profile_text))
+for _word in re.findall(r"\b(\w+) personas\b", _norm_skill):
+    if _word in _NUM_WORDS and _NUM_WORDS[_word] != _live_personas:
+        skill_struct_mismatches.append(
+            f"SKILL.md says '{_word} personas', profile.md declares {_live_personas}"
+        )
+_prof_num = re.search(r"(\w+), numbered 1 through (\d+),", profile_text)
+if not _prof_num:
+    skill_struct_mismatches.append("profile.md carries no 'Twelve, numbered 1 through 12' claim")
+elif _NUM_WORDS.get(_prof_num.group(1).lower()) != _live_personas or int(_prof_num.group(2)) != _live_personas:
+    skill_struct_mismatches.append(
+        f"profile.md says personas are '{_prof_num.group(1)}, numbered 1 through {_prof_num.group(2)}', "
+        f"live persona-heading count is {_live_personas}"
     )
+
+_skill_scope_m = re.search(r"Offer exactly (\w+) scopes", _norm_skill)
+_live_scopes = len(re.findall(r"(?m)^- \*\*[A-Za-z]+ sweep", _skill_text))
+if not _skill_scope_m:
+    skill_struct_mismatches.append("SKILL.md carries no 'Offer exactly N scopes' claim")
+elif _NUM_WORDS.get(_skill_scope_m.group(1)) != _live_scopes:
+    skill_struct_mismatches.append(
+        f"SKILL.md says 'Offer exactly {_skill_scope_m.group(1)} scopes', live Step 1 offers {_live_scopes}"
+    )
+
+_skill_sev_m = re.search(r"one of (\w+) values only: `([^`]+)`, `([^`]+)`, `([^`]+)`", _norm_skill)
+_sev_set = {"blocking", "important", "nit"}
+if not _skill_sev_m:
+    skill_struct_mismatches.append("SKILL.md carries no 'one of N values only: ...' severity claim")
+else:
+    _sev_cited = {_skill_sev_m.group(2), _skill_sev_m.group(3), _skill_sev_m.group(4)}
+    if _NUM_WORDS.get(_skill_sev_m.group(1)) != len(_sev_cited):
+        skill_struct_mismatches.append(
+            f"SKILL.md says 'one of {_skill_sev_m.group(1)} values only', but names {len(_sev_cited)}"
+        )
+    if _sev_cited != _sev_set:
+        skill_struct_mismatches.append(
+            f"SKILL.md's severity set is {sorted(_sev_cited)}, canonical is {sorted(_sev_set)}"
+        )
 
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
@@ -1034,6 +1084,10 @@ if struct_mismatches:
     failures.append(f"{len(struct_mismatches)} structural prose claim(s) drifted from the live tree")
     for _m in struct_mismatches:
         print(f"{ERROR} structural prose: {_m}")
+if skill_struct_mismatches:
+    failures.append(f"{len(skill_struct_mismatches)} SKILL.md/profile.md structural count(s) drifted from the live skill files")
+    for _m in skill_struct_mismatches:
+        print(f"{ERROR} skill structure: {_m}")
 
 if failures:
     for f in failures:
@@ -1052,6 +1106,7 @@ print(f"{OK} skills registry: ADAPTERS.md's census matches {len(_live_skill_dirs
 print(f"{OK} bin/ helper census: profile.md + ADAPTERS.md match {_live_bin_helpers} tracked sibling helper(s), all referenced by tests/test_dispatch.sh")
 print(f"{OK} suite census: profile.md + ARCHITECTURE.md + SKILL.md match {_live_suite_count} tracked bash suite(s), ARCHITECTURE.md's suite list matches the tracked names")
 print(f"{OK} structural prose: MULTI_TENANCY.md tenant aliases + profile.md CI checkout pin + OPERATOR_MANUAL.md principle count match the live tree")
+print(f"{OK} skill structure: SKILL.md steps + personas + scopes + severity set match the live skill files")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

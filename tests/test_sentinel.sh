@@ -1075,6 +1075,117 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[21] SKILL.md's own step/persona/scope/severity counts match the live skill files (issue #96)"
+WORK_X1="$(mktemp -d)"
+WORK_X2="$(mktemp -d)"
+WORK_X3="$(mktemp -d)"
+WORK_X4="$(mktemp -d)"
+WORK_XCTRL="$(mktemp -d)"
+for W in "$WORK_X1" "$WORK_X2" "$WORK_X3" "$WORK_X4" "$WORK_XCTRL"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_X1/skills/architecture-360-audit/SKILL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"eleven steps", "nine steps", s)
+if n < 1:
+    sys.exit("SKILL.md step count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_X2/skills/architecture-360-audit/SKILL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"twelve personas", "nine personas", s)
+if n < 1:
+    sys.exit("SKILL.md persona count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_X3/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"numbered 1 through 12,", "numbered 1 through 9,", s)
+if n != 1:
+    sys.exit("profile.md numbered-personas claim not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_X4/skills/architecture-360-audit/SKILL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"`blocking`, `important`, `nit`", "`blocking`, `important`, `minor`", s)
+if n != 1:
+    sys.exit("SKILL.md severity set not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_X1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted SKILL.md step count"
+else
+    no "coverage accepted a drifted SKILL.md step count"
+fi
+if grep -q "SKILL.md says 'nine steps', live SKILL.md has 11 '## Step' headings" <<<"$OUT"; then
+    ok "coverage names the drifted SKILL.md step count"
+else
+    no "coverage did not name the drifted SKILL.md step count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_X2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted SKILL.md persona count"
+else
+    no "coverage accepted a drifted SKILL.md persona count"
+fi
+if grep -q "SKILL.md says 'nine personas', profile.md declares 12" <<<"$OUT"; then
+    ok "coverage names the drifted SKILL.md persona count"
+else
+    no "coverage did not name the drifted SKILL.md persona count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_X3" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted profile.md numbered-personas claim"
+else
+    no "coverage accepted a drifted profile.md numbered-personas claim"
+fi
+if grep -q "profile.md says personas are 'Twelve, numbered 1 through 9', live persona-heading count is 12" <<<"$OUT"; then
+    ok "coverage names the drifted profile.md numbered-personas claim"
+else
+    no "coverage did not name the drifted profile.md numbered-personas claim"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_X4" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted SKILL.md severity set"
+else
+    no "coverage accepted a drifted SKILL.md severity set"
+fi
+if grep -q "SKILL.md's severity set is" <<<"$OUT"; then
+    ok "coverage names the drifted SKILL.md severity set"
+else
+    no "coverage did not name the drifted SKILL.md severity set"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_XCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct SKILL.md structural counts) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

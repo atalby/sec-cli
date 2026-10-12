@@ -77,16 +77,18 @@ the Gmail fixture classifies `cloud/gcp` / 50 / `[token:google]` and
 PROD_DB `database` / 81 / `[regex:postgres://, token:db, token:postgres]` —
 now pinned by dispatch section [16-honesty] (dispatch 79 -> 80 sections);
 the classifier taxonomy was left unchanged (Gmail is a Google property).
-Issue #94 then guarded the last three correct-but-unguarded structural
-prose claims: docs/MULTI_TENANCY.md's "eight fixed aliases" list vs
-bin/sec's tenant regex, profile.md's CI row ("full commit SHA of v4.2.2")
-vs the pinned `actions/checkout`, and OPERATOR_MANUAL.md's "four core
-principles" count vs its numbered list (section 15; sentinel 18 -> 19
-cases).
+Issue #94 then guarded three correct-but-unguarded structural claims:
+MULTI_TENANCY.md's "eight fixed aliases" vs bin/sec's tenant regex,
+profile.md's CI checkout pin (v4.2.2), and OPERATOR_MANUAL.md's "four core
+principles" (section 15; sentinel 18 -> 19 cases).
 Issue #95 then guarded SKILL.md's own suite-count prose, which had drifted:
 "the two `tests/*.sh` suites" was written when the tree had two and silently
 understated the live five, so the count is now derived and checked in both
 places SKILL.md states it (section 14 extended; sentinel 19 -> 20 cases).
+Issue #96 then guarded SKILL.md's remaining structural counts — its step
+count (11) and persona count (12, cross-checked against profile.md's
+"Twelve, numbered 1 through 12"), the two Step-1 scopes, and the
+three-value severity set (section 16; sentinel 20 -> 21 cases).
 Open items: #67 (360 audit —
 needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
