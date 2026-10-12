@@ -97,6 +97,11 @@ if [[ -z "$SRC" || -z "$DST" ]]; then
     usage_error "sec migrate requires both --from <src_backend> and --to <dst_backend>"
 fi
 
+case "$DST" in
+    1password|1pass|op|bitwarden|bw|bws|infisical|vault) ;;
+    *) echo "[ERROR] Destination backend '$DST' not supported for bulk migration." >&2; exit 1 ;;
+esac
+
 echo "[INFO] Fleet Secret Vault Migration ($SRC -> $DST, Mode: $MODE)"
 
 # 1. Fetch Source Items into Memory
@@ -109,7 +114,7 @@ fetch_source_items() {
             fi
             bw list items 2>/dev/null || echo "[]"
             ;;
-        1password|op)
+        1password|1pass|op)
             op item list --format=json 2>/dev/null || echo "[]"
             ;;
         bws)
@@ -185,7 +190,7 @@ while read -r item; do
         created_id=""
 
         case "$DST" in
-            1password|op)
+            1password|1pass|op)
                 op_template="$(SECVAL="$val" jq -n --arg title "$name" '{title: $title, category: "PASSWORD", fields: [{id: "password", type: "CONCEALED", purpose: "PASSWORD", label: "password", password_details: {strength: ""}, value: env.SECVAL}]}')"
                 res="$(printf '%s' "$op_template" | op item create - --format=json 2>/dev/null || true)"
                 created_id="$(echo "$res" | jq -r '.id // empty')"

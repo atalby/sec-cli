@@ -312,6 +312,18 @@ OUT="$(run_sec "$H" migrate -h 2>&1)"; RC=$?
 set -e
 if [[ $RC -eq 0 ]]; then pass "sec migrate -h exits 0"; else fail "sec migrate -h rc=$RC out=[$OUT]"; fi
 
+echo "[2d2] sec migrate rejects an unsupported destination up front (issue #72)"
+set +e
+OUT="$(run_sec "$H" migrate --from bw --to bogus --plan 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] Destination backend 'bogus' not supported" <<<"$OUT"; then pass "migrate --to bogus --plan -> exit 1 + tagged error"; else fail "migrate --to bogus --plan rc=$RC out=[$OUT]"; fi
+if grep -q "Ready to migrate" <<<"$OUT"; then fail "migrate --to bogus still printed a Ready-to-migrate plan: $OUT"; else pass "migrate --to bogus printed no plan"; fi
+set +e
+OUT="$(run_sec "$H" migrate --from bw --to bogus --apply 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] Destination backend 'bogus' not supported" <<<"$OUT"; then pass "migrate --to bogus --apply -> exit 1 + tagged error"; else fail "migrate --to bogus --apply rc=$RC out=[$OUT]"; fi
+if grep -q "Migration Successfully Completed" <<<"$OUT"; then fail "migrate --to bogus --apply still reported success: $OUT"; else pass "migrate --to bogus --apply reported no false success"; fi
+
 echo "[3] bw get: plain key returns login.password"
 set +e
 OUT="$(run_sec "$H" get MY_API_KEY 2>&1)"
@@ -1416,6 +1428,16 @@ if grep -qF "CANARY-MIG59" "$OPSLOG"; then
 else
     fail "sec-migrator never delivered the secret value to op via stdin"
 fi
+
+: >"$OPLOG"; : >"$OPSLOG"
+G1p="$(new_home "$WORK/h1passapply")"
+set +e
+env -i "PATH=$SBIN:$FAKEBIN:/usr/bin:/bin" "HOME=$G1p" \
+    "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_OP_STDIN_LOG=$OPSLOG" "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_ITEMS=$MG59" \
+    "$REPO_ROOT/bin/sec" migrate --from bitwarden --to 1pass --apply >/dev/null 2>&1 </dev/null
+RC=$?
+set -e
+if [[ $RC -eq 0 ]]; then pass "migrate apply (1pass alias target) ran"; else fail "migrate apply (1pass alias target) rc=$RC"; fi
 
 : >"$VAULTLOG"; : >"$VAULTSLOG"
 G59v="$(new_home "$WORK/h59v")"
