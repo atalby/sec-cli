@@ -11,8 +11,9 @@ Written 2026-10-12 after closing #91. Working tree clean, `main` pushed at
   but errors with "None of the git remotes configured for this repository
   point to a known GitLab host".
 - Open issues: **#67** (fresh 360 audit — its Step-1 gate needs explicit human
-  scope approval, so it is *not* autonomous) and **#51** (hub-side handoff,
-  tracked upstream in the hyer hub, unfixable in-repo).
+  scope approval, so it is *not* autonomous), **#51** (hub-side handoff, tracked
+  upstream in the hyer hub, unfixable in-repo), and **#92** (hub-side: two
+  unguarded counts in hub-owned files, filed by the #90/#91 sweep).
 - No autonomous in-repo work item remains.
 
 ## Just shipped (#91 — the last unguarded-but-correct suite counts)
@@ -36,10 +37,10 @@ covers all four; sentinel is now 18 cases / 84 assertions.
 
 No prose correction was needed (unlike #84-#90, every claim was already true).
 
-**Class status: #46/#48/#49/#84-#91 all carry a guard.** Sweep candidates still
-open are `packs/README.md`'s "9-persona" count and `AGENTS.md`'s "4 core
-execution traits" — both inside **hub-synced** files, so guard them from the
-project side or file hub-side, never hand-edit locally.
+**Class status: #46/#48/#49/#84-#91 all carry a guard.** The sweep's last two
+candidates — `packs/README.md`'s "9-persona" count and `AGENTS.md`'s "4 core
+execution traits" — were filed hub-side as **#92** rather than guarded here. See
+gotcha 10 for why.
 
 ## Ownership boundaries (checked before editing #90)
 
@@ -101,12 +102,27 @@ sync_guard 16 / 44, write_honesty 13 / 49. 108 tracked files, 40 manifest rows,
    timeout and leave the issue OPEN. Write the body to a file, then
    `gh issue comment N --body-file <f>` followed by a separate
    `gh issue close N --reason completed`, and verify the state afterwards.
+10. **A guard needs one project-owned side.** Every sentinel guard so far
+   compares a *project-owned* claim against a live-derived truth (section 10:
+   profile.md vs PACK.md; section 11: ARCHITECTURE.md vs live `bin/`;
+   section 14: profile.md + ARCHITECTURE.md vs tracked `tests/*.sh`). The
+   adopter can always fix the project side. A claim with **both sides
+   hub-owned** (`packs/README.md` vs `PACK.md`, or `AGENTS.md` vs its own §1.2)
+   is the wrong shape for an adopter guard: the day the hub ships an internal
+   inconsistency, every adopter's `sentinel.sh coverage` goes red with no local
+   remedy, breaking the Definition of Done's "suite is green" gate. File those
+   hub-side instead — that is what #92 is. Confirm ownership before adding a
+   guard: `git log --oneline -- <file>` returning only `chore(adopt): re-sync`
+   commits means hub-owned.
 
 ## Next autonomous work
 
-None outstanding in-repo. #67 needs an explicit human scope approval; #51 lives
-in the hub repo. The productive pattern, if continuing, is the drift sweep:
-grep agent-facing markdown for structural counts, measure each against the live
-tree, file an issue, then add a sentinel section plus a test case per claim.
-Note that a count claim and a *name list* behind it are two guards, not one —
-see the `ARCHITECTURE.md` suite-name check in section 14.
+None outstanding in-repo. #67 needs an explicit human scope approval; #51 and
+#92 live in the hub repo. The productive pattern, if continuing, is the drift
+sweep: grep agent-facing markdown for structural counts, measure each against
+the live tree, file an issue, then add a sentinel section plus a test case per
+claim — but check ownership first, because a claim with two hub-owned sides
+belongs upstream (gotcha 10). Two refinements that paid off in #91: a count
+claim and the *name list* behind it are two guards, not one (see the
+`ARCHITECTURE.md` suite-name check in section 14), and a correctly-worded claim
+still needs a guard — correctness is not detection.
