@@ -37,7 +37,13 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
-- #111 `test(sync)` -> pending - 12 new pytest cases covering the sync
+- #112 `test(classify)` -> pending - 2 new pytest cases covering
+  `infer_suggested_name`'s env/project tag branch (generic name + notes with
+  `env: tag` -> `name (tag)`, needs_rename). pytest mirror 41 -> 43; mirrors
+  bumped at `ADAPTERS.md:305`, `skills/architecture-360-audit/SKILL.md:451`,
+  `profile.md:427` transcript, `RESUME.md:104`. Sentinel control [3] drift
+  regexes re-pinned 41 -> 43.
+- #111 `test(sync)` -> `84c3ee6` - 12 new pytest cases covering the sync
   controller's untested surface: GCP write path (describe / create-on-missing /
   add-version / timeout / failure), `parse_args` usage-error contract, and
   `main()` exit codes 0/1/2/3. pytest mirror 29 -> 41; mirrors bumped at
@@ -108,7 +114,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ```
 for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_$s.sh; done   # all ALL TESTS PASSED
-.venv/bin/python -m pytest -q                                                               # 41 passed
+.venv/bin/python -m pytest -q                                                               # 43 passed
 ./skills/architecture-360-audit/sentinel.sh coverage                                        # exit 0
 ./skills/architecture-360-audit/sentinel.sh citations                                       # exit 0
 ```

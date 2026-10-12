@@ -126,6 +126,20 @@ def test_classify_suggested_name_from_username(classify_mod):
     assert res["needs_rename"] is True
 
 
+def test_classify_suggested_name_from_env_tag_in_notes(classify_mod):
+    item = _item(name="login", notes="env: prod")
+    res = classify_mod.classify_item(item)
+    assert res["suggested_name"] == "login (prod)"
+    assert res["needs_rename"] is True
+
+
+def test_classify_suggested_name_no_env_tag_when_name_specific(classify_mod):
+    item = _item(name="my-credential", notes="env: prod")
+    res = classify_mod.classify_item(item)
+    assert res["suggested_name"] == "my-credential"
+    assert res["needs_rename"] is False
+
+
 def test_classify_custom_fields_contribute(classify_mod):
     item = _item(
         name="cfg",

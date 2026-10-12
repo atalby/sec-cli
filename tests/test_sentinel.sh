@@ -1214,7 +1214,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"is now 41 passed", "is now 40 passed", s)
+s2, n = re.subn(r"is now 43 passed", "is now 42 passed", s)
 if n != 1:
     sys.exit("ADAPTERS.md pytest count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1224,7 +1224,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"suites \(41 passed", "suites (42 passed", s)
+s2, n = re.subn(r"suites \(43 passed", "suites (44 passed", s)
 if n != 1:
     sys.exit("SKILL.md pytest count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1263,7 +1263,7 @@ if [[ "$PYTEST_OK" -eq 1 ]]; then
     else
         no "coverage accepted a drifted ADAPTERS.md pytest count"
     fi
-    if grep -q "ADAPTERS.md says pytest mirror is 40 passed, live collection counts 41" <<<"$OUT"; then
+    if grep -q "ADAPTERS.md says pytest mirror is 42 passed, live collection counts 43" <<<"$OUT"; then
         ok "coverage names the drifted ADAPTERS.md pytest count"
     else
         no "coverage did not name the drifted ADAPTERS.md pytest count"
@@ -1276,7 +1276,7 @@ if [[ "$PYTEST_OK" -eq 1 ]]; then
     else
         no "coverage accepted a drifted SKILL.md pytest count"
     fi
-    if grep -q "SKILL.md says pytest mirror is 42 passed, live collection counts 41" <<<"$OUT"; then
+    if grep -q "SKILL.md says pytest mirror is 44 passed, live collection counts 43" <<<"$OUT"; then
         ok "coverage names the drifted SKILL.md pytest count"
     else
         no "coverage did not name the drifted SKILL.md pytest count"
