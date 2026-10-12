@@ -152,8 +152,8 @@ sec 1pass set STRIPE_WEBHOOK "whsec_123"
 sec housekeep plan
 
 # Output:
-#   [MOVE & RENAME] "Gmail" -> Folder: "integrations", New Name: "Gmail (anass.personal@gmail.com)" (Confidence: 94%, Match: [token:gmail])
-#   [MOVE]          "PROD_POSTGRES_DB" -> Folder: "database" (Confidence: 89%, Match: [regex:postgres://])
+#   [MOVE & RENAME] "Gmail" -> Folder: "cloud/gcp", New Name: "Gmail (anass.personal@gmail.com)" (Confidence: 50%, Match: [token:google])
+#   [MOVE]    "PROD_DB" (root) -> Folder/Tag: "database" (Confidence: 81%, Match: [regex:postgres://, token:db, token:postgres])
 
 # Execute changes with pre-apply backup snapshot:
 sec housekeep apply

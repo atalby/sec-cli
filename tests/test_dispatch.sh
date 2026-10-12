@@ -626,6 +626,28 @@ set -e
 CAT="$(jq -r '.category' <<<"$OUT" 2>/dev/null || echo parse-fail)"
 if [[ $RC -eq 0 && "$CAT" == "cloud/aws" ]]; then pass "aws fixture classifies cloud/aws"; else fail "classify rc=$RC category=$CAT out=$OUT"; fi
 
+echo "[16-honesty] README housekeep sample reproduces verbatim (Gmail -> cloud/gcp, PROD_DB -> database)"
+set +e
+OUT="$(printf '%s' '{"name":"Gmail","login":{"username":"anass.personal@gmail.com","password":"s3cretpw","uris":[{"uri":"https://mail.google.com"}]}}' \
+    | python3 "$REPO_ROOT/bin/sec-classify.py" 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -qF '"category": "cloud/gcp"' <<<"$OUT" && grep -qF '"reasons": ["token:google"]' <<<"$OUT" && grep -qF '"suggested_name": "Gmail (anass.personal@gmail.com)"' <<<"$OUT"; then
+    pass "Gmail fixture matches the README housekeep sample (cloud/gcp, token:google)"
+else
+    fail "Gmail fixture drifted from the README sample: rc=$RC out=$OUT"
+fi
+set +e
+OUT="$(printf '%s' '{"name":"PROD_DB","login":{"password":"postgres://prod.example.com:5432/prod"}}' \
+    | python3 "$REPO_ROOT/bin/sec-classify.py" 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -qF '"category": "database"' <<<"$OUT" && grep -qF '"reasons": ["regex:postgres://", "token:db", "token:postgres"]' <<<"$OUT" && grep -qF '"confidence": 81' <<<"$OUT"; then
+    pass "PROD_DB fixture matches the README housekeep sample (database, 81%)"
+else
+    fail "PROD_DB fixture drifted from the README sample: rc=$RC out=$OUT"
+fi
+
 echo "[16b] F017: classify reads login.password (AKIA key in password field -> cloud/aws)"
 AWS_KEY_TAIL="2233445566778899"
 set +e

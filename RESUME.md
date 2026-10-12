@@ -1,7 +1,7 @@
 # Resume point — sec-cli
 
-Written 2026-10-12 after closing #91. Working tree clean, `main` pushed at
-`8457377`.
+Written 2026-10-12 after closing #93. Working tree clean on `main`; last push
+will be the #93 docs commit.
 
 ## Where things stand
 
@@ -15,6 +15,21 @@ Written 2026-10-12 after closing #91. Working tree clean, `main` pushed at
   upstream in the hyer hub, unfixable in-repo), and **#92** (hub-side: two
   unguarded counts in hub-owned files, filed by the #90/#91 sweep).
 - No autonomous in-repo work item remains.
+
+## Just shipped (#93 — README housekeep sample was stale vs the classifier)
+
+`README.md:155-156`'s `sec housekeep` sample claimed output the shipped
+`bin/sec-classify.py` can never produce: `[token:gmail]` is not a real token
+(no category carries a gmail/mail token) and confidence is
+`int(max/(max+2)*100)`, so 94/89 were unreachable. Measured reality: the
+Gmail fixture categorizes `cloud/gcp` / 50 / `[token:google]` (suggested name
+`Gmail (anass.personal@gmail.com)`), and PROD_DB `database` / 81 /
+`[regex:postgres://, token:db, token:postgres]`. The docs were the stale side
+(Gmail is a Google property, so `cloud/gcp` is defensible); the classifier
+taxonomy was left unchanged. Fixed the README sample in place (line count
+preserved) and added dispatch section **[16-honesty]** asserting the two
+classifier outputs verbatim (dispatch 79 -> 80 sections; mirrors at
+`profile.md:22`, `ADAPTERS.md:55`, `ADAPTERS.md:264` bumped first).
 
 ## Just shipped (#91 — the last unguarded-but-correct suite counts)
 
@@ -57,10 +72,11 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ./skills/architecture-360-audit/sentinel.sh citations                                        # exit 0
 ```
 
-Suites: dispatch 79 sections / 237 assertions, install 9 / 30, sentinel 18 / 84,
+Suites: dispatch 80 sections / 239 assertions, install 9 / 30, sentinel 18 / 84,
 sync_guard 16 / 44, write_honesty 13 / 49. 108 tracked files, 40 manifest rows,
 12 personas, 7 tracked `bin/` sibling helpers, 5 bash suites, 23 skill dirs /
-35 registry rows, HISTORY.md 6671 bytes against the 8192-byte budget.
+35 registry rows, HISTORY.md within the 8192-byte budget (sentinel section 6
+guards it).
 
 ## Gotchas worth not rediscovering
 

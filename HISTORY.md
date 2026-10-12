@@ -70,8 +70,16 @@ prose claims — all correct but unguarded — re-deriving the count from
 tracked `tests/*.sh` and checking profile.md's tests/ census, its CI row,
 and ARCHITECTURE.md's count plus its cited suite-name list (section 14;
 sentinel 17 -> 18 cases).
-Open items: #67 (360 audit — needs
-human scope approval), #51 (hub-side, tracked upstream). Full narrative:
+Issue #93 then repaired README.md's `sec housekeep` sample output, which
+the shipped classifier could never produce (`[token:gmail]` is not a real
+token, and confidence is `max/(max+2)*100`, so 94/89 were unreachable):
+the Gmail fixture classifies `cloud/gcp` / 50 / `[token:google]` and
+PROD_DB `database` / 81 / `[regex:postgres://, token:db, token:postgres]` —
+now pinned by dispatch section [16-honesty] (dispatch 79 -> 80 sections);
+the classifier taxonomy was left unchanged (Gmail is a Google property).
+Open items: #67 (360 audit —
+needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
+packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
 `history/2026-10-12.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
