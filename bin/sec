@@ -581,7 +581,8 @@ EOF
                 note|securenote|2) ITEM_TYPE="2" ;;
                 card|creditcard|3) ITEM_TYPE="3" ;;
                 identity|4)        ITEM_TYPE="4" ;;
-                login|1|*)         ITEM_TYPE="1" ;;
+                login|1)           ITEM_TYPE="1" ;;
+                *) usage_error "sec $cmd --type: unknown type '$type_str' (expected: login, note, card, identity)" ;;
             esac
         fi
 

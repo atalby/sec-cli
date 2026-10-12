@@ -267,6 +267,8 @@ assert_usage_error "sec get --scope" get --scope
 assert_usage_error "sec run --" run --
 assert_usage_error "sec completion bogus" completion bogus
 assert_usage_error "sec set --type" set --type
+assert_usage_error "sec set --type bogus" set --type bogus SOME_KEY someval
+assert_usage_error "sec create --type bogus" create --type bogus SOME_KEY someval
 assert_usage_error "sec housekeep bogus" housekeep bogus
 assert_usage_error "sec organize bogus" organize bogus
 
