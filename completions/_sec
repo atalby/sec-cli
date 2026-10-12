@@ -52,7 +52,7 @@ _sec() {
                         '(-y --yes)'{-y,--yes}'[Confirm non-interactive push]'
                     ;;
                 completion)
-                    local -a shells=('zsh:Zsh completion' 'bash:Bash completion' 'fish:Fish completion' 'ps1:PowerShell completion')
+                    local -a shells=('zsh:Zsh completion' 'bash:Bash completion' 'fish:Fish completion' 'ps1:PowerShell completion' 'powershell:PowerShell completion (alias of ps1)')
                     _describe -t shells 'shells' shells
                     ;;
             esac

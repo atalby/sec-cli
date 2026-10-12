@@ -31,7 +31,7 @@ own secrets tool, not just another repo.
   names a different owner.
 - **Last updated**: 2026-10-12 (issues #78/#79: the fish completion surface
   now offers the tenant-prefix words and routes the organize alias to the
-  housekeep subcommands, dispatch guards 22q/22r); issue #65: corrected the stale `SEC_TEST_DISPATCH` opt-in and pre-commit "blind to `tests/*.sh`" claims across ADAPTERS.md, the 360-audit skill, and CI; issue #47: the 103 KB `HISTORY.md` narrative was
+  housekeep subcommands, dispatch guards 22q/22r; issue #81: the ps1 completion now reads the real CommandAst.CommandElements (ArgumentElements does not exist, so the subcommand arms were dead) and all four surfaces complete the powershell shell word + migrate backend values, guards 22t/22u); issue #65: corrected the stale `SEC_TEST_DISPATCH` opt-in and pre-commit "blind to `tests/*.sh`" claims across ADAPTERS.md, the 360-audit skill, and CI; issue #47: the 103 KB `HISTORY.md` narrative was
   split losslessly into per-date `history/` archives and guarded against re-bloat;
   issue #46: sentinel now guards the profile.md
   coverage denominator against the live tracked-file count; issue #44: sec.ps1 doc parity + non-zero exit on unimplemented
@@ -52,7 +52,7 @@ own secrets tool, not just another repo.
   and does a defensive create-on-404 upsert (the GCP arm already created
   if absent); issue #62: the GCP create-if-absent branch itself is now
   pinned by sync_guard section [16] (the shim reads `SEC_TEST_GCLOUD_DESCRIBE_RC`);
-  current suites: dispatch 75, write-honesty 13,
+  current suites: dispatch 77, write-honesty 13,
   sentinel 10, sync-guard 16, install 9; earlier 2026-10-10, later
   same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
@@ -261,7 +261,7 @@ per AGENTS.md §5's replace-don't-append rule.
   `bash tests/test_write_honesty.sh` (13 sections, silent-no-op write
   paths, revert/undo honesty, keeper sync-failure + non-TTY honesty), `bash tests/test_sentinel.sh` (10 cases,
   the 360 audit instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (75 sections, every `sec` dispatch arm
+  `bash tests/test_dispatch.sh` (77 sections, every `sec` dispatch arm
   plus the four helper scripts against stubs) — all zero-dependency
   bash. Run all five before committing; added 2026-10-08/09 in e5c51d7,
   8c6dcbd, b326a14, c613d2c and eaab363; section counts refreshed

@@ -55,6 +55,17 @@ advertised — with guard [22s] pinning the parity and the checked-in
 `completions/_sec` golden regenerated (dispatch 74 -> 75 sections). The
 `sec housekeep --help` / error text stays canonical (plan/apply/revert),
 consistent with the top-level help, which also lists no aliases.
+Issue #81 then repaired the ps1 completion's runtime: it read
+`$commandAst.ArgumentElements`, a property that does not exist on
+`System.Management.Automation.Language.CommandAst` (only `CommandElements`
+does, "never null"), so `$elements` was null, the `Count -le 1` branch
+always won, and the ps1 subcommand completions were dead code at runtime.
+It now reads `CommandElements`; guard [22t] pins that plus the
+`powershell` shell word on all four surfaces (bin/sec always accepted
+`sec completion powershell` but never completed it), and guard [22u]
+pins the migrate backend values (bitwarden 1password bws vault infisical)
+on bash/fish/ps1 to match zsh (dispatch 75 -> 77 sections; the
+`completions/_sec` golden was regenerated for the zsh shells list).
 Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.

@@ -276,7 +276,7 @@ _sec() {
                         '(-y --yes)'{-y,--yes}'[Confirm non-interactive push]'
                     ;;
                 completion)
-                    local -a shells=('zsh:Zsh completion' 'bash:Bash completion' 'fish:Fish completion' 'ps1:PowerShell completion')
+                    local -a shells=('zsh:Zsh completion' 'bash:Bash completion' 'fish:Fish completion' 'ps1:PowerShell completion' 'powershell:PowerShell completion (alias of ps1)')
                     _describe -t shells 'shells' shells
                     ;;
             esac
@@ -309,13 +309,17 @@ _sec_bash_completion() {
             COMPREPLY=( $(compgen -W "plan apply revert undo restore" -- ${cur}) )
             ;;
         migrate)
-            COMPREPLY=( $(compgen -W "--from --to --plan --apply --undo" -- ${cur}) )
+            if [[ ${prev} == "--from" || ${prev} == "--to" ]]; then
+                COMPREPLY=( $(compgen -W "bitwarden 1password bws vault infisical" -- ${cur}) )
+            else
+                COMPREPLY=( $(compgen -W "--from --to --plan --apply --undo" -- ${cur}) )
+            fi
             ;;
         sync)
             COMPREPLY=( $(compgen -W "-n --dry-run -y --yes" -- ${cur}) )
             ;;
         completion)
-            COMPREPLY=( $(compgen -W "zsh bash fish ps1" -- ${cur}) )
+            COMPREPLY=( $(compgen -W "zsh bash fish ps1 powershell" -- ${cur}) )
             ;;
     esac
 }
@@ -353,7 +357,9 @@ complete -f -c sec -n '__fish_sec_needs_command' -a '--help -h --version -v'
 complete -f -c sec -n '__fish_seen_subcommand_from sync' -a '-n --dry-run -y --yes'
 complete -f -c sec -n '__fish_seen_subcommand_from housekeep organize' -a 'plan apply revert undo restore'
 complete -f -c sec -n '__fish_seen_subcommand_from migrate' -a '--from --to --plan --apply --undo'
-complete -f -c sec -n '__fish_seen_subcommand_from completion' -a 'zsh bash fish ps1'
+complete -f -c sec -n '__fish_seen_subcommand_from migrate; and contains --from (commandline -opc)' -a 'bitwarden 1password bws vault infisical'
+complete -f -c sec -n '__fish_seen_subcommand_from migrate; and contains --to (commandline -opc)' -a 'bitwarden 1password bws vault infisical'
+complete -f -c sec -n '__fish_seen_subcommand_from completion' -a 'zsh bash fish ps1 powershell'
 EOF
                 exit 0
                 ;;
@@ -368,7 +374,7 @@ Register-ArgumentCompleter -Native -CommandName 'sec', 'sec.exe', 'sec.ps1' -Scr
     $flags = @('--help', '-h', '--version', '-v')
     $tenants = @('bitwarden', 'bw', '1pass', 'op', 'bws', 'vault', 'infisical', 'keychain')
 
-    $elements = $commandAst.ArgumentElements
+    $elements = $commandAst.CommandElements
     if ($elements.Count -le 1) {
         $offered = if ($commandAst.GetCommandName() -ieq 'sec.ps1') { $corecommands + @('--help', '-h') } else { $subcommands + $flags }
         $offered + $tenants | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
@@ -379,7 +385,11 @@ Register-ArgumentCompleter -Native -CommandName 'sec', 'sec.exe', 'sec.ps1' -Scr
             [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
         }
     } elseif ($elements[1].Value -eq 'migrate') {
-        @('--from', '--to', '--plan', '--apply', '--undo') | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+        $migrateWords = @('--from', '--to', '--plan', '--apply', '--undo')
+        if (($elements[-1].Value -in @('--from', '--to')) -or ($elements[-2].Value -in @('--from', '--to'))) {
+            $migrateWords = @('bitwarden', '1password', 'bws', 'vault', 'infisical')
+        }
+        $migrateWords | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
             [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
         }
     } elseif ($elements[1].Value -eq 'sync') {
@@ -387,7 +397,7 @@ Register-ArgumentCompleter -Native -CommandName 'sec', 'sec.exe', 'sec.ps1' -Scr
             [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
         }
     } elseif ($elements[1].Value -eq 'completion') {
-        @('zsh', 'bash', 'fish', 'ps1') | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+        @('zsh', 'bash', 'fish', 'ps1', 'powershell') | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
             [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
         }
     }

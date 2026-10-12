@@ -1418,6 +1418,47 @@ if ! grep -qF -- 'revert|undo|restore) cmd_revert ;;' "$REPO_ROOT/bin/sec-organi
 fi
 if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer the housekeep revert undo/restore aliases"; fi
 
+echo "[22t] every completion surface offers the powershell shell word; ps1 reads CommandElements only (issue #81)"
+_miss=0
+if ! grep -qF -- "'powershell:PowerShell completion (alias of ps1)'" <<<"$ZSH_C"; then
+    fail "zsh completion omits the powershell shell word (issue #81)"; _miss=1
+fi
+if ! grep -qF -- 'compgen -W "zsh bash fish ps1 powershell"' <<<"$BASH_C"; then
+    fail "bash completion omits the powershell shell word (issue #81)"; _miss=1
+fi
+if ! grep -qF -- "-a 'zsh bash fish ps1 powershell'" <<<"$FISH_C"; then
+    fail "fish completion omits the powershell shell word (issue #81)"; _miss=1
+fi
+if ! grep -qF -- "@('zsh', 'bash', 'fish', 'ps1', 'powershell')" <<<"$PS1_C"; then
+    fail "ps1 completion omits the powershell shell word (issue #81)"; _miss=1
+fi
+if ! grep -qF -- "\$elements = \$commandAst.CommandElements" <<<"$PS1_C"; then
+    fail "ps1 completion no longer reads CommandElements (issue #81)"; _miss=1
+fi
+if grep -qF -- "ArgumentElements" <<<"$PS1_C"; then
+    fail "ps1 completion still references the nonexistent CommandAst.ArgumentElements (issue #81)"; _miss=1
+fi
+if [[ $_miss -eq 0 ]]; then pass "all four surfaces offer the powershell shell word; ps1 reads CommandElements only"; fi
+
+echo "[22u] every completion surface offers the migrate backend value words (issue #81)"
+_miss=0
+if ! grep -qF -- "backend:(bitwarden 1password bws vault infisical)" <<<"$ZSH_C"; then
+    fail "zsh completion omits the migrate backend values (issue #81)"; _miss=1
+fi
+if ! grep -qF -- 'compgen -W "bitwarden 1password bws vault infisical"' <<<"$BASH_C"; then
+    fail "bash completion omits the migrate backend values (issue #81)"; _miss=1
+fi
+if ! grep -qF -- "-a 'bitwarden 1password bws vault infisical'" <<<"$FISH_C"; then
+    fail "fish completion omits the migrate backend values (issue #81)"; _miss=1
+fi
+if ! grep -qF -- "@('bitwarden', '1password', 'bws', 'vault', 'infisical')" <<<"$PS1_C"; then
+    fail "ps1 completion omits the migrate backend values (issue #81)"; _miss=1
+fi
+if ! grep -qF -- ':backend:(bitwarden 1password bws vault infisical)' <<<"$ZSH_C"; then
+    fail "zsh migrate backend completion drifted from the canonical list (issue #81)"; _miss=1
+fi
+if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer the migrate backend values"; fi
+
 echo "[22m] bw set: the secret value reaches jq via env and bw via stdin, never argv (#58)"
 JQGUARD="$WORK/jqguard"; mkdir -p "$JQGUARD"
 REAL_JQ="$(command -v jq)"
