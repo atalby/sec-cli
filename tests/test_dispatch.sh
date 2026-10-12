@@ -423,6 +423,31 @@ grep -qF -- "-a 'bitwarden bw 1pass op bws vault infisical keychain'" <<<"$FF" |
 grep -qF "@('bitwarden', 'bw', '1pass', 'op', 'bws', 'vault', 'infisical', 'keychain')" <<<"$PF" || { fail "ps1 completion tenant list drifted from the canonical set (issue #102)"; _miss=1; }
 if [[ $_miss -eq 0 ]]; then pass "the canonical tenant set is identical across the dispatcher, usage, and all four completions"; fi
 
+echo "[2m] every completion surface offers every dispatcher subcommand (issue #103)"
+_sub_n=15
+_to_arms="$(grep -oE '^    [a-z][a-z|-]*\)$' "$REPO_ROOT/bin/sec" | sed -E 's/^ +//; s/\)$//')"
+_to_help="$(grep -oE '^    -[a-z]\|--[a-z]+\|[a-z]+\)$' "$REPO_ROOT/bin/sec" | sed -E 's/^ +//; s/\)$//' | cut -d'|' -f3)"
+_to_sub="$(printf '%s\n%s\n' "$(tr '|' '\n' <<<"$_to_arms")" "$_to_help" | grep -v '^$' | sort -u)"
+to_z="$(sed -n '/^    local -a subcommands=(/,/^    )$/p' <<<"$ZF" | grep -oE "^        '[a-z0-9|-]+:" | tr -d " ':" | sort -u)"
+to_b="$(sed -n 's/^ *subcmds="\(.*\)"$/\1/p' <<<"$BF" | tr ' ' '\n' | grep -vE '^-' | sort -u)"
+to_f="$(grep -oE -- "-a '[a-z0-9][a-z0-9-]*' -d" <<<"$FF" | grep -oE "'[^']+'" | tr -d "'" | sort -u)"
+to_p="$(sed -n 's/.*\$subcommands = @(\(.*\))/\1/p' <<<"$PF" | grep -oE "'[^']+'" | tr -d "'" | sort -u)"
+to_miss=0
+if [[ "$(grep -c . <<<"$_to_sub")" -ne "$_sub_n" ]]; then
+    fail "dispatcher offers $(grep -c . <<<"$_to_sub") subcommand tokens, expected $_sub_n (issue #103)"; to_miss=1
+fi
+for to_pair in "zsh:$to_z" "bash:$to_b" "fish:$to_f" "ps1:$to_p"; do
+    to_name="${to_pair%%:*}"; to_list="${to_pair#*:}"
+    if [[ "$(grep -c . <<<"$to_list")" -ne "$_sub_n" ]]; then
+        fail "$to_name completion parsed $(grep -c . <<<"$to_list") subcommands, expected $_sub_n (issue #103)"; to_miss=1
+    fi
+    while IFS= read -r to_tok; do
+        [[ -n "$to_tok" ]] || continue
+        grep -qxF "$to_tok" <<<"$to_list" || { fail "$to_name completion omits the '$to_tok' subcommand the dispatcher offers (issue #103; ADAPTERS.md:264 claims every surface covers every subcommand)"; to_miss=1; }
+    done <<<"$_to_sub"
+done
+if [[ $to_miss -eq 0 ]]; then pass "every completion surface offers every dispatcher subcommand ($_sub_n tokens each, zsh/bash/fish/ps1)"; fi
+
 echo "[2g] sec get --scope rejects a flag-like folder name (issue #75)"
 assert_usage_error "sec get --scope --bogus <key>" get --scope --bogus MY_API_KEY
 assert_usage_error "sec get --scope -x <key>" get --scope -x MY_API_KEY
