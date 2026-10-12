@@ -66,6 +66,11 @@ It now reads `CommandElements`; guard [22t] pins that plus the
 pins the migrate backend values (bitwarden 1password bws vault infisical)
 on bash/fish/ps1 to match zsh (dispatch 75 -> 77 sections; the
 `completions/_sec` golden was regenerated for the zsh shells list).
+Issue #82 then completed the bare `help`/`version` subcommands the
+dispatcher accepts (`bin/sec` `-h|--help|help)`, `-v|--version|version)`)
+on all four surfaces; guard [22v] pins the parity (dispatch 77 -> 78
+sections; the `completions/_sec` golden was regenerated for the added
+zsh subcommands). The top-level `usage()` stays canonical.
 Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.

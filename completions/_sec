@@ -19,6 +19,8 @@ _sec() {
         'keep:Keep-alive / rotate Bitwarden session key (alias of rotate)'
         'setup-keychain:Store master password in Keychain for auto-rotation'
         'completion:Generate shell autocompletion script'
+        'help:Display help menu (alias of -h/--help)'
+        'version:Display version (alias of -v/--version)'
     )
 
     _arguments -C \

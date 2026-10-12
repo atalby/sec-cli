@@ -243,6 +243,8 @@ _sec() {
         'keep:Keep-alive / rotate Bitwarden session key (alias of rotate)'
         'setup-keychain:Store master password in Keychain for auto-rotation'
         'completion:Generate shell autocompletion script'
+        'help:Display help menu (alias of -h/--help)'
+        'version:Display version (alias of -v/--version)'
     )
 
     _arguments -C \
@@ -296,7 +298,7 @@ _sec_bash_completion() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    subcmds="get set create run sync housekeep organize migrate unlock rotate keep setup-keychain completion --help -h --version -v"
+    subcmds="get set create run sync housekeep organize migrate unlock rotate keep setup-keychain completion help version --help -h --version -v"
     tenants="bitwarden bw 1pass op bws vault infisical keychain"
 
     if [[ ${COMP_CWORD} -eq 1 ]]; then
@@ -351,6 +353,8 @@ complete -f -c sec -n '__fish_sec_needs_command' -a 'rotate' -d 'Keep-alive / ro
 complete -f -c sec -n '__fish_sec_needs_command' -a 'keep' -d 'Keep-alive / rotate Bitwarden session key (alias of rotate)'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'setup-keychain' -d 'Store master password in Keychain'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'completion' -d 'Generate shell autocompletion script'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'help' -d 'Display help menu (alias of -h/--help)'
+complete -f -c sec -n '__fish_sec_needs_command' -a 'version' -d 'Display version (alias of -v/--version)'
 complete -f -c sec -n '__fish_sec_needs_command' -a 'bitwarden bw 1pass op bws vault infisical keychain' -d 'Vault tenant prefix'
 complete -f -c sec -n '__fish_sec_needs_command' -a '--help -h --version -v'
 
@@ -369,7 +373,7 @@ EOF
 Register-ArgumentCompleter -Native -CommandName 'sec', 'sec.exe', 'sec.ps1' -ScriptBlock {
     param($wordToComplete, $commandAst, $cursorPosition)
 
-    $subcommands = @('get', 'set', 'create', 'run', 'sync', 'housekeep', 'organize', 'migrate', 'unlock', 'rotate', 'keep', 'setup-keychain', 'completion')
+    $subcommands = @('get', 'set', 'create', 'run', 'sync', 'housekeep', 'organize', 'migrate', 'unlock', 'rotate', 'keep', 'setup-keychain', 'completion', 'help', 'version')
     $corecommands = @('get', 'set', 'run', 'housekeep', 'migrate')
     $flags = @('--help', '-h', '--version', '-v')
     $tenants = @('bitwarden', 'bw', '1pass', 'op', 'bws', 'vault', 'infisical', 'keychain')

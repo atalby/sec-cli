@@ -1459,6 +1459,27 @@ if ! grep -qF -- ':backend:(bitwarden 1password bws vault infisical)' <<<"$ZSH_C
 fi
 if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer the migrate backend values"; fi
 
+echo "[22v] every completion surface offers the bare help/version subcommands (issue #82)"
+_miss=0
+if ! grep -qF -- "'help:Display help menu (alias of -h/--help)'" <<<"$ZSH_C" || ! grep -qF -- "'version:Display version (alias of -v/--version)'" <<<"$ZSH_C"; then
+    fail "zsh completion omits the bare help/version subcommands (issue #82)"; _miss=1
+fi
+if ! grep -qF -- 'completion help version --help' <<<"$BASH_C"; then
+    fail "bash completion omits the bare help/version subcommands (issue #82)"; _miss=1
+fi
+if ! grep -qF -- "-a 'help'" <<<"$FISH_C" || ! grep -qF -- "-a 'version'" <<<"$FISH_C"; then
+    fail "fish completion omits the bare help/version subcommands (issue #82)"; _miss=1
+fi
+if ! grep -qF -- "'completion', 'help', 'version')" <<<"$PS1_C"; then
+    fail "ps1 completion omits the bare help/version subcommands (issue #82)"; _miss=1
+fi
+if bash "$REPO_ROOT/bin/sec" help >/dev/null 2>&1 && bash "$REPO_ROOT/bin/sec" version >/dev/null 2>&1; then
+    :
+else
+    fail "sec help / sec version no longer run; the completion advertises a dead spelling (issue #82)"; _miss=1
+fi
+if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer the bare help/version subcommands"; fi
+
 echo "[22m] bw set: the secret value reaches jq via env and bw via stdin, never argv (#58)"
 JQGUARD="$WORK/jqguard"; mkdir -p "$JQGUARD"
 REAL_JQ="$(command -v jq)"

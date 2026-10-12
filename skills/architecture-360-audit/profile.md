@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (10 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (77 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (10 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (78 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#51`, `#62`) |
@@ -662,7 +662,7 @@ is real but partial — measure the gap, do not dismiss either side.
 The operator surface is `usage()` at `bin/sec:176` (the subcommand contract,
 including the `sec sync [--dry-run|--yes]` line at `bin/sec:188`), the zsh
 completion `completions/_sec`, `bin/sec.ps1`, and the docs. Measure: does
-every advertised subcommand (`subcmds` list at `bin/sec:299`) exist in the
+every advertised subcommand (`subcmds` list at `bin/sec:301`) exist in the
 dispatch, does every dispatched command appear in usage, do the completions
 agree? AGENTS §8 mandates one `[ TAG ]` line per event for machine-parsed
 stdout — measured 2026-10-11 (`grep -cE '\[ ?(OK|INFO|WARN|ERROR) ?\]'`; re-measured
