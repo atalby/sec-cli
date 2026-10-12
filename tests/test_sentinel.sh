@@ -416,6 +416,67 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[13] profile.md's cited pack taxonomy matches PACK.md (issue #86)"
+WORK_P="$(mktemp -d)"
+WORK_Q="$(mktemp -d)"
+WORK_R="$(mktemp -d)"
+for W in "$WORK_P" "$WORK_Q" "$WORK_R"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_P/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(`packs/solo-founder-governance`\s*)v\d+\.\d+\.\d+", r"\g<1>v9.9.9", s, count=1)
+if n != 1:
+    sys.exit("profile.md pack version not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_Q/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(It defines\s+)nine(\s+roles)", r"\g<1>eight\g<2>", s, count=1)
+if n != 1:
+    sys.exit("profile.md 'nine roles' phrase not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_P" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a stale pack version"
+else
+    no "coverage accepted a stale pack version"
+fi
+if grep -q "pack: profile.md cites pack v9.9.9" <<<"$OUT"; then
+    ok "coverage names the stale pack version"
+else
+    no "coverage did not name the stale pack version"
+fi
+OUT="$(cd "$WORK_Q" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a stale pack role count"
+else
+    no "coverage accepted a stale pack role count"
+fi
+if grep -q "pack: profile.md says the pack defines eight roles" <<<"$OUT"; then
+    ok "coverage names the stale pack role count"
+else
+    no "coverage did not name the stale pack role count"
+fi
+OUT="$(cd "$WORK_R" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct pack prose) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

@@ -576,6 +576,39 @@ else:
                 f"ADAPTERS.md says {_label} {_am.group(1)}, live suite has {_live}"
             )
 
+
+# --- 10. profile.md's cited pack taxonomy must match PACK.md (issue #86) ------
+pack_mismatches = []
+_NUM_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+    "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
+}
+try:
+    with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
+        _pack_text = _fh.read()
+except OSError:
+    _pack_text = ""
+if not _pack_text:
+    pack_mismatches.append("packs/solo-founder-governance/PACK.md not found")
+else:
+    _pv = re.search(r"Pack version:\s*(v\d+\.\d+\.\d+)", _pack_text)
+    _pack_version = _pv.group(1) if _pv else None
+    _pack_roles = sum(1 for _ln in _pack_text.splitlines() if re.match(r"\d+\. \*\*`Persona", _ln))
+    _cited_version = re.search(r"`packs/solo-founder-governance`\s*(v\d+\.\d+\.\d+)", profile_text)
+    _cited_roles = re.search(r"It defines\s+(\w+)\s+roles", profile_text)
+    if not _cited_version:
+        pack_mismatches.append("profile.md cites no packs/solo-founder-governance version")
+    elif _pack_version and _cited_version.group(1) != _pack_version:
+        pack_mismatches.append(
+            f"profile.md cites pack {_cited_version.group(1)}, PACK.md declares {_pack_version}"
+        )
+    if not _cited_roles:
+        pack_mismatches.append("profile.md states no pack role count")
+    elif _NUM_WORDS.get(_cited_roles.group(1)) != _pack_roles:
+        pack_mismatches.append(
+            f"profile.md says the pack defines {_cited_roles.group(1)} roles, PACK.md enumerates {_pack_roles}"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -635,6 +668,10 @@ if adapters_mismatches:
     failures.append(f"{len(adapters_mismatches)} ADAPTERS.md suite count(s) drifted from the live suites")
     for _m in adapters_mismatches:
         print(f"{ERROR} adapters suite: {_m}")
+if pack_mismatches:
+    failures.append(f"{len(pack_mismatches)} pack-taxonomy drift(s) vs packs/solo-founder-governance/PACK.md")
+    for _m in pack_mismatches:
+        print(f"{ERROR} pack: {_m}")
 
 if failures:
     for f in failures:
@@ -647,6 +684,7 @@ print(f"{OK} narrative history: HISTORY.md is a {history_bytes}-byte summary, {l
 print(f"{OK} suite counts: profile.md matches the live suites ({', '.join(f'{s} {n}' for s, n in sorted(suite_counts.items()))})")
 print(f"{OK} census counts: profile.md matches the live tree (markdown, python, config, [ TAG ] per-file)")
 print(f"{OK} adapters suite snapshot: ADAPTERS.md 'current suites' matches the live suites")
+print(f"{OK} pack prose: profile.md's cited pack version + role count match PACK.md")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

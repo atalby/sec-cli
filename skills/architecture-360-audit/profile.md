@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (12 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (79 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (13 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (13 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (79 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 2 open issues at the time of this profile (`#51`, `#67`) |
@@ -580,11 +580,11 @@ claim is a backticked identifier or a double-quoted phrase (issue #66); since
 issue #35 it also fails on any identifier-shaped claim that exists nowhere in
 the tree.
 
-Declared-persona taxonomy: `packs/solo-founder-governance` v1.2.0 was read
+Declared-persona taxonomy: `packs/solo-founder-governance` v1.4.0 was read
 before deriving (`packs/solo-founder-governance/PACK.md:24` binds the repo to
 `Persona: Human Systems Architect (Solo Founder / Lead Engineer)`, and
 `ADAPTERS.md:28` names that persona the single final approver). It defines
-eight roles; this audit keeps the twelve fixed dimensions (fleet-diffable),
+nine roles; this audit keeps the twelve fixed dimensions (fleet-diffable),
 borrows ownership names from the pack where they fit — Environment &
 Workstation for the delivery surfaces, Multi-Project Product & Security
 Auditor for security, Documentation Curator for doc alignment, Codebase

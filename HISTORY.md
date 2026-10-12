@@ -86,6 +86,9 @@ closed against the live tree — the same drift mode #46/#48/#49 addressed,
 now closed for the census counts too.
 Issue #85 then guarded ADAPTERS.md's `current suites:` snapshot (fixed
 twice: #79/#84) via `sentinel.sh` section 9 and `test_sentinel.sh` [12].
+Issue #86 then fixed the audit profile's stale pack taxonomy (cited
+solo-founder-governance v1.2.0/'eight roles' after #1 re-synced it to
+v1.4.0/9 personas) and guarded it (sentinel section 10 + test [13]).
 Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.
@@ -96,26 +99,22 @@ split losslessly into per-date archives under `history/`, this summary
 was reduced to a few sentences, and `sentinel.sh coverage` gained a guard
 so the file cannot silently re-bloat. The day then swept
 dispatcher/completion/argv/doc-honesty residuals (#40–#66): completion
-alias parity and ps1 honest-scoping (#56/#57), the top-level flag surface
-on fish/ps1 (#60), the `sec.conf` parser honoring commented-out/partial
-keys (#55), the runtime-dependency sentence naming `jq`'s real reach
-(#54), the sync-controller provenance text (#53), the session keeper's
-keep-alive/setup paths no longer re-exposing the master password on argv
-(#52), and the argv sweep that moved the secret value off
+alias parity + ps1 honest-scoping (#56/#57), the top-level fish/ps1 flag
+surface (#60), the `sec.conf` parser honoring commented-out keys (#55),
+`jq`'s real dependency reach (#54), the sync-controller provenance text
+(#53), the keeper's keep-alive/setup no longer re-exposing the master
+password on argv (#52), and the argv sweep moving the secret off
 `jq`/`bw`/`op`/`vault`/`infisical` child argv (#58/#59 — only `bws
-secret create` retains argv, a vendor limit). It also covered the
-sync-controller GitLab write path with a create-on-404 upsert (#61),
-pinned the GCP create-if-absent branch (#62), removed dead pre-commit
-surface (#63), corrected the 360-audit skill's own stale
-`SEC_TEST_DISPATCH`/pre-commit claims (#65), hardened `sentinel.sh
-citations` to content-validate bare prose anchors (#66), and fixed a
-baseline-red reproducibility defect — a local `.venv/` was not
+secret create` retains argv, a vendor limit). It also covered the GitLab sync
+write path with a create-on-404 upsert (#61), pinned the GCP
+create-if-absent branch (#62), removed dead pre-commit surface (#63),
+corrected the 360-audit skill's stale `SEC_TEST_DISPATCH` claims (#65),
+hardened `sentinel.sh citations` (#66), and fixed a baseline-red defect — a local `.venv/` was not
 gitignored, so the sentinel control copies swept it into the tracked set
 and failed the coverage denominator (#68; `.venv/`/`venv/` are now
 ignored). A fresh full 360 audit (#67) is queued for the next interactive
 session because the audit skill's Step-1 gate requires an explicit human
-scope approval. All five bash suites pass (install 9 / sync_guard 16 /
-write_honesty 11 / sentinel 10 / dispatch 70) and the pytest mirror (29
+scope approval. All five bash suites pass; the pytest mirror (29
 tests) passes. The GitHub tracker holds #51 (hub-side) and the queued
 #67. Each issue's full narrative lives in `history/2026-10-11.md` /
 `history/2026-10-12.md`. Next: advance the highest-value unfinished
