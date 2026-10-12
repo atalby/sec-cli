@@ -1,9 +1,9 @@
 # Resume point - sec-cli
 
-Written 2026-10-12 after closing #108 (commit `9750ef5`, resume `3df3b0a`)
-and #107 (commit `1d61880`, resume `e1dffcc`), both pushed. Working tree clean
-on `main`; `origin/main` == local `main`. This lane shipped a long run of
-guard/fix/perf units (#97..#108), all CI-green.
+Written 2026-10-12 after closing #109 (commit `eaf4c0a`), #108 (commit
+`9750ef5`) and #107 (commit `1d61880`), all pushed. Working tree clean on
+`main`; `origin/main` == local `main`. This lane shipped a long run of
+guard/fix/perf units (#97..#109), all CI-green.
 
 There is now **no open issue with an autonomous in-repo remedy**. The remaining
 open items are hub-side or human-gated (see below). If the lane is run again,
@@ -37,6 +37,10 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #109 `test(sentinel)` -> `eaf4c0a` - sentinel section 17 now guards RESUME.md's
+  suite-count line + `Sentinel = N cases / M assertions` total against the live
+  suites (they were hand-bumped, unguarded). Case [25] proves it. Mirrors
+  24 -> 25 cases / 250 -> 260 assertions.
 - #108 `fix(migrate)` -> `9750ef5` (resume `3df3b0a`) - sec migrate's source
   set (bitwarden/bw, 1password/op, bws) vs destination set (+infisical +vault)
   now agree across all four completions, `sec-migrator` usage and
