@@ -259,7 +259,7 @@ _sec() {
         args)
             case $words[1] in
                 housekeep|organize)
-                    local -a hk_cmds=('plan:Generate ML categorization plan' 'apply:Execute organization with pre-apply backup' 'revert:Rollback last housekeeping operation')
+                    local -a hk_cmds=('plan:Generate ML categorization plan' 'apply:Execute organization with pre-apply backup' 'revert:Rollback last housekeeping operation' 'undo:Rollback last housekeeping operation (alias of revert)' 'restore:Rollback last housekeeping operation (alias of revert)')
                     _describe -t hk_cmds 'housekeep commands' hk_cmds
                     ;;
                 migrate)
@@ -306,7 +306,7 @@ _sec_bash_completion() {
 
     case "${COMP_WORDS[1]}" in
         housekeep|organize)
-            COMPREPLY=( $(compgen -W "plan apply revert" -- ${cur}) )
+            COMPREPLY=( $(compgen -W "plan apply revert undo restore" -- ${cur}) )
             ;;
         migrate)
             COMPREPLY=( $(compgen -W "--from --to --plan --apply --undo" -- ${cur}) )
@@ -351,7 +351,7 @@ complete -f -c sec -n '__fish_sec_needs_command' -a 'bitwarden bw 1pass op bws v
 complete -f -c sec -n '__fish_sec_needs_command' -a '--help -h --version -v'
 
 complete -f -c sec -n '__fish_seen_subcommand_from sync' -a '-n --dry-run -y --yes'
-complete -f -c sec -n '__fish_seen_subcommand_from housekeep organize' -a 'plan apply revert'
+complete -f -c sec -n '__fish_seen_subcommand_from housekeep organize' -a 'plan apply revert undo restore'
 complete -f -c sec -n '__fish_seen_subcommand_from migrate' -a '--from --to --plan --apply --undo'
 complete -f -c sec -n '__fish_seen_subcommand_from completion' -a 'zsh bash fish ps1'
 EOF
@@ -375,7 +375,7 @@ Register-ArgumentCompleter -Native -CommandName 'sec', 'sec.exe', 'sec.ps1' -Scr
             [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
         }
     } elseif ($elements[1].Value -in @('housekeep', 'organize')) {
-        @('plan', 'apply', 'revert') | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+        @('plan', 'apply', 'revert', 'undo', 'restore') | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
             [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
         }
     } elseif ($elements[1].Value -eq 'migrate') {

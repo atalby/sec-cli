@@ -35,7 +35,7 @@ _sec() {
         args)
             case $words[1] in
                 housekeep|organize)
-                    local -a hk_cmds=('plan:Generate ML categorization plan' 'apply:Execute organization with pre-apply backup' 'revert:Rollback last housekeeping operation')
+                    local -a hk_cmds=('plan:Generate ML categorization plan' 'apply:Execute organization with pre-apply backup' 'revert:Rollback last housekeeping operation' 'undo:Rollback last housekeeping operation (alias of revert)' 'restore:Rollback last housekeeping operation (alias of revert)')
                     _describe -t hk_cmds 'housekeep commands' hk_cmds
                     ;;
                 migrate)

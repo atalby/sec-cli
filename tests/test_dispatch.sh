@@ -1399,6 +1399,25 @@ if ! grep -qF -- "-in @('housekeep', 'organize')" <<<"$PS1_C"; then
 fi
 if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces route organize to the housekeep subcommands"; fi
 
+echo "[22s] every completion surface offers the housekeep revert undo/restore aliases (issue #80)"
+_miss=0
+if ! grep -qF -- "'revert:Rollback last housekeeping operation' 'undo:Rollback last housekeeping operation (alias of revert)' 'restore:Rollback last housekeeping operation (alias of revert)'" <<<"$ZSH_C"; then
+    fail "zsh housekeep completion omits the undo/restore aliases (issue #80)"; _miss=1
+fi
+if ! grep -qF -- 'compgen -W "plan apply revert undo restore"' <<<"$BASH_C"; then
+    fail "bash housekeep completion omits the undo/restore aliases (issue #80)"; _miss=1
+fi
+if ! grep -qF -- "-a 'plan apply revert undo restore'" <<<"$FISH_C"; then
+    fail "fish housekeep completion omits the undo/restore aliases (issue #80)"; _miss=1
+fi
+if ! grep -qF -- "@('plan', 'apply', 'revert', 'undo', 'restore')" <<<"$PS1_C"; then
+    fail "ps1 housekeep completion omits the undo/restore aliases (issue #80)"; _miss=1
+fi
+if ! grep -qF -- 'revert|undo|restore) cmd_revert ;;' "$REPO_ROOT/bin/sec-organizer"; then
+    fail "sec-organizer no longer maps undo/restore to revert; the completion is stale (issue #80)"; _miss=1
+fi
+if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer the housekeep revert undo/restore aliases"; fi
+
 echo "[22m] bw set: the secret value reaches jq via env and bw via stdin, never argv (#58)"
 JQGUARD="$WORK/jqguard"; mkdir -p "$JQGUARD"
 REAL_JQ="$(command -v jq)"

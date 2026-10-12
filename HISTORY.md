@@ -45,13 +45,18 @@ profile.md + ADAPTERS counts updated; the ADAPTERS "Last updated" stamp
 and stale suite snapshot were truth-up'd in the same pass).
 Issue #79 closed the sibling gap in the same class: `sec completion fish`
 offered no housekeep subcommands after the `organize` alias (bash/zsh/ps1
-did); guard [22r] pins it (dispatch 73 -> 74 sections). Issue #80 was
-opened and held for a human decision — the housekeep arm accepts
-`undo`/`restore` aliases but the help text and all four completions
-advertise only `plan/apply/revert`.
+did); guard [22r] pins it (dispatch 73 -> 74 sections). Issue #80 then
+resolved the last member of that class consistently: the housekeep arm
+accepts `undo`/`restore` as aliases of `revert` (sec-organizer has mapped
+them since v1.0.0), but all four completions advertised only
+`plan/apply/revert`; the aliases are now offered in the housekeep completion
+on every surface — matching how the create/organize/keep aliases are
+advertised — with guard [22s] pinning the parity and the checked-in
+`completions/_sec` golden regenerated (dispatch 74 -> 75 sections). The
+`sec housekeep --help` / error text stays canonical (plan/apply/revert),
+consistent with the top-level help, which also lists no aliases.
 Open items: #67 (360 audit — needs
-human scope approval), #51 (hub-side, tracked upstream), #80 (housekeep
-undo/restore advertise-vs-accept — held for a human decision). Full narrative:
+human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
