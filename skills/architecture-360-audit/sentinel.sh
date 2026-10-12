@@ -549,6 +549,33 @@ else:
             f"profile.md's [ TAG ] census says {_claim_nonzero} emit tagged, live tree has {_live_nonzero}"
         )
 
+
+# --- 9. ADAPTERS.md's mirrored suite snapshot must match the live suites ------
+adapters_mismatches = []
+try:
+    with open(os.path.join(repo, "ADAPTERS.md"), encoding="utf-8") as _fh:
+        _cs_scope = re.search(r"current suites:([^;]*)", _fh.read())
+except OSError:
+    _cs_scope = None
+if not _cs_scope:
+    adapters_mismatches.append("ADAPTERS.md carries no 'current suites:' snapshot line")
+else:
+    for _label, _key in (
+        ("dispatch", "dispatch"),
+        ("write-honesty", "write_honesty"),
+        ("sentinel", "sentinel"),
+        ("sync-guard", "sync_guard"),
+        ("install", "install"),
+    ):
+        _am = re.search(r"%s\s+(\d+)" % re.escape(_label), _cs_scope.group(1))
+        _live = suite_counts.get(_key)
+        if not _am:
+            adapters_mismatches.append(f"ADAPTERS.md 'current suites' names no count for {_label}")
+        elif _live is not None and int(_am.group(1)) != _live:
+            adapters_mismatches.append(
+                f"ADAPTERS.md says {_label} {_am.group(1)}, live suite has {_live}"
+            )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -604,6 +631,10 @@ if census_mismatches:
     failures.append(f"{len(census_mismatches)} cited census count(s) drifted from the live tree")
     for _m in census_mismatches:
         print(f"{ERROR} census: {_m}")
+if adapters_mismatches:
+    failures.append(f"{len(adapters_mismatches)} ADAPTERS.md suite count(s) drifted from the live suites")
+    for _m in adapters_mismatches:
+        print(f"{ERROR} adapters suite: {_m}")
 
 if failures:
     for f in failures:
@@ -615,6 +646,7 @@ print(f"{OK} coverage denominator: profile.md states {denominator} tracked files
 print(f"{OK} narrative history: HISTORY.md is a {history_bytes}-byte summary, {len(archived)} archive(s) linked under history/")
 print(f"{OK} suite counts: profile.md matches the live suites ({', '.join(f'{s} {n}' for s, n in sorted(suite_counts.items()))})")
 print(f"{OK} census counts: profile.md matches the live tree (markdown, python, config, [ TAG ] per-file)")
+print(f"{OK} adapters suite snapshot: ADAPTERS.md 'current suites' matches the live suites")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

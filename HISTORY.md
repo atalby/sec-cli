@@ -84,6 +84,8 @@ re-measured, and `sentinel.sh coverage` gained a section-8 guard
 (`test_sentinel.sh` case [11] proves it RED/GREEN) so both blocks fail
 closed against the live tree — the same drift mode #46/#48/#49 addressed,
 now closed for the census counts too.
+Issue #85 then guarded ADAPTERS.md's `current suites:` snapshot (fixed
+twice: #79/#84) via `sentinel.sh` section 9 and `test_sentinel.sh` [12].
 Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.

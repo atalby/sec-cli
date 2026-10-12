@@ -378,6 +378,44 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[12] ADAPTERS.md's 'current suites' snapshot matches the live suites (issue #85)"
+WORK_N="$(mktemp -d)"
+WORK_O="$(mktemp -d)"
+for W in "$WORK_N" "$WORK_O"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_N/ADAPTERS.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(current suites:\s*dispatch\s+)\d+", r"\g<1>999", s, count=1)
+if n != 1:
+    sys.exit("ADAPTERS 'current suites' dispatch count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_N" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted ADAPTERS suite snapshot"
+else
+    no "coverage accepted a drifted ADAPTERS suite snapshot"
+fi
+if grep -q "ADAPTERS.md says dispatch 999" <<<"$OUT"; then
+    ok "coverage names the drifted ADAPTERS suite snapshot"
+else
+    no "coverage did not name the drifted ADAPTERS suite snapshot"
+fi
+OUT="$(cd "$WORK_O" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct ADAPTERS snapshot) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
