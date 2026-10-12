@@ -1,7 +1,7 @@
 # Resume point — sec-cli
 
-Written 2026-10-12 after closing #90. Working tree clean, `main` pushed at
-`c4e49e8`.
+Written 2026-10-12 after closing #91. Working tree clean, `main` pushed at
+`8457377`.
 
 ## Where things stand
 
@@ -15,28 +15,31 @@ Written 2026-10-12 after closing #90. Working tree clean, `main` pushed at
   tracked upstream in the hyer hub, unfixable in-repo).
 - No autonomous in-repo work item remains.
 
-## Just shipped (#90 — the census-drift class is now fully closed)
+## Just shipped (#91 — the last unguarded-but-correct suite counts)
 
-A sweep of agent-facing markdown for numeric claims that no sentinel section
-enforces found two still-unguarded ones, both drifted and both **wrong at
-birth**, not merely stale:
+The #90 markdown sweep also surfaced three claims that were **correct but
+unguarded** — the bash-suite count, stated three times, with no sentinel section
+enforcing any of them (`git ls-files 'tests/*.sh' | wc -l` = 5):
 
-- `profile.md:12` claimed `bin/sec` and "five sibling dispatchers"; live is 7.
-  This was a same-file self-contradiction — `profile.md:669` already said
-  "7 of the 8 tracked `bin/` entries", and section 8 guards that line.
-- `ADAPTERS.md:265` claimed "the four helper scripts against stubs"; live is 7
-  (five executed, `sec-migrator` via the `sec migrate` arm, and
-  `sec-sync-controller.py` statically only).
+- `profile.md:13` — ``five suites under `tests/` `` (the same sentence whose
+  Python-file count section 8 *does* guard, making the suite count the only
+  unguarded number in it)
+- `profile.md:23` (CI table row) — `runs all five suites`
+- `docs/ARCHITECTURE.md:19` — `five zero-dependency bash suites (...)`
 
-The unenforced invariant underneath both: **every tracked `bin/` helper is
-referenced by the dispatch suite at all**. Helper coverage had grown 2 -> 7
-with no number and no guard moving. Sentinel section 13 now asserts all three
-things (every helper referenced; ADAPTERS.md's word-form count matches;
-profile.md's word-form count matches). Test case [17] covers each.
+Sentinel **section 14** re-derives the count from tracked `tests/*.sh` and checks
+all three, **plus a fourth check the others need**: `ARCHITECTURE.md`'s cited
+suite *names*, compared bidirectionally against the tracked basenames. That half
+is load-bearing — a renamed suite keeps the count at 5, so a count-only guard
+would never notice. Test case T4 exists only to exercise it. Test case [18]
+covers all four; sentinel is now 18 cases / 84 assertions.
 
-**Class status: #46/#48/#49/#84-#90 all carry a guard. Nothing in this class is
-open.** Any remaining numeric-drift risk is prose with no guard yet — worth a
-`sentinel.sh coverage` section each, filed as a real issue first (AGENTS.md §4).
+No prose correction was needed (unlike #84-#90, every claim was already true).
+
+**Class status: #46/#48/#49/#84-#91 all carry a guard.** Sweep candidates still
+open are `packs/README.md`'s "9-persona" count and `AGENTS.md`'s "4 core
+execution traits" — both inside **hub-synced** files, so guard them from the
+project side or file hub-side, never hand-edit locally.
 
 ## Ownership boundaries (checked before editing #90)
 
@@ -53,10 +56,10 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ./skills/architecture-360-audit/sentinel.sh citations                                        # exit 0
 ```
 
-Suites: dispatch 79 sections / 237 assertions, install 9 / 30, sentinel 17 / 75,
+Suites: dispatch 79 sections / 237 assertions, install 9 / 30, sentinel 18 / 84,
 sync_guard 16 / 44, write_honesty 13 / 49. 108 tracked files, 40 manifest rows,
-12 personas, 7 tracked `bin/` sibling helpers, HISTORY.md 8135 bytes against
-the 8192-byte budget.
+12 personas, 7 tracked `bin/` sibling helpers, 5 bash suites, 23 skill dirs /
+35 registry rows, HISTORY.md 6671 bytes against the 8192-byte budget.
 
 ## Gotchas worth not rediscovering
 
@@ -86,6 +89,18 @@ the 8192-byte budget.
    time; when the gate warns, a small `--allow-empty` follow-up recording the
    disposition is the cheap fix (see `c4e49e8`), and it keeps the main
    evidence commit unamended.
+7. **Bump suite-count mirrors BEFORE capturing RED.** A new test case bumps the
+   suite's case count, and every control copy reads those mirrors. If they are
+   stale, the control fails for the wrong reason and RED is not isolated (hit
+   both in #90 and #91).
+8. **Check compaction seams before committing.** Rewriting a HISTORY.md clause
+   that ends mid-sentence leaves a dangling fragment (hit in #91: `...of
+   `revert`.` / `them since v1.0.0), but all four completions...`). Read the
+   lines either side of every edit.
+9. **`gh issue close --comment` with a long heredoc can hang** past the shell
+   timeout and leave the issue OPEN. Write the body to a file, then
+   `gh issue comment N --body-file <f>` followed by a separate
+   `gh issue close N --reason completed`, and verify the state afterwards.
 
 ## Next autonomous work
 
@@ -93,3 +108,5 @@ None outstanding in-repo. #67 needs an explicit human scope approval; #51 lives
 in the hub repo. The productive pattern, if continuing, is the drift sweep:
 grep agent-facing markdown for structural counts, measure each against the live
 tree, file an issue, then add a sentinel section plus a test case per claim.
+Note that a count claim and a *name list* behind it are two guards, not one —
+see the `ARCHITECTURE.md` suite-name check in section 14.
