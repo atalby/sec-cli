@@ -77,6 +77,12 @@ the Gmail fixture classifies `cloud/gcp` / 50 / `[token:google]` and
 PROD_DB `database` / 81 / `[regex:postgres://, token:db, token:postgres]` —
 now pinned by dispatch section [16-honesty] (dispatch 79 -> 80 sections);
 the classifier taxonomy was left unchanged (Gmail is a Google property).
+Issue #94 then guarded the last three correct-but-unguarded structural
+prose claims: docs/MULTI_TENANCY.md's "eight fixed aliases" list vs
+bin/sec's tenant regex, profile.md's CI row ("full commit SHA of v4.2.2")
+vs the pinned `actions/checkout`, and OPERATOR_MANUAL.md's "four core
+principles" count vs its numbered list (section 15; sentinel 18 -> 19
+cases).
 Open items: #67 (360 audit —
 needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:

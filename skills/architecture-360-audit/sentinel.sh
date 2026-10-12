@@ -842,6 +842,83 @@ else:
             f"cited-but-absent {_orphan_cited or 'none'}, present-but-uncited {_uncited_live or 'none'}"
         )
 
+# --- 15. structural prose claims (tenant aliases, CI checkout pin, principle count) must match (#94) --
+struct_mismatches = []
+
+try:
+    with open(os.path.join(repo, "docs", "MULTI_TENANCY.md"), encoding="utf-8") as _fh:
+        _multi_text = _fh.read()
+except OSError:
+    _multi_text = ""
+try:
+    with open(os.path.join(repo, "docs", "OPERATOR_MANUAL.md"), encoding="utf-8") as _fh:
+        _op_text = _fh.read()
+except OSError:
+    _op_text = ""
+try:
+    with open(os.path.join(repo, "bin", "sec"), encoding="utf-8") as _fh:
+        _sec_text = _fh.read()
+except OSError:
+    _sec_text = ""
+try:
+    with open(os.path.join(repo, ".github", "workflows", "test.yml"), encoding="utf-8") as _fh:
+        _wf_text = _fh.read()
+except OSError:
+    _wf_text = ""
+
+_live_aliases = None
+_sec_alias_m = re.search(r"=~\s*\^\(([a-z0-9|]+)\)\$", _sec_text)
+if _sec_alias_m:
+    _live_aliases = set(_sec_alias_m.group(1).split("|"))
+_multi_m = re.search(r"the (\w+) fixed aliases \(([^)]+)\)", _multi_text)
+if not _multi_m:
+    struct_mismatches.append("docs/MULTI_TENANCY.md carries no 'N fixed aliases (...)' claim")
+elif _live_aliases is None:
+    struct_mismatches.append("bin/sec carries no tenant-alias regex to compare MULTI_TENANCY.md against")
+else:
+    _cited_aliases = {
+        _a.strip()
+        for _grp in _multi_m.group(2).split(",")
+        for _a in _grp.split("/")
+        if _a.strip()
+    }
+    if _NUM_WORDS.get(_multi_m.group(1)) != len(_live_aliases):
+        struct_mismatches.append(
+            f"MULTI_TENANCY.md says {_multi_m.group(1)} fixed aliases, live bin/sec has {len(_live_aliases)}"
+        )
+    if _cited_aliases != _live_aliases:
+        struct_mismatches.append(
+            "MULTI_TENANCY.md's alias list is not the live bin/sec alias set: "
+            f"cited-only {sorted(_cited_aliases - _live_aliases) or 'none'}, "
+            f"live-only {sorted(_live_aliases - _cited_aliases) or 'none'}"
+        )
+
+_wf_m = re.search(r"actions/checkout@([0-9a-f]{7,40})(?:\s*#\s*(\S+))?", _wf_text)
+_prof_pin_m = re.search(r"actions/checkout`?\s*pinned to the full commit SHA of (v\d+\.\d+\.\d+)", profile_text)
+if not _prof_pin_m:
+    struct_mismatches.append("profile.md carries no 'actions/checkout pinned to the full commit SHA of vX' claim")
+elif not _wf_m:
+    struct_mismatches.append("workflow does not pin actions/checkout, contradicting profile.md")
+else:
+    _wf_sha, _wf_ver = _wf_m.group(1), _wf_m.group(2)
+    if len(_wf_sha) != 40:
+        struct_mismatches.append(
+            f"workflow pins actions/checkout to '{_wf_sha}', not a full 40-char commit SHA as profile.md claims"
+        )
+    if _wf_ver != _prof_pin_m.group(1):
+        struct_mismatches.append(
+            f"profile.md cites actions/checkout version {_prof_pin_m.group(1)}, workflow pins {_wf_ver or 'untagged'}"
+        )
+
+_op_m = re.search(r"designed around (\w+) core principles", _op_text)
+_live_principles = len(re.findall(r"^\d+\. \*\*", _op_text, re.M))
+if not _op_m:
+    struct_mismatches.append("docs/OPERATOR_MANUAL.md carries no 'N core principles' claim")
+elif _NUM_WORDS.get(_op_m.group(1)) != _live_principles:
+    struct_mismatches.append(
+        f"OPERATOR_MANUAL.md says {_op_m.group(1)} core principles, live doc lists {_live_principles}"
+    )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -928,6 +1005,10 @@ if suite_census_mismatches:
     )
     for _m in suite_census_mismatches:
         print(f"{ERROR} suite census: {_m}")
+if struct_mismatches:
+    failures.append(f"{len(struct_mismatches)} structural prose claim(s) drifted from the live tree")
+    for _m in struct_mismatches:
+        print(f"{ERROR} structural prose: {_m}")
 
 if failures:
     for f in failures:
@@ -945,6 +1026,7 @@ print(f"{OK} producer census: docs/ARCHITECTURE.md's producer count + list match
 print(f"{OK} skills registry: ADAPTERS.md's census matches {len(_live_skill_dirs)} live skill dir(s) + {len(_registry_rows)} REGISTRY.md row(s)")
 print(f"{OK} bin/ helper census: profile.md + ADAPTERS.md match {_live_bin_helpers} tracked sibling helper(s), all referenced by tests/test_dispatch.sh")
 print(f"{OK} suite census: profile.md + ARCHITECTURE.md match {_live_suite_count} tracked bash suite(s), ARCHITECTURE.md's suite list matches the tracked names")
+print(f"{OK} structural prose: MULTI_TENANCY.md tenant aliases + profile.md CI checkout pin + OPERATOR_MANUAL.md principle count match the live tree")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

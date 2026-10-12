@@ -899,6 +899,119 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[19] structural prose claims (tenant aliases, CI checkout pin, principle count) match the live tree (issue #94)"
+WORK_U1="$(mktemp -d)"
+WORK_U2="$(mktemp -d)"
+WORK_U3="$(mktemp -d)"
+WORK_U4="$(mktemp -d)"
+WORK_UCTRL="$(mktemp -d)"
+for W in "$WORK_U1" "$WORK_U2" "$WORK_U3" "$WORK_U4" "$WORK_UCTRL"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_U1/docs/MULTI_TENANCY.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"the (\w+) fixed aliases", "the nine fixed aliases", s)
+if n != 1:
+    sys.exit("MULTI_TENANCY alias count word not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_U2/docs/MULTI_TENANCY.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"1pass/op, bws, vault, infisical, keychain\)",
+                "1pass/op, bws, vault, infisical)", s)
+if n != 1:
+    sys.exit("MULTI_TENANCY alias list not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_U3/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(full commit SHA of )v4\.2\.2", r"\g<1>v9.9.9", s)
+if n != 1:
+    sys.exit("profile.md CI checkout version not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_U4/docs/OPERATOR_MANUAL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"designed around (\w+) core principles",
+                "designed around five core principles", s)
+if n != 1:
+    sys.exit("OPERATOR_MANUAL principle count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_U1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted MULTI_TENANCY.md alias count"
+else
+    no "coverage accepted a drifted MULTI_TENANCY.md alias count"
+fi
+if grep -q "MULTI_TENANCY.md says nine fixed aliases, live bin/sec has 8" <<<"$OUT"; then
+    ok "coverage names the drifted MULTI_TENANCY.md alias count"
+else
+    no "coverage did not name the drifted MULTI_TENANCY.md alias count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_U2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted MULTI_TENANCY.md alias list"
+else
+    no "coverage accepted a drifted MULTI_TENANCY.md alias list"
+fi
+if grep -q "MULTI_TENANCY.md's alias list is not the live bin/sec alias set" <<<"$OUT"; then
+    ok "coverage names the drifted MULTI_TENANCY.md alias list"
+else
+    no "coverage did not name the drifted MULTI_TENANCY.md alias list"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_U3" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted profile.md CI checkout version"
+else
+    no "coverage accepted a drifted profile.md CI checkout version"
+fi
+if grep -q "profile.md cites actions/checkout version v9.9.9, workflow pins v4.2.2" <<<"$OUT"; then
+    ok "coverage names the drifted profile.md CI checkout version"
+else
+    no "coverage did not name the drifted profile.md CI checkout version"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_U4" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted OPERATOR_MANUAL.md principle count"
+else
+    no "coverage accepted a drifted OPERATOR_MANUAL.md principle count"
+fi
+if grep -q "OPERATOR_MANUAL.md says five core principles, live doc lists 4" <<<"$OUT"; then
+    ok "coverage names the drifted OPERATOR_MANUAL.md principle count"
+else
+    no "coverage did not name the drifted OPERATOR_MANUAL.md principle count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_UCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct structural prose claims) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

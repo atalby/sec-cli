@@ -1,7 +1,7 @@
 # Resume point — sec-cli
 
-Written 2026-10-12 after closing #93. Working tree clean on `main`; last push
-will be the #93 docs commit.
+Written 2026-10-12 after closing #94. Working tree clean on `main`; last push
+will be the #94 docs commit.
 
 ## Where things stand
 
@@ -15,6 +15,32 @@ will be the #93 docs commit.
   upstream in the hyer hub, unfixable in-repo), and **#92** (hub-side: two
   unguarded counts in hub-owned files, filed by the #90/#91 sweep).
 - No autonomous in-repo work item remains.
+
+## Just shipped (#94 — the last correct-but-unguarded structural prose claims)
+
+The post-#93 sweep found three claims **correct but unguarded** in
+project-owned docs (the #85/#87/#88/#91 class; ownership checked per gotcha 10):
+
+- `docs/MULTI_TENANCY.md:43` — "the eight fixed aliases
+  (bitwarden/bw, 1pass/op, bws, vault, infisical, keychain)" vs `bin/sec:79`'s
+  tenant regex (8 tokens)
+- `profile.md:23` (CI row) — "`actions/checkout` pinned to the full commit SHA
+  of v4.2.2" vs `.github/workflows/test.yml:13`
+  (`actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2`)
+- `docs/OPERATOR_MANUAL.md:9` — "four core principles" vs its 4 numbered items
+
+Sentinel **section 15** derives the live tenant tokens from `bin/sec`, parses
+the workflow's pinned SHA+version comment, and counts the manual's numbered
+list; it checks each claim's count word (via `_NUM_WORDS`) **and** the alias
+*set* (a count-only guard would miss a renamed alias). Test case [19] covers
+four corruptions plus a control; sentinel is now 19 cases / 93 assertions.
+
+### Defect found while doing this
+
+The profile CI-version regex first used `(\S+?)[,;.\s]`, and `.` in the
+terminator class made the lazy match stop at `v4` for `v4.2.2,` — a spurious
+mismatch caught by case [19] in the first GREEN run (17 failures). Fixed by
+capturing the version as `(v\d+\.\d+\.\d+)`.
 
 ## Just shipped (#93 — README housekeep sample was stale vs the classifier)
 
@@ -72,7 +98,7 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ./skills/architecture-360-audit/sentinel.sh citations                                        # exit 0
 ```
 
-Suites: dispatch 80 sections / 239 assertions, install 9 / 30, sentinel 18 / 84,
+Suites: dispatch 80 sections / 239 assertions, install 9 / 30, sentinel 19 / 93,
 sync_guard 16 / 44, write_honesty 13 / 49. 108 tracked files, 40 manifest rows,
 12 personas, 7 tracked `bin/` sibling helpers, 5 bash suites, 23 skill dirs /
 35 registry rows, HISTORY.md within the 8192-byte budget (sentinel section 6
