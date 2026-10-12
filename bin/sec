@@ -260,6 +260,8 @@ _sec() {
             ;;
         args)
             case $words[1] in
+                get) _arguments '--scope[Scope lookup to a bw folder or op vault]:scope name:' ;;
+                set|create) _arguments '--type[Secret item type]:type:(login note card identity)' ;;
                 housekeep|organize)
                     local -a hk_cmds=('plan:Generate ML categorization plan' 'apply:Execute organization with pre-apply backup' 'revert:Rollback last housekeeping operation' 'undo:Rollback last housekeeping operation (alias of revert)' 'restore:Rollback last housekeeping operation (alias of revert)')
                     _describe -t hk_cmds 'housekeep commands' hk_cmds
@@ -307,6 +309,16 @@ _sec_bash_completion() {
     fi
 
     case "${COMP_WORDS[1]}" in
+        get)
+            COMPREPLY=( $(compgen -W "--scope" -- ${cur}) )
+            ;;
+        set|create)
+            if [[ ${prev} == "--type" ]]; then
+                COMPREPLY=( $(compgen -W "login note card identity" -- ${cur}) )
+            else
+                COMPREPLY=( $(compgen -W "--type" -- ${cur}) )
+            fi
+            ;;
         housekeep|organize)
             COMPREPLY=( $(compgen -W "plan apply revert undo restore" -- ${cur}) )
             ;;
@@ -364,6 +376,9 @@ complete -f -c sec -n '__fish_seen_subcommand_from migrate' -a '--from --to --pl
 complete -f -c sec -n '__fish_seen_subcommand_from migrate; and contains --from (commandline -opc)' -a 'bitwarden 1password bws vault infisical'
 complete -f -c sec -n '__fish_seen_subcommand_from migrate; and contains --to (commandline -opc)' -a 'bitwarden 1password bws vault infisical'
 complete -f -c sec -n '__fish_seen_subcommand_from completion' -a 'zsh bash fish ps1 powershell'
+complete -f -c sec -n '__fish_seen_subcommand_from get' -a '--scope'
+complete -f -c sec -n '__fish_seen_subcommand_from set create' -a '--type'
+complete -f -c sec -n '__fish_seen_subcommand_from set create; and contains --type (commandline -opc)' -a 'login note card identity'
 EOF
                 exit 0
                 ;;
@@ -382,6 +397,18 @@ Register-ArgumentCompleter -Native -CommandName 'sec', 'sec.exe', 'sec.ps1' -Scr
     if ($elements.Count -le 1) {
         $offered = if ($commandAst.GetCommandName() -ieq 'sec.ps1') { $corecommands + @('--help', '-h') } else { $subcommands + $flags }
         $offered + $tenants | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+        }
+    } elseif ($elements[1].Value -eq 'get') {
+        @('--scope') | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
+            [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
+        }
+    } elseif ($elements[1].Value -in @('set', 'create')) {
+        $setWords = @('--type')
+        if (($elements[-1].Value -eq '--type') -or ($elements[-2].Value -eq '--type')) {
+            $setWords = @('login', 'note', 'card', 'identity')
+        }
+        $setWords | Where-Object { $_ -like "$wordToComplete*" } | ForEach-Object {
             [System.Management.Automation.CompletionResult]::new($_, $_, 'ParameterValue', $_)
         }
     } elseif ($elements[1].Value -in @('housekeep', 'organize')) {

@@ -1480,6 +1480,34 @@ else
 fi
 if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer the bare help/version subcommands"; fi
 
+echo "[22w] every completion surface offers the get --scope and set/create --type flags (issue #83)"
+_miss=0
+if ! grep -qF -- "get) _arguments '--scope[Scope lookup to a bw folder or op vault]:scope name:'" <<<"$ZSH_C"; then
+    fail "zsh completion omits the get --scope flag (issue #83)"; _miss=1
+fi
+if ! grep -qF -- "set|create) _arguments '--type[Secret item type]:type:(login note card identity)'" <<<"$ZSH_C"; then
+    fail "zsh completion omits the set/create --type flag (issue #83)"; _miss=1
+fi
+if ! grep -qF -- 'compgen -W "--scope"' <<<"$BASH_C"; then
+    fail "bash completion omits the get --scope flag (issue #83)"; _miss=1
+fi
+if ! grep -qF -- 'compgen -W "login note card identity"' <<<"$BASH_C"; then
+    fail "bash completion omits the set/create --type values (issue #83)"; _miss=1
+fi
+if ! grep -qF -- "-n '__fish_seen_subcommand_from get' -a '--scope'" <<<"$FISH_C"; then
+    fail "fish completion omits the get --scope flag (issue #83)"; _miss=1
+fi
+if ! grep -qF -- "-a 'login note card identity'" <<<"$FISH_C"; then
+    fail "fish completion omits the set/create --type values (issue #83)"; _miss=1
+fi
+if ! grep -qF -- "@('--scope')" <<<"$PS1_C"; then
+    fail "ps1 completion omits the get --scope flag (issue #83)"; _miss=1
+fi
+if ! grep -qF -- "@('login', 'note', 'card', 'identity')" <<<"$PS1_C"; then
+    fail "ps1 completion omits the set/create --type values (issue #83)"; _miss=1
+fi
+if [[ $_miss -eq 0 ]]; then pass "all four completion surfaces offer the get --scope and set/create --type flags"; fi
+
 echo "[22m] bw set: the secret value reaches jq via env and bw via stdin, never argv (#58)"
 JQGUARD="$WORK/jqguard"; mkdir -p "$JQGUARD"
 REAL_JQ="$(command -v jq)"

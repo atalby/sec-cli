@@ -71,6 +71,11 @@ dispatcher accepts (`bin/sec` `-h|--help|help)`, `-v|--version|version)`)
 on all four surfaces; guard [22v] pins the parity (dispatch 77 -> 78
 sections; the `completions/_sec` golden was regenerated for the added
 zsh subcommands). The top-level `usage()` stays canonical.
+Issue #83 then completed the `get --scope` and `set/create --type` flags
+the dispatcher accepts (bin/sec get arm and set|create `--type`
+login/note/card/identity) on all four surfaces; guard [22w] pins the
+parity (dispatch 78 -> 79 sections; the `completions/_sec` golden was
+regenerated for the added zsh `_arguments` arms).
 Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.
