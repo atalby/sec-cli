@@ -627,6 +627,44 @@ else:
             f"profile.md says the pack defines {_cited_roles.group(1)} roles, PACK.md enumerates {_pack_roles}"
         )
 
+# --- 11. docs/ARCHITECTURE.md's producer census must match the live emitters (#88) ---
+producers_mismatches = []
+_live_producers = []
+for _f in tracked:
+    if _f.startswith("bin/") and _f.count("/") == 1:
+        try:
+            with open(os.path.join(repo, _f), encoding="utf-8", errors="replace") as _bfh:
+                _btext = _bfh.read()
+        except OSError:
+            continue
+        if re.search(r"\[ ?(OK|INFO|WARN|ERROR) ?\]", _btext):
+            _live_producers.append(os.path.basename(_f))
+_live_producers.sort()
+try:
+    with open(os.path.join(repo, "docs", "ARCHITECTURE.md"), encoding="utf-8") as _fh:
+        _arch_text = _fh.read()
+except OSError:
+    _arch_text = ""
+if not _arch_text:
+    producers_mismatches.append("docs/ARCHITECTURE.md not found")
+else:
+    _prod = re.search(r"All (\w+) producers \(([^)]*)\)", _arch_text)
+    if not _prod:
+        producers_mismatches.append("docs/ARCHITECTURE.md carries no 'All N producers (...)' sentence")
+    else:
+        _cited_count = _NUM_WORDS.get(_prod.group(1))
+        _cited_set = sorted(
+            {t.strip().strip("`").split("/")[-1] for t in _prod.group(2).split(",") if t.strip()}
+        )
+        if _cited_count != len(_live_producers):
+            producers_mismatches.append(
+                f"ARCHITECTURE.md says {_prod.group(1)} producers, live tree has {len(_live_producers)}"
+            )
+        if _cited_set != _live_producers:
+            producers_mismatches.append(
+                f"ARCHITECTURE.md lists producers {_cited_set}, live emitters are {_live_producers}"
+            )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -690,6 +728,10 @@ if pack_mismatches:
     failures.append(f"{len(pack_mismatches)} pack-taxonomy drift(s) vs packs/solo-founder-governance/PACK.md")
     for _m in pack_mismatches:
         print(f"{ERROR} pack: {_m}")
+if producers_mismatches:
+    failures.append(f"{len(producers_mismatches)} producer-census drift(s) vs docs/ARCHITECTURE.md")
+    for _m in producers_mismatches:
+        print(f"{ERROR} producers: {_m}")
 
 if failures:
     for f in failures:
@@ -703,6 +745,7 @@ print(f"{OK} suite counts: profile.md matches the live suites ({', '.join(f'{s} 
 print(f"{OK} census counts: profile.md matches the live tree (markdown, python, config, [ TAG ] per-file)")
 print(f"{OK} adapters suite counts: ADAPTERS.md 'current suites' snapshot + per-suite mentions match the live suites")
 print(f"{OK} pack prose: profile.md's cited pack version + role count match PACK.md")
+print(f"{OK} producer census: docs/ARCHITECTURE.md's producer count + list match the live bin/ emitters")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

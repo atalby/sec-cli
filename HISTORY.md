@@ -76,14 +76,12 @@ the dispatcher accepts (bin/sec get arm and set|create `--type`
 login/note/card/identity) on all four surfaces; guard [22w] pins the
 parity (dispatch 78 -> 79 sections; the `completions/_sec` golden was
 regenerated for the added zsh `_arguments` arms). Issue #84 then fixed and
-guarded the recurring census drift: profile.md's ecosystem counts
-(Markdown 64 -> 71, Python 2 -> 6) and its `[ TAG ]`-emission per-file
-census (sec-organizer 36 -> 37, sec-sync-controller.py 29 -> 30,
-sec-migrator 23 -> 24, bw-session-keeper 16 -> 17, sec.ps1 6 -> 11) were
-re-measured, and `sentinel.sh coverage` gained a section-8 guard
-(`test_sentinel.sh` case [11] proves it RED/GREEN) so both blocks fail
-closed against the live tree — the same drift mode #46/#48/#49 addressed,
-now closed for the census counts too.
+guarded the recurring census drift: profile.md's ecosystem (Markdown 64
+-> 71, Python 2 -> 6) and `[ TAG ]` per-file census (sec-organizer 37,
+sec-sync-controller.py 30, sec-migrator 24, bw-session-keeper 17, sec.ps1
+11) were re-measured, and a sentinel section-8 guard ([11]) makes both
+fail closed against the live tree — the #46/#48/#49 drift mode, now
+closed for the census too.
 Issue #85 then guarded ADAPTERS.md's `current suites:` snapshot (fixed
 twice: #79/#84) via `sentinel.sh` section 9 and `test_sentinel.sh` [12].
 Issue #86 then fixed the audit profile's stale pack taxonomy (cited
@@ -91,6 +89,9 @@ solo-founder-governance v1.2.0/'eight roles' after #1 re-synced it to
 v1.4.0/9 personas) and guarded it (sentinel section 10 + test [13]).
 Issue #87 then guarded ADAPTERS.md's per-suite `(N sections|cases)`
 counts (sentinel section 9 + test [14]).
+Issue #88 then corrected and guarded docs/ARCHITECTURE.md's producer
+census ('six' -> seven; sec.ps1 was omitted; sentinel section 11 +
+test [15]).
 Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.

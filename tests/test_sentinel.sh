@@ -515,6 +515,67 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[15] docs/ARCHITECTURE.md's producer census matches the live bin/ emitters (issue #88)"
+WORK_U="$(mktemp -d)"
+WORK_V="$(mktemp -d)"
+WORK_W="$(mktemp -d)"
+for W in "$WORK_U" "$WORK_V" "$WORK_W"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_U/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(All )\w+( producers \()", r"\g<1>three\g<2>", s)
+if n != 1:
+    sys.exit("ARCHITECTURE producer count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_V/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(`sec\.ps1`\))", "`bogus-tool`)", s)
+if n != 1:
+    sys.exit("ARCHITECTURE producer list not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_U" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted ARCHITECTURE producer count"
+else
+    no "coverage accepted a drifted ARCHITECTURE producer count"
+fi
+if grep -q "ARCHITECTURE.md says three producers, live tree has" <<<"$OUT"; then
+    ok "coverage names the drifted ARCHITECTURE producer count"
+else
+    no "coverage did not name the drifted ARCHITECTURE producer count"
+fi
+OUT="$(cd "$WORK_V" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted ARCHITECTURE producer list"
+else
+    no "coverage accepted a drifted ARCHITECTURE producer list"
+fi
+if grep -q "ARCHITECTURE.md lists producers" <<<"$OUT"; then
+    ok "coverage names the drifted ARCHITECTURE producer list"
+else
+    no "coverage did not name the drifted ARCHITECTURE producer list"
+fi
+OUT="$(cd "$WORK_W" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct ARCHITECTURE producer census) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
