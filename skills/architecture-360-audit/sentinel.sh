@@ -798,12 +798,57 @@ elif _NUM_WORDS.get(_prof_bin_m.group(1)) != _live_bin_helpers:
         f"live tree has {_live_bin_helpers}"
     )
 
+# --- 14. profile.md + ARCHITECTURE.md's bash suite census must match the live tree (#91) --
+suite_census_mismatches = []
+_live_suites = sorted(f for f in tracked if f.startswith("tests/") and f.endswith(".sh"))
+_live_suite_count = len(_live_suites)
+
+_prof_suite_m = re.search(r"(\w+) suites under `tests/`", profile_text)
+if not _prof_suite_m:
+    suite_census_mismatches.append("profile.md carries no 'N suites under tests/' census")
+elif _NUM_WORDS.get(_prof_suite_m.group(1)) != _live_suite_count:
+    suite_census_mismatches.append(
+        f"profile.md's tests/ suite census says {_NUM_WORDS.get(_prof_suite_m.group(1))}, "
+        f"live tree has {_live_suite_count}"
+    )
+
+_prof_ci_m = re.search(r"runs all (\w+) suites", profile_text)
+if not _prof_ci_m:
+    suite_census_mismatches.append("profile.md's CI row states no suite count")
+elif _NUM_WORDS.get(_prof_ci_m.group(1)) != _live_suite_count:
+    suite_census_mismatches.append(
+        f"profile.md's CI row says it runs all {_prof_ci_m.group(1)} suites, "
+        f"live tree has {_live_suite_count}"
+    )
+
+if not _arch_text:
+    suite_census_mismatches.append("docs/ARCHITECTURE.md not found")
+else:
+    _arch_suite_m = re.search(r"(\w+) zero-dependency bash suites", _arch_text)
+    if not _arch_suite_m:
+        suite_census_mismatches.append("docs/ARCHITECTURE.md carries no bash suite census")
+    elif _NUM_WORDS.get(_arch_suite_m.group(1)) != _live_suite_count:
+        suite_census_mismatches.append(
+            f"ARCHITECTURE.md says {_arch_suite_m.group(1)} zero-dependency bash suites, "
+            f"live tree has {_live_suite_count}"
+        )
+    _cited_suites = set(re.findall(r"`(test_[A-Za-z0-9._-]+\.sh)`", _arch_text))
+    _live_suite_names = {os.path.basename(s) for s in _live_suites}
+    _orphan_cited = sorted(_cited_suites - _live_suite_names)
+    _uncited_live = sorted(_live_suite_names - _cited_suites)
+    if _orphan_cited or _uncited_live:
+        suite_census_mismatches.append(
+            "ARCHITECTURE.md lists suites that are not the live tracked suites: "
+            f"cited-but-absent {_orphan_cited or 'none'}, present-but-uncited {_uncited_live or 'none'}"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
     print(f"{OK} personas reachable from the manifest: {sorted(used)}")
     print(f"{OK} skills tree: {len(_live_skill_dirs)} skill dir(s), registry {len(_registry_rows)} row(s)")
     print(f"{OK} bin/ helpers: {_live_bin_helpers} tracked sibling(s), all referenced by tests/test_dispatch.sh")
+    print(f"{OK} bash suites: {_live_suite_count} tracked tests/*.sh suite(s)")
     for label, owner, n in present_surfaces:
         print(f"{OK} surface present: {label} ({n} location(s)) -> {owner}")
     for m in found_manifests:
@@ -877,6 +922,12 @@ if bin_helper_mismatches:
     )
     for _m in bin_helper_mismatches:
         print(f"{ERROR} bin helper: {_m}")
+if suite_census_mismatches:
+    failures.append(
+        f"{len(suite_census_mismatches)} bash suite census drift(s) vs profile.md + docs/ARCHITECTURE.md"
+    )
+    for _m in suite_census_mismatches:
+        print(f"{ERROR} suite census: {_m}")
 
 if failures:
     for f in failures:
@@ -893,6 +944,7 @@ print(f"{OK} pack prose: profile.md's cited pack version + role count match PACK
 print(f"{OK} producer census: docs/ARCHITECTURE.md's producer count + list match the live bin/ emitters")
 print(f"{OK} skills registry: ADAPTERS.md's census matches {len(_live_skill_dirs)} live skill dir(s) + {len(_registry_rows)} REGISTRY.md row(s)")
 print(f"{OK} bin/ helper census: profile.md + ADAPTERS.md match {_live_bin_helpers} tracked sibling helper(s), all referenced by tests/test_dispatch.sh")
+print(f"{OK} suite census: profile.md + ARCHITECTURE.md match {_live_suite_count} tracked bash suite(s), ARCHITECTURE.md's suite list matches the tracked names")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

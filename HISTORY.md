@@ -7,48 +7,26 @@ record is archived per period under `history/` (append-only, nothing
 deleted, every file searchable). A new session reads this summary by
 default, not the whole history.
 
-**2026-10-12**: issue #71 closed the flag-misparse class — `sec get`,
-`set`/`create` and `unlock`/`rotate`/`keep` now reject an unknown
-`--flag`/`-f*` at the operand position with a tagged `[ERROR]` + exit 2
-before any backend call (same contract #73 shipped for `sec.ps1`;
-keys/passwords must not begin with `-`). Issue #64 (local pre-commit
-enforcement vanishes when `uv` is absent) verified as a duplicate of
-#51's hub-side payload — the gate lives in the hub script, unfixable
-in-repo per the frozen-fork-risk rejection — and closed as duplicate.
-Issue #74 then closed the last gap in the same sweep class: `get`/
-`set`/`create` no longer silently drop trailing operands (tagged
-`[ERROR]` + exit 2 before any backend call; `run` stays variadic).
-Issue #75 closed the last soft spot in the sweep class: `sec get --scope`
-rejects a flag-like folder name (`--*`/`-[a-zA-Z]*`, tagged `[ERROR]` +
-exit 2 before any backend call; sec.ps1 already did this, bin/sec was the
-laggard). Issue #76 then closed the same trailing-operand gap in the arms
-the #74/#75 sweep had skipped: `sec housekeep`/`organize` and `sec
-unlock`/`rotate`/`keep`/`setup-keychain` no longer silently drop extra
-operands (tagged `[ERROR]` + exit 2 before any organizer/keeper/backend
-call; `rotate`/`keep` reject any positional, `unlock`/`setup-keychain`
-still take one optional password; `run` stays variadic). Tests: dispatch
-suite 68 -> 72 sections ([2e], [2f], [2g], [2h]); profile.md + ADAPTERS
-counts updated. All five bash suites pass (install 9 / sync_guard 16 /
-write_honesty 13 / sentinel 10 / dispatch 72), pytest mirror 29 passed,
-sentinel citations + coverage green. Issue #77 then fixed the last
-audit-flagged silent abort (scratchpad C25): a valid-session
+**2026-10-12**: the flag-misparse / operand-honesty sweep closed
+wholesale (#71-#80): `sec get`, `set`/`create` and `unlock`/`rotate`/
+`keep` reject an unknown `--flag`/`-f*` at the operand position with a
+tagged `[ERROR]` + exit 2 before any backend call (same contract #73
+shipped for `sec.ps1`; keys/passwords must not begin with `-`), the
+same arms reject trailing/dropped operands (`run` stays variadic;
+`rotate`/`keep` reject any positional, `unlock`/`setup-keychain` still
+take one optional password), `sec get --scope` rejects a flag-like folder
+name, `sec housekeep`/`organize` no longer drops extra operands, and a
 `bw-session-keeper` `rotate`/`keep` whose vault refresh failed died under
-`set -e` with no message — it now exits 1 with a tagged `[ERROR]`;
-write_honesty 11 -> 13 sections (the keeper's first behavioral coverage:
-rotate sync-failure [11], non-TTY unlock/setup-keychain honesty [12]).
-Issue #78 then closed the last completion-surface parity gap: `sec
-completion fish` omitted the tenant-prefix words
-(bitwarden/bw/1pass/op/bws/vault/infisical/keychain) that zsh/bash/ps1 all
-offer; the fish block now lists them and dispatch guard [22q] asserts the
-parity across all four surfaces (dispatch 72 -> 73 sections;
-profile.md + ADAPTERS counts updated; the ADAPTERS "Last updated" stamp
-and stale suite snapshot were truth-up'd in the same pass).
-Issue #79 closed the sibling gap in the same class: `sec completion fish`
-offered no housekeep subcommands after the `organize` alias (bash/zsh/ps1
-did); guard [22r] pins it (dispatch 73 -> 74 sections). Issue #80 then
-resolved the last member of that class consistently: the housekeep arm
-accepts `undo`/`restore` as aliases of `revert` (sec-organizer has mapped
-them since v1.0.0), but all four completions advertised only
+`set -e` with no message — now exit 1 + tagged `[ERROR]`. Issue #64
+(local pre-commit enforcement vanishing when `uv` is absent) was verified
+as a duplicate of #51's hub-side payload and closed as duplicate. Issue
+#78 closed the last completion-surface parity gap: `sec completion fish`
+omitted the tenant-prefix words (bitwarden/bw/1pass/op/bws/vault/
+infisical/keychain) the other three surfaces offer; #79 closed the sibling
+gap (no housekeep subcommands after the `organize` alias); #80 resolved
+the class by accepting `undo`/`restore` as aliases of `revert` (which
+sec-organizer has mapped since v1.0.0), but all four completions
+advertised only
 `plan/apply/revert`; the aliases are now offered in the housekeep completion
 on every surface — matching how the create/organize/keep aliases are
 advertised — with guard [22s] pinning the parity and the checked-in
@@ -75,22 +53,23 @@ Issue #83 then completed the `get --scope` and `set/create --type` flags
 the dispatcher accepts (bin/sec get arm and set|create `--type`
 login/note/card/identity) on all four surfaces; guard [22w] pins the
 parity (dispatch 78 -> 79 sections; the `completions/_sec` golden was
-regenerated for the added zsh `_arguments` arms). Issues #84-#89 then
-closed the census-drift class wholesale, one guard per claim: #84
-profile.md's ecosystem and `[ TAG ]` per-file censuses (re-measured;
-section 8 + [11]); #85 ADAPTERS.md's `current suites:` snapshot
-(section 9 + [12]); #86 the audit profile's stale pack taxonomy, fixed
-(section 10 + [13]); #87 ADAPTERS.md's per-suite `(N sections|cases)`
-counts (section 9 + [14]); #88 docs/ARCHITECTURE.md's producer census
-('six' -> seven, sec.ps1 omitted; section 11 + [15]); #89 ADAPTERS.md's
-skills/registry census (23 skill dirs / 35 registry rows / 12
-hub-internal, all already correct but unguarded; section 12 + [16]).
-Issue #90 then closed the last two drifted prose counts in the class:
-profile.md's "five sibling dispatchers" (live 7, contradicting line
-669's own "7 of the 8 tracked `bin/` entries") and ADAPTERS.md's "four
-helper scripts" (live 7, one static-only) — both wrong at birth;
+regenerated for the added zsh `_arguments` arms). Issues #84-#90 closed
+the census-drift class wholesale, one guard per claim: profile.md's
+ecosystem and `[ TAG ]` per-file censuses (#84), ADAPTERS.md's
+`current suites:` snapshot (#85), the audit profile's stale pack taxonomy,
+corrected (#86), ADAPTERS.md's per-suite `(N sections|cases)` counts (#87),
+docs/ARCHITECTURE.md's producer census, 'six' -> seven with `sec.ps1`
+omitted (#88), ADAPTERS.md's skills/registry census — 23 skill dirs / 35
+registry rows / 12 hub-internal, already correct but unguarded (#89) — and
+the class's last two *drifted* prose counts: profile.md's "five sibling
+dispatchers" (live 7, contradicting its own line 669) and ADAPTERS.md's
+"four helper scripts" (live 7, one static-only), both wrong at birth;
 section 13 now also asserts every tracked `bin/` helper is referenced by
-`tests/test_dispatch.sh` (sentinel 16 -> 17 cases).
+`tests/test_dispatch.sh`. Issue #91 then guarded the three bash-suite-count
+prose claims — all correct but unguarded — re-deriving the count from
+tracked `tests/*.sh` and checking profile.md's tests/ census, its CI row,
+and ARCHITECTURE.md's count plus its cited suite-name list (section 14;
+sentinel 17 -> 18 cases).
 Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.

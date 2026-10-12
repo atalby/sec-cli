@@ -786,6 +786,119 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[18] bash suite count + list cited in profile.md + docs/ARCHITECTURE.md match the live tree (issue #91)"
+WORK_T1="$(mktemp -d)"
+WORK_T2="$(mktemp -d)"
+WORK_T3="$(mktemp -d)"
+WORK_T4="$(mktemp -d)"
+WORK_TCTRL="$(mktemp -d)"
+for W in "$WORK_T1" "$WORK_T2" "$WORK_T3" "$WORK_T4" "$WORK_TCTRL"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_T1/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(\w+) suites under `tests/`",
+                "nine suites under `tests/`", s)
+if n != 1:
+    sys.exit("profile.md tests/ suite count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_T2/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"runs all (\w+) suites", "runs all nine suites", s)
+if n != 1:
+    sys.exit("profile.md CI suite-count claim not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_T3/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(\w+) zero-dependency bash suites",
+                "nine zero-dependency bash suites", s)
+if n != 1:
+    sys.exit("ARCHITECTURE.md bash suite count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+python3 - "$WORK_T4/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"`test_write_honesty\.sh`", "`test_write_honesty-v2.sh`", s)
+if n != 1:
+    sys.exit("ARCHITECTURE.md suite-list entry not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted profile.md tests/ suite count"
+else
+    no "coverage accepted a drifted profile.md tests/ suite count"
+fi
+if grep -q "profile.md's tests/ suite census says 9" <<<"$OUT"; then
+    ok "coverage names the drifted profile.md tests/ suite count"
+else
+    no "coverage did not name the drifted profile.md tests/ suite count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted profile.md CI suite count"
+else
+    no "coverage accepted a drifted profile.md CI suite count"
+fi
+if grep -q "profile.md's CI row says it runs all nine suites" <<<"$OUT"; then
+    ok "coverage names the drifted profile.md CI suite count"
+else
+    no "coverage did not name the drifted profile.md CI suite count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T3" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted ARCHITECTURE.md bash suite count"
+else
+    no "coverage accepted a drifted ARCHITECTURE.md bash suite count"
+fi
+if grep -q "ARCHITECTURE.md says nine zero-dependency bash suites" <<<"$OUT"; then
+    ok "coverage names the drifted ARCHITECTURE.md bash suite count"
+else
+    no "coverage did not name the drifted ARCHITECTURE.md bash suite count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T4" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md lists a suite that is not tracked"
+else
+    no "coverage accepted an ARCHITECTURE.md suite list naming an untracked suite"
+fi
+if grep -q "ARCHITECTURE.md lists suites that are not the live tracked suites" <<<"$OUT"; then
+    ok "coverage names the ARCHITECTURE.md suite absent from the live tree"
+else
+    no "coverage did not name the ARCHITECTURE.md suite absent from the live tree"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_TCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct suite census) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
