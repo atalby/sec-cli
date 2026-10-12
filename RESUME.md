@@ -1,9 +1,10 @@
 # Resume point - sec-cli
 
-Written 2026-10-12 after closing #113 (commit `d4890c3`), #112 (commit
-`d9fb2d3`), #111 (commit `84c3ee6`) and #110 (commit `8ba4a49`), all pushed.
-Working tree clean on `main`; `origin/main` == local `main`. This lane shipped
-a long run of guard/fix/perf units (#97..#113), all CI-green.
+Written 2026-10-12 after closing #114 (commit `5e295c1`), #113 (commit
+`d4890c3`), #112 (commit `d9fb2d3`), #111 (commit `84c3ee6`) and #110 (commit
+`8ba4a49`), all pushed. Working tree clean on `main`; `origin/main` == local
+`main`. This lane shipped a long run of guard/fix/perf units (#97..#114), all
+CI-green.
 
 There is again **no open issue with an autonomous in-repo remedy**. The
 remaining open items are hub-side or human-gated (see below). If the lane is
@@ -37,6 +38,14 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #114 `fix(docs)` -> `5e295c1` - `docs/OPERATOR_MANUAL.md:31` documented
+  `-v`/`--version` as `` `sec-cli v1.0.0` `` (the `--help` banner string), but
+  the live command prints `` sec-cli version 1.0.0 ``. Corrected the row and
+  added sentinel section 20 that runs `bin/sec version` and fails on drift;
+  `test_sentinel.sh` case [26] proves the guard (control copy passes). Sentinel
+  25 -> 26 cases / 260 -> 266 assertions; mirrors bumped at `profile.md:22`,
+  `profile.md:641`, `ADAPTERS.md:56`, `ADAPTERS.md:262`, `RESUME.md:131-132`;
+  sentinel control [17] literals re-pinned (`twenty-six`, `live suite has 26`).
 - #113 `test(sync)` -> `d4890c3` - 10 new pytest cases covering the untested
   user-facing error contract of the two Python entrypoints: sync controller
   GCP add-version timeout / missing-binary / stderr-detail, `main()` help (0),
@@ -128,8 +137,8 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 86, install 9, sentinel 25, sync_guard 16,
-write_honesty 13. Sentinel = 25 cases / 260 assertions. HISTORY.md is at
+mirrors in sync): dispatch 86, install 9, sentinel 26, sync_guard 16,
+write_honesty 13. Sentinel = 26 cases / 266 assertions. HISTORY.md is at
 8038/8192 bytes - the next narrative addition must compact an older clause first.
 108 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
