@@ -18,9 +18,19 @@
   login/note/card/identity flags are completed on all four surfaces
   (guard [22w]). The tracked `completions/_sec` golden
   was regenerated (zsh shells list + help/version entries + get/set flag arms).
-  Five bash suites ALL TESTS PASSED (dispatch 79 / install 9 / sentinel 10
+  Five bash suites ALL TESTS PASSED (dispatch 79 / install 9 / sentinel 11
   / sync_guard 16 / write_honesty 13); pytest mirror 29 passed; sentinel
-  citations + coverage green (suite counts match); HISTORY.md under budget.
+  citations + coverage green (suite counts + census counts match); HISTORY.md
+  under budget.
+  Drift re-check pass: profile.md open-issue reference corrected (#62 -> #67,
+  commit 4227431). #84: the profile.md ecosystem counts (Markdown 64 -> 71,
+  Python 2 -> 6) and `[ TAG ]`-emission per-file census (sec-organizer
+  36 -> 37, sec-sync-controller.py 29 -> 30, sec-migrator 23 -> 24,
+  bw-session-keeper 16 -> 17, sec.ps1 6 -> 11) were re-measured, and
+  `sentinel.sh coverage` gained a section-8 census guard with a RED/GREEN
+  test (`test_sentinel.sh` [11]) — the #46/#48/#49 drift mode is now closed
+  for the census counts too. No other drift found — ADAPTERS counts current,
+  completions match golden, no TODOs, no unmerged branches.
 - **Open issues:** #67 (fresh 360 audit — Step-1 gate needs explicit human
   scope approval, not autonomous), #51 (hub-side handoff items #2/#13,
   upstream). No held-for-decision item remains.

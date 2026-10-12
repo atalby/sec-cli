@@ -317,6 +317,67 @@ else
     no "install.sh warning omits the get path from jq's uses"
 fi
 
+echo "[11] cited census counts match the live tree (the #49 drift class, issue #84)"
+WORK_K="$(mktemp -d)"
+WORK_L="$(mktemp -d)"
+WORK_M="$(mktemp -d)"
+for W in "$WORK_K" "$WORK_L" "$WORK_M"; do
+    cp -a "$REPO_ROOT/." "$W/"
+    rm -rf "$W/.git"
+done
+python3 - "$WORK_K/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(Markdown \()\d+(\s+files?\))", r"\g<1>999\g<2>", s, count=1)
+if n != 1:
+    sys.exit("ecosystem markdown census not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_K" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted ecosystem census"
+else
+    no "coverage accepted a drifted ecosystem census"
+fi
+if grep -q "census" <<<"$OUT"; then
+    ok "coverage names the census mismatch"
+else
+    no "coverage did not name the census mismatch"
+fi
+python3 - "$WORK_M/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(`sec-organizer` )\d+", r"\g<1>999", s, count=1)
+if n != 1:
+    sys.exit("[ TAG ] census row not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_M" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted [ TAG ] census"
+else
+    no "coverage accepted a drifted [ TAG ] census"
+fi
+if grep -q "sec-organizer" <<<"$OUT"; then
+    ok "coverage names the drifted [ TAG ] census row"
+else
+    no "coverage did not name the drifted [ TAG ] census row"
+fi
+OUT="$(cd "$WORK_L" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct census) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

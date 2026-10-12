@@ -75,7 +75,15 @@ Issue #83 then completed the `get --scope` and `set/create --type` flags
 the dispatcher accepts (bin/sec get arm and set|create `--type`
 login/note/card/identity) on all four surfaces; guard [22w] pins the
 parity (dispatch 78 -> 79 sections; the `completions/_sec` golden was
-regenerated for the added zsh `_arguments` arms).
+regenerated for the added zsh `_arguments` arms). Issue #84 then fixed and
+guarded the recurring census drift: profile.md's ecosystem counts
+(Markdown 64 -> 71, Python 2 -> 6) and its `[ TAG ]`-emission per-file
+census (sec-organizer 36 -> 37, sec-sync-controller.py 29 -> 30,
+sec-migrator 23 -> 24, bw-session-keeper 16 -> 17, sec.ps1 6 -> 11) were
+re-measured, and `sentinel.sh coverage` gained a section-8 guard
+(`test_sentinel.sh` case [11] proves it RED/GREEN) so both blocks fail
+closed against the live tree — the same drift mode #46/#48/#49 addressed,
+now closed for the census counts too.
 Open items: #67 (360 audit — needs
 human scope approval), #51 (hub-side, tracked upstream). Full narrative:
 `history/2026-10-12.md`.

@@ -492,6 +492,63 @@ for _s, _live in suite_counts.items():
     if int(_m.group(1)) != _live:
         suite_mismatches.append(f"profile.md says {_m.group(1)} for tests/test_{_s}.sh, live suites have {_live}")
 
+
+# --- 8. cited census counts must match the live tree (the #49 drift class) -----
+def _glob_count(*globs):
+    return sum(1 for f in tracked if any(fnmatch.fnmatch(f, g) for g in globs))
+
+
+census_mismatches = []
+
+
+def _check_census(label, pattern, live):
+    _cm = re.search(pattern, profile_text)
+    if not _cm:
+        census_mismatches.append(f"profile.md carries no {label} census line")
+    elif int(_cm.group(1)) != live:
+        census_mismatches.append(f"profile.md's {label} census says {_cm.group(1)}, live tree has {live}")
+
+
+_check_census("ecosystem markdown-file", r"Markdown \((\d+)\s+files?\)", _glob_count("*.md"))
+_check_census("ecosystem python-file", r"Python 3 \((\d+)\s+files?[,:)]", _glob_count("*.py"))
+_check_census("ecosystem config-file", r"JSON/YAML/TOML\s+configuration \((\d+)\s+files?\)",
+              _glob_count("*.json", "*.yaml", "*.yml", "*.toml"))
+
+_tag_claim = re.search(
+    r"(\d+) of the (\d+) tracked `bin/` entries emit tagged\s+output \((.*?)\)",
+    profile_text,
+    re.S,
+)
+_tag_bins = [f for f in tracked if f.startswith("bin/") and f.count("/") == 1]
+if not _tag_claim:
+    census_mismatches.append("profile.md carries no [ TAG ]-emission census line")
+else:
+    _claim_nonzero, _claim_total, _claim_body = (
+        int(_tag_claim.group(1)), int(_tag_claim.group(2)), _tag_claim.group(3)
+    )
+    _live_nonzero = 0
+    for _path in _tag_bins:
+        with open(_path, encoding="utf-8", errors="replace") as _fh:
+            _n = sum(1 for _ln in _fh if re.search(r"\[ ?(OK|INFO|WARN|ERROR) ?\]", _ln))
+        if not _n:
+            continue
+        _live_nonzero += 1
+        _m = re.search(r"`%s` (\d+)" % re.escape(os.path.basename(_path)), _claim_body)
+        if not _m:
+            census_mismatches.append(f"profile.md's [ TAG ] census names no count for {_path}")
+        elif int(_m.group(1)) != _n:
+            census_mismatches.append(
+                f"profile.md's [ TAG ] census says {_path} {_m.group(1)}, live has {_n}"
+            )
+    if _claim_total != len(_tag_bins):
+        census_mismatches.append(
+            f"profile.md's [ TAG ] census says {_claim_total} tracked bin/ entries, live tree has {len(_tag_bins)}"
+        )
+    if _claim_nonzero != _live_nonzero:
+        census_mismatches.append(
+            f"profile.md's [ TAG ] census says {_claim_nonzero} emit tagged, live tree has {_live_nonzero}"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -543,6 +600,10 @@ if suite_mismatches:
     failures.append(f"{len(suite_mismatches)} cited suite section count(s) drifted from the live suites")
     for _m in suite_mismatches:
         print(f"{ERROR} suite count: {_m}")
+if census_mismatches:
+    failures.append(f"{len(census_mismatches)} cited census count(s) drifted from the live tree")
+    for _m in census_mismatches:
+        print(f"{ERROR} census: {_m}")
 
 if failures:
     for f in failures:
@@ -553,6 +614,7 @@ print(f"{OK} coverage: all {len(tracked)} tracked files claimed by {len(cov_rows
 print(f"{OK} coverage denominator: profile.md states {denominator} tracked files, matches git ls-files")
 print(f"{OK} narrative history: HISTORY.md is a {history_bytes}-byte summary, {len(archived)} archive(s) linked under history/")
 print(f"{OK} suite counts: profile.md matches the live suites ({', '.join(f'{s} {n}' for s, n in sorted(suite_counts.items()))})")
+print(f"{OK} census counts: profile.md matches the live tree (markdown, python, config, [ TAG ] per-file)")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)
