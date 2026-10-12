@@ -9,7 +9,7 @@
   `tests/test_write_honesty.sh` section [11] (fake-`bw` `SEC_TEST_BW_SYNC_RC`
   knob; RED without the fix) — the keeper's first behavioral coverage.
   Five bash suites ALL TESTS PASSED (dispatch 72 / install 9 / sentinel 10
-  / sync_guard 16 / write_honesty 12); pytest mirror 29 passed; sentinel
+  / sync_guard 16 / write_honesty 13); pytest mirror 29 passed; sentinel
   citations + coverage green (suite counts match); HISTORY.md under budget;
   gitignored surfaces claimed; 12 personas reachable. Working tree clean at
   `a410d56` (fix commit pushed). No unmerged branches, no open PRs, no

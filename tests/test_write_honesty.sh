@@ -34,6 +34,12 @@ exit 0
 EOF
 chmod +x "$FAKEBIN/infisical"
 
+cat >"$FAKEBIN/secret-tool" <<'EOF'
+#!/usr/bin/env bash
+exit 1
+EOF
+chmod +x "$FAKEBIN/secret-tool"
+
 OPCANARY="$WORK/op-canary.log"
 cat >"$FAKEBIN/op" <<'EOF'
 #!/usr/bin/env bash
@@ -237,6 +243,20 @@ RC11b=$?
 set -e
 if [[ $RC11b -eq 0 ]]; then pass "successful refresh exits 0"; else fail "successful refresh exited $RC11b: $OUT11b"; fi
 if grep -q "^\[ OK \] Vault synced successfully." <<<"$OUT11b"; then pass "tagged success banner on real success"; else fail "no success banner on a working refresh: $OUT11b"; fi
+
+echo "[12] bw-session-keeper non-TTY unlock/setup-keychain with no stored password fail loudly (#22)"
+H12="$WORK/h12"
+mkdir -p "$H12"
+set +e
+OUT12a="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H12" "$REPO_ROOT/bin/bw-session-keeper" unlock </dev/null 2>&1)"
+RC12a=$?
+OUT12b="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H12" "$REPO_ROOT/bin/bw-session-keeper" setup-keychain </dev/null 2>&1)"
+RC12b=$?
+set -e
+if [[ $RC12a -eq 1 ]]; then pass "non-TTY unlock with no stored password exits 1"; else fail "non-TTY unlock exited $RC12a, expected 1: $OUT12a"; fi
+if grep -q "^\[ERROR\] Master password not available" <<<"$OUT12a"; then pass "unlock prints a tagged [ERROR]"; else fail "no tagged unlock error: $OUT12a"; fi
+if [[ $RC12b -eq 1 ]]; then pass "non-TTY setup-keychain with no arg exits 1"; else fail "non-TTY setup-keychain exited $RC12b, expected 1: $OUT12b"; fi
+if grep -q "^\[ERROR\] Master password not provided" <<<"$OUT12b"; then pass "setup-keychain prints a tagged [ERROR]"; else fail "no tagged setup error: $OUT12b"; fi
 
 echo
 if [[ $FAILS -eq 0 ]]; then
