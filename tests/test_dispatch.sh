@@ -355,6 +355,15 @@ OUT="$(run_sec "$H" get MY_API_KEY extra 2>&1)"; RC=$?
 set -e
 if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec get: unexpected trailing argument' <<<"$OUT" && [[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]]; then pass "get <key> extra refused before any backend call"; else fail "get <key> extra rc=$RC bwlog_changed=$([[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]] && echo no || echo yes) out=[$OUT]"; fi
 
+echo "[2g] sec get --scope rejects a flag-like folder name (issue #75)"
+assert_usage_error "sec get --scope --bogus <key>" get --scope --bogus MY_API_KEY
+assert_usage_error "sec get --scope -x <key>" get --scope -x MY_API_KEY
+set +e
+BWLOG_BEFORE="$(wc -c <"$BWLOG")"
+OUT="$(run_sec "$H" get --scope --bogus MY_API_KEY 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 2 ]] && grep -q '^\[ERROR\] sec get --scope: invalid name' <<<"$OUT" && [[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]]; then pass "get --scope --bogus refused before any backend call"; else fail "get --scope --bogus rc=$RC bwlog_changed=$([[ "$(wc -c <"$BWLOG")" -eq "$BWLOG_BEFORE" ]] && echo no || echo yes) out=[$OUT]"; fi
+
 echo "[3] bw get: plain key returns login.password"
 set +e
 OUT="$(run_sec "$H" get MY_API_KEY 2>&1)"

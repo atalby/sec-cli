@@ -18,12 +18,15 @@ in-repo per the frozen-fork-risk rejection — and closed as duplicate.
 Issue #74 then closed the last gap in the same sweep class: `get`/
 `set`/`create` no longer silently drop trailing operands (tagged
 `[ERROR]` + exit 2 before any backend call; `run` stays variadic).
-Tests: dispatch suite 68 -> 70 sections ([2e], [2f]); profile.md counts
-updated. All five bash suites pass (install 9 / sync_guard 16 /
-write_honesty 11 / sentinel 10 / dispatch 70), pytest mirror 29 passed,
-sentinel citations + coverage green. Open items: #67 (360 audit — needs
-human scope approval), #51 (hub-side, tracked upstream). Full narrative:
-`history/2026-10-12.md`.
+Issue #75 closed the last soft spot in the sweep class: `sec get --scope`
+rejects a flag-like folder name (`--*`/`-[a-zA-Z]*`, tagged `[ERROR]` +
+exit 2 before any backend call; sec.ps1 already did this, bin/sec was the
+laggard). Tests: dispatch suite 68 -> 71 sections ([2e], [2f], [2g]);
+profile.md counts updated. All five bash suites pass (install 9 /
+sync_guard 16 / write_honesty 11 / sentinel 10 / dispatch 71), pytest
+mirror 29 passed, sentinel citations + coverage green. Open items: #67
+(360 audit — needs human scope approval), #51 (hub-side, tracked
+upstream). Full narrative: `history/2026-10-12.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
