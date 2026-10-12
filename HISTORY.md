@@ -52,10 +52,10 @@ Issue #94 then guarded three correct-but-unguarded structural claims:
 MULTI_TENANCY.md's "eight fixed aliases" vs bin/sec's tenant regex,
 profile.md's CI checkout pin (v4.2.2), and OPERATOR_MANUAL.md's "four core
 principles" (section 15; sentinel 18 -> 19 cases).
-Issue #95 then guarded SKILL.md's own suite-count prose, which had drifted:
-"the two `tests/*.sh` suites" was written when the tree had two and silently
-understated the live five, so the count is now derived and checked in both
-places SKILL.md states it (section 14 extended; sentinel 19 -> 20 cases).
+Issue #95 then guarded SKILL.md's own suite-count prose, whose "the two
+`tests/*.sh` suites" had silently understated the live five; the count is now
+derived and checked in both places SKILL.md states it (section 14 extended;
+sentinel 19 -> 20 cases).
 Issue #96 then guarded SKILL.md's remaining structural counts — its step
 count (11) and persona count (12, cross-checked against profile.md's
 "Twelve, numbered 1 through 12"), the two Step-1 scopes, and the
@@ -86,6 +86,11 @@ undo|revert|--undo` short-circuited the argument parse, so `sec migrate undo
 EXTRA` dropped the operand and proceeded to the rollback path; the undo
 branch now rejects trailing operands with a tagged `[ERROR]` + exit 2 before
 any transaction-log access (dispatch 85 -> 86 sections).
+Issue #111 then covered the sync controller's untested surface: the GCP
+write path (describe / create-on-missing / add-version / timeout / failure),
+the `parse_args` usage-error contract, and `main()`'s exit codes (pytest
+29 -> 41; mirrors bumped at ADAPTERS.md:305, audit SKILL.md:451; sentinel
+control [3] re-pinned).
 Open items: #67 (360 audit —
 needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
@@ -93,9 +98,8 @@ packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
-split losslessly into per-date archives under `history/`, this summary
-was reduced to a few sentences, and `sentinel.sh coverage` gained a guard
-so the file cannot silently re-bloat. The day then swept
+split losslessly into per-date archives under `history/`, and
+`sentinel.sh coverage` gained a guard so the file cannot silently re-bloat. The day then swept
 dispatcher/completion/argv/doc-honesty residuals (#40–#66): completion
 alias parity + ps1 honest-scoping (#56/#57), the top-level fish/ps1 flag
 surface (#60), the `sec.conf` parser honoring commented-out keys (#55),

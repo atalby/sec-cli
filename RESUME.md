@@ -1,6 +1,6 @@
 # Resume point - sec-cli
 
-Written 2026-10-12 after closing #110 (commit pending), #109 (commit
+Written 2026-10-12 after closing #110 (commit `8ba4a49`), #109 (commit
 `eaf4c0a`), #108 (commit `9750ef5`) and #107 (commit `1d61880`), all pushed.
 Working tree clean on `main`; `origin/main` == local `main`. This lane shipped
 a long run of guard/fix/perf units (#97..#110), all CI-green.
@@ -37,7 +37,14 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
-- #110 `fix(migrate)` -> pending - `sec migrate undo|revert|--undo` short-circuited
+- #111 `test(sync)` -> pending - 12 new pytest cases covering the sync
+  controller's untested surface: GCP write path (describe / create-on-missing /
+  add-version / timeout / failure), `parse_args` usage-error contract, and
+  `main()` exit codes 0/1/2/3. pytest mirror 29 -> 41; mirrors bumped at
+  `ADAPTERS.md:305`, `skills/architecture-360-audit/SKILL.md:451`,
+  `profile.md:427` transcript, `RESUME.md:104`. Sentinel control [3]'s
+  hardcoded drift count re-pinned 29 -> 41.
+- #110 `fix(migrate)` -> `8ba4a49` - `sec migrate undo|revert|--undo` short-circuited
   the migrator's arg parse (bin/sec-migrator:37), so `sec migrate undo EXTRA`
   silently dropped the operand and proceeded to the rollback path. The undo
   branch now rejects trailing operands with a tagged `[ERROR]` + exit 2 before
@@ -101,7 +108,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ```
 for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_$s.sh; done   # all ALL TESTS PASSED
-.venv/bin/python -m pytest -q                                                               # 29 passed
+.venv/bin/python -m pytest -q                                                               # 41 passed
 ./skills/architecture-360-audit/sentinel.sh coverage                                        # exit 0
 ./skills/architecture-360-audit/sentinel.sh citations                                       # exit 0
 ```

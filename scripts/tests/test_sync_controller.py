@@ -1,6 +1,8 @@
 import email.message
 import importlib.util
 import json
+import subprocess
+import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -124,3 +126,150 @@ def test_gitlab_network_error_returns_false(ctrl, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "[ERROR] GitLab sync FAILED" in out
     assert "topsecret" not in out
+
+
+def test_parse_args_unknown_arg_is_usage_error(ctrl):
+    assert ctrl.parse_args(["bogus"]) == ("usage-error", "bogus")
+    assert ctrl.parse_args(["--dry-run", "EXTRA"]) == ("usage-error", "EXTRA")
+
+
+def test_parse_args_help(ctrl):
+    assert ctrl.parse_args(["--help"]) == ("help", None)
+    assert ctrl.parse_args(["-h"]) == ("help", None)
+
+
+def test_parse_args_mode_selection(ctrl):
+    assert ctrl.parse_args(["--dry-run"]) == ("dry-run", None)
+    assert ctrl.parse_args(["-n"]) == ("dry-run", None)
+    assert ctrl.parse_args(["--yes"]) == ("yes", None)
+    assert ctrl.parse_args(["-y"]) == ("yes", None)
+    assert ctrl.parse_args([]) == ("run", None)
+
+
+class _FakeCompleted:
+    def __init__(self, returncode=0):
+        self.returncode = returncode
+
+
+class _FakePopen:
+    def __init__(self, returncode=0):
+        self.returncode = returncode
+
+    def communicate(self, input=None, timeout=None):
+        return (b"", b"")
+
+
+def _install_gcp(monkeypatch, describe_rc=0, add_rc=0, popen_raises=None):
+    calls = {"describe": [], "create": [], "add": []}
+
+    def fake_run(cmd, **kwargs):
+        if "describe" in cmd:
+            calls["describe"].append(cmd)
+            return _FakeCompleted(describe_rc)
+        if "create" in cmd:
+            calls["create"].append(cmd)
+            return _FakeCompleted(0)
+        return _FakeCompleted(0)
+
+    def fake_popen(cmd, **kwargs):
+        calls["add"].append((cmd, kwargs))
+        if popen_raises:
+            raise popen_raises
+        return _FakePopen(add_rc)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    return calls
+
+
+def test_gcp_happy_path_describe_then_add_version(ctrl, monkeypatch, capsys):
+    calls = _install_gcp(monkeypatch)
+    assert ctrl.sync_to_gcp_secret_manager("my-key", "topsecret") is True
+    assert len(calls["describe"]) == 1 and not calls["create"]
+    cmd, kwargs = calls["add"][0]
+    assert cmd[:4] == ["gcloud", "secrets", "versions", "add"]
+    assert kwargs.get("stdin") == subprocess.PIPE
+    out = capsys.readouterr().out
+    assert "[ OK ] GCP Secret Manager: my-key updated successfully." in out
+    assert "topsecret" not in out
+
+
+def test_gcp_creates_secret_when_describe_fails(ctrl, monkeypatch, capsys):
+    calls = _install_gcp(monkeypatch, describe_rc=1)
+    assert ctrl.sync_to_gcp_secret_manager("my-key", "topsecret") is True
+    assert calls["create"]
+    assert calls["create"][0][1:4] == ["secrets", "create", "my-key"]
+    assert calls["add"]
+    out = capsys.readouterr().out
+    assert "topsecret" not in out
+
+
+def test_gcp_add_version_failure_returns_false(ctrl, monkeypatch, capsys):
+    _install_gcp(monkeypatch, add_rc=7)
+    assert ctrl.sync_to_gcp_secret_manager("my-key", "topsecret") is False
+    out = capsys.readouterr().out
+    assert "[ERROR] GCP Secret Manager sync FAILED" in out
+    assert "topsecret" not in out
+
+
+def test_gcp_communicate_timeout_returns_false(ctrl, monkeypatch, capsys):
+    _install_gcp(
+        monkeypatch, popen_raises=subprocess.TimeoutExpired(cmd="gcloud", timeout=60)
+    )
+    assert ctrl.sync_to_gcp_secret_manager("my-key", "topsecret") is False
+    out = capsys.readouterr().out
+    assert "[ERROR] GCP Secret Manager sync FAILED" in out
+    assert "timed out" in out
+    assert "topsecret" not in out
+
+
+def _run_main(ctrl, monkeypatch, argv, env):
+    monkeypatch.setattr(sys, "argv", argv)
+    for key in list(ctrl.SYNC_KEYS) + ["GITLAB_TOKEN"]:
+        monkeypatch.delenv(key, raising=False)
+    for key, val in env.items():
+        monkeypatch.setenv(key, val)
+    return ctrl.main()
+
+
+def test_main_no_active_keys_returns_1(ctrl, monkeypatch, capsys):
+    assert _run_main(ctrl, monkeypatch, ["sec"], {}) == 1
+    out = capsys.readouterr().out
+    assert "No active keys found" in out
+
+
+def test_main_non_interactive_without_yes_returns_2(ctrl, monkeypatch, capsys):
+    assert _run_main(ctrl, monkeypatch, ["sec"], {"OPENAI_API_KEY": "sk-1"}) == 2
+    out = capsys.readouterr().out
+    assert "Confirmation required" in out
+
+
+def test_main_dry_run_returns_0(ctrl, monkeypatch, capsys):
+    assert (
+        _run_main(ctrl, monkeypatch, ["sec", "--dry-run"], {"OPENAI_API_KEY": "sk-1"})
+        == 0
+    )
+    out = capsys.readouterr().out
+    assert "DRY RUN COMPLETE" in out
+    assert "sk-1" not in out
+
+
+def test_main_push_success_returns_0(ctrl, monkeypatch, capsys):
+    monkeypatch.setattr(ctrl, "GITLAB_TOKEN", "")
+    monkeypatch.setattr(ctrl, "sync_to_gcp_secret_manager", lambda name, val: True)
+    assert (
+        _run_main(ctrl, monkeypatch, ["sec", "--yes"], {"OPENAI_API_KEY": "sk-1"}) == 0
+    )
+    out = capsys.readouterr().out
+    assert "COMPLETED" in out
+    assert "sk-1" not in out
+
+
+def test_main_push_failure_returns_3(ctrl, monkeypatch, capsys):
+    monkeypatch.setattr(ctrl, "GITLAB_TOKEN", "")
+    monkeypatch.setattr(ctrl, "sync_to_gcp_secret_manager", lambda name, val: False)
+    assert (
+        _run_main(ctrl, monkeypatch, ["sec", "--yes"], {"OPENAI_API_KEY": "sk-1"}) == 3
+    )
+    out = capsys.readouterr().out
+    assert "SYNC FAILED" in out
