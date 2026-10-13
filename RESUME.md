@@ -1,5 +1,20 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (13th run): finished the drift-control sweep #120's bump
+started. Every remaining hardcoded live count or numeral word in
+`tests/test_sentinel.sh` now derives from the live tree, and `sentinel.sh` no
+longer prints a pinned `all 12 reachable`. The rule is that a drift control
+which pins the live value is a control that silently stops testing anything
+the day the live value happens to equal it. Mechanism: a `num_word` helper
+picks a numeral word that differs from the live one, because a digit swap does
+**not** work for the `_NUM_WORDS`-keyed checks (they ignore any word outside
+that map, so a digit yields coverage exit 0). Live `forty-one` and `Twelve`
+spellings forced `[\w-]+` captures in the corruptions, `[A-Za-z-]+` in the
+expectations, and dropped a `[\w-]` inside a `grep -E` bracket that POSIX reads
+as `{\, w, -}`. Negative control: forcing the wrong word back onto the live
+value turns those controls into no-ops and 10 assertions fail. No tracked-file
+or suite-count mirror moved (109 files, 41 cases / 418 assertions).
+
 Session 2026-10-13 (12th run): shipped **#120**'s repo-side half and closed
 **#137** (which the 11th run had staged but not committed). #120: the pytest
 mirror reported a failing bash suite as only `result.stdout[-2000:]`, and for
@@ -550,9 +565,10 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 87, install 9, sentinel 41, sync_guard 16,
 write_honesty 15. Sentinel = 41 cases / 418 assertions. HISTORY.md is at
-7581/8192 bytes - the next narrative addition must compact an older clause first
+7924/8192 bytes - the next narrative addition must compact an older clause first
 (#120's entry compacted the 2026-10-13 paragraph and moved #130-#137's detail
-into `history/2026-10-13.md`, since that detail had only ever lived here).
+into `history/2026-10-13.md`, since that detail had only ever lived here; the
+drift-control sweep compacted it again).
 109 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.

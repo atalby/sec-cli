@@ -75,22 +75,27 @@ packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
 real product bug. #119-#126 swept and guarded stale current-state claims (audit
 profile line anchors, README's backend universe, RESUME's own size claim, and
 two F041 dead config keys -- the per-tenant `cli` line and `[global]
-auto_rotate`, written and documented but read by no code). #127-#136 guarded
-bin/sec's `Configured Tenants:` help line, ADAPTERS.md's pack/persona census,
-profile.md's code-prose counts and tracked-file transcript, sentinel section
-7's shadowable first-match, and the 360-audit-skill-forge spec that declares
-the live skill's shape -- the last "a file it does not read" case
+auto_rotate`). #127-#136 guarded bin/sec's tenant help line, ADAPTERS.md's
+pack/persona census, profile.md's code-prose counts and tracked-file transcript,
+sentinel section 7's shadowable first-match, and the 360-audit-skill-forge spec
 (41 cases / 418 assertions). #137 was the lane's first *product* bug: `bin/sec`
 ran `set -u` and expanded the possibly-empty `SCOPE_ARGS` bare, a fatal
 `unbound variable` on bash < 4.4, so `sec get` died on stock macOS while Linux
-CI stayed green; four sites fixed, plus a source scanner (dispatch case [32])
-so Linux can see the class. #120's repo-side half then closed the observability
-gap behind its own un-diagnosable flake: the pytest mirror reported a failing
-suite as only its last 2000 chars, so for the long dispatch suite a planted
-check name appeared 0 times in the report; it now names every `  FAIL:` line
-with its section (53 -> 58 tests). That bump exposed a second hand-pinned
-mirror -- sentinel case [22]'s `53 passed` drift literals -- now derived. Tracker
-holds #51, #67, #92, #126. Full narrative: `history/2026-10-13.md`.
+CI stayed green; four sites fixed, plus a source scanner (dispatch case [32]).
+#120's repo-side half closed the observability gap behind its own
+un-diagnosable flake: the pytest mirror reported a failing suite as only its
+last 2000 chars, so for the long dispatch suite a planted check name appeared
+0 times in the report; it now names every `  FAIL:` line with its section
+(53 -> 58 tests). That bump exposed a hand-pinned mirror -- case [22]'s
+`53 passed` drift literals -- now derived. The
+same sweep finished the job across the rest of the drift controls: every
+hardcoded live count or numeral word in `tests/test_sentinel.sh` is now derived
+from the live tree (a `num_word` helper picks a numeral that differs from the
+live one, because a `_NUM_WORDS`-keyed check ignores a digit, so a digit swap
+would have silently no-op'd), and `sentinel.sh` no longer prints a pinned
+`all 12 reachable`. Negative control: forcing the wrong word back onto the live
+value turns those controls into no-ops and 10 assertions fail. Tracker holds
+#51, #67, #92, #126. Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was

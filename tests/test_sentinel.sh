@@ -15,6 +15,26 @@ SEED_TAR="$(mktemp "$WORK_ROOT/seed.XXXXXX")"
 seed() { tar -C "$1" -xf "$SEED_TAR"; }
 trap 'rm -rf "$WORK_ROOT"' EXIT
 
+NUM_WORDS="one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty"
+num_word() { local live w; live="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"; for w in $NUM_WORDS; do if [[ "$w" != "$live" ]]; then printf '%s\n' "$w"; return 0; fi; done; return 1; }
+
+LIVE_TRACKED="$(cd "$REPO_ROOT" && git ls-files | wc -l | tr -d ' ')"
+DRIFT_TRACKED="$((LIVE_TRACKED + 1))"
+LIVE_PERSONAS="$(grep -cE '^### [0-9]+\. ' "$REPO_ROOT/skills/architecture-360-audit/profile.md")"
+LIVE_SUITES="$(find "$REPO_ROOT/tests" -maxdepth 1 -name 'test_*.sh' | wc -l | tr -d ' ')"
+DRIFT_PERSONAS="$((LIVE_PERSONAS + 1))"
+DRIFT_SUITES="$((LIVE_SUITES + 1))"
+WRONG_CENSUS="$(num_word five)"
+WRONG_DIMS="$(num_word twelve)"
+WRONG_EXECS="$(num_word five)"
+WRONG_FORGE_STEPS="$(num_word eleven)"
+WRONG_INSTALL="$(num_word nine)"
+WRONG_PERS="$(num_word twelve)"
+WRONG_ROLES="$(num_word nine)"
+WRONG_SENT="$(num_word forty-one)"
+WRONG_STEPS="$(num_word eleven)"
+WRONG_SUITES="$(num_word five)"
+
 echo "[1] coverage subcommand accounts for every tracked file"
 if [[ -x "$SENTINEL" ]]; then
     ok "sentinel.sh exists and is executable"
@@ -34,8 +54,8 @@ if grep -q "\[ OK \] coverage: all .* tracked files claimed" <<<"$OUT"; then
 else
     no "coverage output missing claim summary"
 fi
-if grep -q "personas: all 12 reachable" <<<"$OUT"; then
-    ok "all 12 personas reachable from manifest"
+if grep -qE "personas: all [0-9]+ reachable" <<<"$OUT"; then
+    ok "all personas reachable from manifest"
 else
     no "persona reachability line missing"
 fi
@@ -440,14 +460,17 @@ if n != 1:
     sys.exit("profile.md pack version not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
-python3 - "$WORK_Q/skills/architecture-360-audit/profile.md" <<'PY'
+python3 - "$WORK_Q/skills/architecture-360-audit/profile.md" "$WRONG_ROLES" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"(It defines\s+)nine(\s+roles)", r"\g<1>eight\g<2>", s, count=1)
+s2, n = re.subn(r"(It defines\s+)[\w-]+(\s+roles)", r"\g<1>%s\g<2>" % wrong, s, count=1)
 if n != 1:
-    sys.exit("profile.md 'nine roles' phrase not found to corrupt")
+    sys.exit("profile.md numeric-roles phrase not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
 OUT="$(cd "$WORK_P" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
@@ -469,7 +492,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a stale pack role count"
 fi
-if grep -q "pack: profile.md says the pack defines eight roles" <<<"$OUT"; then
+if grep -qE "pack: profile.md says the pack defines [A-Za-z-]+ roles" <<<"$OUT"; then
     ok "coverage names the stale pack role count"
 else
     no "coverage did not name the stale pack role count"
@@ -787,34 +810,43 @@ WORK_TCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_T1" "$WORK_T2" "$WORK_T3" "$WORK_T4" "$WORK_TCTRL"; do
     seed "$W"
 done
-python3 - "$WORK_T1/skills/architecture-360-audit/profile.md" <<'PY'
+python3 - "$WORK_T1/skills/architecture-360-audit/profile.md" "$WRONG_CENSUS" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"(\w+) suites under `tests/`",
-                "nine suites under `tests/`", s)
+s2, n = re.subn(r"\b[\w-]+ suites under `tests/`",
+                "%s suites under `tests/`" % wrong, s, count=1)
 if n != 1:
     sys.exit("profile.md tests/ suite count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
-python3 - "$WORK_T2/skills/architecture-360-audit/profile.md" <<'PY'
+python3 - "$WORK_T2/skills/architecture-360-audit/profile.md" "$WRONG_CENSUS" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"runs all (\w+) suites", "runs all nine suites", s)
+s2, n = re.subn(r"runs all \b[\w-]+ suites\b", "runs all %s suites" % wrong, s, count=1)
 if n != 1:
     sys.exit("profile.md CI suite-count claim not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
-python3 - "$WORK_T3/docs/ARCHITECTURE.md" <<'PY'
+python3 - "$WORK_T3/docs/ARCHITECTURE.md" "$WRONG_CENSUS" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"(\w+) zero-dependency bash suites",
-                "nine zero-dependency bash suites", s)
+s2, n = re.subn(r"\b[\w-]+ zero-dependency bash suites",
+                "%s zero-dependency bash suites" % wrong, s, count=1)
 if n != 1:
     sys.exit("ARCHITECTURE.md bash suite count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -836,7 +868,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md tests/ suite count"
 fi
-if grep -q "profile.md's tests/ suite census says 9" <<<"$OUT"; then
+if grep -qE "profile.md's tests/ suite census says [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted profile.md tests/ suite count"
 else
     no "coverage did not name the drifted profile.md tests/ suite count"
@@ -849,7 +881,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md CI suite count"
 fi
-if grep -q "profile.md's CI row says it runs all nine suites" <<<"$OUT"; then
+if grep -qE "profile.md's CI row says it runs all [A-Za-z-]+ suites" <<<"$OUT"; then
     ok "coverage names the drifted profile.md CI suite count"
 else
     no "coverage did not name the drifted profile.md CI suite count"
@@ -862,7 +894,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted ARCHITECTURE.md bash suite count"
 fi
-if grep -q "ARCHITECTURE.md says nine zero-dependency bash suites" <<<"$OUT"; then
+if grep -qE "ARCHITECTURE.md says [A-Za-z-]+ zero-dependency bash suites" <<<"$OUT"; then
     ok "coverage names the drifted ARCHITECTURE.md bash suite count"
 else
     no "coverage did not name the drifted ARCHITECTURE.md bash suite count"
@@ -1073,32 +1105,45 @@ WORK_XCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_X1" "$WORK_X2" "$WORK_X3" "$WORK_X4" "$WORK_XCTRL"; do
     seed "$W"
 done
-python3 - "$WORK_X1/skills/architecture-360-audit/SKILL.md" <<'PY'
+python3 - "$WORK_X1/skills/architecture-360-audit/SKILL.md" "$WRONG_STEPS" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"eleven steps", "nine steps", s)
+s2, n = re.subn(r"\b[\w-]+ steps\b", "%s steps" % wrong, s)
 if n < 1:
     sys.exit("SKILL.md step count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
-python3 - "$WORK_X2/skills/architecture-360-audit/SKILL.md" <<'PY'
+python3 - "$WORK_X2/skills/architecture-360-audit/SKILL.md" "$WRONG_PERS" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"twelve personas", "nine personas", s)
+s2, n = re.subn(r"\b[\w-]+ personas\b", "%s personas" % wrong, s)
 if n < 1:
     sys.exit("SKILL.md persona count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
-python3 - "$WORK_X3/skills/architecture-360-audit/profile.md" <<'PY'
+python3 - "$WORK_X3/skills/architecture-360-audit/profile.md" "$WRONG_PERS" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"numbered 1 through 12,", "numbered 1 through 9,", s)
+live = re.search(r"numbered 1 through (\d+),", s)
+if not live:
+    sys.exit("profile.md numbered-personas claim not found to corrupt")
+replacement = "1" if int(live.group(1)) != 1 else "2"
+s2, n = re.subn(r"numbered 1 through \d+,", "numbered 1 through %s," % replacement, s)
 if n != 1:
     sys.exit("profile.md numbered-personas claim not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1120,7 +1165,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted SKILL.md step count"
 fi
-if grep -q "SKILL.md says 'nine steps', live SKILL.md has 11 '## Step' headings" <<<"$OUT"; then
+if grep -qE "SKILL.md says '[A-Za-z-]+ steps', live SKILL.md has [0-9]+ '## Step' headings" <<<"$OUT"; then
     ok "coverage names the drifted SKILL.md step count"
 else
     no "coverage did not name the drifted SKILL.md step count"
@@ -1133,7 +1178,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted SKILL.md persona count"
 fi
-if grep -q "SKILL.md says 'nine personas', profile.md declares 12" <<<"$OUT"; then
+if grep -qE "SKILL.md says '[A-Za-z-]+ personas', profile.md declares [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted SKILL.md persona count"
 else
     no "coverage did not name the drifted SKILL.md persona count"
@@ -1146,7 +1191,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md numbered-personas claim"
 fi
-if grep -q "profile.md says personas are 'Twelve, numbered 1 through 9', live persona-heading count is 12" <<<"$OUT"; then
+if grep -qE "profile.md says personas are '[A-Za-z-]+, numbered 1 through [0-9]+', live persona-heading count is [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted profile.md numbered-personas claim"
 else
     no "coverage did not name the drifted profile.md numbered-personas claim"
@@ -1191,22 +1236,28 @@ else
     PYTEST_OK=0
     echo "  skip: pytest unavailable; section 17 skips the pytest-mirror count check (issue #97)"
 fi
-python3 - "$WORK_Y1/skills/architecture-360-audit/profile.md" <<'PY'
+python3 - "$WORK_Y1/skills/architecture-360-audit/profile.md" "$WRONG_SENT" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"own [\w-]+ sentinel cases", "own twelve sentinel cases", s)
+s2, n = re.subn(r"own [\w-]+ sentinel cases", "own %s sentinel cases" % wrong, s)
 if n < 1:
     sys.exit("profile.md §3 sentinel count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
-python3 - "$WORK_Y2/skills/architecture-360-audit/profile.md" <<'PY'
+python3 - "$WORK_Y2/skills/architecture-360-audit/profile.md" "$WRONG_INSTALL" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"Nine install sections", "Eight install sections", s)
+s2, n = re.subn(r"\b[\w-]+ install sections\b", "%s install sections" % wrong, s, count=1)
 if n != 1:
     sys.exit("profile.md §3 install count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1244,7 +1295,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md §3 sentinel count"
 fi
-if grep -qE "profile.md §3 says 'twelve' for tests/test_sentinel\.sh, live suite has [0-9]+" <<<"$OUT"; then
+if grep -qE "profile.md §3 says '[A-Za-z-]+' for tests/test_sentinel\.sh, live suite has [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted profile.md §3 sentinel count"
 else
     no "coverage did not name the drifted profile.md §3 sentinel count"
@@ -1257,7 +1308,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md §3 install count"
 fi
-if grep -q "profile.md §3 says 'Eight' for tests/test_install.sh, live suite has 9" <<<"$OUT"; then
+if grep -qE "profile.md §3 says '[A-Za-z-]+' for tests/test_install\.sh, live suite has [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted profile.md §3 install count"
 else
     no "coverage did not name the drifted profile.md §3 install count"
@@ -1620,15 +1671,19 @@ WORK_RCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_R1" "$WORK_RCTRL"; do
     seed "$W"
 done
-python3 - "$WORK_R1/RESUME.md" <<'PY'
+python3 - "$WORK_R1/RESUME.md" "$DRIFT_TRACKED" "$DRIFT_PERSONAS" "$DRIFT_SUITES" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+tracked, personas, suites = sys.argv[2], sys.argv[3], sys.argv[4]
+if not tracked or not personas or not suites:
+    sys.exit("no replacement value available for the RESUME.md count line")
 s = open(p, encoding="utf-8").read()
 s2, n = re.subn(
     r"\d+ tracked files, \d+ personas, \d+ bash suites",
-    "107 tracked files, 11 personas, 4 bash suites",
+    "%s tracked files, %s personas, %s bash suites" % (tracked, personas, suites),
     s,
+    count=1,
 )
 if n != 1:
     sys.exit("RESUME.md structural-count line not found to corrupt")
@@ -1642,9 +1697,9 @@ else
     no "coverage accepted drifted RESUME.md structural counts"
 fi
 for _m in \
-    "RESUME\.md says 107 tracked files, live tree has [0-9]+" \
-    "RESUME\.md says 11 personas, profile\.md declares 12" \
-    "RESUME\.md says 4 bash suites, live tree has 5"; do
+    "RESUME\.md says $DRIFT_TRACKED tracked files, live tree has [0-9]+" \
+    "RESUME\.md says $DRIFT_PERSONAS personas, profile\.md declares [0-9]+" \
+    "RESUME\.md says $DRIFT_SUITES bash suites, live tree has [0-9]+"; do
     if grep -qE "$_m" <<<"$OUT"; then
         ok "coverage names the drift: $_m"
     else
@@ -1667,9 +1722,12 @@ WORK_R2CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_R2" "$WORK_R2CTRL"; do
     seed "$W"
 done
-python3 - "$WORK_R2/RESUME.md" <<'PY'
+python3 - "$WORK_R2/RESUME.md" "$DRIFT_TRACKED" "$DRIFT_PERSONAS" "$DRIFT_SUITES" <<'PY'
 import re, sys
 p = sys.argv[1]
+tracked, personas, suites = sys.argv[2], sys.argv[3], sys.argv[4]
+if not tracked or not personas or not suites:
+    sys.exit("no replacement value available for the RESUME.md count line")
 s = open(p, encoding="utf-8").read()
 _m = re.search(r"\d+ tracked files, \d+ personas, \d+ bash suites", s)
 if not _m:
@@ -1677,8 +1735,9 @@ if not _m:
 _correct = _m.group(0)
 s2, n = re.subn(
     r"\d+ tracked files, \d+ personas, \d+ bash suites",
-    "107 tracked files, 11 personas, 4 bash suites",
+    "%s tracked files, %s personas, %s bash suites" % (tracked, personas, suites),
     s,
+    count=1,
 )
 if n != 1:
     sys.exit("expected exactly one structural-count line in RESUME.md")
@@ -1708,7 +1767,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted drift hidden behind an earlier correct mention"
 fi
-if grep -qE "RESUME\.md says 107 tracked files, live tree has [0-9]+" <<<"$OUT"; then
+if grep -qE "RESUME\.md says $DRIFT_TRACKED tracked files, live tree has [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted real line despite the earlier correct mention"
 else
     no "coverage did not name the drifted real line"
@@ -2224,14 +2283,16 @@ else
     printf '%s\n' "$OUT"
 fi
 python3 - "$WORK_P2/ADAPTERS.md" <<'PY'
+import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-old = "9-persona taxonomy total"
-new = "10-persona taxonomy total"
-if old not in s:
+s2, n = re.subn(r"\b\d+-persona taxonomy total\b",
+                lambda m: "%d-persona taxonomy total" % (int(m.group(0).split("-")[0]) + 1),
+                s, count=1)
+if n != 1:
     sys.exit("ADAPTERS.md: no persona-taxonomy count to probe")
-open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+open(p, "w", encoding="utf-8").write(s2)
 PY
 OUT="$(cd "$WORK_P2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
 RC=$?
@@ -2241,7 +2302,7 @@ else
     no "coverage accepted a drifted persona-taxonomy count"
     printf '%s\n' "$OUT"
 fi
-if grep -qE "says 10-persona taxonomy total, PACK\.md enumerates 9" <<<"$OUT"; then
+if grep -qE "says [0-9]+-persona taxonomy total, PACK\.md enumerates [0-9]+" <<<"$OUT"; then
     ok "coverage names the persona-taxonomy drift"
 else
     no "coverage did not name the persona-taxonomy drift"
@@ -2359,15 +2420,18 @@ WORK_S8CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_S8A" "$WORK_S8B" "$WORK_S8C" "$WORK_S8CTRL"; do
     seed "$W"
 done
-python3 - "$WORK_S8A/skills/architecture-360-audit/profile.md" <<'PY'
+python3 - "$WORK_S8A/skills/architecture-360-audit/profile.md" "$WRONG_SUITES" <<'PY'
+import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-old = "five green"
-new = "six green"
-if old not in s:
-    sys.exit("profile.md: no 'five green' suite-count spelling to probe")
-open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+s2, n = re.subn(r"\b[\w-]+ green\b", "%s green" % wrong, s, count=1)
+if n != 1:
+    sys.exit("profile.md: no numeric suite-count spelling to probe")
+open(p, "w", encoding="utf-8").write(s2)
 PY
 OUT="$(cd "$WORK_S8A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
 RC=$?
@@ -2377,21 +2441,24 @@ else
     no "coverage accepted a drifted suite-count spelling"
     printf '%s\n' "$OUT"
 fi
-if grep -qE "says 'six \.\.\. suite\(s\)', live tree has 5 bash suites" <<<"$OUT"; then
+if grep -qE "says '[A-Za-z-]+ \.\.\. suite\(s\)', live tree has [0-9]+ bash suites" <<<"$OUT"; then
     ok "coverage names the drifted suite-count spelling"
 else
     no "coverage did not name the drifted suite-count spelling"
     printf '%s\n' "$OUT"
 fi
-python3 - "$WORK_S8B/skills/architecture-360-audit/profile.md" <<'PY'
+python3 - "$WORK_S8B/skills/architecture-360-audit/profile.md" "$WRONG_DIMS" <<'PY'
+import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-old = "twelve fixed dimensions"
-new = "thirteen fixed dimensions"
-if old not in s:
-    sys.exit("profile.md: no 'twelve fixed dimensions' claim to probe")
-open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+s2, n = re.subn(r"\b[\w-]+ fixed dimensions\b", "%s fixed dimensions" % wrong, s, count=1)
+if n != 1:
+    sys.exit("profile.md: no numeric fixed-dimension claim to probe")
+open(p, "w", encoding="utf-8").write(s2)
 PY
 OUT="$(cd "$WORK_S8B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
 RC=$?
@@ -2401,21 +2468,24 @@ else
     no "coverage accepted a drifted persona-dimension count"
     printf '%s\n' "$OUT"
 fi
-if grep -qE "says 'thirteen fixed dimensions', live persona-heading count is 12" <<<"$OUT"; then
+if grep -qE "says '[A-Za-z-]+ fixed dimensions', live persona-heading count is [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted persona-dimension count"
 else
     no "coverage did not name the drifted persona-dimension count"
     printf '%s\n' "$OUT"
 fi
-python3 - "$WORK_S8C/skills/architecture-360-audit/profile.md" <<'PY'
+python3 - "$WORK_S8C/skills/architecture-360-audit/profile.md" "$WRONG_EXECS" <<'PY'
+import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-old = "five sibling executables"
-new = "six sibling executables"
-if old not in s:
-    sys.exit("profile.md: no 'five sibling executables' decomposition to probe")
-open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+s2, n = re.subn(r"\b[\w-]+ sibling executables\b", "%s sibling executables" % wrong, s, count=1)
+if n != 1:
+    sys.exit("profile.md: no numeric decomposition claim to probe")
+open(p, "w", encoding="utf-8").write(s2)
 PY
 OUT="$(cd "$WORK_S8C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
 RC=$?
@@ -2425,7 +2495,7 @@ else
     no "coverage accepted a drifted bin component decomposition"
     printf '%s\n' "$OUT"
 fi
-if grep -qE "component decomposition says six sibling executables, live tree has 5 non-controller non-MCP" <<<"$OUT"; then
+if grep -qE "component decomposition says [A-Za-z-]+ sibling executables, live tree has [0-9]+ non-controller non-MCP" <<<"$OUT"; then
     ok "coverage names the drifted bin component decomposition"
 else
     no "coverage did not name the drifted bin component decomposition"
@@ -2446,15 +2516,20 @@ WORK_S9CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_S9A" "$WORK_S9CTRL"; do
     seed "$W"
 done
-python3 - "$WORK_S9A/skills/architecture-360-audit/profile.md" <<'PY'
+python3 - "$WORK_S9A/skills/architecture-360-audit/profile.md" "$DRIFT_TRACKED" "$LIVE_TRACKED" <<'PY'
+import re
 import sys
 p = sys.argv[1]
+drift = sys.argv[2]
+live = sys.argv[3]
+if not drift or not live:
+    sys.exit("no tracked-file count available for the transcript probe")
 s = open(p, encoding="utf-8").read()
-old = "git ls-files | wc -l\n    109\n"
-new = "git ls-files | wc -l\n    108\n"
-if old not in s:
+s2, n = re.subn(r"git ls-files \| wc -l\n    \d+\n",
+                "git ls-files | wc -l\n    %s\n" % drift, s, count=1)
+if n != 1:
     sys.exit("profile.md: no tracked-file-count transcript to probe")
-open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+open(p, "w", encoding="utf-8").write(s2)
 PY
 OUT="$(cd "$WORK_S9A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
 RC=$?
@@ -2464,7 +2539,7 @@ else
     no "coverage accepted a drifted tracked-file-count transcript"
     printf '%s\n' "$OUT"
 fi
-if grep -qE "executed-commands transcript says 108 tracked files, but git ls-files reports 109" <<<"$OUT"; then
+if grep -qE "executed-commands transcript says $DRIFT_TRACKED tracked files, but git ls-files reports $LIVE_TRACKED" <<<"$OUT"; then
     ok "coverage names the drifted executed-commands transcript"
 else
     no "coverage did not name the drifted executed-commands transcript"
@@ -2554,12 +2629,15 @@ WORK_S11CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_S11A" "$WORK_S11B" "$WORK_S11CTRL"; do
     seed "$W"
 done
-python3 - "$WORK_S11A/skills/360-audit-skill-forge/SKILL.md" <<'PY'
+python3 - "$WORK_S11A/skills/360-audit-skill-forge/SKILL.md" "$WRONG_FORGE_STEPS" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"Eleven steps", "Nine steps", s)
+s2, n = re.subn(r"\b[\w-]+ steps,", "%s steps," % wrong, s, count=1)
 if n != 1:
     sys.exit("forge step-count claim not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -2572,18 +2650,21 @@ else
     no "coverage accepted a forge step-count drift"
     printf '%s\n' "$OUT"
 fi
-if grep -qE "360-audit-skill-forge says 'Nine steps', live SKILL.md has [0-9]+" <<<"$OUT"; then
+if grep -qE "360-audit-skill-forge says '[A-Za-z-]+ steps', live SKILL.md has [0-9]+" <<<"$OUT"; then
     ok "coverage names the forge step-count drift"
 else
     no "coverage did not name the forge step-count drift"
     printf '%s\n' "$OUT"
 fi
-python3 - "$WORK_S11B/skills/360-audit-skill-forge/SKILL.md" <<'PY'
+python3 - "$WORK_S11B/skills/360-audit-skill-forge/SKILL.md" "$WRONG_DIMS" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"twelve bound audit dimensions", "eight bound audit dimensions", s)
+s2, n = re.subn(r"\b[\w-]+ bound audit dimensions\b", "%s bound audit dimensions" % wrong, s, count=1)
 if n != 1:
     sys.exit("forge persona/dimension claim not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -2596,7 +2677,7 @@ else
     no "coverage accepted a forge dimension-count drift"
     printf '%s\n' "$OUT"
 fi
-if grep -qE "360-audit-skill-forge says 'eight personas/dimensions', profile.md declares [0-9]+" <<<"$OUT"; then
+if grep -qE "360-audit-skill-forge says '[A-Za-z-]+ personas/dimensions', profile.md declares [0-9]+" <<<"$OUT"; then
     ok "coverage names the forge dimension-count drift"
 else
     no "coverage did not name the forge dimension-count drift"

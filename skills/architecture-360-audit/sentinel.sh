@@ -1810,6 +1810,6 @@ print(f"{OK} version claim: OPERATOR_MANUAL.md's documented `--version` output m
 print(f"{OK} tenant help line: bin/sec's `Configured Tenants:` lists exactly the routable aliases")
 print(f"{OK} code census: profile.md's SYNC_KEYS count + sync-controller timeout sites + install.sh/bin/sec zero-timeout claim match the live code")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
-print(f"{OK} personas: all 12 reachable from the manifest")
+print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)
 PY
