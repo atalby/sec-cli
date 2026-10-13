@@ -1207,19 +1207,51 @@ elif _live_help is not None and _readme_fence_m.group(1) != _live_help:
         "README.md's quoted `sec --help` block is not byte-identical to live 'bin/sec --help' output"
     )
 
-_readme_ini_m = re.search(r"```ini\n([\s\S]*?)\n```", _readme_text)
 _sec_conf_m = re.search(r'cat <<EOF > "\$CONFIG_FILE"\n([\s\S]*?)\nEOF', _sec_text)
-if _readme_ini_m is None:
-    readme_mismatches.append("README.md carries no fenced ```ini sec.conf sample")
-elif _sec_conf_m is None:
+if _sec_conf_m is None:
     readme_mismatches.append("bin/sec carries no 'cat <<EOF > $CONFIG_FILE' default-config heredoc")
-elif _readme_ini_m.group(1) != _sec_conf_m.group(1):
-    readme_mismatches.append(
-        "README.md's sec.conf sample is not byte-identical to bin/sec's ensure_config heredoc"
-    )
 
-if _readme_ini_m is not None:
-    _sample_keys = sorted(set(re.findall(r"^\s*([a-z_]+)\s*=", _readme_ini_m.group(1), re.M)))
+_CONF_DOC_SURFACES = ("README.md", "docs/MULTI_TENANCY.md", "sec.conf.example")
+
+
+def _conf_sample_body(rel_path, raw):
+    if raw is None:
+        return None
+    if rel_path == "sec.conf.example":
+        return raw.rstrip("\n")
+    fences = re.findall(r"```ini\n([\s\S]*?)\n```", raw)
+    if not fences:
+        return None
+    if len(fences) > 1:
+        readme_mismatches.append(
+            f"{rel_path} carries {len(fences)} fenced ```ini blocks, so which one is the "
+            "sec.conf sample is ambiguous; keep exactly one"
+        )
+    return fences[0]
+
+
+if _sec_conf_m is not None:
+    _conf_canonical = _sec_conf_m.group(1)
+    for _rel in _CONF_DOC_SURFACES:
+        try:
+            with open(os.path.join(repo, _rel), encoding="utf-8") as _fh:
+                _conf_raw = _fh.read()
+        except OSError as _exc:
+            _conf_raw = None
+            readme_mismatches.append(f"could not read the {_rel} sec.conf sample surface: {_exc}")
+        _conf_body = _conf_sample_body(_rel, _conf_raw)
+        if _conf_body is None:
+            if _conf_raw is not None:
+                readme_mismatches.append(f"{_rel} carries no fenced ```ini sec.conf sample")
+            continue
+        if _conf_body != _conf_canonical:
+            readme_mismatches.append(
+                f"{_rel}'s sec.conf sample is not byte-identical to bin/sec's ensure_config "
+                "heredoc (the only text bin/sec ever writes); keep explanatory prose outside "
+                "the fence"
+            )
+
+    _sample_keys = sorted(set(re.findall(r"^\s*([a-z_]+)\s*=", _conf_canonical, re.M)))
     _cfg_reads = re.findall(r"get_cfg_val\s+(?:\"[^\"]*\"|\$\w+)\s+\"([a-z_]+)\"", _sec_text)
     _unread_sample_keys = [_k for _k in _sample_keys if _k not in _cfg_reads]
     if _unread_sample_keys:

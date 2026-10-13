@@ -51,7 +51,6 @@ export PATH="$HOME/.local/bin:$PATH"
 # ~/.sec/sec.conf: Fleet Multi-Tenant Secret Manager Configuration
 [global]
 default_backend = bitwarden
-auto_rotate = true
 
 [bitwarden]
 auto_rotate = true

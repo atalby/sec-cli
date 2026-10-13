@@ -1,5 +1,13 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (3rd run): shipped **#125** -- F041's second half. Deleted the
+dead `[global] auto_rotate = true` from the heredoc and both doc samples, and
+widened the #123 config-surface guard from two surfaces to all four (which
+surfaced that `sec.conf.example` had already drifted and that
+`docs/MULTI_TENANCY.md` was never guarded at all). Filed **#126** (the
+`get_cfg_val` parser silently ignores a key with no `=`). No work in flight:
+clean tree on `main`, CI green.
+
 Session 2026-10-13 (2nd run): resumed an UNCOMMITTED tree that already held
 most of #123 (dead `cli` config keys + a sentinel sub-check) and finished it --
 the previous run left `sentinel.sh citations` red (39 shifted `bin/sec:N`
@@ -29,20 +37,24 @@ then the fresh 360 audit (#67, after human scope approval).
 
 ## Next autonomous work
 
-Start with **#125** (autonomous, in-repo):
-- **#125** (`[global] auto_rotate` is dead config; `sec.conf.example` and
-  `docs/MULTI_TENANCY.md` are unguarded config surfaces) - delete the
-  `[global] auto_rotate = true` line from the `bin/sec` heredoc, the README
-  sample and the MULTI_TENANCY sample; widen the #123 config-surface check
-  from two surfaces to all four (modulo `sec.conf.example`'s leading comment
-  line); extend case [32] with a drift probe + control. Removing a line at
-  the top of `bin/sec` shifts every `bin/sec:N` anchor >= it by -1 (gotcha 3),
-  and the new assertion count must hit the mirrors BEFORE green (gotcha 2).
-  Resume: `gh issue view 125`.
-After #125, the next high-value candidates are a fresh sweep for the next
-unguarded current-state claim (as #116, #117, #123 and #124 were) or another
+Start with a fresh sweep for the next unguarded current-state claim (the class
+#116, #117, #123, #124 and #125 were all instances of), then another
 sentinel-robustness class (as #118 was), then the fresh 360 audit (#67, after
-human scope approval.
+human scope approval).
+Cheapest concrete next candidates, in order:
+- Re-measure every numeric claim in `ADAPTERS.md`, `docs/ARCHITECTURE.md` and
+  `docs/OPERATOR_MANUAL.md` against the live tree and file one issue per
+  unguarded claim. #123, #124 and #125 were all found this way; the audit
+  profile's own line-number anchors are guarded by `citations`, but its prose
+  counts are not.
+- **#126** (filed this run) - `get_cfg_val`'s awk parser silently skips a line
+  with no `=`, so a `default_backend bitwarden` typo is ignored with no signal
+  and falls back to the built-in default. The intended behavior (reject the
+  file vs emit a tagged `[WARN]`) is a design decision that changes CLI output,
+  so it needs a human call, not an autonomous edit. Filed rather than fixed
+  because #123 and #125 both touched this parser and never considered its
+  failure modes, and a silent ignore in a credential-adjacent parser is the
+  highest-severity class left in this repo.
 The rest are gated and not autonomously actionable:
 - **#120** (one-off flaky `test_dispatch.sh` failure in pre-commit Step 5) -
   tracked; not reproducible in ~16 runs; a recurrence needs the hub-side hook
@@ -74,6 +86,34 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #125 `fix(config)` -> `fix(sentinel)` - F041's second half. The heredoc wrote
+  `[global] auto_rotate = true` into every fresh `sec.conf`, but the only read
+  of `auto_rotate` is `get_cfg_val "$tenant" "auto_rotate" "true"` -- the
+  per-TENANT block, never `[global]`. Audit F041 had named it ("`[global]
+  auto_rotate` is equally unread"); #123 closed the `cli` half and left this
+  open. Empirically confirmed dead before deleting: with the line removed,
+  `bin/sec --help` and bare `bin/sec` against a fresh `$HOME` both exit 0 with
+  an identical banner and the same default tenant. Line came out of the heredoc,
+  the README sample and the MULTI_TENANCY sample.
+  The same sweep found two surfaces nobody guarded: `docs/MULTI_TENANCY.md`'s
+  sample omitted the heredoc's leading comment line, and `sec.conf.example` was
+  missing `[global] auto_rotate` entirely -- so it already disagreed with what
+  `bin/sec` writes. Rather than add a normalization special case, the
+  MULTI_TENANCY sample gained the comment line, which makes all four surfaces
+  byte-identical with no exception to encode. `coverage`'s section 18 widened
+  from two surfaces (heredoc vs README) to a four-way identity check, plus a
+  guard that a surface carrying two ```ini fences is rejected as ambiguous
+  rather than silently resolved to the first.
+  Proved the widening was needed, not decorative: seeded a temp repo at `e71e74a`,
+  drifted `docs/MULTI_TENANCY.md` and `sec.conf.example` with README untouched,
+  and the PRE-#125 sentinel exited 0. Four new probes (one per new guard branch)
+  + 1 control; 8 new assertions, 322 -> 338. Deleting one line at the top of
+  `bin/sec` shifted all 39 `bin/sec:N` anchors >= 20 by -1 (gotcha 3);
+  `citations` exited 0 after the re-pin. `HISTORY.md` needed a compaction pass
+  to fit #124 and #125 under its 8192-byte budget, which immediately tripped
+  the #124 guard (RESUME.md's own figure went stale in the same edit) -- the
+  guard firing on its own author.
+
 - #124 `fix(sentinel)` -> `8e528a2` - RESUME.md's `## Verified baseline` states
   HISTORY.md's live size but nothing checked it (the sentinel guards
   HISTORY.md's own budget, never the figure RESUME.md quotes); #123's
@@ -97,7 +137,9 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   silently ignored setting"); `bin/sec` is the only `sec.conf` owner and
   resolves the tenant binary from a hardcoded alias table. The five lines came
   out of the `bin/sec` heredoc, the README sample and `docs/MULTI_TENANCY.md`
-  (all four config surfaces now agree). `coverage` gained a sub-check failing
+  (of the three documented surfaces, only README and MULTI_TENANCY were
+  guarded; `sec.conf.example` had already drifted and #125 fixed it).
+  `coverage` gained a sub-check failing
   when a sample key is not the second argument of a `get_cfg_val` call in
   `bin/sec` -- anchored on the CALL SHAPE, not the bare quoted literal, so
   case [32] probe 3 (`_key_probe="cli"`) proves a quoted-but-never-read key
@@ -142,7 +184,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   exits nonzero naming the drift; control exits 0). Sentinel 26 -> 27 cases /
   266 -> 272 assertions; mirrors `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`,
   `RESUME.md:141`; `_NUM_WORDS` gains `twenty-seven`; control [22] literals
-  re-pinned. `HISTORY.md` now 7938/8192 bytes.
+  re-pinned. `HISTORY.md` now 8062/8192 bytes.
 - #115 `fix(sec-organizer)` -> `2549973` - `sec-organizer apply`/`revert` did not
   guard a corrupt plan/snapshot and died on a raw `jq` parse (exit 4, no tagged
   line). Now a tagged `[ERROR]` + exit 1, file kept. `tests/test_write_honesty.sh`
@@ -250,8 +292,8 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 86, install 9, sentinel 33, sync_guard 16,
-write_honesty 15. Sentinel = 33 cases / 322 assertions. HISTORY.md is at
-7938/8192 bytes - the next narrative addition must compact an older clause first.
+write_honesty 15. Sentinel = 33 cases / 338 assertions. HISTORY.md is at
+8062/8192 bytes - the next narrative addition must compact an older clause first.
 108 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.

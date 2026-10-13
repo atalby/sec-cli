@@ -84,17 +84,18 @@ bare `line N` references in the audit profile; #121 made `citations` fail on
 one; #122 guarded README.md's front-page backend universe. #123 closed F041:
 the per-tenant `cli = <backend>` key was written into every fresh `sec.conf`
 and documented in three surfaces while no code read it, so the five lines came
-out of the `bin/sec` heredoc, the README sample and `docs/MULTI_TENANCY.md`
-(all four config surfaces now agree) and `coverage` gained a sub-check that
+out of the heredoc and both samples, and `coverage` gained a sub-check that
 fails when a sample key is not a `get_cfg_val` read in `bin/sec`, anchored on
-the call shape so a quoted-but-unread key still fails. Removing five lines at
-the top of `bin/sec` shifted all 39 `bin/sec:N` anchors >= 23 by -5, which
-broke two hand-bumped control literals; the live-count assertion is now
-regex-shaped so the control stops breaking on every count bump. All five bash
-suites pass (sentinel 32 cases / 314 assertions); the pytest mirror (53
-tests) passes. The tracker holds #51, #67, #92, #120 (one-off flaky
-`test_dispatch.sh` failure, not reproducible). Full narrative:
-`history/2026-10-12.md`.
+the call shape so a quoted-but-unread key still fails. That shift broke two
+hand-bumped control literals; the live-count assertion is now regex-shaped so
+the control stops breaking on every count bump. All five bash
+suites pass (sentinel 33 cases / 338 assertions); the pytest mirror (53
+tests) passes. #124 then guarded RESUME.md's own HISTORY.md size claim, scoped
+to its Verified-baseline section so narrative mentions stay legal; #125 closed
+F041's second half (the `[global] auto_rotate` key, written and read by no
+code) and widened #123's check from two config surfaces to all four. The
+tracker holds #51, #67, #92, #120 (one-off flaky `test_dispatch.sh` failure,
+not reproducible). Full narrative: `history/2026-10-12.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was

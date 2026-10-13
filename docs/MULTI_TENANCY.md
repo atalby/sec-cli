@@ -11,9 +11,9 @@ The configuration file lives at `~/.sec/sec.conf` (mode `0600`).
 ### Example Configuration
 
 ```ini
+# ~/.sec/sec.conf: Fleet Multi-Tenant Secret Manager Configuration
 [global]
 default_backend = bitwarden
-auto_rotate = true
 
 [bitwarden]
 auto_rotate = true

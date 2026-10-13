@@ -1806,12 +1806,16 @@ else
     printf '%s\n' "$OUT"
 fi
 
-echo "[32] sec.conf sample keys must all be read by code in bin/sec (issue #123)"
+echo "[32] every sec.conf sample surface must be byte-identical to the heredoc, and every key read (issue #123, widened by #125)"
 WORK_C1="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_C2="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_C3="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_C4="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_C5="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_C6="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_C7="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_CCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for W in "$WORK_C1" "$WORK_C2" "$WORK_C3" "$WORK_CCTRL"; do
+for W in "$WORK_C1" "$WORK_C2" "$WORK_C3" "$WORK_C4" "$WORK_C5" "$WORK_C6" "$WORK_C7" "$WORK_CCTRL"; do
     seed "$W"
 done
 python3 - "$WORK_C1/README.md" "$WORK_C1/bin/sec" <<'PY'
@@ -1893,6 +1897,94 @@ if grep -qF "read by no code in bin/sec (the sole config owner): cli" <<<"$OUT";
     ok "coverage names the sample key that is quoted but never a get_cfg_val read"
 else
     no "coverage did not name the quoted-but-unread sample key"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_C4/docs/MULTI_TENANCY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+if "[bws]\nauto_rotate = true" not in s:
+    sys.exit("docs/MULTI_TENANCY.md: no '[bws]\\nauto_rotate = true' block to probe")
+open(p, "w", encoding="utf-8").write(
+    s.replace("[bws]\nauto_rotate = true", "[bws]\nauto_rotate = false", 1)
+)
+PY
+OUT="$(cd "$WORK_C4" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the MULTI_TENANCY.md sec.conf sample drifts from the heredoc"
+else
+    no "coverage accepted a drifted docs/MULTI_TENANCY.md sec.conf sample"
+fi
+if grep -qF "docs/MULTI_TENANCY.md's sec.conf sample is not byte-identical to bin/sec's ensure_config" <<<"$OUT"; then
+    ok "coverage names docs/MULTI_TENANCY.md as the drifted surface"
+else
+    no "coverage did not name docs/MULTI_TENANCY.md as the drifted surface"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_C5/sec.conf.example" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+if "default_backend = bitwarden" not in s:
+    sys.exit("sec.conf.example: no default_backend line to probe")
+open(p, "w", encoding="utf-8").write(
+    s.replace("default_backend = bitwarden", "default_backend = bws", 1)
+)
+PY
+OUT="$(cd "$WORK_C5" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when sec.conf.example drifts from the heredoc"
+else
+    no "coverage accepted a drifted sec.conf.example"
+fi
+if grep -qF "sec.conf.example's sec.conf sample is not byte-identical to bin/sec's ensure_config" <<<"$OUT"; then
+    ok "coverage names sec.conf.example as the drifted surface"
+else
+    no "coverage did not name sec.conf.example as the drifted surface"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_C6/docs/MULTI_TENANCY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+if "```ini\n" not in s or "\n```" not in s:
+    sys.exit("docs/MULTI_TENANCY.md: no ini fence to unwrap")
+open(p, "w", encoding="utf-8").write(s.replace("```ini\n", "~~~ini\n", 1))
+PY
+OUT="$(cd "$WORK_C6" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a sec.conf sample surface has no fenced ini block"
+else
+    no "coverage accepted a sec.conf sample surface with no fenced ini block"
+fi
+if grep -qF "docs/MULTI_TENANCY.md carries no fenced \`\`\`ini sec.conf sample" <<<"$OUT"; then
+    ok "coverage names the surface that lost its fenced ini block"
+else
+    no "coverage did not name the surface that lost its fenced ini block"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_C7/docs/MULTI_TENANCY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+if s.count("```ini\n") != 1:
+    sys.exit("docs/MULTI_TENANCY.md: expected exactly one ini fence to duplicate")
+open(p, "w", encoding="utf-8").write(s + "\n```ini\n[global]\ndefault_backend = bitwarden\n```\n")
+PY
+OUT="$(cd "$WORK_C7" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a sec.conf sample surface carries two ini fences"
+else
+    no "coverage accepted a sec.conf sample surface carrying two ini fences"
+fi
+if grep -qE "docs/MULTI_TENANCY\.md carries 2 fenced \`\`\`ini blocks" <<<"$OUT"; then
+    ok "coverage names the ambiguous surface and its fence count"
+else
+    no "coverage did not name the ambiguous surface and its fence count"
     printf '%s\n' "$OUT"
 fi
 OUT="$(cd "$WORK_CCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
