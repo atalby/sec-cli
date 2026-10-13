@@ -76,28 +76,27 @@ needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
 `history/2026-10-12.md`.
 
-**2026-10-13**: the guard-hardening lane kept closing (audit-finding
-regressions plus the guards that would have caught them). #119 re-pinned stale
-bare `line N` references in the audit profile; #121 made `citations` fail on
+**2026-10-13**: the guard-hardening lane kept closing (audit
+regressions plus their guards). #119 re-pinned stale
+bare `line N` references in the audit profile and #121 made `citations` fail on
 one; #122 guarded README.md's front-page backend universe. #123 closed F041:
 the per-tenant `cli = <backend>` key was written into every fresh `sec.conf`
 and documented in three surfaces while no code read it, so the five lines came
 out of the heredoc and both samples, and `coverage` gained a sub-check that
-fails when a sample key is not a `get_cfg_val` read in `bin/sec`, anchored on
-the call shape so a quoted-but-unread key still fails. Two hand-bumped control
-literals broke in that shift; the live-count assertion is now regex-shaped so
-count bumps stop breaking it. All five bash suites pass (sentinel 36 cases /
-362 assertions); the pytest mirror (53 tests) passes. #124 then guarded
-RESUME.md's own HISTORY.md size claim, scoped to its Verified-baseline section
-so narrative mentions stay legal; #125 closed F041's second half (the
-`[global] auto_rotate` key, written and read by no code) and widened #123's
-check from two config surfaces to all four. #127 guarded bin/sec's hardcoded
-`Configured Tenants:` help line against the live dispatcher alias regex.
-#129 then guarded ADAPTERS.md's Opted-in Policy Packs census (all five pack
-versions + the 9-persona taxonomy total) against the live PACK.md
-files (sentinel 35 -> 36 cases / 352 -> 362 assertions). The
-tracker holds #51, #67, #92, #120, #126. Full narrative:
-`history/2026-10-13.md`.
+fails when a sample key is not a `get_cfg_val` read in `bin/sec` (anchored on
+the call shape, so a quoted-but-unread key still fails); the control literals
+it broke are now regex-shaped. #124 guarded RESUME.md's own HISTORY.md size
+claim, scoped to its Verified-baseline section so narrative mentions stay
+legal; #125 closed F041's second half (the `[global] auto_rotate` key, written
+and read by no code) and widened #123's check from two config surfaces to all
+four. #127 guarded bin/sec's hardcoded `Configured Tenants:` help line against
+the live dispatcher alias regex; #129 guarded ADAPTERS.md's Opted-in Policy
+Packs census (all five pack versions + the 9-persona taxonomy total) against
+the live PACK.md files (sentinel 35 -> 36 cases). #130-#132 then guarded
+profile.md's own code-prose counts (SYNC_KEYS' six env keys, the sync
+controller's 4 timeout sites, install.sh/bin/sec's zero-timeout claim) against
+the live files (sentinel 36 -> 37 cases / 362 -> 378 assertions). Tracker
+holds #51, #67, #92, #120, #126. Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was

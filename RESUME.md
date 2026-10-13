@@ -1,5 +1,15 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (6th run): shipped **#130**, **#131** and **#132** -- three
+profile.md code-prose counts. Persona 11 cited the sync controller's
+"**4 timeout sites**" and install.sh/bin/sec's "**zero** timeout occurrences",
+persona 1 cited SYNC_KEYS' "six env keys"; none was derived from the code.
+Sentinel section 22 now counts `timeout=` in bin/sec-sync-controller.py, scans
+install.sh + bin/sec for any timeout construct, and parses the live SYNC_KEYS
+list -- comparing each claim's count and (for SYNC_KEYS) the member set.
+Test case [37] (3 probes + control, 16 new assertions, 36 -> 37 cases /
+362 -> 378). Tree clean on `main`, CI green.
+
 Session 2026-10-13 (5th run): shipped **#129** — the unguarded-claim sweep of
 ADAPTERS.md / docs/ARCHITECTURE.md / docs/OPERATOR_MANUAL.md found one
 unguarded census: ADAPTERS.md's Opted-in Policy Packs section (five
@@ -58,24 +68,24 @@ This lane shipped a long run of guard/fix/perf units (#97..#123), all CI-green.
 The open item **#120** below has no in-repo remedy yet; every other open item
 is hub-side or human-gated. If the lane is run again, the highest-value
 candidates are a fresh sweep for the next unguarded current-state claim (as
-#116, #117 and #123 were) or another sentinel-robustness class (as #118 was),
-then the fresh 360 audit (#67, after human scope approval).
+#116, #117, #123 and #130-#132 were) or another sentinel-robustness class (as
+#118 was), then the fresh 360 audit (#67, after human scope approval).
 
 ## Next autonomous work
 
 The 5th-run sweep of ADAPTERS.md / docs/ARCHITECTURE.md / docs/OPERATOR_MANUAL.md
-is complete (found and shipped #129; every other numeric claim in the three
-docs verified guarded or historical). Next candidates, in order: another
-sentinel-robustness class (as #118 was), a sweep of profile.md's own prose
-counts for any remaining unguarded mirror, then the fresh 360 audit (#67, after
-human scope approval).
+is complete (found and shipped #129) and the 6th-run sweep of profile.md's own
+prose counts found and shipped #130-#132 (its persona-1/persona-11 code-prose
+counts). Next candidates, in order: another sentinel-robustness class (as #118
+was), a re-sweep of profile.md's remaining prose counts for any unguarded mirror
+(the #130-#132 pass covered the code-derived ones), then the fresh 360 audit
+(#67, after human scope approval).
 Cheapest concrete next candidates, in order:
-- Re-measure every numeric claim in `ADAPTERS.md`, `docs/ARCHITECTURE.md` and
-  `docs/OPERATOR_MANUAL.md` against the live tree and file one issue per
-  unguarded claim. #123, #124 and #125 were all found this way; the audit
-  profile's own line-number anchors are guarded by `citations`, but its prose
-  counts are not.
-- **#126** (filed this run) - `get_cfg_val`'s awk parser silently skips a line
+- Re-measure every numeric claim in `profile.md` against the live tree and file
+  one issue per unguarded claim. #123, #124, #125 and #130-#132 were all found
+  this way; the audit profile's own line-number anchors are guarded by
+  `citations`, but its remaining prose counts may not be.
+- **#126** (filed 3rd run) - `get_cfg_val`'s awk parser silently skips a line
   with no `=`, so a `default_backend bitwarden` typo is ignored with no signal
   and falls back to the built-in default. The intended behavior (reject the
   file vs emit a tagged `[WARN]`) is a design decision that changes CLI output,
@@ -114,6 +124,23 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   (hub-side handoff, tracked upstream).
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
+
+- #130/#131/#132 `fix(sentinel)` - profile.md's own code-prose counts, all
+  guarded by the new sentinel section 22. Persona 11 cited the sync
+  controller's "**4 timeout sites**" (nothing derived it from the `timeout=`
+  occurrences) and install.sh/bin/sec's "**zero** timeout occurrences";
+  persona 1 cited SYNC_KEYS' "six env keys". Section 22 counts `timeout=` in
+  `bin/sec-sync-controller.py`, scans install.sh + bin/sec for any
+  `timeout`/`--max-time`/`--connect-timeout`, and parses the live SYNC_KEYS
+  list -- failing on both a count drift and a member-set drift. Case [37]:
+  probe 1 bumps profile's "4 timeout sites" to 5, probe 2 plants `timeout 30`
+  on install.sh's git clone (live 1 vs the zero claim), probe 3 drops
+  `STRIPE_SECRET_KEY` from SYNC_KEYS (live 5 + names drift), control exits 0.
+  16 new assertions (8 ok/no sites), 36 -> 37 cases / 362 -> 378; `_NUM_WORDS`
+  gains `zero` + `thirty-seven`. Mirrors bumped at profile.md:22 + :641,
+  ADAPTERS.md:56 + :262, RESUME.md baseline; HISTORY.md's 2026-10-13 block
+  gained the #130-#132 sentence and was compacted to stay under budget
+  (8188 -> 8178).
 
 - #129 `fix(sentinel)` - ADAPTERS.md's Opted-in Policy Packs section cited
   all five pack versions (`zero-cost-infra-defaults`, `solo-founder-governance`,
@@ -359,9 +386,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 86, install 9, sentinel 36, sync_guard 16,
-write_honesty 15. Sentinel = 36 cases / 362 assertions. HISTORY.md is at
-8188/8192 bytes - the next narrative addition must compact an older clause first.
+mirrors in sync): dispatch 86, install 9, sentinel 37, sync_guard 16,
+write_honesty 15. Sentinel = 37 cases / 378 assertions. HISTORY.md is at
+8178/8192 bytes - the next narrative addition must compact an older clause first.
 109 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.

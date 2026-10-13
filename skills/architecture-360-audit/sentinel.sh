@@ -604,6 +604,7 @@ if _adapters_text:
 # --- 10. profile.md's cited pack taxonomy must match PACK.md (issue #86) ------
 pack_mismatches = []
 _NUM_WORDS = {
+    "zero": 0,
     "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
     "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
     "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16,
@@ -612,7 +613,7 @@ _NUM_WORDS = {
     "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
     "thirty": 30, "thirty-two": 32, "thirty-three": 33, "thirty-four": 34,
-    "thirty-five": 35, "thirty-six": 36,
+    "thirty-five": 35, "thirty-six": 36, "thirty-seven": 37,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1493,6 +1494,72 @@ else:
             f"routable-only {sorted(_live_aliases - _cited_aliases) or 'none'}"
         )
 
+# --- 22. profile.md's persona-11 timeout counts + persona-1 SYNC_KEYS census
+#         must match the live controller / install.sh / bin/sec (#130/#131/#132) --
+code_census_mismatches = []
+try:
+    with open(os.path.join(repo, "bin", "sec-sync-controller.py"), encoding="utf-8") as _fh:
+        _ctrl_src = _fh.read()
+except OSError:
+    _ctrl_src = ""
+try:
+    with open(os.path.join(repo, "install.sh"), encoding="utf-8") as _fh:
+        _install_src = _fh.read()
+except OSError:
+    _install_src = ""
+
+# persona 1: "SYNC_KEYS ... names the six env keys (verified ...: A, B, ...)"
+_sync_block_m = re.search(r"SYNC_KEYS = \[(.*?)\]", _ctrl_src, re.S)
+_sync_cited_m = re.search(
+    r"([\w-]+) env keys \(verified \d{4}-\d{2}-\d{2}: ([^)]+)\)", profile_text
+)
+if not _sync_block_m:
+    code_census_mismatches.append("bin/sec-sync-controller.py carries no SYNC_KEYS list")
+elif not _sync_cited_m:
+    code_census_mismatches.append("profile.md states no 'N env keys (verified ...: ...)' SYNC_KEYS claim")
+else:
+    _sync_live = re.findall(r'"([A-Z0-9_]+)"', _sync_block_m.group(1))
+    _sync_cited = [n.strip() for n in _sync_cited_m.group(2).split(",") if n.strip()]
+    if _NUM_WORDS.get(_sync_cited_m.group(1)) != len(_sync_live):
+        code_census_mismatches.append(
+            f"profile.md says SYNC_KEYS names {_sync_cited_m.group(1)} env keys, "
+            f"live list has {len(_sync_live)}"
+        )
+    if _sync_cited != _sync_live:
+        code_census_mismatches.append(
+            "profile.md's SYNC_KEYS list is not the live controller's: cited-only "
+            f"{sorted(set(_sync_cited) - set(_sync_live)) or 'none'}, live-only "
+            f"{sorted(set(_sync_live) - set(_sync_cited)) or 'none'}"
+        )
+
+# persona 11: "bin/sec-sync-controller.py has **N timeout sites**"
+_prof_timeout_m = re.search(r"has \*\*(\d+) timeout sites\*\*", profile_text)
+if not _prof_timeout_m:
+    code_census_mismatches.append("profile.md states no 'N timeout sites' claim for the sync controller")
+else:
+    _live_timeouts = len(re.findall(r"timeout=", _ctrl_src))
+    if int(_prof_timeout_m.group(1)) != _live_timeouts:
+        code_census_mismatches.append(
+            f"profile.md says the sync controller has {_prof_timeout_m.group(1)} timeout sites, "
+            f"live code has {_live_timeouts} 'timeout=' occurrence(s)"
+        )
+
+# persona 11: "install.sh and bin/sec still have **zero** timeout occurrences"
+_prof_zero_m = re.search(r"still have \*\*(\w+)\*\* timeout occurrences", profile_text)
+if not _prof_zero_m:
+    code_census_mismatches.append(
+        "profile.md states no 'still have N timeout occurrences' claim for install.sh/bin/sec"
+    )
+else:
+    _timeout_re = re.compile(r"timeout|--max-time|--connect-timeout", re.I)
+    for _label, _src in (("install.sh", _install_src), ("bin/sec", _sec_text)):
+        _live_zero = len(_timeout_re.findall(_src))
+        if _NUM_WORDS.get(_prof_zero_m.group(1)) != _live_zero:
+            code_census_mismatches.append(
+                f"profile.md says {_label} has {_prof_zero_m.group(1)} timeout occurrences, "
+                f"live file has {_live_zero}"
+            )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -1609,6 +1676,12 @@ if tenant_line_mismatches:
     )
     for _m in tenant_line_mismatches:
         print(f"{ERROR} tenant help line: {_m}")
+if code_census_mismatches:
+    failures.append(
+        f"{len(code_census_mismatches)} profile.md code-prose count(s) drifted from the live controller/install.sh/bin/sec"
+    )
+    for _m in code_census_mismatches:
+        print(f"{ERROR} code census: {_m}")
 
 if failures:
     for f in failures:
@@ -1633,6 +1706,7 @@ print(f"{OK} README: quoted `sec --help` + sec.conf sample + migrate backend lis
 print(f"{OK} migrate surfaces: source/destination backend sets agree across migrator, 4 shells + OPERATOR_MANUAL")
 print(f"{OK} version claim: OPERATOR_MANUAL.md's documented `--version` output matches live 'bin/sec version'")
 print(f"{OK} tenant help line: bin/sec's `Configured Tenants:` lists exactly the routable aliases")
+print(f"{OK} code census: profile.md's SYNC_KEYS count + sync-controller timeout sites + install.sh/bin/sec zero-timeout claim match the live code")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)

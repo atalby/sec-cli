@@ -2248,6 +2248,101 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[37] profile.md's persona-1 SYNC_KEYS + persona-11 timeout counts must match the live code (issues #130/#131/#132)"
+WORK_S1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S3="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_SCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_S1" "$WORK_S2" "$WORK_S3" "$WORK_SCTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_S1/skills/architecture-360-audit/profile.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "has **4 timeout sites**"
+new = "has **5 timeout sites**"
+if old not in s:
+    sys.exit("profile.md: no '4 timeout sites' claim to probe")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_S1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when profile.md's sync-controller timeout-site count drifts"
+else
+    no "coverage accepted a drifted sync-controller timeout-site count"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "says the sync controller has 5 timeout sites, live code has 4" <<<"$OUT"; then
+    ok "coverage names the sync-controller timeout-site drift"
+else
+    no "coverage did not name the sync-controller timeout-site drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_S2/install.sh" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "git clone --depth 1"
+new = "timeout 30 git clone --depth 1"
+if old not in s:
+    sys.exit("install.sh: no 'git clone --depth 1' site to probe")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_S2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when install.sh gains a timeout against profile.md's zero claim"
+else
+    no "coverage accepted a live install.sh timeout against a zero claim"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "says install.sh has zero timeout occurrences, live file has 1" <<<"$OUT"; then
+    ok "coverage names the install.sh zero-timeout drift"
+else
+    no "coverage did not name the install.sh zero-timeout drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_S3/bin/sec-sync-controller.py" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = '    "STRIPE_SECRET_KEY",\n'
+new = ''
+if old not in s:
+    sys.exit("controller: no STRIPE_SECRET_KEY entry to probe")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_S3" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SYNC_KEYS loses a key but profile.md still cites six"
+else
+    no "coverage accepted a drifted SYNC_KEYS list"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "says SYNC_KEYS names six env keys, live list has 5" <<<"$OUT"; then
+    ok "coverage names the SYNC_KEYS count drift"
+else
+    no "coverage did not name the SYNC_KEYS count drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "SYNC_KEYS list is not the live controller's: cited-only \['STRIPE_SECRET_KEY'\]" <<<"$OUT"; then
+    ok "coverage names the drifted SYNC_KEYS member"
+else
+    no "coverage did not name the drifted SYNC_KEYS member"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_SCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (SYNC_KEYS + timeout counts match the live code) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
