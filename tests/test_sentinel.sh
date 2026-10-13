@@ -1194,7 +1194,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"own twenty-eight sentinel cases", "own twelve sentinel cases", s)
+s2, n = re.subn(r"own twenty-nine sentinel cases", "own twelve sentinel cases", s)
 if n != 1:
     sys.exit("profile.md §3 sentinel count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1236,7 +1236,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md §3 sentinel count"
 fi
-if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 28" <<<"$OUT"; then
+if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 29" <<<"$OUT"; then
     ok "coverage names the drifted profile.md §3 sentinel count"
 else
     no "coverage did not name the drifted profile.md §3 sentinel count"
@@ -1648,6 +1648,61 @@ OUT="$(cd "$WORK_RCTRL" && git init -q . && git add -A && "skills/architecture-3
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (correct RESUME.md structural counts) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[29] a claim quoted earlier in the doc must not hide drift in the real current-state line (issue #118)"
+WORK_R2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_R2CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_R2" "$WORK_R2CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_R2/RESUME.md" <<'PY'
+import re, sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"\d+ tracked files, \d+ personas, \d+ bash suites",
+    "107 tracked files, 11 personas, 4 bash suites",
+    s,
+)
+if n != 1:
+    sys.exit("expected exactly one structural-count line in RESUME.md")
+head, sep, tail = s2.partition("\n")
+open(p, "w", encoding="utf-8").write(
+    head + sep + "\nAn earlier mention: 108 tracked files, 12 personas, 5 bash suites.\n" + tail
+)
+PY
+python3 - "$WORK_R2CTRL/RESUME.md" <<'PY'
+import re, sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+if len(re.findall(r"\d+ tracked files, \d+ personas, \d+ bash suites", s)) != 1:
+    sys.exit("expected exactly one structural-count line in RESUME.md")
+head, sep, tail = s.partition("\n")
+open(p, "w", encoding="utf-8").write(
+    head + sep + "\nAn earlier mention: 108 tracked files, 12 personas, 5 bash suites.\n" + tail
+)
+PY
+OUT="$(cd "$WORK_R2" && git init -q && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the real line drifts despite an earlier correct mention"
+else
+    no "coverage accepted drift hidden behind an earlier correct mention"
+fi
+if grep -qF "RESUME.md says 107 tracked files, live tree has 108" <<<"$OUT"; then
+    ok "coverage names the drifted real line despite the earlier correct mention"
+else
+    no "coverage did not name the drifted real line"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_R2CTRL" && git init -q && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (two agreeing mentions) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"

@@ -604,7 +604,7 @@ _NUM_WORDS = {
     "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
     "twenty-one": 21, "twenty-two": 22, "twenty-three": 23,
     "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
-    "twenty-seven": 27, "twenty-eight": 28,
+    "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1055,23 +1055,27 @@ if _pytest_available:
         ("ADAPTERS.md", r"pytest scripts/tests/ -q` is now (\d+) passed", _adapters_text),
         ("SKILL.md", r"all five bash suites \((\d+) passed", _skill_text),
     ):
-        _m = re.search(_pattern, _text)
-        if not _m:
+        _found = re.findall(_pattern, _text)
+        if not _found:
             count_claim_mismatches.append(f"{_label} carries no pytest 'N passed' claim")
-        elif int(_m.group(1)) != _collected:
-            count_claim_mismatches.append(
-                f"{_label} says pytest mirror is {_m.group(1)} passed, live collection counts {_collected}"
-            )
+        else:
+            for _v in dict.fromkeys(_found):
+                if int(_v) != _collected:
+                    count_claim_mismatches.append(
+                        f"{_label} says pytest mirror is {_v} passed, live collection counts {_collected}"
+                    )
     # HISTORY.md's current-state summary cites the pytest mirror count too
     # ("the pytest mirror (N tests) passes") -- a fourth unguarded mirror
     # (#116). history_text is read for section 6 above.
-    _hm = re.search(r"pytest mirror \((\d+)\s+tests\)", history_text)
+    _hm = re.findall(r"pytest mirror \((\d+)\s+tests\)", history_text)
     if not _hm:
         count_claim_mismatches.append("HISTORY.md carries no pytest 'N tests' claim")
-    elif int(_hm.group(1)) != _collected:
-        count_claim_mismatches.append(
-            f"HISTORY.md says pytest mirror is {_hm.group(1)} tests, live collection counts {_collected}"
-        )
+    else:
+        for _v in dict.fromkeys(_hm):
+            if int(_v) != _collected:
+                count_claim_mismatches.append(
+                    f"HISTORY.md says pytest mirror is {_v} tests, live collection counts {_collected}"
+                )
 
 # RESUME.md is itself a hand-bumped count mirror (its 'suite counts ... mirrors
 # in sync' line + the 'Sentinel = N cases / M assertions' total) with no guard.
@@ -1125,27 +1129,28 @@ else:
             f"RESUME.md says Sentinel = {_rasserts} assertions, live suite has {_live_asserts}"
         )
 
-_resume_struct_m = re.search(
+_resume_struct_all = re.findall(
     r"(\d+) tracked files, (\d+) personas, (\d+) bash suites", _resume_text
 )
-if not _resume_struct_m:
+if not _resume_struct_all:
     count_claim_mismatches.append(
         "RESUME.md carries no 'N tracked files, N personas, N bash suites' line"
     )
 else:
-    _rt, _rp, _rs = (int(_resume_struct_m.group(_i)) for _i in (1, 2, 3))
-    if _rt != len(tracked):
-        count_claim_mismatches.append(
-            f"RESUME.md says {_rt} tracked files, live tree has {len(tracked)}"
-        )
-    if _rp != _live_personas:
-        count_claim_mismatches.append(
-            f"RESUME.md says {_rp} personas, profile.md declares {_live_personas}"
-        )
-    if _rs != _live_suite_count:
-        count_claim_mismatches.append(
-            f"RESUME.md says {_rs} bash suites, live tree has {_live_suite_count}"
-        )
+    for _triple in dict.fromkeys(_resume_struct_all):
+        _rt, _rp, _rs = (int(_v) for _v in _triple)
+        if _rt != len(tracked):
+            count_claim_mismatches.append(
+                f"RESUME.md says {_rt} tracked files, live tree has {len(tracked)}"
+            )
+        if _rp != _live_personas:
+            count_claim_mismatches.append(
+                f"RESUME.md says {_rp} personas, profile.md declares {_live_personas}"
+            )
+        if _rs != _live_suite_count:
+            count_claim_mismatches.append(
+                f"RESUME.md says {_rs} bash suites, live tree has {_live_suite_count}"
+            )
 
 # --- 18. README.md's quoted `sec --help` + default sec.conf blocks + migrate backend list
 #         must match the live CLI (issue #107) ---------------------------------
