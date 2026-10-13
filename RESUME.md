@@ -1,5 +1,18 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (9th run): shipped **#135** -- the next sentinel-robustness
+class. sentinel section 7 (per-suite section counts, the #48 drift class) derived
+each suite's count with `profile_text.find(f"test_{_s}.sh")` (first mention
+anywhere) then `re.search` (the next count after it), so one earlier
+`tests/test_<suite>.sh` mention with no count on its own line made the guard read
+a *different* suite's count -- the same #118 non-anchored-search class that #87
+already fixed in the sibling section 9. Pre-fix probe: an intro line naming
+`tests/test_dispatch.sh` made coverage exit 1 with "says 9 for
+tests/test_dispatch.sh". Now same-line-bound + `findall` all-must-match (the
+section 9 convention); test case [40] (2 probes + control, 10 new assertions,
+39 -> 40 cases / 398 -> 408). `_NUM_WORDS` gains `forty`. HISTORY.md now
+8148/8192 bytes. Tracker holds #51, #67, #92, #120, #126.
+
 Session 2026-10-13 (8th run): shipped **#134** -- the resume's sentinel-robustness
 class. profile.md:435 quoted `git ls-files | wc -l` as `99` in the
 executed-commands transcript, a stale value contradicting the profile's own
@@ -97,20 +110,23 @@ candidates are a fresh sweep for the next unguarded current-state claim (as
 The 5th-run sweep of ADAPTERS.md / docs/ARCHITECTURE.md / docs/OPERATOR_MANUAL.md
 is complete (found and shipped #129), the 6th-run sweep of profile.md's
 code-prose counts shipped #130-#132, the 7th-run sweep of profile.md's
-remaining prose counts shipped #133, and the 8th-run sentinel-robustness pass
+remaining prose counts shipped #133, the 8th-run sentinel-robustness pass
 shipped #134 (the executed-commands transcript twin of the tracked-file
-denominator, 99 -> 109, now derived in section 5). profile.md's numeric claims
-are exhaustively guarded. Next candidates, in order: another
+denominator, 99 -> 109, now derived in section 5), and the 9th run shipped #135
+(section 7's per-suite count guard was the last `find`+`re.search` first-match;
+now same-line-bound + `findall` all-must-match like section 9). profile.md's
+numeric claims are exhaustively guarded. Next candidates, in order: another
 sentinel-robustness class (as #118 was), then the fresh 360 audit (#67, after
 human scope approval).
 Cheapest concrete next candidates, in order:
-- A sentinel-robustness class: the guards added ad hoc (#123-#134) each attach
+- A sentinel-robustness class: the guards added ad hoc (#123-#135) each attach
   to a specific section; audit for a class of claim the sentinel still cannot
-  see (a spelling/variant it does not scan, a file it does not read). Concrete
-  lead: section 7's per-suite count guard does `profile_text.find(f"test_{_s}.sh")`
-  (first occurrence) then `re.search` from there -- a shadowable first-match of
-  the same #118 class; check whether an earlier `test_<s>.sh` mention can shadow
-  the guarded `(N sections|cases)` site before hardening it to `findall`.
+  see (a spelling/variant it does not scan, a file it does not read). Next
+  concrete lead: sweep the remaining single `re.search(...)` extractors in
+  `sentinel.sh` for the same non-anchored/scope-grab shape (e.g. section 9's
+  `re.search(r"current suites:([^;]*)")` scope grab -- ADAPTERS.md has one such
+  site today, so theoretical until a second mention appears); harden any that a
+  doc edit could shadow, and add a case per hardening.
 - **#126** (filed 3rd run) - `get_cfg_val`'s awk parser silently skips a line
   with no `=`, so a `default_backend bitwarden` typo is ignored with no signal
   and falls back to the built-in default. The intended behavior (reject the
@@ -428,9 +444,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 86, install 9, sentinel 39, sync_guard 16,
-write_honesty 15. Sentinel = 39 cases / 398 assertions. HISTORY.md is at
-7966/8192 bytes - the next narrative addition must compact an older clause first.
+mirrors in sync): dispatch 86, install 9, sentinel 40, sync_guard 16,
+write_honesty 15. Sentinel = 40 cases / 408 assertions. HISTORY.md is at
+8148/8192 bytes - the next narrative addition must compact an older clause first.
 109 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.

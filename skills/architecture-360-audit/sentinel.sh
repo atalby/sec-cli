@@ -492,16 +492,16 @@ for _s in ("install", "sync_guard", "write_honesty", "sentinel", "dispatch"):
             suite_counts[_s] = sum(1 for _ln in _fh if _ln.startswith('echo "['))
 suite_mismatches = []
 for _s, _live in suite_counts.items():
-    _i = profile_text.find(f"test_{_s}.sh")
-    if _i < 0:
+    if profile_text.find(f"test_{_s}.sh") < 0:
         suite_mismatches.append(f"profile.md does not cite tests/test_{_s}.sh")
         continue
-    _m = re.search(r"\((\d+)\s+(?:sections|cases)\b", profile_text[_i:])
-    if not _m:
+    _cited = re.findall(rf"test_{_s}\.sh[^\n]*?\((\d+)\s+(?:sections|cases)\b", profile_text)
+    if not _cited:
         suite_mismatches.append(f"profile.md cites no '(N sections|cases)' count for tests/test_{_s}.sh")
         continue
-    if int(_m.group(1)) != _live:
-        suite_mismatches.append(f"profile.md says {_m.group(1)} for tests/test_{_s}.sh, live suites have {_live}")
+    for _num in dict.fromkeys(_cited):
+        if int(_num) != _live:
+            suite_mismatches.append(f"profile.md says {_num} for tests/test_{_s}.sh, live suites have {_live}")
 
 
 # --- 8. cited census counts must match the live tree (the #49 drift class) -----
@@ -619,7 +619,7 @@ _NUM_WORDS = {
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
     "thirty": 30, "thirty-two": 32, "thirty-three": 33, "thirty-four": 34,
     "thirty-five": 35, "thirty-six": 36, "thirty-seven": 37, "thirty-eight": 38,
-    "thirty-nine": 39,
+    "thirty-nine": 39, "forty": 40,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:

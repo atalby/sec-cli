@@ -95,7 +95,9 @@ profile.md's last unguarded counts: seven suite-count spellings, "twelve fixed
 dimensions", and "five sibling executables, one Python controller"
 decomposition (37 -> 38 cases / 378 -> 392); #134 then guarded the
 executed-commands `git ls-files | wc -l` transcript, a stale 99 vs live 109
-(38 -> 39 cases / 398 assertions). Tracker
+(38 -> 39 cases / 398 assertions); #135 anchored section 7's per-suite count
+guard (one earlier `tests/test_<suite>.sh` mention mis-bound the next count; now
+same-line-bound + `findall`, 39 -> 40 cases / 398 -> 408). Tracker
 holds #51, #67, #92, #120, #126. Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared

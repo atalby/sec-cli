@@ -2471,6 +2471,74 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[40] profile.md's suite counts must bind to their own line, not the next mention (issue #135)"
+WORK_S10A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S10B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S10CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_S10A" "$WORK_S10B" "$WORK_S10CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_S10A/skills/architecture-360-audit/profile.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+shadow = "Intro note: the largest suite is tests/test_dispatch.sh and it exercises the whole dispatcher.\n"
+if "Intro note:" in s:
+    sys.exit("profile.md: shadow prologue already present")
+open(p, "w", encoding="utf-8").write(shadow + s)
+PY
+OUT="$(cd "$WORK_S10A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "coverage exits 0 when an earlier no-count tests/test_dispatch.sh mention precedes the count row"
+else
+    no "coverage mis-bound an earlier same-suite mention to the next count (exited $RC)"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE '\[ERROR\] suite count' <<<"$OUT"; then
+    no "coverage still reports a suite-count drift for the shadowed mention"
+    printf '%s\n' "$OUT"
+else
+    ok "coverage does not mis-bind an earlier same-suite mention to a later count"
+fi
+python3 - "$WORK_S10B/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"(test_dispatch\.sh` -> ALL TESTS PASSED \()[0-9]+( sections\))",
+    r"\g<1>999\g<2>",
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("dispatch count row not found to drift")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_S10B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage still exits nonzero when a bound suite count genuinely drifts"
+else
+    no "coverage accepted a drifted bound suite count"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "says 999 for tests/test_dispatch\.sh, live suites have [0-9]+" <<<"$OUT"; then
+    ok "coverage names the genuinely drifted suite count"
+else
+    no "coverage did not name the drifted suite count"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_S10CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (suite counts bind on their own row) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
