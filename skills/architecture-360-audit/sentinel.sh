@@ -619,7 +619,7 @@ _NUM_WORDS = {
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
     "thirty": 30, "thirty-two": 32, "thirty-three": 33, "thirty-four": 34,
     "thirty-five": 35, "thirty-six": 36, "thirty-seven": 37, "thirty-eight": 38,
-    "thirty-nine": 39, "forty": 40,
+    "thirty-nine": 39, "forty": 40, "forty-one": 41,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1092,6 +1092,48 @@ else:
         skill_struct_mismatches.append(
             f"SKILL.md's severity set is {sorted(_sev_cited)}, canonical is {sorted(_sev_set)}"
         )
+
+forge_mismatches = []
+_forge_path = os.path.join(repo, "skills", "360-audit-skill-forge", "SKILL.md")
+try:
+    with open(_forge_path, encoding="utf-8") as _fh:
+        _forge_text = _fh.read()
+except OSError:
+    _forge_text = ""
+if not _forge_text:
+    forge_mismatches.append("skills/360-audit-skill-forge/SKILL.md not found")
+else:
+    _norm_forge = re.sub(r"\s+", " ", _forge_text)
+    _live_top_headings = len(re.findall(r"(?m)^#{1,2} ", _skill_text))
+    _forge_shape = re.search(r"(\w+) steps, (\w+) headings counting the title", _norm_forge)
+    if not _forge_shape:
+        forge_mismatches.append(
+            "360-audit-skill-forge carries no 'N steps, N headings counting the title' shape claim"
+        )
+    else:
+        if _forge_shape.group(1).lower() in _NUM_WORDS and _NUM_WORDS[_forge_shape.group(1).lower()] != _skill_step_count:
+            forge_mismatches.append(
+                f"360-audit-skill-forge says '{_forge_shape.group(1)} steps', live SKILL.md has {_skill_step_count} '## Step' headings"
+            )
+        if _forge_shape.group(2).lower() in _NUM_WORDS and _NUM_WORDS[_forge_shape.group(2).lower()] != _live_top_headings:
+            forge_mismatches.append(
+                f"360-audit-skill-forge says '{_forge_shape.group(2)} headings counting the title', live SKILL.md has {_live_top_headings} top-level headings"
+            )
+    for _fw in re.findall(r"\b(\w+) (?:bound audit dimensions|personas|dimensions)\b", _norm_forge):
+        if _fw.lower() in _NUM_WORDS and _NUM_WORDS[_fw.lower()] != _live_personas:
+            forge_mismatches.append(
+                f"360-audit-skill-forge says '{_fw} personas/dimensions', profile.md declares {_live_personas}"
+            )
+    for _fw in re.findall(r"\b(\w+) values only\b", _norm_forge):
+        if _fw.lower() in _NUM_WORDS and _NUM_WORDS[_fw.lower()] != len(_sev_set):
+            forge_mismatches.append(
+                f"360-audit-skill-forge says '{_fw} severity values only', canonical set has {len(_sev_set)}"
+            )
+    for _fw in re.findall(r"Offer exactly (\w+) scopes", _norm_forge):
+        if _fw.lower() in _NUM_WORDS and _NUM_WORDS[_fw.lower()] != _live_scopes:
+            forge_mismatches.append(
+                f"360-audit-skill-forge says 'Offer exactly {_fw} scopes', live Step 1 offers {_live_scopes}"
+            )
 
 
 # --- 17. profile.md's §3 count-words + the pytest mirror's collected count must match (#97) --
@@ -1708,6 +1750,10 @@ if skill_struct_mismatches:
     failures.append(f"{len(skill_struct_mismatches)} SKILL.md/profile.md structural count(s) drifted from the live skill files")
     for _m in skill_struct_mismatches:
         print(f"{ERROR} skill structure: {_m}")
+if forge_mismatches:
+    failures.append(f"{len(forge_mismatches)} 360-audit-skill-forge structural count(s) drifted from the live SKILL.md")
+    for _m in forge_mismatches:
+        print(f"{ERROR} skill forge: {_m}")
 if count_claim_mismatches:
     failures.append(f"{len(count_claim_mismatches)} profile.md §3 / pytest-mirror count claim(s) drifted from the live suites")
     for _m in count_claim_mismatches:
@@ -1756,6 +1802,7 @@ print(f"{OK} bin/ helper census: profile.md + ADAPTERS.md match {_live_bin_helpe
 print(f"{OK} suite census: profile.md + ARCHITECTURE.md + SKILL.md match {_live_suite_count} tracked bash suite(s), ARCHITECTURE.md's suite list matches the tracked names")
 print(f"{OK} structural prose: MULTI_TENANCY.md tenant aliases + profile.md CI checkout pin + OPERATOR_MANUAL.md principle count match the live tree")
 print(f"{OK} skill structure: SKILL.md steps + personas + scopes + severity set match the live skill files")
+print(f"{OK} skill forge: 360-audit-skill-forge's declared steps/headings/personas/scopes/severity match the live SKILL.md")
 print(f"{OK} count claims: profile.md §3 count-words + ADAPTERS.md/SKILL.md pytest-mirror count + RESUME.md suite counts match the live suites")
 print(f"{OK} README: quoted `sec --help` + sec.conf sample + migrate backend list match the live CLI")
 print(f"{OK} migrate surfaces: source/destination backend sets agree across migrator, 4 shells + OPERATOR_MANUAL")

@@ -29,7 +29,7 @@ own secrets tool, not just another repo.
   Engineer) — this repo's opted-in `packs/solo-founder-governance`
   names a single final approver, and no other opted-in pack or doc here
   names a different owner.
-- **Last updated**: 2026-10-13 (issue #135: sentinel section 7's per-suite count guard was a shadowable first-match -- an earlier tests/test_<suite>.sh mention mis-bound the next '(N sections|cases)' count; now same-line-bound + findall all-must-match (the section 9/#118 convention), test case [40]; issue #134: the profile.md executed-commands `git ls-files | wc -l` transcript -- the manifest-denominator twin -- was stale (99 vs the live 109) and unguarded; sentinel section 5 now derives both surfaces, test case [39]; issues #78/#79: the fish completion surface
+- **Last updated**: 2026-10-13 (issue #136: sentinel.sh never read skills/360-audit-skill-forge/SKILL.md -- the generator spec that declares the live audit skill's shape ("Eleven steps, sixteen headings", "twelve bound audit dimensions", "one of three values only", "Offer exactly two scopes"); section 16 now cross-checks those constants against the live SKILL.md/profile.md, test case [41]; issue #135: sentinel section 7's per-suite count guard was a shadowable first-match -- an earlier tests/test_<suite>.sh mention mis-bound the next '(N sections|cases)' count; now same-line-bound + findall all-must-match (the section 9/#118 convention), test case [40]; issue #134: the profile.md executed-commands `git ls-files | wc -l` transcript -- the manifest-denominator twin -- was stale (99 vs the live 109) and unguarded; sentinel section 5 now derives both surfaces, test case [39]; issues #78/#79: the fish completion surface
   now offers the tenant-prefix words and routes the organize alias to the
   housekeep subcommands, dispatch guards 22q/22r; issue #81: the ps1 completion now reads the real CommandAst.CommandElements (ArgumentElements does not exist, so the subcommand arms were dead) and all four surfaces complete the powershell shell word + migrate backend values, guards 22t/22u; issue #82: the bare help/version subcommands the dispatcher accepts are now completed on all four surfaces, guard 22v; issue #83: the `get --scope` and `set/create --type` flags the dispatcher accepts are now completed on all four surfaces, guard 22w; issue #65: corrected the stale `SEC_TEST_DISPATCH` opt-in and pre-commit "blind to `tests/*.sh`" claims across ADAPTERS.md, the 360-audit skill, and CI; issue #47: the 103 KB `HISTORY.md` narrative was
   split losslessly into per-date `history/` archives and guarded against re-bloat;
@@ -53,7 +53,7 @@ own secrets tool, not just another repo.
   if absent); issue #62: the GCP create-if-absent branch itself is now
   pinned by sync_guard section [16] (the shim reads `SEC_TEST_GCLOUD_DESCRIBE_RC`);
   current suites: dispatch 86, write-honesty 15,
-  sentinel 40, sync-guard 16, install 9; earlier 2026-10-10, later
+  sentinel 41, sync-guard 16, install 9; earlier 2026-10-10, later
   same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
   the four fast bash suites with dispatch opt-in behind `SEC_TEST_DISPATCH=1`,
@@ -259,7 +259,7 @@ per AGENTS.md §5's replace-don't-append rule.
 - **Command**: `bash tests/test_install.sh` (9 sections, install path),
   `bash tests/test_sync_guard.sh` (16 sections, sync guard canaries),
   `bash tests/test_write_honesty.sh` (15 sections, silent-no-op write
-    paths, revert/undo honesty, keeper sync-failure + non-TTY honesty),   `bash tests/test_sentinel.sh` (40 cases,
+    paths, revert/undo honesty, keeper sync-failure + non-TTY honesty),   `bash tests/test_sentinel.sh` (41 cases,
   the 360 audit instrument's coverage/citations sentinel) and
   `bash tests/test_dispatch.sh` (86 sections, every `sec` dispatch arm
   plus the seven sibling `bin/` helpers the suite references —

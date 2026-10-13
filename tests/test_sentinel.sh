@@ -2539,6 +2539,70 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[41] 360-audit-skill-forge's declared shape must match the live SKILL.md (issue #136)"
+WORK_S11A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S11B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S11CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_S11A" "$WORK_S11B" "$WORK_S11CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_S11A/skills/360-audit-skill-forge/SKILL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"Eleven steps", "Nine steps", s)
+if n != 1:
+    sys.exit("forge step-count claim not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_S11A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the forge's step count drifts from the live SKILL.md"
+else
+    no "coverage accepted a forge step-count drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "360-audit-skill-forge says 'Nine steps', live SKILL.md has [0-9]+" <<<"$OUT"; then
+    ok "coverage names the forge step-count drift"
+else
+    no "coverage did not name the forge step-count drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_S11B/skills/360-audit-skill-forge/SKILL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"twelve bound audit dimensions", "eight bound audit dimensions", s)
+if n != 1:
+    sys.exit("forge persona/dimension claim not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_S11B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the forge's dimension count drifts from the live profile.md"
+else
+    no "coverage accepted a forge dimension-count drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "360-audit-skill-forge says 'eight personas/dimensions', profile.md declares [0-9]+" <<<"$OUT"; then
+    ok "coverage names the forge dimension-count drift"
+else
+    no "coverage did not name the forge dimension-count drift"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_S11CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (forge matches the live SKILL.md) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
