@@ -1194,7 +1194,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"own twenty-six sentinel cases", "own twelve sentinel cases", s)
+s2, n = re.subn(r"own twenty-seven sentinel cases", "own twelve sentinel cases", s)
 if n != 1:
     sys.exit("profile.md §3 sentinel count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1236,7 +1236,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md §3 sentinel count"
 fi
-if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 26" <<<"$OUT"; then
+if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 27" <<<"$OUT"; then
     ok "coverage names the drifted profile.md §3 sentinel count"
 else
     no "coverage did not name the drifted profile.md §3 sentinel count"
@@ -1559,6 +1559,48 @@ OUT="$(cd "$WORK_VCTRL" && git init -q . && git add -A && "skills/architecture-3
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (correct OPERATOR_MANUAL.md --version) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[27] HISTORY.md's current-state pytest-mirror count must match the live suite (issue #116)"
+WORK_H1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_HCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_H1" "$WORK_HCTRL"; do
+    seed "$W"
+done
+if python3 -c "import pytest" >/dev/null 2>&1; then
+    python3 - "$WORK_H1/HISTORY.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"pytest mirror \(53", "pytest mirror (52", s)
+if n != 1:
+    sys.exit("HISTORY.md pytest-mirror count not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+    OUT="$(cd "$WORK_H1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+    RC=$?
+    if [[ $RC -ne 0 ]]; then
+        ok "coverage exits nonzero on a drifted HISTORY.md pytest count"
+    else
+        no "coverage accepted a drifted HISTORY.md pytest count"
+    fi
+    if grep -q "HISTORY.md says pytest mirror is 52 tests, live collection counts 53" <<<"$OUT"; then
+        ok "coverage names the drifted HISTORY.md pytest count"
+    else
+        no "coverage did not name the drifted HISTORY.md pytest count"
+        printf '%s\n' "$OUT"
+    fi
+else
+    echo "  skip: pytest unavailable; the HISTORY.md pytest-mirror count check (issue #116) degrades (cf. #98)"
+fi
+OUT="$(cd "$WORK_HCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct HISTORY.md pytest count) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"

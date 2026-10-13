@@ -118,8 +118,8 @@ hardened `sentinel.sh citations` (#66), and fixed a baseline-red defect — a
 local `.venv/` was not gitignored, so sentinel control copies swept it into
 the tracked set and failed the coverage denominator (#68; `.venv/`/`venv/`
 now ignored). A fresh full 360 audit (#67) stays queued (its Step-1 gate
-needs human scope approval). All five bash suites pass; the pytest mirror (29
-tests) passes. The tracker holds #51 (hub-side) and #67. Full narrative:
+needs human scope approval). All five bash suites pass; the pytest mirror (53
+tests) passes. The tracker holds #51, #67, #92. Full narrative:
 `history/2026-10-11.md` / `history/2026-10-12.md`.
 
 ## Archive

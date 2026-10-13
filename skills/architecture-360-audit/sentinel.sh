@@ -604,6 +604,7 @@ _NUM_WORDS = {
     "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
     "twenty-one": 21, "twenty-two": 22, "twenty-three": 23,
     "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
+    "twenty-seven": 27,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1061,6 +1062,16 @@ if _pytest_available:
             count_claim_mismatches.append(
                 f"{_label} says pytest mirror is {_m.group(1)} passed, live collection counts {_collected}"
             )
+    # HISTORY.md's current-state summary cites the pytest mirror count too
+    # ("the pytest mirror (N tests) passes") -- a fourth unguarded mirror
+    # (#116). history_text is read for section 6 above.
+    _hm = re.search(r"pytest mirror \((\d+)\s+tests\)", history_text)
+    if not _hm:
+        count_claim_mismatches.append("HISTORY.md carries no pytest 'N tests' claim")
+    elif int(_hm.group(1)) != _collected:
+        count_claim_mismatches.append(
+            f"HISTORY.md says pytest mirror is {_hm.group(1)} tests, live collection counts {_collected}"
+        )
 
 # RESUME.md is itself a hand-bumped count mirror (its 'suite counts ... mirrors
 # in sync' line + the 'Sentinel = N cases / M assertions' total) with no guard.
