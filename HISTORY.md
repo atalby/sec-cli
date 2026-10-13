@@ -71,33 +71,32 @@ needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
 `history/2026-10-12.md`.
 
-**2026-10-13**: the guard-hardening lane kept closing (audit
-regressions plus their guards). #119 re-pinned stale
-bare `line N` references in the audit profile and #121 made `citations` fail on
-one; #122 guarded README.md's front-page backend universe. #123 closed F041:
-the per-tenant `cli = <backend>` key was written into every fresh `sec.conf`
-and documented in three surfaces while no code read it, so the five lines came
-out of the heredoc and both samples, and `coverage` gained a sub-check that
-fails when a sample key is not a `get_cfg_val` read in `bin/sec` (anchored on
-the call shape, so a quoted-but-unread key still fails); the control literals
-it broke are now regex-shaped. #124 guarded RESUME.md's own HISTORY.md size
-claim, scoped to its Verified-baseline section so narrative mentions stay
-legal; #125 closed F041's second half (the `[global] auto_rotate` key, written
-and read by no code) and widened #123's check from two config surfaces to all
-four. #127 guarded bin/sec's hardcoded `Configured Tenants:` help line against
+**2026-10-13**: the guard-hardening lane kept closing. #119 re-pinned
+stale bare `line N` references in the audit profile and #121 made `citations`
+fail on one; #122 guarded README.md's front-page backend universe. #123 closed F041: the per-tenant `cli = <backend>` key was
+written into every fresh `sec.conf` and documented in three surfaces while no
+code read it, so the five lines came out of the heredoc and both samples, and
+`coverage` gained a sub-check that fails when a sample key is not a
+`get_cfg_val` read in `bin/sec`; the control literals it broke are regex-shaped. #124 guarded RESUME.md's own HISTORY.md size claim
+(scoped to its Verified-baseline section); #125 closed F041's second half (the
+`[global] auto_rotate` key, written and read by no code) and widened #123's
+check from two config surfaces to all four. #127 guarded bin/sec's `Configured Tenants:` help line against
 the live dispatcher alias regex; #129 guarded ADAPTERS.md's Opted-in Policy
-Packs census (all five pack versions + the 9-persona taxonomy total) against
-the live PACK.md files (sentinel 35 -> 36 cases). #130-#132 then guarded
-profile.md's own code-prose counts (SYNC_KEYS' six env keys, the sync
-controller's 4 timeout sites, install.sh/bin/sec's zero-timeout claim)
-(sentinel 36 -> 37 cases / 362 -> 378 assertions). #133-#135 guarded
-profile.md's last counts (suite-count spellings, "twelve fixed
-dimensions", the "five sibling executables" split), the
+Packs census (five pack versions + the 9-persona taxonomy total) against the
+live PACK.md files (35 -> 36 cases); #130-#132 guarded profile.md's code-prose
+counts (SYNC_KEYS' six env keys, the sync controller's 4 timeout sites,
+install.sh/bin/sec's zero-timeout claim; 36 -> 37 cases / 362 -> 378
+assertions). #133-#135 guarded profile.md's last counts, its
 executed-commands `git ls-files | wc -l` transcript, and section 7's
 per-suite count guard (38 -> 40 cases / 392 -> 408); #136 read the
 previously-unread 360-audit-skill-forge spec, cross-checking its declared
 shape (eleven steps, sixteen headings, twelve dimensions, three severity
-values, two scopes) against the live SKILL.md (40 -> 41 cases / 408 -> 418). Tracker
+values, two scopes) against the live SKILL.md (40 -> 41 cases / 408 -> 418).
+#137 fixed a real product bug: `bin/sec` ran `set -u` and expanded the
+possibly-empty `SCOPE_ARGS` bare -- a fatal `unbound variable` on bash < 4.4,
+so `sec get` died unscoped on stock macOS (bash 3.2); the four sites are now
+`${SCOPE_ARGS[@]+${SCOPE_ARGS[@]}}` and dispatch case [32] scans the source so
+Linux CI sees the class (86 -> 87 sections). Tracker
 holds #51, #67, #92, #120, #126. Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared

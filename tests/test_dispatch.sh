@@ -1818,6 +1818,22 @@ else
     fail "sec-migrator never delivered the secret value to infisical via file"
 fi
 
+echo "[32] bin/sec never expands a possibly-empty array bare (issue #137: bash 3.2 + set -u)"
+BARE_ARR=""
+while IFS= read -r _arname; do
+    [[ -z "$_arname" ]] && continue
+    grep -qE "^[[:space:]]*${_arname}=\(\)" "$REPO_ROOT/bin/sec" || continue
+    BARE_ARR="$BARE_ARR $_arname"
+done < <(sed 's/^/ /' "$REPO_ROOT/bin/sec" \
+    | grep -oE '.\$\{[A-Za-z_][A-Za-z0-9_]*\[@\]\}' \
+    | sed -E -e 's/^\+.*$//' -e 's/^.?\$\{([A-Za-z_][A-Za-z0-9_]*)\[@\]\}$/\1/' \
+    | sort -u)
+if [[ -z "$BARE_ARR" ]]; then
+    pass "bin/sec expands no array bare (every [ @ ] expansion is \${A[@]+\${A[@]}}-guarded)"
+else
+    fail "bin/sec expands these possibly-empty arrays bare, which is a fatal unbound variable under set -u on bash < 4.4 (issue #137):$BARE_ARR"
+fi
+
 echo
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"

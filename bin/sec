@@ -494,7 +494,7 @@ EOF
             bitwarden|bw)
                 if command -v bw >/dev/null 2>&1; then
                     # 1. Check for exact item name match $key
-                    items_json="$(bw_list_items --search "$key" "${SCOPE_ARGS[@]}")"
+                    items_json="$(bw_list_items --search "$key" "${SCOPE_ARGS[@]+${SCOPE_ARGS[@]}}")"
                     [[ "$items_json" == "ERR" ]] && exit 1
                     count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
                     if [[ "$count" -ge 1 ]]; then
@@ -517,7 +517,7 @@ EOF
                         if [[ -n "$cf_res" && "$cf_res" != "null" ]]; then echo "$cf_res"; exit 0; fi
                     else
                         # Fallback: Search custom fields across all vault items
-                        all_items="$(bw_list_items "${SCOPE_ARGS[@]}")"
+                        all_items="$(bw_list_items "${SCOPE_ARGS[@]+${SCOPE_ARGS[@]}}")"
                         [[ "$all_items" == "ERR" ]] && exit 1
                         cf_res="$(echo "$all_items" | jq -r --arg f "$key" '[.[] | .fields[]? | select(.name == $f).value // empty][0] // empty')"
                         if [[ -n "$cf_res" && "$cf_res" != "null" ]]; then echo "$cf_res"; exit 0; fi
@@ -532,14 +532,14 @@ EOF
                         if [[ "$item_name" == *"/"* ]] && [[ "${item_name##*/}" == "attachment" ]]; then
                             real_item_name="${item_name%/*}"
                             attachment_file="$field_name"
-                            item_id="$(bw_list_items --search "$real_item_name" "${SCOPE_ARGS[@]}" | jq -r --arg n "$real_item_name" '[.[] | select(.name == $n)][0].id // empty')"
+                            item_id="$(bw_list_items --search "$real_item_name" "${SCOPE_ARGS[@]+${SCOPE_ARGS[@]}}" | jq -r --arg n "$real_item_name" '[.[] | select(.name == $n)][0].id // empty')"
                             if [[ "$item_id" == "ERR" ]]; then exit 1; fi
                             if [[ -n "$item_id" ]]; then
                                 BW_SESSION="${BW_SESSION:-}" bw get attachment "$attachment_file" --itemid "$item_id" --raw 2>/dev/null && exit 0
                             fi
                         fi
 
-                        items_json="$(bw_list_items --search "$item_name" "${SCOPE_ARGS[@]}")"
+                        items_json="$(bw_list_items --search "$item_name" "${SCOPE_ARGS[@]+${SCOPE_ARGS[@]}}")"
                         [[ "$items_json" == "ERR" ]] && exit 1
                         count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
                         if [[ "$count" -ge 1 ]]; then

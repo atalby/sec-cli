@@ -1,5 +1,21 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (11th run): shipped **#137**, the lane's first *product*
+bug rather than a doc-guard: `bin/sec` expands the possibly-empty `SCOPE_ARGS`
+bare under `set -u`, fatal on bash < 4.4, so `sec get` died on stock macOS
+(bash 3.2) while Linux CI stayed green. Four sites fixed with
+`${SCOPE_ARGS[@]+${SCOPE_ARGS[@]}}` (net-zero, anchors unshifted) plus a static
+source scanner as dispatch case [32], so the class is finally observable on
+Linux. A repo-wide sweep for the rest of the class found zero other hits: no
+`declare -A`/`mapfile`/`${x,,}`/`&>>`/`[[ -v ]]` in any shell surface, and no
+GNU-ism (`grep -P`, `readlink -f`, `sed -r`, `sha256sum`, `xargs -r`,
+`sort -V`, ...) in `bin/sec`, `install.sh`, `bin/hyer-mcp.sh`,
+`bin/bw-session-keeper`, `bin/sec-migrator`, `bin/sec-organizer` or
+`completions/_sec`, so #137 was its only live instance. Also finished and
+shipped the previous run's **#136** (the forge shape guard, commit `201751f`),
+which was sitting uncommitted in the tree. Next: **#120**'s repo-side half --
+the pytest mirror swallows the bash suite's `  FAIL:` names.
+
 Session 2026-10-13 (10th run): shipped **#136** -- the last sentinel-robustness
 class, "a file it does not read". `sentinel.sh` reads profile.md, the live
 `SKILL.md`, ADAPTERS.md, the docs, RESUME.md and HISTORY.md, but never
@@ -136,7 +152,14 @@ declared shape against the live SKILL.md). profile.md's numeric claims and the
 audit-skill family's cross-file shape claims are now exhaustively guarded. Next
 candidates, in order: the remaining theoretical `re.search` scope-grabs (below),
 then the fresh 360 audit (#67, after human scope approval).
-Cheapest concrete next candidates, in order:
+**#120's repo-side half is the next item** (the 11th run named it): the hook
+change stays hub-side, but the in-repo half is `scripts/tests/`'s pytest
+mirror, which runs `tests/test_dispatch.sh` and reports only
+`1 failed, N passed` -- the bash suite's own `  FAIL: <check name>` lines are
+never surfaced, which is exactly why the 2026-10-13 occurrence could not be
+diagnosed. Fix = print the captured sub-suite output on failure (pytest's
+`caplog`/captured-stdout already holds it; nothing about the flake itself
+needs reproducing first). Cheapest concrete next candidates, in order:
 - (largely swept) A sentinel-robustness class: the guards added ad hoc
   (#123-#136) each attach to a specific section. #136 closed the last "a file it
   does not read" (the forge). The one remaining lead is theoretical: sweep the
@@ -155,8 +178,9 @@ Cheapest concrete next candidates, in order:
   highest-severity class left in this repo.
 The rest are gated and not autonomously actionable:
 - **#120** (one-off flaky `test_dispatch.sh` failure in pre-commit Step 5) -
-  tracked; not reproducible in ~16 runs; a recurrence needs the hub-side hook
-  to dump the `  FAIL:` lines. No in-repo fix yet.
+  not reproducible in ~16 runs; the hub-side hook fix is out of scope, but the
+  repo-side observability half (pytest mirror must print the bash suite's
+  `  FAIL:` lines) is the current next item, above.
 - **#67** (fresh 360 audit) - its Step-1 gate needs explicit human scope approval.
 - **#92** (hub-side: two unguarded counts in hub-owned files) - gotcha 6; no
   in-repo remedy.
@@ -171,19 +195,43 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Where things stand
 
-- `git status` clean on `main`; `origin/main` == local `main`.
+- `git status` clean on `main`; `origin/main` == local `main` (verified after
+  the #137 commit and push).
 - Tracker: **GitHub** (`gh --repo atalby/sec-cli`), not glab. Remote is
   `git@github.com:atalby/sec-cli.git`; `glab` errors "None of the git remotes
   configured for this repository point to a known GitLab host" (re-confirmed
   2026-10-13 against a live `glab auth status`, which IS authenticated --
   for gitlab.com, which this repo is not on).
-- Open issues: **#126** (autonomous but needs a human call - `get_cfg_val`'s
-  awk parser silently skips a key with no `=`; reject-vs-warn is a design
-  decision); **#120** (one-off flaky dispatch failure); **#67** (fresh 360
-  audit - human scope gate); **#92** (hub-side unguarded counts); **#51**
-  (hub-side handoff, tracked upstream).
+- Open issues: **#120** (one-off flaky dispatch failure; repo-side half --
+  the pytest mirror must surface the bash suite's `  FAIL:` lines -- is the
+  next item); **#126** (needs a human call - `get_cfg_val`'s awk parser
+  silently skips a key with no `=`; reject-vs-warn is a design decision);
+  **#67** (fresh 360 audit - human scope gate); **#92** (hub-side unguarded
+  counts); **#51** (hub-side handoff, tracked upstream).
+- Operator standing order says the tracker is GitLab/`glab`; re-verified this
+  run that it is not -- `git remote -v` is `git@github.com:atalby/sec-cli.git`
+  and `glab issue list` fails with "None of the git remotes configured for this
+  repository point to a known GitLab host" while `glab auth status` shows a
+  live gitlab.com login. This repo is GitHub-tracked, so `gh` is used.
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
+
+- #137 `fix(dispatch)` - a real product bug,
+  not a doc-guard. `bin/sec` runs `set -euo pipefail` and expanded the
+  possibly-empty `SCOPE_ARGS` bare at bin/sec:497/520/535/542, so on stock
+  macOS (`env bash` = 3.2, where an empty `[@]` expansion under `set -u` is a
+  fatal `unbound variable`) plain `sec get KEY` died with rc 1. All four sites
+  now use `${SCOPE_ARGS[@]+${SCOPE_ARGS[@]}}` -- net-zero edits, so no
+  `bin/sec:N` anchor shifted and `sentinel.sh citations` stayed green. Because
+  Linux CI cannot observe a bash-3.2 failure, dispatch case [32] scans the
+  source instead: every `"${NAME[@]}"` whose `NAME=()` is assigned somewhere
+  in `bin/sec` fails (a `+`-prefixed match is the guarded inner form), so the
+  class is visible on Linux. RED: the first version of the scanner matched
+  nothing because its name-extraction used `%%[*` (an unterminated bracket
+  glob, which bash treats literally); it failed green until rewritten with a
+  sed name-extraction, then failed correctly naming `SCOPE_ARGS`. Mirrors
+  bumped to dispatch 87 at profile.md:22, ADAPTERS.md:55 + :264, RESUME.md
+  baseline; HISTORY.md compacted 8103 -> 8179.
 
 - #133 `fix(sentinel)` - profile.md's remaining unguarded prose counts, guarded
   by extending existing sections. (1) suite count: sections 14 now scans every
@@ -462,9 +510,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 86, install 9, sentinel 41, sync_guard 16,
+mirrors in sync): dispatch 87, install 9, sentinel 41, sync_guard 16,
 write_honesty 15. Sentinel = 41 cases / 418 assertions. HISTORY.md is at
-8103/8192 bytes - the next narrative addition must compact an older clause first.
+8179/8192 bytes - the next narrative addition must compact an older clause first.
 109 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.
