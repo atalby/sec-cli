@@ -611,7 +611,7 @@ _NUM_WORDS = {
     "twenty-one": 21, "twenty-two": 22, "twenty-three": 23,
     "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
-    "thirty": 30, "thirty-one": 31, "thirty-two": 32,
+    "thirty": 30, "thirty-two": 32, "thirty-three": 33,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1135,6 +1135,28 @@ else:
         count_claim_mismatches.append(
             f"RESUME.md says Sentinel = {_rasserts} assertions, live suite has {_live_asserts}"
         )
+
+_resume_baseline_m = re.search(
+    r"## Verified baseline.*?\n([\s\S]*?)\n## ", _resume_text
+)
+if not _resume_baseline_m:
+    count_claim_mismatches.append("RESUME.md carries no '## Verified baseline' section")
+else:
+    _rbytes_m = re.search(r"(\d+)/(\d+) bytes", _resume_baseline_m.group(1))
+    if not _rbytes_m:
+        count_claim_mismatches.append(
+            "RESUME.md's Verified baseline states no 'N/8192 bytes' HISTORY.md size"
+        )
+    else:
+        _rsize, _rbudget = int(_rbytes_m.group(1)), int(_rbytes_m.group(2))
+        if _rsize != history_bytes:
+            count_claim_mismatches.append(
+                f"RESUME.md says HISTORY.md is {_rsize} bytes, live file is {history_bytes}"
+            )
+        if _rbudget != HISTORY_BUDGET:
+            count_claim_mismatches.append(
+                f"RESUME.md states a {_rbudget}-byte HISTORY.md budget, the guard's is {HISTORY_BUDGET}"
+            )
 
 _resume_struct_all = re.findall(
     r"(\d+) tracked files, (\d+) personas, (\d+) bash suites", _resume_text

@@ -1194,8 +1194,8 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"own thirty-two sentinel cases", "own twelve sentinel cases", s)
-if n != 1:
+s2, n = re.subn(r"own [\w-]+ sentinel cases", "own twelve sentinel cases", s)
+if n < 1:
     sys.exit("profile.md §3 sentinel count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
@@ -1899,6 +1899,71 @@ OUT="$(cd "$WORK_CCTRL" && git init -q . && git add -A && "skills/architecture-3
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (unmodified sec.conf sample) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[33] RESUME.md's Verified-baseline HISTORY.md size must match the live file"
+WORK_V1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_V2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_VCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_V1" "$WORK_V2" "$WORK_VCTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_V1/RESUME.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+m = re.search(r"## Verified baseline.*?\n([\s\S]*?)\n## ", s)
+if not m:
+    sys.exit("RESUME.md: no '## Verified baseline' section to probe")
+blk = m.group(1)
+r = re.search(r"(\d+)/(\d+) bytes", blk)
+if not r:
+    sys.exit("RESUME.md: no 'N/8192 bytes' claim in the Verified baseline section")
+s2, n = re.subn(r"\d+/(\d+) bytes", lambda m2: "%d/%s bytes" % (int(r.group(1)) + 1, m2.group(1)), s)
+if n < 1:
+    sys.exit("RESUME.md: byte claim not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_V1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when RESUME.md's HISTORY.md size is drifted"
+else
+    no "coverage accepted a drifted RESUME.md HISTORY.md size"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "RESUME\.md says HISTORY\.md is [0-9]+ bytes, live file is [0-9]+" <<<"$OUT"; then
+    ok "coverage names the drifted HISTORY.md size and the live size"
+else
+    no "coverage did not name the drifted HISTORY.md size"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_V2/RESUME.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+marker = "## Shipped this session"
+if marker not in s:
+    sys.exit("RESUME.md: no shipped-this-session section to probe")
+s2, n = s.replace("## Shipped this session", marker + "\n\n9999/8192 bytes", 1), 1
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_V2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "coverage ignores a HISTORY.md size claim outside the Verified-baseline section"
+else
+    no "coverage read a HISTORY.md size claim from outside the Verified-baseline section"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_VCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct RESUME.md HISTORY.md size) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"
