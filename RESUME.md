@@ -7,7 +7,9 @@ anchors), control case [22] broken on two hand-bumped literals, and
 RESUME.md's mirrors unbumped. Shipped #123 (commit `ae9ba7a`) plus a
 follow-up defect found while finishing it: two control assertions hardcoded
 the live suite/pytest counts, so every legitimate count bump broke them; both
-are now regex-shaped. No work in flight: clean tree on `main`.
+are now regex-shaped. Then shipped #124 (`8e528a2`), guarding RESUME.md's own
+HISTORY.md size claim. Filed **#125** as the next item. No work in flight:
+clean tree on `main`, CI green.
 
 Session 2026-10-13: shipped #119 (commit `9864fb0`), filed #120 (one-off
 flaky `test_dispatch.sh` failure in the pre-commit Step 5 run; not reproduced
@@ -27,16 +29,20 @@ then the fresh 360 audit (#67, after human scope approval).
 
 ## Next autonomous work
 
-Start with a **fresh sweep for the next unguarded current-state claim**, which
-is what #116, #117 and #123 each were. The one this lane already identified and
-did not finish:
-- RESUME.md's line "HISTORY.md is at 8181/8192 bytes" states HISTORY.md's
-  live byte count, but nothing guards it: `sentinel.sh` checks HISTORY.md's
-  budget (`HISTORY_BUDGET = 8192`) and never cross-checks the number RESUME.md
-  quotes. #123's compaction moved the live value to 7938, so the claim was
-  already stale when this run ended. Remedy: a section-17 sub-check that
-  re-derives `(\d+)/8192 bytes` in RESUME.md against `len(history_text)`,
-  plus a `test_sentinel.sh` case + control.
+Start with **#125** (autonomous, in-repo):
+- **#125** (`[global] auto_rotate` is dead config; `sec.conf.example` and
+  `docs/MULTI_TENANCY.md` are unguarded config surfaces) - delete the
+  `[global] auto_rotate = true` line from the `bin/sec` heredoc, the README
+  sample and the MULTI_TENANCY sample; widen the #123 config-surface check
+  from two surfaces to all four (modulo `sec.conf.example`'s leading comment
+  line); extend case [32] with a drift probe + control. Removing a line at
+  the top of `bin/sec` shifts every `bin/sec:N` anchor >= it by -1 (gotcha 3),
+  and the new assertion count must hit the mirrors BEFORE green (gotcha 2).
+  Resume: `gh issue view 125`.
+After #125, the next high-value candidates are a fresh sweep for the next
+unguarded current-state claim (as #116, #117, #123 and #124 were) or another
+sentinel-robustness class (as #118 was), then the fresh 360 audit (#67, after
+human scope approval.
 The rest are gated and not autonomously actionable:
 - **#120** (one-off flaky `test_dispatch.sh` failure in pre-commit Step 5) -
   tracked; not reproducible in ~16 runs; a recurrence needs the hub-side hook
@@ -61,11 +67,29 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   configured for this repository point to a known GitLab host" (re-confirmed
   2026-10-13 against a live `glab auth status`, which IS authenticated --
   for gitlab.com, which this repo is not on).
-- Open issues: **#120** (one-off flaky dispatch failure); **#67** (fresh 360
+- Open issues: **#125** (autonomous - `[global] auto_rotate` is dead config;
+  start here); **#120** (one-off flaky dispatch failure); **#67** (fresh 360
   audit - human scope gate); **#92** (hub-side unguarded counts); **#51**
   (hub-side handoff, tracked upstream).
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
+
+- #124 `fix(sentinel)` -> `8e528a2` - RESUME.md's `## Verified baseline` states
+  HISTORY.md's live size but nothing checked it (the sentinel guards
+  HISTORY.md's own budget, never the figure RESUME.md quotes); #123's
+  compaction invalidated the claim in the commit that shipped it. Section 17
+  re-derives it, SCOPED to the `## Verified baseline` section: RESUME.md also
+  carries size mentions in `## Next autonomous work` (quoting the stale figure
+  as the work item) and `## Shipped this session` (true at the time), and a
+  document-wide `findall` would flag narrative as drift -- gotcha 1. Case [33]
+  probe 2 plants a size claim in the shipped-this-session section and asserts
+  `coverage` still exits 0, so the scope is proven. Same class: case [22]'s
+  profile.md probe hardcoded `own thirty-two sentinel cases` (breaks on every
+  added case) -> now `own [\w-]+ sentinel cases` substituting a word that is
+  never the live count; `[\w-]` matters because `\w` misses the hyphen in
+  "thirty-three" (caught empirically: the `\w`-only version matched nothing
+  and the control degraded to "coverage accepted a drifted count"). Mirrors
+  32 -> 33 cases / 314 -> 322 assertions; `_NUM_WORDS` gains `thirty-three`.
 
 - #123 `fix(config)` -> `ae9ba7a` - the per-tenant `cli = <backend>` key was
   written into every fresh `~/.sec/sec.conf` and documented in three surfaces
