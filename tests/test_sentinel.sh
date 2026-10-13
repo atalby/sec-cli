@@ -33,6 +33,7 @@ WRONG_PRINCIPLES="$(num_word four)"
 WRONG_SCANNERS="$(num_word five)"
 WRONG_GATE="$(num_word five)"
 WRONG_EXECS="$(num_word five)"
+WRONG_CONTROLLERS="$(num_word one)"
 WRONG_FORGE_STEPS="$(num_word eleven)"
 WRONG_INSTALL="$(num_word nine)"
 WRONG_PERS="$(num_word twelve)"
@@ -2440,8 +2441,9 @@ echo "[38] profile.md's suite-count spellings + persona dimensions + bin decompo
 WORK_S8A="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_S8B="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_S8C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S8D="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_S8CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for W in "$WORK_S8A" "$WORK_S8B" "$WORK_S8C" "$WORK_S8CTRL"; do
+for W in "$WORK_S8A" "$WORK_S8B" "$WORK_S8C" "$WORK_S8D" "$WORK_S8CTRL"; do
     seed "$W"
 done
 python3 - "$WORK_S8A/skills/architecture-360-audit/profile.md" "$WRONG_SUITES" <<'PY'
@@ -2525,6 +2527,35 @@ else
     no "coverage did not name the drifted bin component decomposition"
     printf '%s\n' "$OUT"
 fi
+python3 - "$WORK_S8D/skills/architecture-360-audit/profile.md" "$WRONG_CONTROLLERS" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(\b[\w-]+ sibling executables, )[\w-]+( Python controller)",
+                r"\g<1>%s\g<2>" % wrong, s, count=1)
+if n != 1:
+    sys.exit("profile.md: no numeric controller claim to probe")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_S8D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when profile.md's bin Python-controller count drifts"
+else
+    no "coverage accepted a drifted bin Python-controller count"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "component decomposition says [A-Za-z-]+ Python controller\(s\), live tree has [0-9]+" <<<"$OUT"; then
+    ok "coverage names the drifted bin Python-controller count"
+else
+    no "coverage did not name the drifted bin Python-controller count"
+    printf '%s\n' "$OUT"
+fi
+
 OUT="$(cd "$WORK_S8CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
 RC=$?
 if [[ $RC -eq 0 ]]; then
