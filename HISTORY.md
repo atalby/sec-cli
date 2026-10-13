@@ -86,16 +86,17 @@ the per-tenant `cli = <backend>` key was written into every fresh `sec.conf`
 and documented in three surfaces while no code read it, so the five lines came
 out of the heredoc and both samples, and `coverage` gained a sub-check that
 fails when a sample key is not a `get_cfg_val` read in `bin/sec`, anchored on
-the call shape so a quoted-but-unread key still fails. That shift broke two
-hand-bumped control literals; the live-count assertion is now regex-shaped so
-the control stops breaking on every count bump. All five bash
-suites pass (sentinel 33 cases / 338 assertions); the pytest mirror (53
-tests) passes. #124 then guarded RESUME.md's own HISTORY.md size claim, scoped
-to its Verified-baseline section so narrative mentions stay legal; #125 closed
-F041's second half (the `[global] auto_rotate` key, written and read by no
-code) and widened #123's check from two config surfaces to all four. The
-tracker holds #51, #67, #92, #120 (one-off flaky `test_dispatch.sh` failure,
-not reproducible). Full narrative: `history/2026-10-12.md`.
+the call shape so a quoted-but-unread key still fails. Two hand-bumped control
+literals broke in that shift; the live-count assertion is now regex-shaped so
+count bumps stop breaking it. All five bash suites pass (sentinel 35 cases /
+352 assertions); the pytest mirror (53 tests) passes. #124 then guarded
+RESUME.md's own HISTORY.md size claim, scoped to its Verified-baseline section
+so narrative mentions stay legal; #125 closed F041's second half (the
+`[global] auto_rotate` key, written and read by no code) and widened #123's
+check from two config surfaces to all four. #127 guarded bin/sec's hardcoded
+`Configured Tenants:` help line against the live dispatcher alias regex. The
+tracker holds #51, #67, #92, #120, #126. Full narrative:
+`history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
@@ -121,6 +122,7 @@ tests) passes. Full narrative:
 
 ## Archive
 
+- [2026-10-13](history/2026-10-13.md)
 - [2026-10-12](history/2026-10-12.md)
 - [2026-10-11](history/2026-10-11.md)
 - [2026-10-10](history/2026-10-10.md)

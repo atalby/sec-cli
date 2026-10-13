@@ -1634,10 +1634,10 @@ else
     no "coverage accepted drifted RESUME.md structural counts"
 fi
 for _m in \
-    "RESUME.md says 107 tracked files, live tree has 108" \
-    "RESUME.md says 11 personas, profile.md declares 12" \
-    "RESUME.md says 4 bash suites, live tree has 5"; do
-    if grep -qF "$_m" <<<"$OUT"; then
+    "RESUME\.md says 107 tracked files, live tree has [0-9]+" \
+    "RESUME\.md says 11 personas, profile\.md declares 12" \
+    "RESUME\.md says 4 bash suites, live tree has 5"; do
+    if grep -qE "$_m" <<<"$OUT"; then
         ok "coverage names the drift: $_m"
     else
         no "coverage did not name: $_m"
@@ -1663,6 +1663,10 @@ python3 - "$WORK_R2/RESUME.md" <<'PY'
 import re, sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
+_m = re.search(r"\d+ tracked files, \d+ personas, \d+ bash suites", s)
+if not _m:
+    sys.exit("expected exactly one structural-count line in RESUME.md")
+_correct = _m.group(0)
 s2, n = re.subn(
     r"\d+ tracked files, \d+ personas, \d+ bash suites",
     "107 tracked files, 11 personas, 4 bash suites",
@@ -1672,18 +1676,21 @@ if n != 1:
     sys.exit("expected exactly one structural-count line in RESUME.md")
 head, sep, tail = s2.partition("\n")
 open(p, "w", encoding="utf-8").write(
-    head + sep + "\nAn earlier mention: 108 tracked files, 12 personas, 5 bash suites.\n" + tail
+    head + sep + "\nAn earlier mention: " + _correct + ".\n" + tail
 )
 PY
 python3 - "$WORK_R2CTRL/RESUME.md" <<'PY'
 import re, sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
+_m = re.search(r"\d+ tracked files, \d+ personas, \d+ bash suites", s)
+if not _m:
+    sys.exit("expected exactly one structural-count line in RESUME.md")
 if len(re.findall(r"\d+ tracked files, \d+ personas, \d+ bash suites", s)) != 1:
     sys.exit("expected exactly one structural-count line in RESUME.md")
 head, sep, tail = s.partition("\n")
 open(p, "w", encoding="utf-8").write(
-    head + sep + "\nAn earlier mention: 108 tracked files, 12 personas, 5 bash suites.\n" + tail
+    head + sep + "\nAn earlier mention: " + _m.group(0) + ".\n" + tail
 )
 PY
 OUT="$(cd "$WORK_R2" && git init -q && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
@@ -1693,7 +1700,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted drift hidden behind an earlier correct mention"
 fi
-if grep -qF "RESUME.md says 107 tracked files, live tree has 108" <<<"$OUT"; then
+if grep -qE "RESUME\.md says 107 tracked files, live tree has [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted real line despite the earlier correct mention"
 else
     no "coverage did not name the drifted real line"
@@ -2056,6 +2063,122 @@ OUT="$(cd "$WORK_VCTRL" && git init -q . && git add -A && "skills/architecture-3
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (correct RESUME.md HISTORY.md size) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[34] bin/sec's Configured-Tenants help line must match the live dispatcher alias regex"
+WORK_T1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_TCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T1" "$WORK_T2" "$WORK_TCTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T1/bin/sec" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+m = re.search(r"=~\s*\^\(([a-z0-9|]+)\)\$", s)
+if not m:
+    sys.exit("bin/sec: no tenant-alias regex to probe")
+s2, n = re.subn(
+    r"=~\s*\^\(([a-z0-9|]+)\)\$",
+    lambda m2: "=~ ^(%s|dashvault)$" % m2.group(1),
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("bin/sec: tenant-alias regex not replaced")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a routable alias is missing from the help line"
+else
+    no "coverage accepted a help line that omits a routable alias"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "routable-only \['[a-z]+" <<<"$OUT"; then
+    ok "coverage names the alias that is routable but absent from the help line"
+else
+    no "coverage did not name the routable-only alias"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T2/bin/sec" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+m = re.search(r'^(\s*echo "Configured Tenants: )([^"]+)(")$', s, re.M)
+if not m:
+    sys.exit("bin/sec: no 'Configured Tenants:' help line to probe")
+padded = m.group(2) + ", phantomtenant"
+open(p, "w", encoding="utf-8").write(
+    s[: m.start()] + m.group(1) + padded + m.group(3) + s[m.end():]
+)
+PY
+OUT="$(cd "$WORK_T2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the help line lists a tenant that is no longer routable"
+else
+    no "coverage accepted a help line listing a non-routable tenant"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "help-only \['[a-z]+" <<<"$OUT"; then
+    ok "coverage names the alias that is listed but no longer routable"
+else
+    no "coverage did not name the help-only alias"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_TCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (help line matches the alias regex) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[35] the Verified-baseline size guard ignores a mid-line '## Verified baseline' mention in narrative"
+WORK_S1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S2="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_S1" "$WORK_S2"; do
+    seed "$W"
+done
+python3 - "$WORK_S1/RESUME.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+marker = "## Shipped this session"
+if marker not in s:
+    sys.exit("RESUME.md: no shipped-this-session section to probe")
+plant = (
+    marker
+    + "\n\n- #999 probe: the `## Verified baseline` section stays scoped"
+    " (mid-line mention).\n- #999 probe tail: stale 9999/8192 bytes"
+    " inside the shadowed span.\n"
+)
+s2, n = s.replace(marker, plant, 1), 1
+if n != 1:
+    sys.exit("RESUME.md: shipped-this-session marker not found to probe")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_S1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "coverage exits 0 despite a mid-line '## Verified baseline' mention and stale size claim in the shadowed span"
+else
+    no "coverage read the size claim shadowed by a mid-line '## Verified baseline' mention"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_S2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (no planted mention) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"

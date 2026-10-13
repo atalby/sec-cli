@@ -611,7 +611,8 @@ _NUM_WORDS = {
     "twenty-one": 21, "twenty-two": 22, "twenty-three": 23,
     "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
-    "thirty": 30, "thirty-two": 32, "thirty-three": 33,
+    "thirty": 30, "thirty-two": 32, "thirty-three": 33, "thirty-four": 34,
+    "thirty-five": 35,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1137,7 +1138,7 @@ else:
         )
 
 _resume_baseline_m = re.search(
-    r"## Verified baseline.*?\n([\s\S]*?)\n## ", _resume_text
+    r"(?m)^## Verified baseline.*?\n([\s\S]*?)\n## ", _resume_text
 )
 if not _resume_baseline_m:
     count_claim_mismatches.append("RESUME.md carries no '## Verified baseline' section")
@@ -1427,6 +1428,33 @@ elif _live_version is not None and _op_version_m.group(1) != _live_version:
         f"live 'bin/sec version' prints '{_live_version}'"
     )
 
+# --- 21. bin/sec's hardcoded `Configured Tenants:` help line must match the
+#         live dispatcher alias regex (issue #127) --------------------------
+tenant_line_mismatches = []
+_help_tenants_m = re.search(r'^\s*echo "Configured Tenants: ([^"]+)"', _sec_text, re.M)
+if _help_tenants_m is None:
+    tenant_line_mismatches.append(
+        "bin/sec carries no `echo \"Configured Tenants: ...\"` help line"
+    )
+elif _live_aliases is None:
+    tenant_line_mismatches.append(
+        "bin/sec carries no tenant-alias regex to compare the help line against"
+    )
+else:
+    _cited_aliases = set()
+    for _entry in _help_tenants_m.group(1).split(","):
+        _names = re.findall(r"[a-z0-9]+", _entry)
+        if not _names:
+            continue
+        _cited_aliases.add(_names[0])
+        _cited_aliases.update(_names[1:])
+    if _cited_aliases != _live_aliases:
+        tenant_line_mismatches.append(
+            "bin/sec's `Configured Tenants:` help line is not the live dispatcher alias set: "
+            f"help-only {sorted(_cited_aliases - _live_aliases) or 'none'}, "
+            f"routable-only {sorted(_live_aliases - _cited_aliases) or 'none'}"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -1537,6 +1565,12 @@ if version_mismatches:
     failures.append(f"{len(version_mismatches)} OPERATOR_MANUAL.md --version drift(s) vs the live CLI")
     for _m in version_mismatches:
         print(f"{ERROR} version: {_m}")
+if tenant_line_mismatches:
+    failures.append(
+        f"{len(tenant_line_mismatches)} bin/sec 'Configured Tenants:' help line drift(s) vs the live alias regex"
+    )
+    for _m in tenant_line_mismatches:
+        print(f"{ERROR} tenant help line: {_m}")
 
 if failures:
     for f in failures:
@@ -1560,6 +1594,7 @@ print(f"{OK} count claims: profile.md §3 count-words + ADAPTERS.md/SKILL.md pyt
 print(f"{OK} README: quoted `sec --help` + sec.conf sample + migrate backend list match the live CLI")
 print(f"{OK} migrate surfaces: source/destination backend sets agree across migrator, 4 shells + OPERATOR_MANUAL")
 print(f"{OK} version claim: OPERATOR_MANUAL.md's documented `--version` output matches live 'bin/sec version'")
+print(f"{OK} tenant help line: bin/sec's `Configured Tenants:` lists exactly the routable aliases")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all 12 reachable from the manifest")
 sys.exit(0)
