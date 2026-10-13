@@ -258,6 +258,33 @@ if grep -q "^\[ERROR\] Master password not available" <<<"$OUT12a"; then pass "u
 if [[ $RC12b -eq 1 ]]; then pass "non-TTY setup-keychain with no arg exits 1"; else fail "non-TTY setup-keychain exited $RC12b, expected 1: $OUT12b"; fi
 if grep -q "^\[ERROR\] Master password not provided" <<<"$OUT12b"; then pass "setup-keychain prints a tagged [ERROR]"; else fail "no tagged setup error: $OUT12b"; fi
 
+echo "[13] housekeep apply on a corrupt plan fails loudly (tagged, exit 1, plan kept) (#115)"
+H13="$WORK/h13"
+mkdir -p "$H13/.cache/bitwarden"
+PLAN13="$H13/.cache/bitwarden/housekeep_plan.json"
+printf '{"backend":"bw","actions":[' >"$PLAN13"
+set +e
+OUT13="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H13" "$REPO_ROOT/bin/sec-organizer" apply 2>&1)"
+RC13=$?
+set -e
+if [[ $RC13 -eq 1 ]]; then pass "corrupt plan apply exits 1"; else fail "corrupt plan apply exited $RC13, expected 1: $OUT13"; fi
+if grep -q "^\[ERROR\] corrupt or unreadable housekeeping plan" <<<"$OUT13"; then pass "tagged corrupt-plan notice"; else fail "no tagged corrupt-plan notice: $OUT13"; fi
+if grep -q "Successfully Applied" <<<"$OUT13"; then fail "reported success for a corrupt plan"; else pass "no success banner on a corrupt plan"; fi
+if [[ -f "$PLAN13" ]]; then pass "corrupt plan file kept for diagnosis"; else fail "corrupt plan file deleted"; fi
+
+echo "[14] housekeep revert on a corrupt snapshot fails loudly (tagged, exit 1, snapshot kept) (#115)"
+SNAP14="$WORK/h14/.cache/bitwarden/snapshot_latest.json"
+mkdir -p "$(dirname "$SNAP14")"
+printf '{"backend":"bw","actions":[' >"$SNAP14"
+set +e
+OUT14="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$WORK/h14" "$REPO_ROOT/bin/sec-organizer" revert 2>&1)"
+RC14=$?
+set -e
+if [[ $RC14 -eq 1 ]]; then pass "corrupt snapshot revert exits 1"; else fail "corrupt snapshot revert exited $RC14, expected 1: $OUT14"; fi
+if grep -q "^\[ERROR\] corrupt or unreadable housekeeping snapshot" <<<"$OUT14"; then pass "tagged corrupt-snapshot notice"; else fail "no tagged corrupt-snapshot notice: $OUT14"; fi
+if grep -q "Revert Successfully Completed" <<<"$OUT14"; then fail "reported success for a corrupt snapshot"; else pass "no success banner on a corrupt snapshot"; fi
+if [[ -f "$SNAP14" ]]; then pass "corrupt snapshot file kept for diagnosis"; else fail "corrupt snapshot file deleted"; fi
+
 echo
 if [[ $FAILS -eq 0 ]]; then
     echo "ALL TESTS PASSED"

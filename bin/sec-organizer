@@ -173,8 +173,14 @@ cmd_apply() {
         exit 1
     fi
 
-    backend="$(jq -r '.backend // "bw"' "$PLAN_FILE")"
-    actions="$(jq -c '.actions[]' "$PLAN_FILE" 2>/dev/null || echo "")"
+    if ! backend="$(jq -r '.backend // "bw"' "$PLAN_FILE" 2>/dev/null)"; then
+        echo "[ERROR] corrupt or unreadable housekeeping plan ($PLAN_FILE). Apply is blocked; inspect or delete the file manually." >&2
+        exit 1
+    fi
+    if ! actions="$(jq -c '.actions[]?' "$PLAN_FILE" 2>/dev/null)"; then
+        echo "[ERROR] corrupt or unreadable housekeeping plan ($PLAN_FILE). Apply is blocked; inspect or delete the file manually." >&2
+        exit 1
+    fi
     if [[ -z "$actions" ]]; then
         echo "[INFO] Plan contains zero move/rename actions. Everything is up to date."
         exit 0
@@ -292,8 +298,14 @@ cmd_revert() {
         exit 1
     fi
 
-    backend="$(jq -r '.backend // "bw"' "$LATEST_SNAPSHOT")"
-    actions="$(jq -c '.actions[]' "$LATEST_SNAPSHOT" 2>/dev/null || echo "")"
+    if ! backend="$(jq -r '.backend // "bw"' "$LATEST_SNAPSHOT" 2>/dev/null)"; then
+        echo "[ERROR] corrupt or unreadable housekeeping snapshot ($LATEST_SNAPSHOT). Revert is blocked; inspect or delete the file manually." >&2
+        exit 1
+    fi
+    if ! actions="$(jq -c '.actions[]?' "$LATEST_SNAPSHOT" 2>/dev/null)"; then
+        echo "[ERROR] corrupt or unreadable housekeeping snapshot ($LATEST_SNAPSHOT). Revert is blocked; inspect or delete the file manually." >&2
+        exit 1
+    fi
     if [[ -z "$actions" ]]; then
         echo "[INFO] Snapshot contains zero move actions."
         exit 0

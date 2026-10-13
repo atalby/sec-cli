@@ -131,3 +131,4 @@ tests) passes. The tracker holds #51 (hub-side) and #67. Full narrative:
 - [2026-10-08](history/2026-10-08.md)
 - [2026-08-27](history/2026-08-27.md)
 - [2026-08-12](history/2026-08-12.md)
+
