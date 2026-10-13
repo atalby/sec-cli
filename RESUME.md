@@ -1,16 +1,16 @@
 # Resume point - sec-cli
 
-Written 2026-10-12 after closing #117 (commit `3f0e69b`), #116 (commit
-`fddb57b`), #115 (commit `2549973`), #114 (commit `5e295c1`), #113 (commit
-`d4890c3`) and #112 (commit `d9fb2d3`), all pushed. Working tree clean on
-`main`; `origin/main` == local `main`. This lane shipped a long run of
-guard/fix/perf units (#97..#117), all CI-green.
+Written 2026-10-12 after closing #118 (commit `aa0eb12`), #117 (commit
+`3f0e69b`), #116 (commit `fddb57b`), #115 (commit `2549973`), #114 (commit
+`5e295c1`), #113 (commit `d4890c3`) and #112 (commit `d9fb2d3`), all pushed.
+Working tree clean on `main`; `origin/main` == local `main`. This lane shipped
+a long run of guard/fix/perf units (#97..#118), all CI-green.
 
 There is again **no open issue with an autonomous in-repo remedy**. The
 remaining open items are hub-side or human-gated (see below). If the lane is
-run again, the highest-value candidate is a fresh sweep for the next unguarded
-current-state claim (as #116 and #117 were), then the fresh 360 audit (#67,
-after human scope approval).
+run again, the highest-value candidates are a fresh sweep for the next unguarded
+current-state claim (as #116 and #117 were) or another sentinel-robustness class
+(as #118 was), then the fresh 360 audit (#67, after human scope approval).
 
 ## Next autonomous work
 
@@ -39,6 +39,15 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #118 `fix(sentinel)` -> `aa0eb12` - section 17's count guards used `re.search`
+  (first match); a doc that quoted the claim earlier (as the #117 resume note
+  did) shadowed the real current-state line, so real drift went unseen. The
+  three bare-count guards now `re.findall` and require *every* occurrence to
+  match live (`dict.fromkeys` de-dups). Case [29] proves it (earlier correct
+  mention + drifted real line -> `coverage` fails naming the drift; two-agreeing
+  control exits 0). Sentinel 28 -> 29 cases / 278 -> 284 assertions; mirrors
+  `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`, `RESUME.md:157`/`:158`;
+  `_NUM_WORDS` gains `twenty-nine`; control [22] literals re-pinned.
 - #117 `fix(docs)` -> `3f0e69b` - `RESUME.md`'s `## Current state` line (160)
   declaring 108 tracked files / 12 personas / 5 bash suites was the last
   unguarded structural claim; corrupting it left `coverage` exiting 0. Extended sentinel
