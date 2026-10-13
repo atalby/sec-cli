@@ -1183,8 +1183,10 @@ WORK_YCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_Y1" "$WORK_Y2" "$WORK_Y3" "$WORK_Y4" "$WORK_YCTRL"; do
     seed "$W"
 done
+PYTEST_COUNT=""
 if python3 -c "import pytest" >/dev/null 2>&1; then
     PYTEST_OK=1
+    PYTEST_COUNT="$(PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest scripts/tests/ --collect-only -q -c /dev/null --confcutdir scripts/tests 2>/dev/null | grep -c '::')"
 else
     PYTEST_OK=0
     echo "  skip: pytest unavailable; section 17 skips the pytest-mirror count check (issue #97)"
@@ -1209,23 +1211,29 @@ if n != 1:
     sys.exit("profile.md §3 install count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
-python3 - "$WORK_Y3/ADAPTERS.md" <<'PY'
+python3 - "$WORK_Y3/ADAPTERS.md" "$PYTEST_COUNT" <<'PY'
 import re
 import sys
-p = sys.argv[1]
+p, live = sys.argv[1], sys.argv[2]
+if not live:
+    sys.exit(0)
+n = int(live)
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"is now 53 passed", "is now 52 passed", s)
-if n != 1:
+s2, hits = re.subn(r"is now %d passed" % n, "is now %d passed" % (n - 1), s)
+if hits != 1:
     sys.exit("ADAPTERS.md pytest count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
-python3 - "$WORK_Y4/skills/architecture-360-audit/SKILL.md" <<'PY'
+python3 - "$WORK_Y4/skills/architecture-360-audit/SKILL.md" "$PYTEST_COUNT" <<'PY'
 import re
 import sys
-p = sys.argv[1]
+p, live = sys.argv[1], sys.argv[2]
+if not live:
+    sys.exit(0)
+n = int(live)
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"suites \(53 passed", "suites (54 passed", s)
-if n != 1:
+s2, hits = re.subn(r"suites \(%d passed" % n, "suites (%d passed" % (n + 1), s)
+if hits != 1:
     sys.exit("SKILL.md pytest count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
@@ -1263,7 +1271,7 @@ if [[ "$PYTEST_OK" -eq 1 ]]; then
     else
         no "coverage accepted a drifted ADAPTERS.md pytest count"
     fi
-    if grep -q "ADAPTERS.md says pytest mirror is 52 passed, live collection counts 53" <<<"$OUT"; then
+    if grep -q "ADAPTERS.md says pytest mirror is $((PYTEST_COUNT - 1)) passed, live collection counts $PYTEST_COUNT" <<<"$OUT"; then
         ok "coverage names the drifted ADAPTERS.md pytest count"
     else
         no "coverage did not name the drifted ADAPTERS.md pytest count"
@@ -1276,7 +1284,7 @@ if [[ "$PYTEST_OK" -eq 1 ]]; then
     else
         no "coverage accepted a drifted SKILL.md pytest count"
     fi
-    if grep -q "SKILL.md says pytest mirror is 54 passed, live collection counts 53" <<<"$OUT"; then
+    if grep -q "SKILL.md says pytest mirror is $((PYTEST_COUNT + 1)) passed, live collection counts $PYTEST_COUNT" <<<"$OUT"; then
         ok "coverage names the drifted SKILL.md pytest count"
     else
         no "coverage did not name the drifted SKILL.md pytest count"

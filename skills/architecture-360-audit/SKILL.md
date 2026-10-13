@@ -448,7 +448,7 @@ Stated so a reader can calibrate the findings rather than over-trust them.
   catch drift, but a run that skips Step 3 has no drift detection at all.
 - This repository's gate runs the suites only through the `scripts/tests/`
   pytest mirror, and only while `uv` is on PATH (issue #64). With `uv`, the
-  pre-commit Step 5 executes all five bash suites (53 passed, verified on the
+  pre-commit Step 5 executes all five bash suites (58 passed, verified on the
   #63 commit's gate); a host without `uv` falls through to Step 5's
   no-suite-present warning and enforces nothing. An audit that treats "the
   hook is green" as "the suite ran" must first confirm `uv` is present.

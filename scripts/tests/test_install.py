@@ -1,6 +1,7 @@
 """Pytest-based regression tests for sec-cli (Issue #2: pre-commit Step 5 test detection)."""
 
 import os
+import re
 import subprocess
 
 import pytest
@@ -28,6 +29,57 @@ def _run_suite(name):
         capture_output=True,
         text=True,
         timeout=_SUITE_TIMEOUT,
+    )
+
+
+# Every tests/*.sh suite reports through the identical shape --
+# `echo "[NN] section title"` then `fail() { echo "  FAIL: $1"; }` -- so one
+# extractor covers all five. Issue #120: a suite failure reached the hook as a
+# bare "1 failed, 52 passed" because the failing checks' names were only ever
+# in the truncated sub-suite tail, so a recurrence could not be diagnosed.
+_FAIL_RE = re.compile(r"^\s+FAIL:\s*(?P<name>.*)$")
+_SECTION_RE = re.compile(r"^\[(?P<tag>\S+)\]\s*(?P<title>.*)$")
+
+
+def _failing_checks(stdout):
+    """Return [(section_label, check_name)] for each "  FAIL:" line in stdout.
+
+    The section label is the enclosing "[NN] title" header, so a bare check name
+    is attributable to the region of the suite that failed.
+    """
+    found = []
+    section = "(before the first section header)"
+    for line in stdout.splitlines():
+        header = _SECTION_RE.match(line)
+        if header is not None:
+            section = f"[{header.group('tag')}] {header.group('title')}".rstrip()
+            continue
+        failure = _FAIL_RE.match(line)
+        if failure is not None:
+            found.append((section, failure.group("name").strip()))
+    return found
+
+
+def _suite_failure_detail(name, result):
+    """Build the assertion body for a failed suite run.
+
+    Names every failing check with its section header first, then keeps a short
+    tail of the suite output for context. Falls back to the tail alone when the
+    suite died without printing a "  FAIL:" line (a crash, or a non-zero exit
+    from a path the suite does not report through fail()).
+    """
+    combined = result.stdout + result.stderr
+    tail = combined.strip().splitlines()[-15:]
+    failures = _failing_checks(result.stdout)
+    if failures:
+        named = "\n".join(f"  - {section} :: {check}" for section, check in failures)
+        return (
+            f"{name}: {len(failures)} failing check(s):\n{named}"
+            f"\n  last {len(tail)} output line(s):\n" + "\n".join(tail)
+        )
+    return (
+        f"{name}: no '  FAIL:' line in the suite output (it may have died before"
+        f" reporting); last {len(tail)} output line(s):\n" + "\n".join(tail)
     )
 
 
@@ -86,8 +138,7 @@ def test_test_dispatch_suite_shell():
 def test_bash_suite_passes(suite_name):
     result = _run_suite(suite_name)
     assert result.returncode == 0, (
-        f"{suite_name} exited {result.returncode}\n"
-        f"stdout:\n{result.stdout[-2000:]}\nstderr:\n{result.stderr[-2000:]}"
+        f"{suite_name} exited {result.returncode}\n{_suite_failure_detail(suite_name, result)}"
     )
 
 
@@ -95,5 +146,71 @@ def test_dispatch_suite_passes():
     result = _run_suite("test_dispatch.sh")
     assert result.returncode == 0, (
         f"test_dispatch.sh exited {result.returncode}\n"
-        f"stdout:\n{result.stdout[-2000:]}\nstderr:\n{result.stderr[-2000:]}"
+        f"{_suite_failure_detail('test_dispatch.sh', result)}"
     )
+
+
+def test_failing_checks_names_each_failure_with_its_section():
+    """A suite failure must be reportable by check name, not just by count (#120)."""
+    stdout = (
+        "[1] first section\n"
+        "  ok: fine\n"
+        "[32] bin/sec never expands a possibly-empty array bare\n"
+        "  FAIL: bin/sec expands these possibly-empty arrays bare: SCOPE_ARGS\n"
+        "[33] another section\n"
+        "  FAIL: something else broke\n"
+    )
+    assert _failing_checks(stdout) == [
+        (
+            "[32] bin/sec never expands a possibly-empty array bare",
+            "bin/sec expands these possibly-empty arrays bare: SCOPE_ARGS",
+        ),
+        ("[33] another section", "something else broke"),
+    ]
+
+
+def test_failing_checks_is_empty_when_every_check_passes():
+    assert _failing_checks("[1] s\n  ok: a\n  ok: b\n\nALL TESTS PASSED\n") == []
+
+
+def test_suite_failure_detail_surfaces_a_name_truncated_out_of_the_tail():
+    """The name must survive when it sits far above the tail of a long run."""
+    padding = "\n".join(f"  ok: check {i}" for i in range(400))
+    stdout = (
+        "[1] section one\n"
+        "  FAIL: the check that flaked\n" + padding + "\nALL TESTS PASSED\n"
+    )
+    detail = _suite_failure_detail(
+        "test_dispatch.sh", subprocess.CompletedProcess([], 1, stdout, "")
+    )
+    assert "1 failing check(s)" in detail
+    assert "[1] section one :: the check that flaked" in detail
+    assert "ALL TESTS PASSED" in detail
+
+
+def test_suite_failure_detail_falls_back_to_the_tail_without_a_fail_line():
+    detail = _suite_failure_detail(
+        "test_install.sh", subprocess.CompletedProcess([], 2, "boom\n", "segfault\n")
+    )
+    assert "no '  FAIL:' line" in detail
+    assert "boom" in detail
+    assert "segfault" in detail
+
+
+def test_suite_runners_report_through_the_named_failure_detail():
+    """Pin the call shape: both suite runners must use the extractor.
+
+    The helper's own tests would still pass if a runner went back to truncating
+    raw stdout, which is the exact regression issue #120 hit.
+    """
+    with open(os.path.abspath(__file__), "r") as fh:
+        source = fh.read()
+    runners = re.findall(
+        r"^def test_(?:bash_suite_passes|dispatch_suite_passes)\(.*?\n(?=\n\ndef |\Z)",
+        source,
+        re.S | re.M,
+    )
+    assert len(runners) == 2, "the suite-runner bodies were not found in this file"
+    for body in runners:
+        assert "_suite_failure_detail" in body, body.splitlines()[0]
+        assert "result.stdout[" not in body, body.splitlines()[0]

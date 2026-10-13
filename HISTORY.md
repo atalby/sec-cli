@@ -71,33 +71,26 @@ needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
 `history/2026-10-12.md`.
 
-**2026-10-13**: the guard-hardening lane kept closing. #119 re-pinned
-stale bare `line N` references in the audit profile and #121 made `citations`
-fail on one; #122 guarded README.md's front-page backend universe. #123 closed F041: the per-tenant `cli = <backend>` key was
-written into every fresh `sec.conf` and documented in three surfaces while no
-code read it, so the five lines came out of the heredoc and both samples, and
-`coverage` gained a sub-check that fails when a sample key is not a
-`get_cfg_val` read in `bin/sec`; the control literals it broke are regex-shaped. #124 guarded RESUME.md's own HISTORY.md size claim
-(scoped to its Verified-baseline section); #125 closed F041's second half (the
-`[global] auto_rotate` key, written and read by no code) and widened #123's
-check from two config surfaces to all four. #127 guarded bin/sec's `Configured Tenants:` help line against
-the live dispatcher alias regex; #129 guarded ADAPTERS.md's Opted-in Policy
-Packs census (five pack versions + the 9-persona taxonomy total) against the
-live PACK.md files (35 -> 36 cases); #130-#132 guarded profile.md's code-prose
-counts (SYNC_KEYS' six env keys, the sync controller's 4 timeout sites,
-install.sh/bin/sec's zero-timeout claim; 36 -> 37 cases / 362 -> 378
-assertions). #133-#135 guarded profile.md's last counts, its
-executed-commands `git ls-files | wc -l` transcript, and section 7's
-per-suite count guard (38 -> 40 cases / 392 -> 408); #136 read the
-previously-unread 360-audit-skill-forge spec, cross-checking its declared
-shape (eleven steps, sixteen headings, twelve dimensions, three severity
-values, two scopes) against the live SKILL.md (40 -> 41 cases / 408 -> 418).
-#137 fixed a real product bug: `bin/sec` ran `set -u` and expanded the
-possibly-empty `SCOPE_ARGS` bare -- a fatal `unbound variable` on bash < 4.4,
-so `sec get` died unscoped on stock macOS (bash 3.2); the four sites are now
-`${SCOPE_ARGS[@]+${SCOPE_ARGS[@]}}` and dispatch case [32] scans the source so
-Linux CI sees the class (86 -> 87 sections). Tracker
-holds #51, #67, #92, #120, #126. Full narrative: `history/2026-10-13.md`.
+**2026-10-13**: the guard-hardening lane closed two more classes plus one
+real product bug. #119-#126 swept and guarded stale current-state claims (audit
+profile line anchors, README's backend universe, RESUME's own size claim, and
+two F041 dead config keys -- the per-tenant `cli` line and `[global]
+auto_rotate`, written and documented but read by no code). #127-#136 guarded
+bin/sec's `Configured Tenants:` help line, ADAPTERS.md's pack/persona census,
+profile.md's code-prose counts and tracked-file transcript, sentinel section
+7's shadowable first-match, and the 360-audit-skill-forge spec that declares
+the live skill's shape -- the last "a file it does not read" case
+(41 cases / 418 assertions). #137 was the lane's first *product* bug: `bin/sec`
+ran `set -u` and expanded the possibly-empty `SCOPE_ARGS` bare, a fatal
+`unbound variable` on bash < 4.4, so `sec get` died on stock macOS while Linux
+CI stayed green; four sites fixed, plus a source scanner (dispatch case [32])
+so Linux can see the class. #120's repo-side half then closed the observability
+gap behind its own un-diagnosable flake: the pytest mirror reported a failing
+suite as only its last 2000 chars, so for the long dispatch suite a planted
+check name appeared 0 times in the report; it now names every `  FAIL:` line
+with its section (53 -> 58 tests). That bump exposed a second hand-pinned
+mirror -- sentinel case [22]'s `53 passed` drift literals -- now derived. Tracker
+holds #51, #67, #92, #126. Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
@@ -114,7 +107,7 @@ GCP create-if-absent branch (#62), dead pre-commit surface (#63), the skill's
 stale `SEC_TEST_DISPATCH` (#65), `sentinel.sh citations` (#66), and a
 baseline-red defect — an ungitignored local `.venv/` swept into the tracked set
 failing the denominator (#68; now ignored). All five bash suites and the
-pytest mirror (53 tests) pass. Full narrative:
+pytest mirror (58 tests) pass. Full narrative:
 `history/2026-10-11.md` / `history/2026-10-12.md`.
 
 ## Archive

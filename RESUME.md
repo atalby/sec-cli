@@ -1,5 +1,23 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (12th run): shipped **#120**'s repo-side half and closed
+**#137** (which the 11th run had staged but not committed). #120: the pytest
+mirror reported a failing bash suite as only `result.stdout[-2000:]`, and for
+the long dispatch suite that tail never carries the failure -- proven by
+injection, a check name planted in `test_dispatch.sh`'s first section appeared
+**0** times in the old report. `_failing_checks` in
+`scripts/tests/test_install.py` now extracts every `  FAIL:` line with its
+enclosing `[NN]` section header; `_suite_failure_detail` falls back to a
+15-line tail when a suite dies without reporting; both suite runners are pinned
+to that call shape by a source-shape guard (the extractor's own tests would
+still pass if a runner regressed to raw slicing). Mirror 53 -> 58 tests.
+That bump immediately broke sentinel case [22]'s drift controls, which
+hardcoded `is now 53 passed` / `suites (53 passed` -- and the new reporter
+named the cause in one run ("ADAPTERS.md pytest count not found to corrupt"),
+the exact failure mode #120 had created. Those four literals now derive the
+live collection count, the pattern case [27] already used. The hook-side half
+of #120 (dumping the report) stays hub-side and out of scope.
+
 Session 2026-10-13 (11th run): shipped **#137**, the lane's first *product*
 bug rather than a doc-guard: `bin/sec` expands the possibly-empty `SCOPE_ARGS`
 bare under `set -u`, fatal on bash < 4.4, so `sec get` died on stock macOS
@@ -13,8 +31,8 @@ GNU-ism (`grep -P`, `readlink -f`, `sed -r`, `sha256sum`, `xargs -r`,
 `bin/bw-session-keeper`, `bin/sec-migrator`, `bin/sec-organizer` or
 `completions/_sec`, so #137 was its only live instance. Also finished and
 shipped the previous run's **#136** (the forge shape guard, commit `201751f`),
-which was sitting uncommitted in the tree. Next: **#120**'s repo-side half --
-the pytest mirror swallows the bash suite's `  FAIL:` names.
+which was sitting uncommitted in the tree.
+
 
 Session 2026-10-13 (10th run): shipped **#136** -- the last sentinel-robustness
 class, "a file it does not read". `sentinel.sh` reads profile.md, the live
@@ -152,14 +170,18 @@ declared shape against the live SKILL.md). profile.md's numeric claims and the
 audit-skill family's cross-file shape claims are now exhaustively guarded. Next
 candidates, in order: the remaining theoretical `re.search` scope-grabs (below),
 then the fresh 360 audit (#67, after human scope approval).
-**#120's repo-side half is the next item** (the 11th run named it): the hook
-change stays hub-side, but the in-repo half is `scripts/tests/`'s pytest
-mirror, which runs `tests/test_dispatch.sh` and reports only
-`1 failed, N passed` -- the bash suite's own `  FAIL: <check name>` lines are
-never surfaced, which is exactly why the 2026-10-13 occurrence could not be
-diagnosed. Fix = print the captured sub-suite output on failure (pytest's
-`caplog`/captured-stdout already holds it; nothing about the flake itself
-needs reproducing first). Cheapest concrete next candidates, in order:
+Cheapest concrete next candidates, in order:
+- The **pytest-count mirror family is now self-maintaining** (case [22]'s
+  controls derive the live collection count, the pattern case [27] already
+  used), but that fix only covered the mirrors case [22] touches. The wider
+  lesson worth sweeping: `tests/test_sentinel.sh` mostly derives its drift
+  controls (`r"(...)\\d+"` -> `999`), but exactly three still pin an English
+  numeral by hand -- `twelve personas` (line 1091), `Nine install sections`
+  (line 1209), `twelve bound audit dimensions` (line 2586) -- plus the
+  expectation literal `"... for tests/test_install.sh, live suite has 9"`
+  (line 1260). All four go stale silently-ish on the next count bump (they do
+  fail loudly, as `count not found to corrupt`, but only after the bump).
+  Convert each to the derived form. Concrete, bounded, self-verifying.
 - (largely swept) A sentinel-robustness class: the guards added ad hoc
   (#123-#136) each attach to a specific section. #136 closed the last "a file it
   does not read" (the forge). The one remaining lead is theoretical: sweep the
@@ -178,9 +200,9 @@ needs reproducing first). Cheapest concrete next candidates, in order:
   highest-severity class left in this repo.
 The rest are gated and not autonomously actionable:
 - **#120** (one-off flaky `test_dispatch.sh` failure in pre-commit Step 5) -
-  not reproducible in ~16 runs; the hub-side hook fix is out of scope, but the
-  repo-side observability half (pytest mirror must print the bash suite's
-  `  FAIL:` lines) is the current next item, above.
+  the repo-side observability half shipped this run (the mirror now names the
+  failing check + its section); only the hub-side hook fix is left, and it is
+  out of scope. The flake itself was still not reproducible.
 - **#67** (fresh 360 audit) - its Step-1 gate needs explicit human scope approval.
 - **#92** (hub-side: two unguarded counts in hub-owned files) - gotcha 6; no
   in-repo remedy.
@@ -202,12 +224,10 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   configured for this repository point to a known GitLab host" (re-confirmed
   2026-10-13 against a live `glab auth status`, which IS authenticated --
   for gitlab.com, which this repo is not on).
-- Open issues: **#120** (one-off flaky dispatch failure; repo-side half --
-  the pytest mirror must surface the bash suite's `  FAIL:` lines -- is the
-  next item); **#126** (needs a human call - `get_cfg_val`'s awk parser
+- Open issues: **#126** (needs a human call - `get_cfg_val`'s awk parser
   silently skips a key with no `=`; reject-vs-warn is a design decision);
   **#67** (fresh 360 audit - human scope gate); **#92** (hub-side unguarded
-  counts); **#51** (hub-side handoff, tracked upstream).
+  counts); **#51** (hub-side handoff, tracked upstream). #120 closed this run.
 - Operator standing order says the tracker is GitLab/`glab`; re-verified this
   run that it is not -- `git remote -v` is `git@github.com:atalby/sec-cli.git`
   and `glab issue list` fails with "None of the git remotes configured for this
@@ -215,6 +235,24 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   live gitlab.com login. This repo is GitHub-tracked, so `gh` is used.
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
+
+- #120 `fix(test)` - the repo-side observability half of the flaky-dispatch
+  issue, and the reason that issue was undiagnosable. The mirror reported a
+  failing suite as `result.stdout[-2000:]`; for the long dispatch suite that
+  tail never contains the failure. Proof by injection: a `fail` planted in
+  `test_dispatch.sh`'s first section appears **0** times in the old pytest
+  report and is named by the new one. `_failing_checks` extracts every
+  `  FAIL:` line with its enclosing `[NN]` header (one extractor covers all
+  five suites -- they share the `fail() { echo "  FAIL: $1"; }` shape);
+  `_suite_failure_detail` adds a 15-line tail and, when a suite dies without
+  reporting, says so instead of showing an arbitrary window. Five new tests,
+  including a source-shape guard on both runner bodies because the extractor's
+  own tests would still pass if a runner regressed to raw slicing. Mirror 53
+  -> 58; mirrors bumped at `ADAPTERS.md:305`, `SKILL.md:451`,
+  `profile.md:427`, `RESUME.md` baseline and `HISTORY.md`. Second-order find:
+  sentinel case [22]'s drift-control literals hardcoded `53` and broke on the
+  bump -- named by the new reporter in one run -- so they now derive the live
+  collection count (`PYTEST_COUNT`), the pattern case [27] already used.
 
 - #137 `fix(dispatch)` - a real product bug,
   not a doc-guard. `bin/sec` runs `set -euo pipefail` and expanded the
@@ -504,7 +542,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ```
 for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_$s.sh; done   # all ALL TESTS PASSED
-.venv/bin/python -m pytest -q                                                               # 53 passed
+.venv/bin/python -m pytest -q                                                               # 58 passed
 ./skills/architecture-360-audit/sentinel.sh coverage                                        # exit 0
 ./skills/architecture-360-audit/sentinel.sh citations                                       # exit 0
 ```
@@ -512,7 +550,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 87, install 9, sentinel 41, sync_guard 16,
 write_honesty 15. Sentinel = 41 cases / 418 assertions. HISTORY.md is at
-8179/8192 bytes - the next narrative addition must compact an older clause first.
+7581/8192 bytes - the next narrative addition must compact an older clause first
+(#120's entry compacted the 2026-10-13 paragraph and moved #130-#137's detail
+into `history/2026-10-13.md`, since that detail had only ever lived here).
 109 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.

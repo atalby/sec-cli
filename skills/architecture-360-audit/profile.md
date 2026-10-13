@@ -424,7 +424,7 @@ instrument rather than the product but runs the same way:
 
      $ python3 -m pytest scripts/tests/ -q
      .....................................................            [100%]
-     53 passed in 71.6s
+     58 passed in 195.69s
 
   (the dispatch suite runs in this mirror unconditionally: commit
   0284d39 removed the former SEC_TEST_DISPATCH opt-in, issue #65)
