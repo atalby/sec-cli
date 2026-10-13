@@ -1,5 +1,14 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (8th run): shipped **#134** -- the resume's sentinel-robustness
+class. profile.md:435 quoted `git ls-files | wc -l` as `99` in the
+executed-commands transcript, a stale value contradicting the profile's own
+`Denominator: **109 tracked files**`, and unguarded (section 5 only checked the
+prose denominator). Set to 109; section 5 now derives both surfaces; test case
+[39] (2 probes + control, 6 new assertions, 38 -> 39 cases / 392 -> 398).
+`_NUM_WORDS` gains `thirty-nine`. HISTORY.md compacted to 7966 bytes. Tracker
+holds #51, #67, #92, #120, #126. Tree clean on `main`.
+
 Session 2026-10-13 (7th run): shipped **#133** -- re-swept profile.md for
 unguarded prose counts (the #130-#132 pass covered only the code-derived ones)
 and found three classes: seven further suite-count spellings ("five green
@@ -87,16 +96,21 @@ candidates are a fresh sweep for the next unguarded current-state claim (as
 
 The 5th-run sweep of ADAPTERS.md / docs/ARCHITECTURE.md / docs/OPERATOR_MANUAL.md
 is complete (found and shipped #129), the 6th-run sweep of profile.md's
-code-prose counts shipped #130-#132, and the 7th-run sweep of profile.md's
-remaining prose counts shipped #133 (seven suite-count spellings, the "twelve
-fixed dimensions" persona count, the bin decomposition). profile.md's numeric
-claims are now exhaustively guarded. Next candidates, in order: another
+code-prose counts shipped #130-#132, the 7th-run sweep of profile.md's
+remaining prose counts shipped #133, and the 8th-run sentinel-robustness pass
+shipped #134 (the executed-commands transcript twin of the tracked-file
+denominator, 99 -> 109, now derived in section 5). profile.md's numeric claims
+are exhaustively guarded. Next candidates, in order: another
 sentinel-robustness class (as #118 was), then the fresh 360 audit (#67, after
 human scope approval).
 Cheapest concrete next candidates, in order:
-- A sentinel-robustness class: the guards added ad hoc (#123-#133) each attach
+- A sentinel-robustness class: the guards added ad hoc (#123-#134) each attach
   to a specific section; audit for a class of claim the sentinel still cannot
-  see (a spelling/variant it does not scan, a file it does not read).
+  see (a spelling/variant it does not scan, a file it does not read). Concrete
+  lead: section 7's per-suite count guard does `profile_text.find(f"test_{_s}.sh")`
+  (first occurrence) then `re.search` from there -- a shadowable first-match of
+  the same #118 class; check whether an earlier `test_<s>.sh` mention can shadow
+  the guarded `(N sections|cases)` site before hardening it to `findall`.
 - **#126** (filed 3rd run) - `get_cfg_val`'s awk parser silently skips a line
   with no `=`, so a `default_backend bitwarden` typo is ignored with no signal
   and falls back to the built-in default. The intended behavior (reject the
@@ -414,9 +428,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 86, install 9, sentinel 38, sync_guard 16,
-write_honesty 15. Sentinel = 38 cases / 392 assertions. HISTORY.md is at
-8190/8192 bytes - the next narrative addition must compact an older clause first.
+mirrors in sync): dispatch 86, install 9, sentinel 39, sync_guard 16,
+write_honesty 15. Sentinel = 39 cases / 398 assertions. HISTORY.md is at
+7966/8192 bytes - the next narrative addition must compact an older clause first.
 109 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.

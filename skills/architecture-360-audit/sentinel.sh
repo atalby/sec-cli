@@ -463,6 +463,11 @@ missing_personas = [i for i in range(1, 13) if i not in used]
 profile_text = open(profile, encoding="utf-8").read()
 denom_match = re.search(r"Denominator:\s*\*\*(\d+)\s+tracked files\*\*", profile_text)
 denominator = int(denom_match.group(1)) if denom_match else None
+# The same quantity is quoted in the "Commands (executed)" transcript as the
+# output of `git ls-files | wc -l`; guard that twin too (issue #134), since a
+# drifted transcript is invisible to the prose-denominator check alone.
+transcript_match = re.search(r"git ls-files \| wc -l\n\s*(\d+)", profile_text)
+transcript_count = int(transcript_match.group(1)) if transcript_match else None
 
 # --- 6. narrative history must stay rotated (AGENTS.md §5) --------------------
 # HISTORY.md is force-loaded by every session, so it must hold only a short
@@ -614,6 +619,7 @@ _NUM_WORDS = {
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
     "thirty": 30, "thirty-two": 32, "thirty-three": 33, "thirty-four": 34,
     "thirty-five": 35, "thirty-six": 36, "thirty-seven": 37, "thirty-eight": 38,
+    "thirty-nine": 39,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1645,6 +1651,13 @@ elif denominator != len(tracked):
         f"profile.md coverage denominator says {denominator} tracked files, "
         f"but git ls-files reports {len(tracked)}"
     )
+if transcript_count is None:
+    failures.append("profile.md executed-commands 'git ls-files | wc -l' transcript line not found")
+elif transcript_count != len(tracked):
+    failures.append(
+        f"profile.md executed-commands transcript says {transcript_count} tracked files, "
+        f"but git ls-files reports {len(tracked)}"
+    )
 if dated_entries:
     failures.append(f"HISTORY.md holds {len(dated_entries)} dated '### ' entr(ies); rotate them into history/ (AGENTS.md §5)")
 if history_bytes > HISTORY_BUDGET:
@@ -1731,6 +1744,7 @@ if failures:
 
 print(f"{OK} coverage: all {len(tracked)} tracked files claimed by {len(cov_rows)} manifest rows")
 print(f"{OK} coverage denominator: profile.md states {denominator} tracked files, matches git ls-files")
+print(f"{OK} coverage denominator transcript: profile.md's executed 'git ls-files | wc -l' quotes {transcript_count}, matches git ls-files")
 print(f"{OK} narrative history: HISTORY.md is a {history_bytes}-byte summary, {len(archived)} archive(s) linked under history/")
 print(f"{OK} suite counts: profile.md matches the live suites ({', '.join(f'{s} {n}' for s, n in sorted(suite_counts.items()))})")
 print(f"{OK} census counts: profile.md matches the live tree (markdown, python, config, [ TAG ] per-file)")

@@ -31,13 +31,8 @@ pinned the `powershell` shell word plus the migrate backend values; #82
 added the bare `help`/`version` subcommands; #83 added `get --scope` /
 `set|create --type`; guards [22t]-[22w] pin them (dispatch 75 -> 79;
 `completions/_sec` regenerated). Issues #84-#91 closed
-the census-drift class: profile.md's ecosystem + per-file censuses (#84),
-ADAPTERS.md's `current suites:` snapshot (#85), the audit profile's stale
-pack taxonomy (#86), ADAPTERS.md's per-suite `(N sections|cases)` counts
-(#87), ARCHITECTURE.md's producer census (#88), the skills/registry census
-(#89), and two *drifted* prose counts — "five sibling dispatchers" (live
-7) and "four helper scripts" (live 7) (#90); section 13 asserts every
-tracked `bin/` helper is referenced by `tests/test_dispatch.sh`. #91 guarded
+the census-drift class (#84-#90; details in `history/2026-10-12.md`); section 13
+asserts every tracked `bin/` helper is referenced by `tests/test_dispatch.sh`. #91 guarded
 the three bash-suite-count claims, re-derived from `tests/*.sh`
 (section 14; sentinel 17 -> 18 cases).
 Issue #93 repaired README.md's `sec housekeep` sample output, which the
@@ -98,7 +93,9 @@ controller's 4 timeout sites, install.sh/bin/sec's zero-timeout claim) against
 the live files (sentinel 36 -> 37 cases / 362 -> 378 assertions). #133 derived
 profile.md's last unguarded counts: seven suite-count spellings, "twelve fixed
 dimensions", and "five sibling executables, one Python controller"
-decomposition (37 -> 38 cases / 378 -> 392 assertions). Tracker
+decomposition (37 -> 38 cases / 378 -> 392); #134 then guarded the
+executed-commands `git ls-files | wc -l` transcript, a stale 99 vs live 109
+(38 -> 39 cases / 398 assertions). Tracker
 holds #51, #67, #92, #120, #126. Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared

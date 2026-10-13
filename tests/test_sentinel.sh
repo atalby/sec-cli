@@ -2432,6 +2432,45 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[39] profile.md's executed-commands 'git ls-files | wc -l' transcript must match the live count (issue #134)"
+WORK_S9A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S9CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_S9A" "$WORK_S9CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_S9A/skills/architecture-360-audit/profile.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "git ls-files | wc -l\n    109\n"
+new = "git ls-files | wc -l\n    108\n"
+if old not in s:
+    sys.exit("profile.md: no tracked-file-count transcript to probe")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_S9A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when profile.md's executed transcript drifts"
+else
+    no "coverage accepted a drifted tracked-file-count transcript"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "executed-commands transcript says 108 tracked files, but git ls-files reports 109" <<<"$OUT"; then
+    ok "coverage names the drifted executed-commands transcript"
+else
+    no "coverage did not name the drifted executed-commands transcript"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_S9CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (executed-commands transcript matches the live count) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
