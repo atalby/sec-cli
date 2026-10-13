@@ -604,7 +604,7 @@ _NUM_WORDS = {
     "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
     "twenty-one": 21, "twenty-two": 22, "twenty-three": 23,
     "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
-    "twenty-seven": 27,
+    "twenty-seven": 27, "twenty-eight": 28,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1123,6 +1123,28 @@ else:
     if _rasserts != _live_asserts:
         count_claim_mismatches.append(
             f"RESUME.md says Sentinel = {_rasserts} assertions, live suite has {_live_asserts}"
+        )
+
+_resume_struct_m = re.search(
+    r"(\d+) tracked files, (\d+) personas, (\d+) bash suites", _resume_text
+)
+if not _resume_struct_m:
+    count_claim_mismatches.append(
+        "RESUME.md carries no 'N tracked files, N personas, N bash suites' line"
+    )
+else:
+    _rt, _rp, _rs = (int(_resume_struct_m.group(_i)) for _i in (1, 2, 3))
+    if _rt != len(tracked):
+        count_claim_mismatches.append(
+            f"RESUME.md says {_rt} tracked files, live tree has {len(tracked)}"
+        )
+    if _rp != _live_personas:
+        count_claim_mismatches.append(
+            f"RESUME.md says {_rp} personas, profile.md declares {_live_personas}"
+        )
+    if _rs != _live_suite_count:
+        count_claim_mismatches.append(
+            f"RESUME.md says {_rs} bash suites, live tree has {_live_suite_count}"
         )
 
 # --- 18. README.md's quoted `sec --help` + default sec.conf blocks + migrate backend list

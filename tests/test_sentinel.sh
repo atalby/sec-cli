@@ -1194,7 +1194,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"own twenty-seven sentinel cases", "own twelve sentinel cases", s)
+s2, n = re.subn(r"own twenty-eight sentinel cases", "own twelve sentinel cases", s)
 if n != 1:
     sys.exit("profile.md §3 sentinel count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1236,7 +1236,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md §3 sentinel count"
 fi
-if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 27" <<<"$OUT"; then
+if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 28" <<<"$OUT"; then
     ok "coverage names the drifted profile.md §3 sentinel count"
 else
     no "coverage did not name the drifted profile.md §3 sentinel count"
@@ -1601,6 +1601,53 @@ OUT="$(cd "$WORK_HCTRL" && git init -q . && git add -A && "skills/architecture-3
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (correct HISTORY.md pytest count) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[28] RESUME.md's current-state tracked-files / personas / bash-suites counts must match the live tree (issue #117)"
+WORK_R1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_RCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_R1" "$WORK_RCTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_R1/RESUME.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"\d+ tracked files, \d+ personas, \d+ bash suites",
+    "107 tracked files, 11 personas, 4 bash suites",
+    s,
+)
+if n != 1:
+    sys.exit("RESUME.md structural-count line not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_R1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on drifted RESUME.md structural counts"
+else
+    no "coverage accepted drifted RESUME.md structural counts"
+fi
+for _m in \
+    "RESUME.md says 107 tracked files, live tree has 108" \
+    "RESUME.md says 11 personas, profile.md declares 12" \
+    "RESUME.md says 4 bash suites, live tree has 5"; do
+    if grep -qF "$_m" <<<"$OUT"; then
+        ok "coverage names the drift: $_m"
+    else
+        no "coverage did not name: $_m"
+        printf '%s\n' "$OUT"
+    fi
+done
+OUT="$(cd "$WORK_RCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct RESUME.md structural counts) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"
