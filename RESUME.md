@@ -1,15 +1,16 @@
 # Resume point - sec-cli
 
-Written 2026-10-12 after closing #114 (commit `5e295c1`), #113 (commit
-`d4890c3`), #112 (commit `d9fb2d3`), #111 (commit `84c3ee6`) and #110 (commit
-`8ba4a49`), all pushed. Working tree clean on `main`; `origin/main` == local
-`main`. This lane shipped a long run of guard/fix/perf units (#97..#114), all
+Written 2026-10-12 after closing #116 (commit `fddb57b`), #115 (commit
+`2549973`), #114 (commit `5e295c1`), #113 (commit `d4890c3`) and #112 (commit
+`d9fb2d3`), all pushed. Working tree clean on `main`; `origin/main` == local
+`main`. This lane shipped a long run of guard/fix/perf units (#97..#116), all
 CI-green.
 
 There is again **no open issue with an autonomous in-repo remedy**. The
 remaining open items are hub-side or human-gated (see below). If the lane is
-run again, the highest-value candidates are the fresh 360 audit (#67, after
-human scope approval) and re-running the verified baseline to catch any drift.
+run again, the highest-value candidates are a fresh sweep for unguarded
+current-state claims (as #116 was) and the fresh 360 audit (#67, after human
+scope approval).
 
 ## Next autonomous work
 
@@ -38,6 +39,22 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #116 `fix(docs)` -> `fddb57b` - `HISTORY.md`'s `## Current state` claimed a
+  pytest mirror of 29 tests (live 53) and a stale open-issue set; that count was
+  guarded in `ADAPTERS.md` + audit `SKILL.md` (#97) and `RESUME.md` (#109) but
+  not in `HISTORY.md`. Fixed the value and extended sentinel section 17 to
+  guard `HISTORY.md` too. Case [27] proves it (corrupt 53 -> 52 -> `coverage`
+  exits nonzero naming the drift; control exits 0). Sentinel 26 -> 27 cases /
+  266 -> 272 assertions; mirrors `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`,
+  `RESUME.md:141`; `_NUM_WORDS` gains `twenty-seven`; control [22] literals
+  re-pinned. `HISTORY.md` now 8181/8192 bytes.
+- #115 `fix(sec-organizer)` -> `2549973` - `sec-organizer apply`/`revert` did not
+  guard a corrupt plan/snapshot and died on a raw `jq` parse (exit 4, no tagged
+  line). Now a tagged `[ERROR]` + exit 1, file kept. `tests/test_write_honesty.sh`
+  [13]/[14], suite 13 -> 15 sections. Mirrors: `profile.md` §3 count + `[ TAG ]`
+  census (`sec-organizer` 37 -> 41), citation anchors re-pinned
+  (`LATEST_SNAPSHOT` 290->296, `snapshot_file` 195->201); `docs/ARCHITECTURE.md`
+  records the pre-use validation.
 - #114 `fix(docs)` -> `5e295c1` - `docs/OPERATOR_MANUAL.md:31` documented
   `-v`/`--version` as `` `sec-cli v1.0.0` `` (the `--help` banner string), but
   the live command prints `` sec-cli version 1.0.0 ``. Corrected the row and
@@ -139,7 +156,7 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 86, install 9, sentinel 27, sync_guard 16,
 write_honesty 15. Sentinel = 27 cases / 272 assertions. HISTORY.md is at
-8038/8192 bytes - the next narrative addition must compact an older clause first.
+8181/8192 bytes - the next narrative addition must compact an older clause first.
 108 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.
