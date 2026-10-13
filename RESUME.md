@@ -1,8 +1,9 @@
 # Resume point - sec-cli
 
-Session 2026-10-13: shipped #119 (commit `9864fb0`) and filed #120 (one-off
+Session 2026-10-13: shipped #119 (commit `9864fb0`), filed #120 (one-off
 flaky `test_dispatch.sh` failure in the pre-commit Step 5 run; not reproduced
-in ~16 attempts). No work in flight: clean tree on `main`, CI green.
+in ~16 attempts), and opened #121 (bare line-reference guard) as the next
+autonomous item. No work in flight: clean tree on `main`, CI green.
 
 Written 2026-10-12 after closing #118 (commit `aa0eb12`), #117 (commit
 `3f0e69b`), #116 (commit `fddb57b`), #115 (commit `2549973`), #114 (commit
@@ -10,16 +11,21 @@ Written 2026-10-12 after closing #118 (commit `aa0eb12`), #117 (commit
 Working tree clean on `main`; `origin/main` == local `main`. This lane shipped
 a long run of guard/fix/perf units (#97..#118), all CI-green.
 
-There is again **no open issue with an autonomous in-repo remedy**. The
-remaining open items are hub-side or human-gated (see below). If the lane is
-run again, the highest-value candidates are a fresh sweep for the next unguarded
+The open item **#121** below has an autonomous in-repo remedy (a sentinel guard
+for bare line references); everything else is hub-side or human-gated. If the
+lane is run again, other high-value candidates are a fresh sweep for the next unguarded
 current-state claim (as #116 and #117 were) or another sentinel-robustness class
 (as #118 was), then the fresh 360 audit (#67, after human scope approval).
 
 ## Next autonomous work
 
-None until a human un-sticks one of the gated items, or a new unguarded
-claim is found:
+Start with **#121** (autonomous, in-repo):
+- **#121** (sentinel: bare `line N` refs in `profile.md`/`SKILL.md` are
+  unguarded) - add a citations sub-check that FAILS on a bare `\blines?\s+\d+`
+  outside a `file:N` anchor, rewrite the 5 remaining bare refs to colon form,
+  add a `test_sentinel.sh` case + control, bump mirrors 29 -> 30. Resume:
+  `gh --repo atalby/sec-cli issue view 121`.
+The rest are gated and not autonomously actionable:
 - **#120** (one-off flaky `test_dispatch.sh` failure in pre-commit Step 5) -
   tracked; not reproducible in ~16 runs; a recurrence needs the hub-side hook
   to dump the `  FAIL:` lines. No in-repo fix yet.
@@ -28,8 +34,8 @@ claim is found:
   in-repo remedy.
 - **#51** (hub-side handoff items tracked upstream) - unfixable in-repo.
 
-Resume commands:
-`cd /home/opc/sandbox/sec-cli && gh --repo atalby/sec-cli issue view 67`
+Resume command:
+`cd /home/opc/sandbox/sec-cli && gh --repo atalby/sec-cli issue view 121`
 
 If picking un-tracked work instead, the cheapest high-value items are: re-run the
 verified baseline below to confirm no drift, and the sentinel suite is now ~40s
@@ -41,9 +47,9 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 - Tracker: **GitHub** (`gh --repo atalby/sec-cli`), not glab. Remote is
   `git@github.com:atalby/sec-cli.git`; `glab` errors "None of the git remotes
   configured for this repository point to a known GitLab host".
-- Open issues: **#67** (fresh 360 audit - human scope gate); **#92** (hub-side
-  unguarded counts); **#51** (hub-side handoff, tracked upstream). None are
-  autonomously actionable in-repo.
+- Open issues: **#121** (autonomous - bare line-reference guard, start here);
+  **#67** (fresh 360 audit - human scope gate); **#92** (hub-side unguarded
+  counts); **#51** (hub-side handoff, tracked upstream).
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
