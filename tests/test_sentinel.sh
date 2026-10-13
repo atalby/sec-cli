@@ -2800,6 +2800,82 @@ else
     no "the control copy's OK line did not report a doc anchor count"
     printf '%s\n' "$OUT"
 fi
+echo "[39] a shadow allow-list / alias regex must not mask the real bin guard (issue #140 shadow class)"
+WORK_S13A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S13B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S13CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_S13A" "$WORK_S13B" "$WORK_S13CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_S13A/bin/sec-migrator" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+m = re.search(r'(case "\$DST" in\n\s*)([a-z0-9|]+)(\))', s)
+if not m or "infisical" not in m.group(2):
+    sys.exit("bin/sec-migrator: no destination allow-list carrying infisical to probe")
+s = s[:m.start(2)] + re.sub(r"\|?infisical", "", m.group(2), count=1) + s[m.end(2):]
+idx = s.index('case "$DST" in')
+shadow = (
+    'case "$DST" in\n'
+    '    1password|1pass|op|bitwarden|bw|bws|infisical|vault)\n'
+    '        echo "Destination backend not supported for bulk migration." >&2\n'
+    '        exit 1\n'
+    '        ;;\n'
+    'esac\n\n'
+)
+open(p, "w", encoding="utf-8").write(s[:idx] + shadow + s[idx:])
+PY
+OUT="$(cd "$WORK_S13A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a second case \"\$DST\" allow-list shadows the real one"
+else
+    no "coverage accepted a shadowed migrator destination allow-list"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "migrator destination allow-list is" <<<"$OUT"; then
+    ok "coverage names the shadowed migrator destination allow-list"
+else
+    no "coverage did not name the shadowed migrator destination allow-list"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_S13B/bin/sec" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+m = re.search(r'\[\[ "\$1" =~ \^\(([a-z0-9|]+)\)\$ \]\]', s)
+if not m or "keychain" not in m.group(1):
+    sys.exit("bin/sec: no dispatcher alias gate carrying keychain to probe")
+s = s[:m.start(1)] + re.sub(r"\|?keychain", "", m.group(1), count=1) + s[m.end(1):]
+idx = s.index('if [[ $# -ge 2 ]] && [[ "$1" =~')
+shadow = 'if [[ $# -ge 2 ]] && [[ "$1" =~ ^(%s)$ ]]; then :; fi\n' % m.group(1)
+open(p, "w", encoding="utf-8").write(s[:idx] + shadow + s[idx:])
+PY
+OUT="$(cd "$WORK_S13B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a dead alias regex shadows the real gate"
+else
+    no "coverage accepted a shadowed tenant alias gate"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "dispatcher alias gates" <<<"$OUT"; then
+    ok "coverage names the shadowed tenant alias set"
+else
+    no "coverage did not name the shadowed tenant alias set"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_S13CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (unmutated bin guards) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

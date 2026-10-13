@@ -1015,9 +1015,21 @@ except OSError:
     _wf_text = ""
 
 _live_aliases = None
-_sec_alias_m = re.search(r"=~\s*\^\(([a-z0-9|]+)\)\$", _sec_text)
-if _sec_alias_m:
+_sec_alias_m = None
+_alias_gates = []
+for _alias_cand in re.finditer(r"=~\s*\^\(([a-z0-9|]+)\)\$", _sec_text):
+    _alias_start = _sec_text.rfind("\n", 0, _alias_cand.start()) + 1
+    _alias_stop = _sec_text.find("\n", _alias_cand.end())
+    _alias_line = _sec_text[_alias_start:(len(_sec_text) if _alias_stop < 0 else _alias_stop)].strip()
+    if _alias_line.startswith('if [[ $# -ge 2 ]] && [[ "$1" =~ ^('):
+        _alias_gates.append(_alias_cand)
+if _alias_gates:
+    _sec_alias_m = _alias_gates[0]
     _live_aliases = set(_sec_alias_m.group(1).split("|"))
+    if len(_alias_gates) > 1:
+        struct_mismatches.append(
+            f"bin/sec carries {len(_alias_gates)} dispatcher alias gates, expected exactly 1"
+        )
 _multi_m = re.search(r"the (\w+) fixed aliases \(([^)]+)\)", _multi_text)
 if not _multi_m:
     struct_mismatches.append("docs/MULTI_TENANCY.md carries no 'N fixed aliases (...)' claim")
@@ -1431,7 +1443,16 @@ _ALIAS = {
     "1password": "1password", "1pass": "1password", "op": "1password",
     "infisical": "infisical", "vault": "vault",
 }
-_mig_dst_m = re.search(r'case "\$DST" in\n\s*([a-z0-9|]+)\)', _mig_text)
+_mig_dst_blocks = [
+    _mig_dst_cand
+    for _mig_dst_cand in re.finditer(r'case "\$DST" in\n\s*([a-z0-9|]+)\)([\s\S]*?)esac', _mig_text)
+    if "[ERROR] Destination backend" in _mig_dst_cand.group(2)
+]
+_mig_dst_m = _mig_dst_blocks[0] if _mig_dst_blocks else None
+if len(_mig_dst_blocks) > 1:
+    readme_mismatches.append(
+        f"bin/sec-migrator carries {len(_mig_dst_blocks)} destination allow-list blocks, expected exactly 1"
+    )
 _readme_mig_m = re.search(r"^- .*`sec migrate`.*$", _readme_text, re.M)
 if _mig_dst_m is None:
     readme_mismatches.append("bin/sec-migrator carries no 'case \"$DST\" in' backend allow-list")
