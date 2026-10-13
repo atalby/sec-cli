@@ -15,6 +15,20 @@ as `{\, w, -}`. Negative control: forcing the wrong word back onto the live
 value turns those controls into no-ops and 10 assertions fail. No tracked-file
 or suite-count mirror moved (109 files, 41 cases / 418 assertions).
 
+Same run, second batch: the sweep's own grep was too narrow -- it matched
+replacement strings that *start* with a numeral word, so six pinned sites
+survived the first commit (9a4938e): profile.md's seven sibling dispatchers,
+ADAPTERS.md's seven `bin/` helpers, MULTI_TENANCY.md's eight fixed aliases,
+OPERATOR_MANUAL.md's four core principles, SKILL.md's five `tests/*.sh`
+scanner suites and five-suite gate. All six now take a `WRONG_*` word from
+`num_word` and all six expectations widened. Found by dumping every corruption
+heredoc and grepping the whole replacement string, which is the method to reuse.
+One live-only grep bug: the expectation for the scanner suites used double
+quotes around a pattern containing backticks, so bash ran `tests/*.sh` as a
+command substitution -- such greps must be single-quoted. Negative control on
+the six: forcing each `WRONG_*` to the live word fails 12 assertions. No
+mirror moved.
+
 Session 2026-10-13 (12th run): shipped **#120**'s repo-side half and closed
 **#137** (which the 11th run had staged but not committed). #120: the pytest
 mirror reported a failing bash suite as only `result.stdout[-2000:]`, and for
@@ -565,7 +579,7 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 87, install 9, sentinel 41, sync_guard 16,
 write_honesty 15. Sentinel = 41 cases / 418 assertions. HISTORY.md is at
-7924/8192 bytes - the next narrative addition must compact an older clause first
+8135/8192 bytes - the next narrative addition must compact an older clause first
 (#120's entry compacted the 2026-10-13 paragraph and moved #130-#137's detail
 into `history/2026-10-13.md`, since that detail had only ever lived here; the
 drift-control sweep compacted it again).

@@ -93,8 +93,11 @@ hardcoded live count or numeral word in `tests/test_sentinel.sh` is now derived
 from the live tree (a `num_word` helper picks a numeral that differs from the
 live one, because a `_NUM_WORDS`-keyed check ignores a digit, so a digit swap
 would have silently no-op'd), and `sentinel.sh` no longer prints a pinned
-`all 12 reachable`. Negative control: forcing the wrong word back onto the live
-value turns those controls into no-ops and 10 assertions fail. Tracker holds
+`all 12 reachable`. The first pass grepped replacement prefixes and so missed
+six; dumping every corruption heredoc caught them (sibling dispatchers, bin
+helpers, tenant aliases, core principles, scanner suites, gate suites).
+Negative control: forcing the wrong word back onto the live value turns those
+controls into no-ops, 10 then 12 assertions fail. Tracker holds
 #51, #67, #92, #126. Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared

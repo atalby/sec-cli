@@ -26,6 +26,12 @@ DRIFT_PERSONAS="$((LIVE_PERSONAS + 1))"
 DRIFT_SUITES="$((LIVE_SUITES + 1))"
 WRONG_CENSUS="$(num_word five)"
 WRONG_DIMS="$(num_word twelve)"
+WRONG_DISPATCH="$(num_word seven)"
+WRONG_HELPERS="$(num_word seven)"
+WRONG_ALIASES="$(num_word eight)"
+WRONG_PRINCIPLES="$(num_word four)"
+WRONG_SCANNERS="$(num_word five)"
+WRONG_GATE="$(num_word five)"
 WRONG_EXECS="$(num_word five)"
 WRONG_FORGE_STEPS="$(num_word eleven)"
 WRONG_INSTALL="$(num_word nine)"
@@ -721,24 +727,30 @@ WORK_SCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_S1" "$WORK_S2" "$WORK_S3" "$WORK_SCTRL"; do
     seed "$W"
 done
-python3 - "$WORK_S1/skills/architecture-360-audit/profile.md" <<'PY'
+python3 - "$WORK_S1/skills/architecture-360-audit/profile.md" "$WRONG_DISPATCH" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"`bin/sec` and (\w+) sibling dispatchers",
-                "`bin/sec` and nine sibling dispatchers", s)
+s2, n = re.subn(r"`bin/sec` and [\w-]+ sibling dispatchers",
+                "`bin/sec` and %s sibling dispatchers" % wrong, s)
 if n != 1:
     sys.exit("profile.md bin/ sibling-dispatcher count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
-python3 - "$WORK_S2/ADAPTERS.md" <<'PY'
+python3 - "$WORK_S2/ADAPTERS.md" "$WRONG_HELPERS" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"plus the (\w+) sibling `bin/` helpers the suite references",
-                "plus the nine sibling `bin/` helpers the suite references", s)
+s2, n = re.subn(r"plus the [\w-]+ sibling `bin/` helpers the suite references",
+                "plus the %s sibling `bin/` helpers the suite references" % wrong, s)
 if n != 1:
     sys.exit("ADAPTERS.md dispatch-suite helper count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -760,7 +772,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md bin/ sibling-dispatcher count"
 fi
-if grep -q "profile.md's bin/ sibling-dispatcher census says 9" <<<"$OUT"; then
+if grep -qE "profile.md's bin/ sibling-dispatcher census says [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted profile.md bin/ sibling-dispatcher count"
 else
     no "coverage did not name the drifted profile.md bin/ sibling-dispatcher count"
@@ -773,7 +785,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted ADAPTERS.md dispatch-suite helper count"
 fi
-if grep -q "ADAPTERS.md says nine helper scripts, live tree has" <<<"$OUT"; then
+if grep -qE "ADAPTERS.md says [A-Za-z-]+ helper scripts, live tree has [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted ADAPTERS.md dispatch-suite helper count"
 else
     no "coverage did not name the drifted ADAPTERS.md dispatch-suite helper count"
@@ -931,12 +943,15 @@ WORK_UCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_U1" "$WORK_U2" "$WORK_U3" "$WORK_U4" "$WORK_UCTRL"; do
     seed "$W"
 done
-python3 - "$WORK_U1/docs/MULTI_TENANCY.md" <<'PY'
+python3 - "$WORK_U1/docs/MULTI_TENANCY.md" "$WRONG_ALIASES" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"the (\w+) fixed aliases", "the nine fixed aliases", s)
+s2, n = re.subn(r"the [\w-]+ fixed aliases", "the %s fixed aliases" % wrong, s)
 if n != 1:
     sys.exit("MULTI_TENANCY alias count word not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -962,13 +977,16 @@ if n != 1:
     sys.exit("profile.md CI checkout version not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
-python3 - "$WORK_U4/docs/OPERATOR_MANUAL.md" <<'PY'
+python3 - "$WORK_U4/docs/OPERATOR_MANUAL.md" "$WRONG_PRINCIPLES" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"designed around (\w+) core principles",
-                "designed around five core principles", s)
+s2, n = re.subn(r"designed around [\w-]+ core principles",
+                "designed around %s core principles" % wrong, s)
 if n != 1:
     sys.exit("OPERATOR_MANUAL principle count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -980,7 +998,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted MULTI_TENANCY.md alias count"
 fi
-if grep -q "MULTI_TENANCY.md says nine fixed aliases, live bin/sec has 8" <<<"$OUT"; then
+if grep -qE "MULTI_TENANCY.md says [A-Za-z-]+ fixed aliases, live bin/sec has [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted MULTI_TENANCY.md alias count"
 else
     no "coverage did not name the drifted MULTI_TENANCY.md alias count"
@@ -1019,7 +1037,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted OPERATOR_MANUAL.md principle count"
 fi
-if grep -q "OPERATOR_MANUAL.md says five core principles, live doc lists 4" <<<"$OUT"; then
+if grep -qE "OPERATOR_MANUAL.md says [A-Za-z-]+ core principles, live doc lists [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted OPERATOR_MANUAL.md principle count"
 else
     no "coverage did not name the drifted OPERATOR_MANUAL.md principle count"
@@ -1041,22 +1059,28 @@ WORK_WCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
 for W in "$WORK_W1" "$WORK_W2" "$WORK_WCTRL"; do
     seed "$W"
 done
-python3 - "$WORK_W1/skills/architecture-360-audit/SKILL.md" <<'PY'
+python3 - "$WORK_W1/skills/architecture-360-audit/SKILL.md" "$WRONG_SCANNERS" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"the \w+ `tests/\*\.sh` suites", "the nine `tests/*.sh` suites", s)
+s2, n = re.subn(r"the [\w-]+ `tests/\*\.sh` suites", "the %s `tests/*.sh` suites" % wrong, s)
 if n != 1:
     sys.exit("SKILL.md scanner suite count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
-python3 - "$WORK_W2/skills/architecture-360-audit/SKILL.md" <<'PY'
+python3 - "$WORK_W2/skills/architecture-360-audit/SKILL.md" "$WRONG_GATE" <<'PY'
 import re
 import sys
 p = sys.argv[1]
+wrong = sys.argv[2]
+if not wrong:
+    sys.exit("no replacement numeral word available")
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"executes all \w+ bash suites", "executes all nine bash suites", s)
+s2, n = re.subn(r"executes all [\w-]+ bash suites", "executes all %s bash suites" % wrong, s)
 if n != 1:
     sys.exit("SKILL.md gate suite count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1068,7 +1092,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted SKILL.md scanner suite count"
 fi
-if grep -q 'SKILL.md says the nine `tests/\*\.sh` suites, live tree has 5' <<<"$OUT"; then
+if grep -qE 'SKILL.md says the [A-Za-z-]+ `tests/\*\.sh` suites, live tree has [0-9]+' <<<"$OUT"; then
     ok "coverage names the drifted SKILL.md scanner suite count"
 else
     no "coverage did not name the drifted SKILL.md scanner suite count"
@@ -1081,7 +1105,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted SKILL.md gate suite count"
 fi
-if grep -q "SKILL.md says the gate executes all nine bash suites, live tree has 5" <<<"$OUT"; then
+if grep -qE "SKILL.md says the gate executes all [A-Za-z-]+ bash suites, live tree has [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted SKILL.md gate suite count"
 else
     no "coverage did not name the drifted SKILL.md gate suite count"
