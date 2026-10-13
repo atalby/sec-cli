@@ -611,7 +611,7 @@ _NUM_WORDS = {
     "twenty-one": 21, "twenty-two": 22, "twenty-three": 23,
     "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
-    "thirty": 30,
+    "thirty": 30, "thirty-one": 31,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1297,6 +1297,42 @@ if _mig_src_set is not None and _mig_dst_set is not None:
             if _s | _add != _mig_dst_set:
                 migrate_mismatches.append(
                     f"{_name} destination list is {sorted(_s | _add)}, migrator destination allow-list is {sorted(_mig_dst_set)}"
+                )
+
+# --- 18b. README.md's front-page backend universe + sync targets must match the
+#         live migrator allow-lists and the sync controller's `Targets:` header
+#         (issue #122) ----------------------------------------------------------
+_readme_front_m = re.search(r"unifies secret management across[^\n]+", _readme_text)
+if _readme_front_m is None:
+    readme_mismatches.append("README.md carries no 'unifies secret management across' front sentence")
+else:
+    _front_lower = _readme_front_m.group(0).lower()
+    if _mig_src_set is None or _mig_dst_set is None:
+        readme_mismatches.append(
+            "bin/sec-migrator backend allow-lists unavailable to compare README.md's front universe against"
+        )
+    else:
+        _universe = _mig_src_set | _mig_dst_set
+        _claimed = {_ALIAS[_t] for _t in re.findall(r"[a-z0-9]+", _front_lower) if _t in _ALIAS}
+        _missing = sorted(_universe - _claimed)
+        if _missing:
+            readme_mismatches.append(
+                "README.md's front sentence omits live backend(s): " + ", ".join(_missing)
+            )
+    try:
+        with open(os.path.join(repo, "bin", "sec-sync-controller.py"), encoding="utf-8") as _fh:
+            _ctrl_text = _fh.read()
+    except OSError:
+        _ctrl_text = ""
+    _targets_m = re.search(r"^Targets: (.+)$", _ctrl_text, re.M)
+    if _targets_m is None:
+        readme_mismatches.append("bin/sec-sync-controller.py carries no 'Targets:' header")
+    else:
+        for _tgt in _targets_m.group(1).split(","):
+            _tgt = _tgt.strip().lower()
+            if _tgt and _tgt not in _front_lower:
+                readme_mismatches.append(
+                    "README.md's front sentence omits live sync target: %s" % _tgt
                 )
 
 # --- 20. OPERATOR_MANUAL.md's documented `-v/--version` output must match the

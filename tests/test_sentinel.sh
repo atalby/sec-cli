@@ -1194,7 +1194,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"own thirty sentinel cases", "own twelve sentinel cases", s)
+s2, n = re.subn(r"own thirty-one sentinel cases", "own twelve sentinel cases", s)
 if n != 1:
     sys.exit("profile.md §3 sentinel count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1236,7 +1236,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md §3 sentinel count"
 fi
-if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 30" <<<"$OUT"; then
+if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 31" <<<"$OUT"; then
     ok "coverage names the drifted profile.md §3 sentinel count"
 else
     no "coverage did not name the drifted profile.md §3 sentinel count"
@@ -1743,6 +1743,64 @@ OUT="$(cd "$WORK_BRCTRL" && git init -q . && git add -A && "skills/architecture-
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (no bare references) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[31] README.md's front-page backend universe + sync targets must match the live tree (issue #122)"
+WORK_B1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_B2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_BCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_B1" "$WORK_B2" "$WORK_BCTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_B1/README.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+if "**Infisical**, " not in s:
+    sys.exit("README.md front sentence has no **Infisical** token to remove")
+open(p, "w", encoding="utf-8").write(s.replace("**Infisical**, ", "", 1))
+PY
+OUT="$(cd "$WORK_B1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when README.md's front sentence omits a live backend"
+else
+    no "coverage accepted a README.md front sentence missing a live backend"
+fi
+if grep -qF "README.md's front sentence omits live backend(s): infisical" <<<"$OUT"; then
+    ok "coverage names the omitted backend"
+else
+    no "coverage did not name the omitted backend"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_B2/README.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+if "& **GitLab group variables**" not in s:
+    sys.exit("README.md front sentence has no GitLab sync target to remove")
+open(p, "w", encoding="utf-8").write(s.replace("& **GitLab group variables**", "", 1))
+PY
+OUT="$(cd "$WORK_B2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when README.md's front sentence omits a live sync target"
+else
+    no "coverage accepted a README.md front sentence missing a live sync target"
+fi
+if grep -qF "README.md's front sentence omits live sync target: gitlab group variables" <<<"$OUT"; then
+    ok "coverage names the omitted sync target"
+else
+    no "coverage did not name the omitted sync target"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_BCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (unmodified README.md) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"
