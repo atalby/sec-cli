@@ -612,7 +612,7 @@ _NUM_WORDS = {
     "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
     "thirty": 30, "thirty-two": 32, "thirty-three": 33, "thirty-four": 34,
-    "thirty-five": 35,
+    "thirty-five": 35, "thirty-six": 36,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -639,6 +639,44 @@ else:
         pack_mismatches.append(
             f"profile.md says the pack defines {_cited_roles.group(1)} roles, PACK.md enumerates {_pack_roles}"
         )
+
+# ADAPTERS.md's Opted-in Policy Packs section carries its own copy of the
+# same census (issue #129): one `packs/<name> (vX.Y.Z)` citation per opted-in
+# pack plus the solo-founder persona-taxonomy total. Each must match the
+# live packs/<name>/PACK.md; a pack bump that updates profile.md but not
+# ADAPTERS.md previously drifted unseen.
+if _adapters_text:
+    _cited_packs = set()
+    for _pkg_m in re.finditer(r"`(packs/[a-z0-9-]+) \((v\d+\.\d+\.\d+)\)`", _adapters_text):
+        _pkg_name, _pkg_cited = _pkg_m.group(1), _pkg_m.group(2)
+        _cited_packs.add(_pkg_name)
+        try:
+            with open(os.path.join(repo, _pkg_name, "PACK.md"), encoding="utf-8") as _pf:
+                _pkg_live = _pf.read()
+        except OSError:
+            pack_mismatches.append(f"ADAPTERS.md cites {_pkg_name} but no PACK.md exists beside it")
+            continue
+        _pkg_live_v = re.search(r"Pack version:\s*(v\d+\.\d+\.\d+)", _pkg_live)
+        if not _pkg_live_v:
+            pack_mismatches.append(f"packs/{_pkg_name}/PACK.md declares no 'Pack version:'")
+        elif _pkg_live_v.group(1) != _pkg_cited:
+            pack_mismatches.append(
+                f"ADAPTERS.md cites {_pkg_name} {_pkg_cited}, PACK.md declares {_pkg_live_v.group(1)}"
+            )
+    for _pd in sorted(os.listdir(os.path.join(repo, "packs"))):
+        if _pd.startswith(".") or not os.path.isfile(os.path.join(repo, "packs", _pd, "PACK.md")):
+            continue
+        if f"packs/{_pd}" not in _cited_packs:
+            pack_mismatches.append(f"packs/{_pd}/PACK.md exists but ADAPTERS.md does not cite it")
+    _pers_m = re.search(r"(\d+)-persona taxonomy total", _adapters_text)
+    if not _pers_m:
+        pack_mismatches.append("ADAPTERS.md states no solo-founder persona-taxonomy count")
+    elif _pack_text:
+        _live_personas = len(re.findall(r"(?m)^### \d+\. ", _pack_text))
+        if int(_pers_m.group(1)) != _live_personas:
+            pack_mismatches.append(
+                f"ADAPTERS.md says {_pers_m.group(1)}-persona taxonomy total, PACK.md enumerates {_live_personas}"
+            )
 
 # --- 11. docs/ARCHITECTURE.md's producer census must match the live emitters (#88) ---
 producers_mismatches = []
@@ -1518,7 +1556,7 @@ if adapters_mismatches:
     for _m in adapters_mismatches:
         print(f"{ERROR} adapters suite: {_m}")
 if pack_mismatches:
-    failures.append(f"{len(pack_mismatches)} pack-taxonomy drift(s) vs packs/solo-founder-governance/PACK.md")
+    failures.append(f"{len(pack_mismatches)} pack-taxonomy drift(s) vs the live packs/ PACK.md files")
     for _m in pack_mismatches:
         print(f"{ERROR} pack: {_m}")
 if producers_mismatches:
@@ -1583,7 +1621,7 @@ print(f"{OK} narrative history: HISTORY.md is a {history_bytes}-byte summary, {l
 print(f"{OK} suite counts: profile.md matches the live suites ({', '.join(f'{s} {n}' for s, n in sorted(suite_counts.items()))})")
 print(f"{OK} census counts: profile.md matches the live tree (markdown, python, config, [ TAG ] per-file)")
 print(f"{OK} adapters suite counts: ADAPTERS.md 'current suites' snapshot + per-suite mentions match the live suites")
-print(f"{OK} pack prose: profile.md's cited pack version + role count match PACK.md")
+print(f"{OK} pack prose: profile.md's + ADAPTERS.md's cited pack versions + persona-taxonomy count match the live PACK.md files")
 print(f"{OK} producer census: docs/ARCHITECTURE.md's producer count + list match the live bin/ emitters")
 print(f"{OK} skills registry: ADAPTERS.md's census matches {len(_live_skill_dirs)} live skill dir(s) + {len(_registry_rows)} REGISTRY.md row(s)")
 print(f"{OK} bin/ helper census: profile.md + ADAPTERS.md match {_live_bin_helpers} tracked sibling helper(s), all referenced by tests/test_dispatch.sh")

@@ -18,8 +18,8 @@ optional password), `sec get --scope` rejects a flag-like folder
 name, `sec housekeep`/`organize` no longer drops extra operands, and a
 `bw-session-keeper` `rotate`/`keep` whose vault refresh failed died under
 `set -e` — now exit 1 + tagged `[ERROR]`. Issue #64 (pre-commit
-enforcement vanishing when `uv` is absent) was verified as a duplicate of
-#51's hub-side payload and closed. Issue
+vanishing when `uv` is absent) verified as a duplicate of #51's payload
+and closed. Issue
 #78-#80 closed the completion-parity class: fish omitted the tenant-prefix
 words the other surfaces offer; no housekeep subcommands followed the
 `organize` alias; and all four surfaces advertised only `plan/apply/revert`
@@ -30,8 +30,7 @@ Issue #81 fixed the ps1 completion runtime (`$commandAst.ArgumentElements`
 pinned the `powershell` shell word plus the migrate backend values; #82
 added the bare `help`/`version` subcommands; #83 added `get --scope` /
 `set|create --type`; guards [22t]-[22w] pin them (dispatch 75 -> 79;
-`completions/_sec` regenerated). The top-level `usage()` stays
-canonical. Issues #84-#91 closed
+`completions/_sec` regenerated). Issues #84-#91 closed
 the census-drift class: profile.md's ecosystem + per-file censuses (#84),
 ADAPTERS.md's `current suites:` snapshot (#85), the audit profile's stale
 pack taxonomy (#86), ADAPTERS.md's per-suite `(N sections|cases)` counts
@@ -42,8 +41,7 @@ tracked `bin/` helper is referenced by `tests/test_dispatch.sh`. #91 guarded
 the three bash-suite-count claims, re-derived from `tests/*.sh`
 (section 14; sentinel 17 -> 18 cases).
 Issue #93 repaired README.md's `sec housekeep` sample output, which the
-shipped classifier could never produce (`[token:gmail]` is not a real token;
-`max/(max+2)*100` makes 94/89 unreachable) — now pinned by dispatch section
+shipped classifier could never produce — now pinned by dispatch section
 [16-honesty], taxonomy unchanged. Issues #94-#98 guarded the remaining
 structural claims: MULTI_TENANCY.md's alias count vs bin/sec's tenant regex,
 profile.md's CI checkout pin, OPERATOR_MANUAL.md's principle count, SKILL.md's
@@ -88,13 +86,16 @@ out of the heredoc and both samples, and `coverage` gained a sub-check that
 fails when a sample key is not a `get_cfg_val` read in `bin/sec`, anchored on
 the call shape so a quoted-but-unread key still fails. Two hand-bumped control
 literals broke in that shift; the live-count assertion is now regex-shaped so
-count bumps stop breaking it. All five bash suites pass (sentinel 35 cases /
-352 assertions); the pytest mirror (53 tests) passes. #124 then guarded
+count bumps stop breaking it. All five bash suites pass (sentinel 36 cases /
+362 assertions); the pytest mirror (53 tests) passes. #124 then guarded
 RESUME.md's own HISTORY.md size claim, scoped to its Verified-baseline section
 so narrative mentions stay legal; #125 closed F041's second half (the
 `[global] auto_rotate` key, written and read by no code) and widened #123's
 check from two config surfaces to all four. #127 guarded bin/sec's hardcoded
-`Configured Tenants:` help line against the live dispatcher alias regex. The
+`Configured Tenants:` help line against the live dispatcher alias regex.
+#129 then guarded ADAPTERS.md's Opted-in Policy Packs census (all five pack
+versions + the 9-persona taxonomy total) against the live PACK.md
+files (sentinel 35 -> 36 cases / 352 -> 362 assertions). The
 tracker holds #51, #67, #92, #120, #126. Full narrative:
 `history/2026-10-13.md`.
 

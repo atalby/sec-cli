@@ -2184,6 +2184,70 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[36] ADAPTERS.md's pack-version + persona-taxonomy census matches the live packs/ PACK.md files"
+WORK_P1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_P2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_PCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_P1" "$WORK_P2" "$WORK_PCTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_P1/ADAPTERS.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`packs/solo-founder-governance (v1.4.0)`"
+new = "`packs/solo-founder-governance (v9.9.9)`"
+if old not in s:
+    sys.exit("ADAPTERS.md: no solo-founder pack citation to probe")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_P1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ADAPTERS.md cites a pack version that drifted from PACK.md"
+else
+    no "coverage accepted a drifted pack version citation"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "cites packs/solo-founder-governance v9\.9\.9, PACK\.md declares v1\.4\.0" <<<"$OUT"; then
+    ok "coverage names the drifted pack citation and the live PACK.md version"
+else
+    no "coverage did not name the pack version drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_P2/ADAPTERS.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "9-persona taxonomy total"
+new = "10-persona taxonomy total"
+if old not in s:
+    sys.exit("ADAPTERS.md: no persona-taxonomy count to probe")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_P2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the persona-taxonomy count drifts from PACK.md"
+else
+    no "coverage accepted a drifted persona-taxonomy count"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "says 10-persona taxonomy total, PACK\.md enumerates 9" <<<"$OUT"; then
+    ok "coverage names the persona-taxonomy drift"
+else
+    no "coverage did not name the persona-taxonomy drift"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_PCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (pack census matches PACK.md) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

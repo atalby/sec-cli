@@ -1,5 +1,17 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (5th run): shipped **#129** — the unguarded-claim sweep of
+ADAPTERS.md / docs/ARCHITECTURE.md / docs/OPERATOR_MANUAL.md found one
+unguarded census: ADAPTERS.md's Opted-in Policy Packs section (five
+`packs/<name> (vX.Y.Z)` citations + the "9-persona taxonomy total") had no
+guard deriving it from the live packs/ PACK.md files (section 10 only checked
+profile.md's copy, #86). Section 10 now compares every citation against each
+pack's live `Pack version:`, fails on an uncited live pack dir, and compares
+the persona-taxonomy total against PACK.md's live `### N.` headings; case
+[36] proves it (2 probes + control, 10 assertions, 35 -> 36 cases /
+352 -> 362). Every other numeric claim in the three docs verified guarded or
+historical. Tree clean on `main`, CI green.
+
 Session 2026-10-13 (4th run): shipped **#127** and **#128** in commit `c34c896`,
 pushed to `main` (`a903ca5..c34c896`). #127: `bin/sec --help`'s `Configured
 Tenants:` line was a hardcoded literal nothing derived from the dispatcher alias
@@ -51,9 +63,11 @@ then the fresh 360 audit (#67, after human scope approval).
 
 ## Next autonomous work
 
-Start with a fresh sweep for the next unguarded current-state claim (the class
-#116, #117, #123, #124 and #125 were all instances of), then another
-sentinel-robustness class (as #118 was), then the fresh 360 audit (#67, after
+The 5th-run sweep of ADAPTERS.md / docs/ARCHITECTURE.md / docs/OPERATOR_MANUAL.md
+is complete (found and shipped #129; every other numeric claim in the three
+docs verified guarded or historical). Next candidates, in order: another
+sentinel-robustness class (as #118 was), a sweep of profile.md's own prose
+counts for any remaining unguarded mirror, then the fresh 360 audit (#67, after
 human scope approval).
 Cheapest concrete next candidates, in order:
 - Re-measure every numeric claim in `ADAPTERS.md`, `docs/ARCHITECTURE.md` and
@@ -100,6 +114,22 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   (hub-side handoff, tracked upstream).
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
+
+- #129 `fix(sentinel)` - ADAPTERS.md's Opted-in Policy Packs section cited
+  all five pack versions (`zero-cost-infra-defaults`, `solo-founder-governance`,
+  `ip-and-data-governance`, `compliance-baseline`, `human-team-coordination`)
+  plus a "9-persona taxonomy total", and nothing derived any of it from the
+  live packs/ PACK.md files (section 10/#86 checked only profile.md's copy).
+  Section 10 now compares every `packs/<name> (vX.Y.Z)` citation against that
+  pack's live `Pack version:`, fails when a live pack dir is uncited, and
+  compares the persona-taxonomy total against PACK.md's live `### N.` persona
+  headings. Case [36]: probe 1 rewrites the solo-founder citation to v9.9.9,
+  probe 2 rewrites "9-persona" to "10-persona", control unmodified exits 0.
+  10 new assertions, 35 -> 36 cases / 352 -> 362. Mirrors bumped at
+  `profile.md:22` + section 3, `ADAPTERS.md:55` + `:262`, `RESUME.md` baseline
+  + this section; `_NUM_WORDS` gains `thirty-six`. HISTORY.md needed three
+  compacted clauses to fit the entry under its 8192-byte budget, which tripped
+  the #124 guard on RESUME.md's own size line in the same edit (8136 -> 8188).
 
 - #128 `fix(sentinel)` (folded into `c34c896` per the #123 precedent) - the #124
   size guard extracted RESUME.md's Verified-baseline section with an unanchored
@@ -329,9 +359,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 86, install 9, sentinel 35, sync_guard 16,
-write_honesty 15. Sentinel = 35 cases / 352 assertions. HISTORY.md is at
-8136/8192 bytes - the next narrative addition must compact an older clause first.
+mirrors in sync): dispatch 86, install 9, sentinel 36, sync_guard 16,
+write_honesty 15. Sentinel = 36 cases / 362 assertions. HISTORY.md is at
+8188/8192 bytes - the next narrative addition must compact an older clause first.
 109 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.
