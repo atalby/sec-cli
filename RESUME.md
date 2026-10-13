@@ -1,5 +1,34 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (16th run): #140 -- the audit slot's own first-match
+shadows. Two coverage guards read the first regex hit in the tree, so a
+duplicate above the canonical one fed them a set they then agreed with:
+`bin/sec-migrator` carries two `case "$DST" in` blocks (destination allow-list
+at 103, op dispatch at 195) and `bin/sec` carries two `=~ ^(...)$` alias
+regexes (dispatcher gate at 73, scope gate at 473). Both were proven red first
+(untagged shadow allow-list above the real one + infisical dropped from the
+real one still printed "migrate surfaces agree"; a dead alias regex above the
+gate + keychain dropped still printed "MULTI_TENANCY.md tenant aliases match").
+Both guards now select the canonical candidate by a property only it has (the
+`[ERROR] Destination backend` reject arm; the line beginning
+`if [[ $# -ge 2 ]] && [[ "$1" =~ ^(`) and flag more than one. Case [39] pins
+both with three probes. Two failed attempts to reuse: a 400-char lookahead for
+the reject arm (the injected shadow sits directly above the real block, so its
+window reaches the real arm), and a line-based alias anchor requiring `"$1"`
+and `-ge 2` anywhere on the line (a shadow inserted after the
+`if [[ $# -ge 2 ]] && ` prefix satisfies both).
+
+Resume here next run: the tracker's open items are #126 (sec.conf parser
+silently skips a key with no '='; needs the human design call -- reject vs
+tagged WARN), #67 (fresh 360 audit, Step-1 scope approval needed), #92 and #51
+(hub-side, not this repo). The audit-slot sweep's next candidate is the
+migrator SOURCE allow-list guard and the `_mig_src_set` cross-surface check
+(the twin of the destination guard just fixed, same shape at
+`sentinel.sh`'s `case "\$SRC" in` site), then any remaining
+`re.search`/`re.match` site in the coverage python whose file carries more
+than one potential match (re-run the /tmp/sweep_research.py-style AST count
+against the now-fixed file).
+
 Session 2026-10-13 (15th run): #139 -- profile.md's bin/ decomposition states
 two numbers ("N sibling executables, N Python controller") and sentinel checks
 both, but only the first had a drift control, so the controller branch could
@@ -618,10 +647,10 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 87, install 9, sentinel 43, sync_guard 16,
 write_honesty 15. Sentinel = 43 cases / 444 assertions. HISTORY.md is at
-8188/8192 bytes - the next narrative addition must compact an older clause first
+8124/8192 bytes - the next narrative addition must compact an older clause first
 (#120's entry compacted the 2026-10-13 paragraph and moved #130-#137's detail
 into `history/2026-10-13.md`, since that detail had only ever lived here; the
-drift-control sweep compacted it again).
+drift-control sweep compacted it again; #140's entry compacted it a third time).
 109 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.

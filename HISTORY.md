@@ -81,23 +81,22 @@ transcript, sentinel section 7's shadowable first-match, and the
 first product bug: `bin/sec` ran `set -u` and expanded the possibly-empty
 `SCOPE_ARGS` bare, a fatal `unbound variable` on bash < 4.4, so `sec get` died
 on stock macOS while Linux CI stayed green; four sites fixed plus a source
-scanner (dispatch case [32]). #120's repo-side half closed the observability
-gap behind its own un-diagnosable flake: the pytest mirror reported a failing
+scanner (case [32]). #120's half closed the observability
+gap behind its un-diagnosable flake: the pytest mirror reported a failing
 suite as only its last 2000 chars; it now names every `  FAIL:` line with its
-section (53 -> 58 tests), and the bump's hand-pinned `53 passed`
-drift literals are derived. The same sweep derived every remaining live
-count and numeral word in `tests/test_sentinel.sh` (a `num_word` helper picks
-a numeral differing from the live one, because a `_NUM_WORDS`-keyed check
-ignores a digit, so a digit swap would have silently no-op'd); its first pass
-missed six (dump every corruption heredoc, not grep prefixes); forcing the wrong
-word onto the live value fails 10 then 12. #138 found the class one layer out: `citations` walked only the
+section (53 -> 58 tests). The sweep also derived every remaining live
+count and numeral word in `tests/test_sentinel.sh` (a `_NUM_WORDS`-keyed check
+ignores a digit, so only a word swap fails); its first pass
+missed six (dump every corruption heredoc, not grep prefixes). #138 found the class one layer out: `citations` walked only the
 audit skill's two docs, leaving RESUME.md's and HISTORY.md's 58 anchors
-unverified, and two bare line-451 citations of the audit `SKILL.md` were
-silently resolving to the 50-line root `SKILL.md` (24 tracked files share that
-basename). Both are qualified; the repo docs now get an anchor-resolution pass (path,
-EOF, range) with a drift control. #139 went one layer out: profile.md's bin
-decomposition names a controller count sentinel checks with no drift control
-guarding it, so it could rot silently. Tracker holds #51, #67, #92, #126. Full narrative: `history/2026-10-13.md`.
+unverified, and two bare line-451 citations of the audit `SKILL.md`
+silently resolved to the 50-line root `SKILL.md`. Both are qualified; repo docs now get an anchor pass (path,
+EOF, range) with a drift control. #139: profile.md's bin
+decomposition names a controller count with no drift control, so it could rot
+silently. #140 closed the same first-match class at the audit slot: the migrate
+and alias guards took the first regex hit, so a duplicate above the canonical
+one fed them a set they then agreed with; both now select the canonical
+block/gate line and flag duplicates (case [39], 444 assertions). Tracker holds #51, #67, #92, #126. Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
