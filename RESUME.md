@@ -1,16 +1,16 @@
 # Resume point - sec-cli
 
-Written 2026-10-12 after closing #116 (commit `fddb57b`), #115 (commit
-`2549973`), #114 (commit `5e295c1`), #113 (commit `d4890c3`) and #112 (commit
-`d9fb2d3`), all pushed. Working tree clean on `main`; `origin/main` == local
-`main`. This lane shipped a long run of guard/fix/perf units (#97..#116), all
-CI-green.
+Written 2026-10-12 after closing #117 (commit `3f0e69b`), #116 (commit
+`fddb57b`), #115 (commit `2549973`), #114 (commit `5e295c1`), #113 (commit
+`d4890c3`) and #112 (commit `d9fb2d3`), all pushed. Working tree clean on
+`main`; `origin/main` == local `main`. This lane shipped a long run of
+guard/fix/perf units (#97..#117), all CI-green.
 
 There is again **no open issue with an autonomous in-repo remedy**. The
 remaining open items are hub-side or human-gated (see below). If the lane is
-run again, the highest-value candidates are a fresh sweep for unguarded
-current-state claims (as #116 was) and the fresh 360 audit (#67, after human
-scope approval).
+run again, the highest-value candidate is a fresh sweep for the next unguarded
+current-state claim (as #116 and #117 were), then the fresh 360 audit (#67,
+after human scope approval).
 
 ## Next autonomous work
 
@@ -39,6 +39,14 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #117 `fix(docs)` -> `3f0e69b` - `RESUME.md`'s `## Current state` line (160)
+  declaring 108 tracked files / 12 personas / 5 bash suites was the last
+  unguarded structural claim; corrupting it left `coverage` exiting 0. Extended sentinel
+  section 17 with a `(\d+) tracked files, (\d+) personas, (\d+) bash suites`
+  guard against `len(tracked)`, `_live_personas`, `_live_suite_count`. Case
+  [28] proves it. Sentinel 27 -> 28 cases / 272 -> 278 assertions; mirrors
+  `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`, `RESUME.md:157`/`:158`;
+  `_NUM_WORDS` gains `twenty-eight`; control [22] literals re-pinned.
 - #116 `fix(docs)` -> `fddb57b` - `HISTORY.md`'s `## Current state` claimed a
   pytest mirror of 29 tests (live 53) and a stale open-issue set; that count was
   guarded in `ADAPTERS.md` + audit `SKILL.md` (#97) and `RESUME.md` (#109) but
