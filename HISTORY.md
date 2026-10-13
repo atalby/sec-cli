@@ -95,7 +95,10 @@ Packs census (all five pack versions + the 9-persona taxonomy total) against
 the live PACK.md files (sentinel 35 -> 36 cases). #130-#132 then guarded
 profile.md's own code-prose counts (SYNC_KEYS' six env keys, the sync
 controller's 4 timeout sites, install.sh/bin/sec's zero-timeout claim) against
-the live files (sentinel 36 -> 37 cases / 362 -> 378 assertions). Tracker
+the live files (sentinel 36 -> 37 cases / 362 -> 378 assertions). #133 derived
+profile.md's last unguarded counts: seven suite-count spellings, "twelve fixed
+dimensions", and "five sibling executables, one Python controller"
+decomposition (37 -> 38 cases / 378 -> 392 assertions). Tracker
 holds #51, #67, #92, #120, #126. Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
@@ -103,21 +106,17 @@ in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
 split losslessly into per-date archives under `history/`, and
 `sentinel.sh coverage` gained a guard so the file cannot silently re-bloat. The day then swept
 dispatcher/completion/argv/doc-honesty residuals (#40–#66): completion
-alias parity + ps1 honest-scoping (#56/#57), the top-level fish/ps1 flag
-surface (#60), the `sec.conf` parser honoring commented-out keys (#55),
-`jq`'s real dependency reach (#54), the sync-controller provenance text
-(#53), the keeper's keep-alive/setup no longer re-exposing the master
-password on argv (#52), and the argv sweep moving the secret off
-`jq`/`bw`/`op`/`vault`/`infisical` child argv (#58/#59 — only `bws
-secret create` retains argv, a vendor limit). It also covered the GitLab sync
-write path with a create-on-404 upsert (#61), pinned the GCP
-create-if-absent branch (#62), removed dead pre-commit surface (#63),
-corrected the 360-audit skill's stale `SEC_TEST_DISPATCH` claims (#65),
-hardened `sentinel.sh citations` (#66), and fixed a baseline-red defect — a
-local `.venv/` was not gitignored, so sentinel control copies swept it into
-the tracked set and failed the coverage denominator (#68; `.venv/`/`venv/`
-now ignored). All five bash suites pass; the pytest mirror (53
-tests) passes. Full narrative:
+alias parity + ps1 honest-scoping (#56/#57), the fish/ps1 flag surface (#60),
+the `sec.conf` commented-key parser (#55), `jq`'s dependency reach (#54), the
+sync-controller provenance text (#53), the keeper's keep-alive/setup no longer
+re-exposing the master password on argv (#52), the argv sweep moving the secret
+off `jq`/`bw`/`op`/`vault`/`infisical` child argv (#58/#59 — only `bws secret
+create` retains argv, a vendor limit), the GitLab sync write path (#61), the
+GCP create-if-absent branch (#62), dead pre-commit surface (#63), the skill's
+stale `SEC_TEST_DISPATCH` (#65), `sentinel.sh citations` (#66), and a
+baseline-red defect — an ungitignored local `.venv/` swept into the tracked set
+failing the denominator (#68; now ignored). All five bash suites and the
+pytest mirror (53 tests) pass. Full narrative:
 `history/2026-10-11.md` / `history/2026-10-12.md`.
 
 ## Archive

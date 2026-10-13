@@ -613,7 +613,7 @@ _NUM_WORDS = {
     "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
     "thirty": 30, "thirty-two": 32, "thirty-three": 33, "thirty-four": 34,
-    "thirty-five": 35, "thirty-six": 36, "thirty-seven": 37,
+    "thirty-five": 35, "thirty-six": 36, "thirty-seven": 37, "thirty-eight": 38,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -850,6 +850,31 @@ elif _NUM_WORDS.get(_prof_bin_m.group(1)) != _live_bin_helpers:
         f"live tree has {_live_bin_helpers}"
     )
 
+_prof_exec_m = re.search(r"(\w+) sibling executables, (\w+) Python controller", profile_text)
+if not _prof_exec_m:
+    bin_helper_mismatches.append(
+        "profile.md carries no 'N sibling executables, N Python controller' component decomposition"
+    )
+else:
+    _live_controllers = [
+        _h for _h in _bin_helpers if os.path.basename(_h).endswith("-controller.py")
+    ]
+    _live_execs = [
+        _h for _h in _bin_helpers
+        if not os.path.basename(_h).endswith("-controller.py")
+        and "mcp" not in os.path.basename(_h)
+    ]
+    if _NUM_WORDS.get(_prof_exec_m.group(1)) != len(_live_execs):
+        bin_helper_mismatches.append(
+            f"profile.md's component decomposition says {_prof_exec_m.group(1)} sibling "
+            f"executables, live tree has {len(_live_execs)} non-controller non-MCP bin/ helpers"
+        )
+    if _NUM_WORDS.get(_prof_exec_m.group(2)) != len(_live_controllers):
+        bin_helper_mismatches.append(
+            f"profile.md's component decomposition says {_prof_exec_m.group(2)} Python "
+            f"controller(s), live tree has {len(_live_controllers)}"
+        )
+
 # --- 14. profile.md + ARCHITECTURE.md + SKILL.md's bash suite census must match the live tree (#91/#95) --
 suite_census_mismatches = []
 _live_suites = sorted(f for f in tracked if f.startswith("tests/") and f.endswith(".sh"))
@@ -872,6 +897,14 @@ elif _NUM_WORDS.get(_prof_ci_m.group(1)) != _live_suite_count:
         f"profile.md's CI row says it runs all {_prof_ci_m.group(1)} suites, "
         f"live tree has {_live_suite_count}"
     )
+
+_norm_prof = re.sub(r"\s+", " ", profile_text)
+for _sm in re.finditer(r"\b(\w+) (?:green |bash )?suites?\b", _norm_prof):
+    _sw = _sm.group(1)
+    if _sw in _NUM_WORDS and _NUM_WORDS[_sw] != _live_suite_count:
+        suite_census_mismatches.append(
+            f"profile.md says '{_sw} ... suite(s)', live tree has {_live_suite_count} bash suites"
+        )
 
 if not _arch_text:
     suite_census_mismatches.append("docs/ARCHITECTURE.md not found")
@@ -1020,6 +1053,14 @@ elif _NUM_WORDS.get(_prof_num.group(1).lower()) != _live_personas or int(_prof_n
     skill_struct_mismatches.append(
         f"profile.md says personas are '{_prof_num.group(1)}, numbered 1 through {_prof_num.group(2)}', "
         f"live persona-heading count is {_live_personas}"
+    )
+
+_dim_m = re.search(r"\b(\w+) fixed dimensions\b", re.sub(r"\s+", " ", profile_text))
+if not _dim_m:
+    skill_struct_mismatches.append("profile.md carries no 'N fixed dimensions' claim")
+elif _NUM_WORDS.get(_dim_m.group(1)) != _live_personas:
+    skill_struct_mismatches.append(
+        f"profile.md says '{_dim_m.group(1)} fixed dimensions', live persona-heading count is {_live_personas}"
     )
 
 _skill_scope_m = re.search(r"Offer exactly (\w+) scopes", _norm_skill)

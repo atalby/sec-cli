@@ -1,5 +1,17 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (7th run): shipped **#133** -- re-swept profile.md for
+unguarded prose counts (the #130-#132 pass covered only the code-derived ones)
+and found three classes: seven further suite-count spellings ("five green
+suites" + "five bash suites" x6) where only two spellings were guarded; the
+"twelve fixed dimensions" persona count (only "Twelve, numbered 1 through 12"
+was guarded); and the "five sibling executables, one Python controller" bin/
+decomposition (only "seven sibling dispatchers" was guarded). Sentinel sections
+13/14/16 now derive all three: 13 splits the live bin/ helpers into controllers
+vs non-controller-non-MCP; 14 scans every normalized "N [green|bash] suite(s)"
+spelling; 16 scans "N fixed dimensions". Test case [38] (3 probes + control,
+14 new assertions, 37 -> 38 cases / 378 -> 392). Tree clean on `main`, CI green.
+
 Session 2026-10-13 (6th run): shipped **#130**, **#131** and **#132** -- three
 profile.md code-prose counts. Persona 11 cited the sync controller's
 "**4 timeout sites**" and install.sh/bin/sec's "**zero** timeout occurrences",
@@ -74,17 +86,17 @@ candidates are a fresh sweep for the next unguarded current-state claim (as
 ## Next autonomous work
 
 The 5th-run sweep of ADAPTERS.md / docs/ARCHITECTURE.md / docs/OPERATOR_MANUAL.md
-is complete (found and shipped #129) and the 6th-run sweep of profile.md's own
-prose counts found and shipped #130-#132 (its persona-1/persona-11 code-prose
-counts). Next candidates, in order: another sentinel-robustness class (as #118
-was), a re-sweep of profile.md's remaining prose counts for any unguarded mirror
-(the #130-#132 pass covered the code-derived ones), then the fresh 360 audit
-(#67, after human scope approval).
+is complete (found and shipped #129), the 6th-run sweep of profile.md's
+code-prose counts shipped #130-#132, and the 7th-run sweep of profile.md's
+remaining prose counts shipped #133 (seven suite-count spellings, the "twelve
+fixed dimensions" persona count, the bin decomposition). profile.md's numeric
+claims are now exhaustively guarded. Next candidates, in order: another
+sentinel-robustness class (as #118 was), then the fresh 360 audit (#67, after
+human scope approval).
 Cheapest concrete next candidates, in order:
-- Re-measure every numeric claim in `profile.md` against the live tree and file
-  one issue per unguarded claim. #123, #124, #125 and #130-#132 were all found
-  this way; the audit profile's own line-number anchors are guarded by
-  `citations`, but its remaining prose counts may not be.
+- A sentinel-robustness class: the guards added ad hoc (#123-#133) each attach
+  to a specific section; audit for a class of claim the sentinel still cannot
+  see (a spelling/variant it does not scan, a file it does not read).
 - **#126** (filed 3rd run) - `get_cfg_val`'s awk parser silently skips a line
   with no `=`, so a `default_backend bitwarden` typo is ignored with no signal
   and falls back to the built-in default. The intended behavior (reject the
@@ -124,6 +136,22 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   (hub-side handoff, tracked upstream).
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
+
+- #133 `fix(sentinel)` - profile.md's remaining unguarded prose counts, guarded
+  by extending existing sections. (1) suite count: sections 14 now scans every
+  normalized "N [green|bash] suite(s)" spelling in profile.md against the live
+  `tests/*.sh` count (five; only "N suites under tests/" + "runs all N suites"
+  were guarded). (2) persona count: section 16 scans "N fixed dimensions"
+  against the live persona-heading count (twelve; only "Twelve, numbered 1
+  through 12" was guarded). (3) bin decomposition: section 13 splits the live
+  bin/ helpers into controller (`*-controller.py`) vs non-controller-non-MCP and
+  checks profile.md's "N sibling executables, N Python controller" (five + one).
+  Case [38]: probe 1 edits "five green" -> "six green", probe 2 "twelve fixed
+  dimensions" -> "thirteen", probe 3 "five sibling executables" -> "six",
+  control exits 0. 14 new assertions (7 ok/no sites), 37 -> 38 cases /
+  378 -> 392; `_NUM_WORDS` gains `thirty-eight`. Mirrors bumped at profile.md:22
+  + :641, ADAPTERS.md:56 + :262, RESUME.md baseline; HISTORY.md's 2026-10-13
+  block gained the #133 sentence and was compacted (8178 -> 8190).
 
 - #130/#131/#132 `fix(sentinel)` - profile.md's own code-prose counts, all
   guarded by the new sentinel section 22. Persona 11 cited the sync
@@ -386,9 +414,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 86, install 9, sentinel 37, sync_guard 16,
-write_honesty 15. Sentinel = 37 cases / 378 assertions. HISTORY.md is at
-8178/8192 bytes - the next narrative addition must compact an older clause first.
+mirrors in sync): dispatch 86, install 9, sentinel 38, sync_guard 16,
+write_honesty 15. Sentinel = 38 cases / 392 assertions. HISTORY.md is at
+8190/8192 bytes - the next narrative addition must compact an older clause first.
 109 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.

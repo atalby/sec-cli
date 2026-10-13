@@ -2343,6 +2343,95 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[38] profile.md's suite-count spellings + persona dimensions + bin decomposition must match the live tree (issue #133)"
+WORK_S8A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S8B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S8C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S8CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_S8A" "$WORK_S8B" "$WORK_S8C" "$WORK_S8CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_S8A/skills/architecture-360-audit/profile.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "five green"
+new = "six green"
+if old not in s:
+    sys.exit("profile.md: no 'five green' suite-count spelling to probe")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_S8A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when profile.md's suite-count spelling drifts"
+else
+    no "coverage accepted a drifted suite-count spelling"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "says 'six \.\.\. suite\(s\)', live tree has 5 bash suites" <<<"$OUT"; then
+    ok "coverage names the drifted suite-count spelling"
+else
+    no "coverage did not name the drifted suite-count spelling"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_S8B/skills/architecture-360-audit/profile.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "twelve fixed dimensions"
+new = "thirteen fixed dimensions"
+if old not in s:
+    sys.exit("profile.md: no 'twelve fixed dimensions' claim to probe")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_S8B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when profile.md's persona-dimension count drifts"
+else
+    no "coverage accepted a drifted persona-dimension count"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "says 'thirteen fixed dimensions', live persona-heading count is 12" <<<"$OUT"; then
+    ok "coverage names the drifted persona-dimension count"
+else
+    no "coverage did not name the drifted persona-dimension count"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_S8C/skills/architecture-360-audit/profile.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "five sibling executables"
+new = "six sibling executables"
+if old not in s:
+    sys.exit("profile.md: no 'five sibling executables' decomposition to probe")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_S8C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when profile.md's bin component decomposition drifts"
+else
+    no "coverage accepted a drifted bin component decomposition"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "component decomposition says six sibling executables, live tree has 5 non-controller non-MCP" <<<"$OUT"; then
+    ok "coverage names the drifted bin component decomposition"
+else
+    no "coverage did not name the drifted bin component decomposition"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_S8CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (suite-count spellings + dimensions + bin decomposition match) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
