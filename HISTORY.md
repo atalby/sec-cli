@@ -41,40 +41,19 @@ pack taxonomy (#86), ADAPTERS.md's per-suite `(N sections|cases)` counts
 tracked `bin/` helper is referenced by `tests/test_dispatch.sh`. #91 guarded
 the three bash-suite-count claims, re-derived from `tests/*.sh`
 (section 14; sentinel 17 -> 18 cases).
-Issue #93 then repaired README.md's `sec housekeep` sample output, which
-the shipped classifier could never produce (`[token:gmail]` is not a real
-token; confidence `max/(max+2)*100` makes 94/89 unreachable):
-the Gmail fixture classifies `cloud/gcp` / 50 / `[token:google]` and
-PROD_DB `database` / 81 / `[regex:postgres://, token:db, token:postgres]` —
-now pinned by dispatch section [16-honesty] (dispatch 79 -> 80 sections);
-the classifier taxonomy was left unchanged (Gmail is a Google property).
-Issue #94 then guarded three correct-but-unguarded structural claims:
-MULTI_TENANCY.md's "eight fixed aliases" vs bin/sec's tenant regex,
-profile.md's CI checkout pin (v4.2.2), and OPERATOR_MANUAL.md's "four core
-principles" (section 15; sentinel 18 -> 19 cases).
-Issue #95 then guarded SKILL.md's own suite-count prose, whose "the two
-`tests/*.sh` suites" had understated the live five; the count is now derived
-and checked wherever SKILL.md states it (section 14 extended; sentinel 19 ->
-20 cases).
-Issue #96 then guarded SKILL.md's remaining structural counts — its step
-count (11) and persona count (12, cross-checked against profile.md), the
-two Step-1 scopes, and the three-value severity set (section 16; sentinel
-20 -> 21 cases).
-Issue #97 then bound the last unguarded count claims: profile.md §3's four
-suite count-words and the pytest mirror's "29 passed" (ADAPTERS.md:305,
-SKILL.md:451), all re-derived from the live suites (section 17; sentinel
-21 -> 22 cases). CI then went red: the `Run bash suites` step has no pytest,
-so section 17's pytest-mirror check skips and case [22]'s pytest corruptions
-went unwitnessed; the case now mirrors the guard's `_pytest_available`
-precondition (#98).
-Issue #99 then closed the last silent-drop arm in the same #74/#76 class:
-`sec completion <shell> <extra>` had exited 0, printing a script and dropping
-the extra operand; the arm now rejects a trailing argument with a tagged
-`[ERROR]` + exit 2 before emitting anything, and the four shifted profile.md
-`bin/sec:` anchors were re-pinned (dispatch 80 -> 81 sections).
-Issue #100 then guarded the two argument-less arms: `sec help <x>` and
-`sec version <x>` had exited 0, dropping the operand; both now reject it with
-a tagged `[ERROR]` + exit 2 before printing (dispatch 81 -> 82).
+Issue #93 repaired README.md's `sec housekeep` sample output, which the
+shipped classifier could never produce (`[token:gmail]` is not a real token;
+`max/(max+2)*100` makes 94/89 unreachable) — now pinned by dispatch section
+[16-honesty], taxonomy unchanged. Issues #94-#98 guarded the remaining
+structural claims: MULTI_TENANCY.md's alias count vs bin/sec's tenant regex,
+profile.md's CI checkout pin, OPERATOR_MANUAL.md's principle count, SKILL.md's
+suite/step/persona/scope/severity counts, and profile.md §3's four suite
+count-words plus the pytest-mirror count (section 17; CI's `Run bash suites`
+step has no pytest, so case [22] had to mirror the guard's `_pytest_available`
+precondition). Issues #99/#100 closed the last silent-drop arms —
+`sec completion <shell> <extra>`, `sec help <x>` and `sec version <x>` all
+exited 0 while dropping the operand; each now rejects it with a tagged
+`[ERROR]` + exit 2 (dispatch 80 -> 82 sections).
 Issues #101-#103 tied the completion surfaces to the dispatcher: `sec --help`
 prints a line for every subcommand and non-flag arm, the tenant set is identical
 across dispatcher/usage/completions, and each surface offers every subcommand
@@ -99,6 +78,24 @@ needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
 packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
 `history/2026-10-12.md`.
 
+**2026-10-13**: the guard-hardening lane kept closing (audit-finding
+regressions plus the guards that would have caught them). #119 re-pinned stale
+bare `line N` references in the audit profile; #121 made `citations` fail on
+one; #122 guarded README.md's front-page backend universe. #123 closed F041:
+the per-tenant `cli = <backend>` key was written into every fresh `sec.conf`
+and documented in three surfaces while no code read it, so the five lines came
+out of the `bin/sec` heredoc, the README sample and `docs/MULTI_TENANCY.md`
+(all four config surfaces now agree) and `coverage` gained a sub-check that
+fails when a sample key is not a `get_cfg_val` read in `bin/sec`, anchored on
+the call shape so a quoted-but-unread key still fails. Removing five lines at
+the top of `bin/sec` shifted all 39 `bin/sec:N` anchors >= 23 by -5, which
+broke two hand-bumped control literals; the live-count assertion is now
+regex-shaped so the control stops breaking on every count bump. All five bash
+suites pass (sentinel 32 cases / 314 assertions); the pytest mirror (53
+tests) passes. The tracker holds #51, #67, #92, #120 (one-off flaky
+`test_dispatch.sh` failure, not reproducible). Full narrative:
+`history/2026-10-12.md`.
+
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
 split losslessly into per-date archives under `history/`, and
@@ -117,9 +114,8 @@ corrected the 360-audit skill's stale `SEC_TEST_DISPATCH` claims (#65),
 hardened `sentinel.sh citations` (#66), and fixed a baseline-red defect — a
 local `.venv/` was not gitignored, so sentinel control copies swept it into
 the tracked set and failed the coverage denominator (#68; `.venv/`/`venv/`
-now ignored). A fresh full 360 audit (#67) stays queued (its Step-1 gate
-needs human scope approval). All five bash suites pass; the pytest mirror (53
-tests) passes. The tracker holds #51, #67, #92. Full narrative:
+now ignored). All five bash suites pass; the pytest mirror (53
+tests) passes. Full narrative:
 `history/2026-10-11.md` / `history/2026-10-12.md`.
 
 ## Archive

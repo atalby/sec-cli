@@ -1,30 +1,42 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (2nd run): resumed an UNCOMMITTED tree that already held
+most of #123 (dead `cli` config keys + a sentinel sub-check) and finished it --
+the previous run left `sentinel.sh citations` red (39 shifted `bin/sec:N`
+anchors), control case [22] broken on two hand-bumped literals, and
+RESUME.md's mirrors unbumped. Shipped #123 (commit `ae9ba7a`) plus a
+follow-up defect found while finishing it: two control assertions hardcoded
+the live suite/pytest counts, so every legitimate count bump broke them; both
+are now regex-shaped. No work in flight: clean tree on `main`.
+
 Session 2026-10-13: shipped #119 (commit `9864fb0`), filed #120 (one-off
 flaky `test_dispatch.sh` failure in the pre-commit Step 5 run; not reproduced
-in ~16 attempts), and opened #121 (bare line-reference guard) as the next
-autonomous item. No work in flight: clean tree on `main`, CI green.
+in ~16 attempts), and opened #121 (bare line-reference guard). #121 and #122
+then shipped in `4515b56` / `71df727`.
 
 Written 2026-10-12 after closing #118 (commit `aa0eb12`), #117 (commit
 `3f0e69b`), #116 (commit `fddb57b`), #115 (commit `2549973`), #114 (commit
 `5e295c1`), #113 (commit `d4890c3`) and #112 (commit `d9fb2d3`), all pushed.
-Working tree clean on `main`; `origin/main` == local `main`. This lane shipped
-a long run of guard/fix/perf units (#97..#118), all CI-green.
+This lane shipped a long run of guard/fix/perf units (#97..#123), all CI-green.
 
-The open item **#121** below has an autonomous in-repo remedy (a sentinel guard
-for bare line references); everything else is hub-side or human-gated. If the
-lane is run again, other high-value candidates are a fresh sweep for the next unguarded
-current-state claim (as #116 and #117 were) or another sentinel-robustness class
-(as #118 was), then the fresh 360 audit (#67, after human scope approval).
+The open item **#120** below has no in-repo remedy yet; every other open item
+is hub-side or human-gated. If the lane is run again, the highest-value
+candidates are a fresh sweep for the next unguarded current-state claim (as
+#116, #117 and #123 were) or another sentinel-robustness class (as #118 was),
+then the fresh 360 audit (#67, after human scope approval).
 
 ## Next autonomous work
 
-Start with **#121** (autonomous, in-repo):
-- **#121** (sentinel: bare `line N` refs in `profile.md`/`SKILL.md` are
-  unguarded) - add a citations sub-check that FAILS on a bare `\blines?\s+\d+`
-  outside a `file:N` anchor, rewrite the 5 remaining bare refs to colon form,
-  add a `test_sentinel.sh` case + control, bump mirrors 29 -> 30. Resume:
-  `gh --repo atalby/sec-cli issue view 121`.
+Start with a **fresh sweep for the next unguarded current-state claim**, which
+is what #116, #117 and #123 each were. The one this lane already identified and
+did not finish:
+- RESUME.md's line "HISTORY.md is at 8181/8192 bytes" states HISTORY.md's
+  live byte count, but nothing guards it: `sentinel.sh` checks HISTORY.md's
+  budget (`HISTORY_BUDGET = 8192`) and never cross-checks the number RESUME.md
+  quotes. #123's compaction moved the live value to 7938, so the claim was
+  already stale when this run ended. Remedy: a section-17 sub-check that
+  re-derives `(\d+)/8192 bytes` in RESUME.md against `len(history_text)`,
+  plus a `test_sentinel.sh` case + control.
 The rest are gated and not autonomously actionable:
 - **#120** (one-off flaky `test_dispatch.sh` failure in pre-commit Step 5) -
   tracked; not reproducible in ~16 runs; a recurrence needs the hub-side hook
@@ -35,7 +47,7 @@ The rest are gated and not autonomously actionable:
 - **#51** (hub-side handoff items tracked upstream) - unfixable in-repo.
 
 Resume command:
-`cd /home/opc/sandbox/sec-cli && gh --repo atalby/sec-cli issue view 121`
+`cd /home/opc/sandbox/sec-cli && ./skills/architecture-360-audit/sentinel.sh coverage`
 
 If picking un-tracked work instead, the cheapest high-value items are: re-run the
 verified baseline below to confirm no drift, and the sentinel suite is now ~40s
@@ -46,13 +58,33 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 - `git status` clean on `main`; `origin/main` == local `main`.
 - Tracker: **GitHub** (`gh --repo atalby/sec-cli`), not glab. Remote is
   `git@github.com:atalby/sec-cli.git`; `glab` errors "None of the git remotes
-  configured for this repository point to a known GitLab host".
-- Open issues: **#121** (autonomous - bare line-reference guard, start here);
-  **#67** (fresh 360 audit - human scope gate); **#92** (hub-side unguarded
-  counts); **#51** (hub-side handoff, tracked upstream).
+  configured for this repository point to a known GitLab host" (re-confirmed
+  2026-10-13 against a live `glab auth status`, which IS authenticated --
+  for gitlab.com, which this repo is not on).
+- Open issues: **#120** (one-off flaky dispatch failure); **#67** (fresh 360
+  audit - human scope gate); **#92** (hub-side unguarded counts); **#51**
+  (hub-side handoff, tracked upstream).
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #123 `fix(config)` -> `ae9ba7a` - the per-tenant `cli = <backend>` key was
+  written into every fresh `~/.sec/sec.conf` and documented in three surfaces
+  while no code read it (audit finding F041: "user setting cli = ... gets a
+  silently ignored setting"); `bin/sec` is the only `sec.conf` owner and
+  resolves the tenant binary from a hardcoded alias table. The five lines came
+  out of the `bin/sec` heredoc, the README sample and `docs/MULTI_TENANCY.md`
+  (all four config surfaces now agree). `coverage` gained a sub-check failing
+  when a sample key is not the second argument of a `get_cfg_val` call in
+  `bin/sec` -- anchored on the CALL SHAPE, not the bare quoted literal, so
+  case [32] probe 3 (`_key_probe="cli"`) proves a quoted-but-never-read key
+  still fails. Removing 5 lines at the top of `bin/sec` shifted all 39
+  `bin/sec:N` anchors >= 23 by -5 (incl. `448-463` -> `443-458`); mirrors 31 ->
+  32 cases / 300 -> 314 assertions; `_NUM_WORDS` gains `thirty-two`.
+  Follow-up defect found while finishing: control case [22] hardcoded the live
+  count twice (`own thirty-one` and `live suite has 31`) and case [27]
+  hardcoded `pytest mirror (53` + required exactly ONE occurrence, so every
+  legitimate count bump broke them. All three assertions are now
+  regex-shaped / count-agnostic, matching the #118 `findall` convention.
 - #119 `fix(docs)` -> `9864fb0` - `skills/architecture-360-audit/profile.md`
   (the audit line-map) carried STALE bare line references: sync-controller
   TTY gate `line 248` -> `line 270`; section-7 header `.gitignore:12` ->
@@ -86,7 +118,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   exits nonzero naming the drift; control exits 0). Sentinel 26 -> 27 cases /
   266 -> 272 assertions; mirrors `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`,
   `RESUME.md:141`; `_NUM_WORDS` gains `twenty-seven`; control [22] literals
-  re-pinned. `HISTORY.md` now 8181/8192 bytes.
+  re-pinned. `HISTORY.md` now 7938/8192 bytes.
 - #115 `fix(sec-organizer)` -> `2549973` - `sec-organizer apply`/`revert` did not
   guard a corrupt plan/snapshot and died on a raw `jq` parse (exit 4, no tagged
   line). Now a tagged `[ERROR]` + exit 1, file kept. `tests/test_write_honesty.sh`
@@ -195,7 +227,7 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 86, install 9, sentinel 32, sync_guard 16,
 write_honesty 15. Sentinel = 32 cases / 314 assertions. HISTORY.md is at
-8181/8192 bytes - the next narrative addition must compact an older clause first.
+7938/8192 bytes - the next narrative addition must compact an older clause first.
 108 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.
