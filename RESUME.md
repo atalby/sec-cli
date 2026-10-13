@@ -1,5 +1,9 @@
 # Resume point - sec-cli
 
+Session 2026-10-13: shipped #119 (commit `9864fb0`) and filed #120 (one-off
+flaky `test_dispatch.sh` failure in the pre-commit Step 5 run; not reproduced
+in ~16 attempts). No work in flight: clean tree on `main`, CI green.
+
 Written 2026-10-12 after closing #118 (commit `aa0eb12`), #117 (commit
 `3f0e69b`), #116 (commit `fddb57b`), #115 (commit `2549973`), #114 (commit
 `5e295c1`), #113 (commit `d4890c3`) and #112 (commit `d9fb2d3`), all pushed.
@@ -14,7 +18,11 @@ current-state claim (as #116 and #117 were) or another sentinel-robustness class
 
 ## Next autonomous work
 
-None until a human un-sticks one of the gated items:
+None until a human un-sticks one of the gated items, or a new unguarded
+claim is found:
+- **#120** (one-off flaky `test_dispatch.sh` failure in pre-commit Step 5) -
+  tracked; not reproducible in ~16 runs; a recurrence needs the hub-side hook
+  to dump the `  FAIL:` lines. No in-repo fix yet.
 - **#67** (fresh 360 audit) - its Step-1 gate needs explicit human scope approval.
 - **#92** (hub-side: two unguarded counts in hub-owned files) - gotcha 6; no
   in-repo remedy.
@@ -39,6 +47,14 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #119 `fix(docs)` -> `9864fb0` - `skills/architecture-360-audit/profile.md`
+  (the audit line-map) carried STALE bare line references: sync-controller
+  TTY gate `line 248` -> `line 270`; section-7 header `.gitignore:12` ->
+  `.gitignore:14`; "runtime state files .gitignore:12 + lines 13-14" ->
+  `:14-16`; section-11 "(lines 83, 99, 119)" -> `(84, 100, 120)`, "urlopen at
+  line 170" -> `line 159`, "defined at line 17" -> `line 18`, re-dated to
+  2026-10-13. Bare refs are NOT scanned by the sentinel's colon-anchor check
+  (documented blind spot). #120 filed for the one-off flaky hook failure.
 - #118 `fix(sentinel)` -> `aa0eb12` - section 17's count guards used `re.search`
   (first match); a doc that quoted the claim earlier (as the #117 resume note
   did) shadowed the real current-state line, so real drift went unseen. The
