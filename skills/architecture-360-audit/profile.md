@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (15 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (29 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (86 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (15 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (30 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (86 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#51`, `#67`, `#92`) |
@@ -599,7 +599,7 @@ is the repo's reason to exist; audit the places it can leak. The production
 path is `sec sync`: `SYNC_KEYS` at `bin/sec-sync-controller.py:20` names the
 six env keys (verified 2026-10-10: GEMINI_API_KEY, OPENAI_API_KEY,
 ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, ATLASSIAN_API_TOKEN, STRIPE_SECRET_KEY),
-and the guards — TTY/`--yes` gate at line 270, dry-run — are
+and the guards — the TTY/`--yes` `isatty` gate at `bin/sec-sync-controller.py:270`, dry-run — are
 enforced by `tests/test_sync_guard.sh` (first suite section
 `[1] --dry-run previews` at `tests/test_sync_guard.sh:48`). Re-verify the
 guards actually precede every backend write, and that no other writer exists.
@@ -638,7 +638,7 @@ module-level public, leading underscore private.
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:255`
 
 Nine install sections, sixteen guard sections, fifteen write-honesty
-sections, and the audit instrument's own twenty-nine sentinel cases pass today
+sections, and the audit instrument's own thirty sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes all five bash suites — the former dispatch opt-in was removed in
 0284d39, issue #65); establish what they do not cover. Structural
@@ -746,7 +746,7 @@ stored there (contract block at `bin/sec-sync-controller.py:37-42`) —
 audit whether the dispatcher and the suites honor it consistently (the guard
 suite does cover exit 2 and exit 3). The only
 long-running process is `bin/bw-session-keeper` with its session file at
-line 8 — establish what happens when Bitwarden locks mid-rotation, whether
+`bin/bw-session-keeper:8` — establish what happens when Bitwarden locks mid-rotation, whether
 failures are visible to an operator, and whether any runbook exists for it
 (none does — absence is the finding).
 
@@ -769,9 +769,10 @@ can tenant A's key resolve to tenant B's item through the name-matching and
 Count every external call and check three properties on each: timeout,
 retry, defined behaviour on partial failure. The measured baseline this
 build (re-derived 2026-10-13 after issue #6 landed): `bin/sec-sync-controller.py`
-has **4 timeout sites** — all `subprocess` backend calls (lines 84, 100,
-120) and the `urlopen` at line 159 pass `timeout=BACKEND_TIMEOUT`
-(`SEC_SYNC_TIMEOUT`, default 60s, defined at line 18), so the earlier
+has **4 timeout sites**, all passing `timeout=BACKEND_TIMEOUT`
+(`bin/sec-sync-controller.py:84,100,120`) and the `urlopen` at
+`bin/sec-sync-controller.py:159`, with the constant declared at
+`bin/sec-sync-controller.py:18` (`SEC_SYNC_TIMEOUT`, default 60s), so the earlier
 "zero timeout occurrences" baseline is obsolete there. Still unguarded:
 `git clone --depth 1` at `install.sh:24` (no `--max-time`, can hang
 unbounded) and the piped install itself (no `--max-time`) — `install.sh` and
@@ -882,7 +883,7 @@ never return the path.
 | `~/.sec/` (literal path; inert — the real config lives outside the repo at `$HOME/.sec`) | no | yes | 7 |
 | `housekeep_plan.json`, `snapshot_*.json`, `migration_transaction.json` (writers: `bin/sec-organizer`, `bin/sec-migrator`) | no | yes | 7 |
 | `.mcp.json` (host-local MCP wiring; tracked copy removed in issue #20, `.mcp.json.example` is the tracked template) | yes | yes | 4 |
-| `node_modules/`, `vendor/` | `node_modules/` **present once** — `.opencode/node_modules/` (opencode's plugin dependency tree, 42 manifests below it); `vendor/` absent | yes — `.opencode/.gitignore` line 1; no root rule needed | 8 |
+| `node_modules/`, `vendor/` | `node_modules/` **present once** — `.opencode/node_modules/` (opencode's plugin dependency tree, 42 manifests below it); `vendor/` absent | yes — `.opencode/.gitignore:1`; no root rule needed | 8 |
 | `.pytest_cache/` | **absent** | n/a | 3 |
 | `graphify-out/`, `graft/` (regenerable code-graph caches) | **absent** | n/a | 8 |
 | `.claude/`, `.opencode/` (bridge `commands/` subdirs are tracked) | yes — both bridge dirs; `.opencode/` additionally carries opencode's plugin install since 2026-10-10 (`package.json`, lockfile, `node_modules/`, self-written `.gitignore`) | partially — bridges tracked deliberately; the plugin install self-ignores via `.opencode/.gitignore` | 4 |

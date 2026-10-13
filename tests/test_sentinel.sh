@@ -1194,7 +1194,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"own twenty-nine sentinel cases", "own twelve sentinel cases", s)
+s2, n = re.subn(r"own thirty sentinel cases", "own twelve sentinel cases", s)
 if n != 1:
     sys.exit("profile.md §3 sentinel count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1236,7 +1236,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md §3 sentinel count"
 fi
-if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 29" <<<"$OUT"; then
+if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 30" <<<"$OUT"; then
     ok "coverage names the drifted profile.md §3 sentinel count"
 else
     no "coverage did not name the drifted profile.md §3 sentinel count"
@@ -1703,6 +1703,46 @@ OUT="$(cd "$WORK_R2CTRL" && git init -q && git add -A && "skills/architecture-36
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (two agreeing mentions) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[30] a bare 'line N' reference in profile.md/SKILL.md must fail citations (issue #121)"
+WORK_BR="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_BRCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_BR" "$WORK_BRCTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_BR/skills/architecture-360-audit/profile.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+if "line 999" in s:
+    sys.exit("probe already present in profile.md")
+if not s.endswith("\n"):
+    s += "\n"
+open(p, "w", encoding="utf-8").write(
+    s + "Drift probe: the guard appears at line 999 in some file.\n"
+)
+PY
+OUT="$(cd "$WORK_BR" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "citations exits nonzero on a bare 'line N' reference"
+else
+    no "citations accepted a bare 'line N' reference"
+fi
+if grep -qF "uses a bare 'line 999' reference -- cite a file:line anchor instead" <<<"$OUT"; then
+    ok "citations names the bare reference"
+else
+    no "citations did not name the bare reference"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_BRCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (no bare references) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"

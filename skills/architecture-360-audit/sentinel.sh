@@ -313,6 +313,12 @@ for src in (skill, profile):
                         f"{os.path.basename(src)}:{lineno} cites {path}:{spec} -- "
                         f"line {fields[-1]} beyond end of file ({total} lines)"
                     )
+    for lineno, line in enumerate(text.split("\n"), 1):
+        for m in re.finditer(r"\blines? \d+", line):
+            broken.append(
+                "%s:%d uses a bare '%s' reference -- cite a file:line anchor instead"
+                % (os.path.basename(src), lineno, m.group(0))
+            )
     broken.extend(stale_content_anchors(os.path.basename(src), text))
     broken.extend(phantom_claims(os.path.basename(src), text))
 
@@ -605,6 +611,7 @@ _NUM_WORDS = {
     "twenty-one": 21, "twenty-two": 22, "twenty-three": 23,
     "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
+    "thirty": 30,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
