@@ -611,7 +611,7 @@ _NUM_WORDS = {
     "twenty-one": 21, "twenty-two": 22, "twenty-three": 23,
     "twenty-four": 24, "twenty-five": 25, "twenty-six": 26,
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
-    "thirty": 30, "thirty-one": 31,
+    "thirty": 30, "thirty-one": 31, "thirty-two": 32,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1195,6 +1195,16 @@ elif _readme_ini_m.group(1) != _sec_conf_m.group(1):
     readme_mismatches.append(
         "README.md's sec.conf sample is not byte-identical to bin/sec's ensure_config heredoc"
     )
+
+if _readme_ini_m is not None:
+    _sample_keys = sorted(set(re.findall(r"^\s*([a-z_]+)\s*=", _readme_ini_m.group(1), re.M)))
+    _cfg_reads = re.findall(r"get_cfg_val\s+(?:\"[^\"]*\"|\$\w+)\s+\"([a-z_]+)\"", _sec_text)
+    _unread_sample_keys = [_k for _k in _sample_keys if _k not in _cfg_reads]
+    if _unread_sample_keys:
+        readme_mismatches.append(
+            "README.md's sec.conf sample key(s) are read by no code in bin/sec (the sole config owner): "
+            + ", ".join(_unread_sample_keys)
+        )
 
 try:
     with open(os.path.join(repo, "bin", "sec-migrator"), encoding="utf-8") as _fh:

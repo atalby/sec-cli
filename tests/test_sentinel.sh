@@ -1194,7 +1194,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"own thirty-one sentinel cases", "own twelve sentinel cases", s)
+s2, n = re.subn(r"own thirty-two sentinel cases", "own twelve sentinel cases", s)
 if n != 1:
     sys.exit("profile.md §3 sentinel count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
@@ -1236,7 +1236,7 @@ if [[ $RC -ne 0 ]]; then
 else
     no "coverage accepted a drifted profile.md §3 sentinel count"
 fi
-if grep -q "profile.md §3 says 'twelve' for tests/test_sentinel.sh, live suite has 31" <<<"$OUT"; then
+if grep -qE "profile.md §3 says 'twelve' for tests/test_sentinel\.sh, live suite has [0-9]+" <<<"$OUT"; then
     ok "coverage names the drifted profile.md §3 sentinel count"
 else
     no "coverage did not name the drifted profile.md §3 sentinel count"
@@ -1576,8 +1576,8 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-s2, n = re.subn(r"pytest mirror \(53", "pytest mirror (52", s)
-if n != 1:
+s2, n = re.subn(r"pytest mirror \((\d+)", lambda m: "pytest mirror (%d" % (int(m.group(1)) - 1), s)
+if n < 1:
     sys.exit("HISTORY.md pytest-mirror count not found to corrupt")
 open(p, "w", encoding="utf-8").write(s2)
 PY
@@ -1588,7 +1588,7 @@ PY
     else
         no "coverage accepted a drifted HISTORY.md pytest count"
     fi
-    if grep -q "HISTORY.md says pytest mirror is 52 tests, live collection counts 53" <<<"$OUT"; then
+    if grep -qE "HISTORY\.md says pytest mirror is [0-9]+ tests, live collection counts [0-9]+" <<<"$OUT"; then
         ok "coverage names the drifted HISTORY.md pytest count"
     else
         no "coverage did not name the drifted HISTORY.md pytest count"
@@ -1801,6 +1801,104 @@ OUT="$(cd "$WORK_BCTRL" && git init -q . && git add -A && "skills/architecture-3
 RC=$?
 if [[ $RC -eq 0 ]]; then
     ok "control copy (unmodified README.md) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
+echo "[32] sec.conf sample keys must all be read by code in bin/sec (issue #123)"
+WORK_C1="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_C2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_C3="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_CCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_C1" "$WORK_C2" "$WORK_C3" "$WORK_CCTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_C1/README.md" "$WORK_C1/bin/sec" <<'PY'
+import sys
+readme, sec = sys.argv[1], sys.argv[2]
+for p in (readme, sec):
+    s = open(p, encoding="utf-8").read()
+    if "[bitwarden]\nauto_rotate = true" not in s:
+        sys.exit(f"{p}: no '[bitwarden]\\nauto_rotate = true' block to probe")
+    open(p, "w", encoding="utf-8").write(
+        s.replace("[bitwarden]\nauto_rotate = true", "[bitwarden]\ncli = bw\nauto_rotate = true", 1)
+    )
+PY
+OUT="$(cd "$WORK_C1" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the sec.conf sample carries a key no code reads"
+else
+    no "coverage accepted a sec.conf sample key that no code reads"
+fi
+if grep -qF "sec.conf sample key(s) are read by no code in bin/sec (the sole config owner): cli" <<<"$OUT"; then
+    ok "coverage names the unread sample key"
+else
+    no "coverage did not name the unread sample key"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_C2/README.md" "$WORK_C2/bin/sec" <<'PY'
+import sys
+readme, sec = sys.argv[1], sys.argv[2]
+for p in (readme, sec):
+    s = open(p, encoding="utf-8").read()
+    if "[bitwarden]\nauto_rotate = true" not in s:
+        sys.exit(f"{p}: no '[bitwarden]\\nauto_rotate = true' block to probe")
+    open(p, "w", encoding="utf-8").write(
+        s.replace(
+            "[bitwarden]\nauto_rotate = true",
+            "[bitwarden]\ncli = bw\nbogus = true\nauto_rotate = true",
+            1,
+        )
+    )
+PY
+OUT="$(cd "$WORK_C2" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the sec.conf sample carries multiple keys no code reads"
+else
+    no "coverage accepted sec.conf sample keys that no code reads"
+fi
+if grep -qF "read by no code in bin/sec (the sole config owner): bogus, cli" <<<"$OUT"; then
+    ok "coverage names every unread sample key in sorted order"
+else
+    no "coverage did not name every unread sample key"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_C3/README.md" "$WORK_C3/bin/sec" <<'PY'
+import sys
+readme, sec = sys.argv[1], sys.argv[2]
+for p in (readme, sec):
+    s = open(p, encoding="utf-8").read()
+    if "[bitwarden]\nauto_rotate = true" not in s:
+        sys.exit(f"{p}: no '[bitwarden]\\nauto_rotate = true' block to probe")
+    open(p, "w", encoding="utf-8").write(
+        s.replace("[bitwarden]\nauto_rotate = true", "[bitwarden]\ncli = bw\nauto_rotate = true", 1)
+    )
+s = open(sec, encoding="utf-8").read()
+anchor = 'DEFAULT_BACKEND="$(get_cfg_val "global" "default_backend" "bitwarden")"'
+if anchor not in s:
+    sys.exit("bin/sec: no DEFAULT_BACKEND get_cfg_val anchor to probe")
+open(sec, "w", encoding="utf-8").write(s.replace(anchor, '_key_probe="cli"\n' + anchor, 1))
+PY
+OUT="$(cd "$WORK_C3" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when an unread sample key is only a bare quoted literal in bin/sec"
+else
+    no "coverage accepted a sample key proven read only by a bare quoted literal in bin/sec"
+fi
+if grep -qF "read by no code in bin/sec (the sole config owner): cli" <<<"$OUT"; then
+    ok "coverage names the sample key that is quoted but never a get_cfg_val read"
+else
+    no "coverage did not name the quoted-but-unread sample key"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_CCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (unmodified sec.conf sample) exits 0"
 else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"
