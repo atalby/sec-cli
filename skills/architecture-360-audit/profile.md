@@ -599,7 +599,7 @@ is the repo's reason to exist; audit the places it can leak. The production
 path is `sec sync`: `SYNC_KEYS` at `bin/sec-sync-controller.py:20` names the
 six env keys (verified 2026-10-10: GEMINI_API_KEY, OPENAI_API_KEY,
 ANTHROPIC_API_KEY, DEEPSEEK_API_KEY, ATLASSIAN_API_TOKEN, STRIPE_SECRET_KEY),
-and the guards — TTY/`--yes` gate at line 248, dry-run — are
+and the guards — TTY/`--yes` gate at line 270, dry-run — are
 enforced by `tests/test_sync_guard.sh` (first suite section
 `[1] --dry-run previews` at `tests/test_sync_guard.sh:48`). Re-verify the
 guards actually precede every backend write, and that no other writer exists.
@@ -702,12 +702,12 @@ this public repo, so the zero-cost claim binds on minutes-spend, not on
 zero-CI).
 `.gemini/settings.json` and the bridge dirs are harness delivery surfaces.
 
-### 7. Persistence and state -- `bin/sec:8`, `sec.conf.example:1`, `.gitignore:12`, `bin/sec-organizer:8`, `bin/sec-migrator:6`
+### 7. Persistence and state -- `bin/sec:8`, `sec.conf.example:1`, `.gitignore:14`, `bin/sec-organizer:8`, `bin/sec-migrator:6`
 
 Persistent state: `$HOME/.sec/sec.conf` (`bin/sec:8`, INI-ish, mode 600) is
 the only declared config; the ignore list names the runtime state files —
 `housekeep_plan.json`, `snapshot_*.json`, `migration_transaction.json`
-(`.gitignore:12` and its lines 13-14) — whose on-disk writers are
+(`.gitignore:14-16`) — whose on-disk writers are
 `bin/sec-organizer:8` (`LATEST_SNAPSHOT`) and `bin/sec-migrator:6`
 (`TX_FILE`). Audit: are these files ever read back across runs (rollback and
 revert depend on it), are formats deterministic between writer and reader,
@@ -768,10 +768,10 @@ can tenant A's key resolve to tenant B's item through the name-matching and
 
 Count every external call and check three properties on each: timeout,
 retry, defined behaviour on partial failure. The measured baseline this
-build (re-derived 2026-10-10 after issue #6 landed): `bin/sec-sync-controller.py`
-has **4 timeout sites** — all `subprocess.run` backend calls (lines 83, 99,
-119) and the `urlopen` at line 170 pass `timeout=BACKEND_TIMEOUT`
-(`SEC_SYNC_TIMEOUT`, default 60s, defined at line 17), so the earlier
+build (re-derived 2026-10-13 after issue #6 landed): `bin/sec-sync-controller.py`
+has **4 timeout sites** — all `subprocess` backend calls (lines 84, 100,
+120) and the `urlopen` at line 159 pass `timeout=BACKEND_TIMEOUT`
+(`SEC_SYNC_TIMEOUT`, default 60s, defined at line 18), so the earlier
 "zero timeout occurrences" baseline is obsolete there. Still unguarded:
 `git clone --depth 1` at `install.sh:24` (no `--max-time`, can hang
 unbounded) and the piped install itself (no `--max-time`) — `install.sh` and
