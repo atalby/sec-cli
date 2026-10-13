@@ -1,5 +1,19 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (4th run): shipped **#127** and **#128** in commit `c34c896`,
+pushed to `main` (`a903ca5..c34c896`). #127: `bin/sec --help`'s `Configured
+Tenants:` line was a hardcoded literal nothing derived from the dispatcher alias
+regex; sentinel section 21 now compares the help line's cited alias set against
+the live regex (both directions), test case [34] (2 probes + control, 10
+assertions, 33->34 cases / 338->348). #128 (found while finishing #127): the
+#124 size guard's section regex was unanchored, so a mid-line `## Verified
+baseline` mention in the #124 narrative shadowed the real section header;
+fixed with `(?m)^## Verified baseline`, test case [35] plants the shadowing
+mention (4 assertions, 34->35 cases / 348->352). Also fixed the same
+control-literal class #123 fixed: cases [28]/[29] hardcoded the live tracked
+count (108); the planted mention is now derived from the live line and
+assertions are regex-shaped. Tree clean on `main`, CI green.
+
 Session 2026-10-13 (3rd run): shipped **#125** -- F041's second half. Deleted the
 dead `[global] auto_rotate = true` from the heredoc and both doc samples, and
 widened the #123 config-surface guard from two surfaces to all four (which
@@ -79,12 +93,36 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   configured for this repository point to a known GitLab host" (re-confirmed
   2026-10-13 against a live `glab auth status`, which IS authenticated --
   for gitlab.com, which this repo is not on).
-- Open issues: **#125** (autonomous - `[global] auto_rotate` is dead config;
-  start here); **#120** (one-off flaky dispatch failure); **#67** (fresh 360
+- Open issues: **#126** (autonomous but needs a human call - `get_cfg_val`'s
+  awk parser silently skips a key with no `=`; reject-vs-warn is a design
+  decision); **#120** (one-off flaky dispatch failure); **#67** (fresh 360
   audit - human scope gate); **#92** (hub-side unguarded counts); **#51**
   (hub-side handoff, tracked upstream).
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
+
+- #128 `fix(sentinel)` (folded into `c34c896` per the #123 precedent) - the #124
+  size guard extracted RESUME.md's Verified-baseline section with an unanchored
+  regex, so the first literal `## Verified baseline` in the file -- a mid-line
+  mention in the #124 narrative -- shadowed the real section header and the
+  guard read the #116 entry's then-stale size line. It passed until now only
+  because the two occurrences agreed. Fix: `(?m)^## Verified baseline`, the
+  convention the persona/step counts already use. Case [35] plants a mid-line
+  mention plus a stale 9999/8192 claim inside the shadowed span; coverage must
+  still exit 0 (control copy too). Also fixed the same control-literal class
+  #123 fixed: cases [28]/[29] hardcoded the live tracked-file count (108) in
+  assertions and the planted 'correct' mention; the mention is now derived from
+  the live line and the assertions are regex-shaped. Sentinel 34 -> 35 cases /
+  348 -> 352 assertions; `_NUM_WORDS` gains `thirty-five`.
+
+- #127 `fix(audit)` -> `c34c896` - `bin/sec --help`'s `Configured Tenants:` line
+  was a hardcoded literal nothing derived from the dispatcher alias table.
+  Sentinel section 21 now compares the help line's cited alias set against the
+  live dispatcher alias regex (help-only and routable-only both fail, naming
+  the drift). Case [34]: probe 1 adds `dashvault` to the regex only, probe 2
+  adds `phantomtenant` to the help line only, control unmodified exits 0. 10 new
+  assertions, 33 -> 34 cases / 338 -> 348. Mirrors bumped at profile.md:22 +
+  section 3, ADAPTERS.md:56 + :264, RESUME.md baseline + this section.
 
 - #125 `fix(config)` -> `fix(sentinel)` - F041's second half. The heredoc wrote
   `[global] auto_rotate = true` into every fresh `sec.conf`, but the only read

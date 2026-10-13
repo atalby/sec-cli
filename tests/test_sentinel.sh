@@ -2015,7 +2015,7 @@ import re
 import sys
 p = sys.argv[1]
 s = open(p, encoding="utf-8").read()
-m = re.search(r"## Verified baseline.*?\n([\s\S]*?)\n## ", s)
+m = re.search(r"(?m)^## Verified baseline.*?\n([\s\S]*?)\n## ", s)
 if not m:
     sys.exit("RESUME.md: no '## Verified baseline' section to probe")
 blk = m.group(1)
