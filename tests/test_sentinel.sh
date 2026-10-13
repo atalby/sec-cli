@@ -2716,6 +2716,59 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[42] citations verifies the repo docs' file:line anchors, not just the audit skill's (issue #138)"
+WORK_S12A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S12B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S12CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_S12A" "$WORK_S12B" "$WORK_S12CTRL"; do
+    seed "$W"
+done
+DOC_LINES="$(wc -l <"$WORK_S12A/docs/ARCHITECTURE.md" | tr -d ' ')"
+SUITE_LINES="$(wc -l <"$WORK_S12A/tests/test_dispatch.sh" | tr -d ' ')"
+printf '\nInjected anchor: `docs/ARCHITECTURE.md:%s`\n' "$((DOC_LINES + 1))" >>"$WORK_S12A/RESUME.md"
+OUT="$(cd "$WORK_S12A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "citations exits nonzero when a RESUME.md anchor runs past the cited file"
+else
+    no "citations accepted a RESUME.md anchor past the end of the cited file"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "RESUME.md:[0-9]+ cites docs/ARCHITECTURE.md:$((DOC_LINES + 1)) -- line $((DOC_LINES + 1)) beyond end of file" <<<"$OUT"; then
+    ok "citations names the out-of-range RESUME.md anchor"
+else
+    no "citations did not name the out-of-range RESUME.md anchor"
+    printf '%s\n' "$OUT"
+fi
+printf '\nInjected range: `tests/test_dispatch.sh:%s-%s`\n' "$SUITE_LINES" "$((SUITE_LINES - 1))" >>"$WORK_S12B/HISTORY.md"
+OUT="$(cd "$WORK_S12B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "citations exits nonzero on a reversed doc anchor range"
+else
+    no "citations accepted a reversed doc anchor range"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "HISTORY.md:[0-9]+ cites tests/test_dispatch.sh:$SUITE_LINES-$((SUITE_LINES - 1)) -- reversed range" <<<"$OUT"; then
+    ok "citations names the reversed doc anchor range"
+else
+    no "citations did not name the reversed doc anchor range"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_S12CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" citations 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (every doc anchor resolves) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\([1-9][0-9]* anchor\(s\) in the repo docs also resolve\)" <<<"$OUT"; then
+    ok "the control copy proves doc anchors were actually scanned, not skipped"
+else
+    no "the control copy's OK line did not report a doc anchor count"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

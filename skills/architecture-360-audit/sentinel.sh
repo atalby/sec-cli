@@ -287,32 +287,51 @@ def stale_content_anchors(src_name, text):
     return hits
 
 
+def anchor_problems(src_name, lineno, path, spec):
+    if "://" in path or path.startswith("/"):
+        return
+    if os.path.basename(path) in {"x.py", "y.py", "example.py"}:
+        return
+    full = resolve(path)
+    if full is None:
+        return [f"{src_name}:{lineno} cites {path}:{spec} -- no such tracked path"]
+    total = lines_in(os.path.join(repo, full))
+    hits = []
+    for token in spec.split(","):
+        fields = token.split("-", 1)
+        if len(fields) == 2 and int(fields[1]) < int(fields[0]):
+            hits.append(f"{src_name}:{lineno} cites {path}:{spec} -- reversed range")
+            continue
+        if int(fields[-1]) > total:
+            hits.append(
+                f"{src_name}:{lineno} cites {path}:{spec} -- "
+                f"line {fields[-1]} beyond end of file ({total} lines)"
+            )
+    return hits
+
+
+def anchor_sources():
+    out = []
+    for name in ("ADAPTERS.md", "RESUME.md", "HISTORY.md"):
+        if name in tracked:
+            out.append(name)
+    docs = os.path.join(repo, "docs")
+    for name in sorted(os.listdir(docs)) if os.path.isdir(docs) else []:
+        if name.endswith(".md"):
+            rel = os.path.relpath(os.path.join(docs, name), repo)
+            if rel in tracked:
+                out.append(rel)
+    return out
+
+
 for src in (skill, profile):
     with open(src, encoding="utf-8") as fh:
         text = fh.read()
     for lineno, line in enumerate(text.split("\n"), 1):
         for m in pattern.finditer(line):
-            path, spec = m.group(1), m.group(2)
-            if "://" in path or path.startswith("/"):
-                continue
-            if os.path.basename(path) in {"x.py", "y.py", "example.py"}:
-                continue
-            full = resolve(path)
-            if full is None:
-                broken.append(f"{os.path.basename(src)}:{lineno} cites {path}:{spec} -- no such tracked path")
-                continue
-            full = os.path.join(repo, full)
-            total = lines_in(full)
-            for token in spec.split(","):
-                fields = token.split("-", 1)
-                if len(fields) == 2 and int(fields[1]) < int(fields[0]):
-                    broken.append(f"{os.path.basename(src)}:{lineno} cites {path}:{spec} -- reversed range")
-                    continue
-                if int(fields[-1]) > total:
-                    broken.append(
-                        f"{os.path.basename(src)}:{lineno} cites {path}:{spec} -- "
-                        f"line {fields[-1]} beyond end of file ({total} lines)"
-                    )
+            broken.extend(
+                anchor_problems(os.path.basename(src), lineno, m.group(1), m.group(2))
+            )
     for lineno, line in enumerate(text.split("\n"), 1):
         for m in re.finditer(r"\blines? \d+", line):
             broken.append(
@@ -322,12 +341,24 @@ for src in (skill, profile):
     broken.extend(stale_content_anchors(os.path.basename(src), text))
     broken.extend(phantom_claims(os.path.basename(src), text))
 
+doc_anchor_count = 0
+for src in anchor_sources():
+    with open(os.path.join(repo, src), encoding="utf-8", errors="replace") as fh:
+        doc_text = fh.read()
+    for lineno, line in enumerate(doc_text.split("\n"), 1):
+        for m in pattern.finditer(line):
+            doc_anchor_count += 1
+            broken.extend(anchor_problems(src, lineno, m.group(1), m.group(2)))
+
 if broken:
     for b in broken:
         print(f"{ERROR} {b}")
     print(f"{ERROR} {len(broken)} citation problem(s): broken anchors, stale-content anchors, phantom claims")
     sys.exit(1)
-print(f"{OK} citations: every file:line anchor in SKILL.md and profile.md resolves")
+print(
+    f"{OK} citations: every file:line anchor in SKILL.md and profile.md resolves"
+    f" ({doc_anchor_count} anchor(s) in the repo docs also resolve)"
+)
 sys.exit(0)
 PY
 fi
@@ -619,7 +650,8 @@ _NUM_WORDS = {
     "twenty-seven": 27, "twenty-eight": 28, "twenty-nine": 29,
     "thirty": 30, "thirty-two": 32, "thirty-three": 33, "thirty-four": 34,
     "thirty-five": 35, "thirty-six": 36, "thirty-seven": 37, "thirty-eight": 38,
-    "thirty-nine": 39, "forty": 40, "forty-one": 41,
+    "thirty-nine": 39, "forty": 40, "forty-one": 41, "forty-two": 42,
+    "forty-three": 43, "forty-four": 44, "forty-five": 45,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:

@@ -1,5 +1,32 @@
 # Resume point - sec-cli
 
+Session 2026-10-13 (14th run): the drift sweep's own audit was wrong in a
+useful way -- it grepped for corruption replacement strings that *begin* with a
+numeral word, so six controls whose literal sat later in the string survived
+the first commit (9a4938e): profile.md's seven sibling dispatchers, ADAPTERS.md's
+seven `bin/` helpers, MULTI_TENANCY.md's eight fixed aliases,
+OPERATOR_MANUAL.md's four core principles, SKILL.md's five `tests/*.sh` scanner
+suites and five-suite gate. All six now take a `WRONG_*` word from `num_word`;
+forcing each onto its live word fails 12 assertions, so none is a lucky literal.
+Dumping every corruption heredoc and grepping the whole replacement body is the
+method to reuse. A live bug the run exposed: an expectation grepped with double
+quotes around a backticked `tests/*.sh`, so bash command-substituted it before
+grep saw the pattern -- patterns containing backticks must be single-quoted.
+
+Same run, **#138**: `citations` walked only the audit skill's two docs, so
+RESUME.md's and HISTORY.md's 58 anchors were unverified, and two bare
+line-451 citations of the audit `SKILL.md` were silently binding to the
+50-line root `SKILL.md` (24 tracked files share that basename). Both are
+qualified; the repo docs now get an anchor-resolution pass (path resolves,
+range inside EOF, no reversed range) driven by sentinel case [42] with a
+derived injected anchor. Deliberately not extended: the bare `line N` rule and
+the stale-content / phantom-claim heuristics assume audit-skill prose density
+and false-positive on narrative docs. `history/*.md` stays excluded because
+those archives record now-stale anchors on purpose. `_NUM_WORDS` gains
+forty-two through forty-five. 41 -> 42 cases / 418 -> 430 assertions; mirrors
+bumped at `ADAPTERS.md:56`/`:262`, `profile.md:22`/`:641`, this file and
+`HISTORY.md`, which was rewritten to stay inside its budget.
+
 Session 2026-10-13 (13th run): finished the drift-control sweep #120's bump
 started. Every remaining hardcoded live count or numeral word in
 `tests/test_sentinel.sh` now derives from the live tree, and `sentinel.sh` no
@@ -277,7 +304,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   reporting, says so instead of showing an arbitrary window. Five new tests,
   including a source-shape guard on both runner bodies because the extractor's
   own tests would still pass if a runner regressed to raw slicing. Mirror 53
-  -> 58; mirrors bumped at `ADAPTERS.md:305`, `SKILL.md:451`,
+  -> 58; mirrors bumped at `ADAPTERS.md:305`, `skills/architecture-360-audit/SKILL.md:451`,
   `profile.md:427`, `RESUME.md` baseline and `HISTORY.md`. Second-order find:
   sentinel case [22]'s drift-control literals hardcoded `53` and broke on the
   bump -- named by the new reporter in one run -- so they now derive the live
@@ -452,7 +479,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   match live (`dict.fromkeys` de-dups). Case [29] proves it (earlier correct
   mention + drifted real line -> `coverage` fails naming the drift; two-agreeing
   control exits 0). Sentinel 28 -> 29 cases / 278 -> 284 assertions; mirrors
-  `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`, `RESUME.md:157`/`:158`;
+  `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`, `RESUME.md:184`/`:185`;
   `_NUM_WORDS` gains `twenty-nine`; control [22] literals re-pinned.
 - #117 `fix(docs)` -> `3f0e69b` - `RESUME.md`'s `## Current state` line (160)
   declaring 108 tracked files / 12 personas / 5 bash suites was the last
@@ -460,7 +487,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   section 17 with a `(\d+) tracked files, (\d+) personas, (\d+) bash suites`
   guard against `len(tracked)`, `_live_personas`, `_live_suite_count`. Case
   [28] proves it. Sentinel 27 -> 28 cases / 272 -> 278 assertions; mirrors
-  `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`, `RESUME.md:157`/`:158`;
+  `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`, `RESUME.md:184`/`:185`;
   `_NUM_WORDS` gains `twenty-eight`; control [22] literals re-pinned.
 - #116 `fix(docs)` -> `fddb57b` - `HISTORY.md`'s `## Current state` claimed a
   pytest mirror of 29 tests (live 53) and a stale open-issue set; that count was
@@ -469,7 +496,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   guard `HISTORY.md` too. Case [27] proves it (corrupt 53 -> 52 -> `coverage`
   exits nonzero naming the drift; control exits 0). Sentinel 26 -> 27 cases /
   266 -> 272 assertions; mirrors `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`,
-  `RESUME.md:141`; `_NUM_WORDS` gains `twenty-seven`; control [22] literals
+  `RESUME.md:168`; `_NUM_WORDS` gains `twenty-seven`; control [22] literals
   re-pinned. `HISTORY.md` now 8062/8192 bytes.
 - #115 `fix(sec-organizer)` -> `2549973` - `sec-organizer apply`/`revert` did not
   guard a corrupt plan/snapshot and died on a raw `jq` parse (exit 4, no tagged
@@ -484,7 +511,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   added sentinel section 20 that runs `bin/sec version` and fails on drift;
   `test_sentinel.sh` case [26] proves the guard (control copy passes). Sentinel
   25 -> 26 cases / 260 -> 266 assertions; mirrors bumped at `profile.md:22`,
-  `profile.md:641`, `ADAPTERS.md:56`, `ADAPTERS.md:262`, `RESUME.md:131-132`;
+  `profile.md:641`, `ADAPTERS.md:56`, `ADAPTERS.md:262`, `RESUME.md:158-159`;
   sentinel control [17] literals re-pinned (`twenty-six`, `live suite has 26`).
 - #113 `test(sync)` -> `d4890c3` - 10 new pytest cases covering the untested
   user-facing error contract of the two Python entrypoints: sync controller
@@ -493,19 +520,19 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   and a real CLI `--help` subprocess; classify invalid-JSON fallback (exit 0,
   no crash). pytest mirror 43 -> 53; mirrors bumped at `ADAPTERS.md:305`,
   `skills/architecture-360-audit/SKILL.md:451`, `profile.md:427` transcript,
-  `RESUME.md:117`. Sentinel control [3] drift regexes re-pinned 43 -> 53.
+  `RESUME.md:144`. Sentinel control [3] drift regexes re-pinned 43 -> 53.
 - #112 `test(classify)` -> `d9fb2d3` - 2 new pytest cases covering
   `infer_suggested_name`'s env/project tag branch (generic name + notes with
   `env: tag` -> `name (tag)`, needs_rename). pytest mirror 41 -> 43; mirrors
   bumped at `ADAPTERS.md:305`, `skills/architecture-360-audit/SKILL.md:451`,
-  `profile.md:427` transcript, `RESUME.md:104`. Sentinel control [3] drift
+  `profile.md:427` transcript, `RESUME.md:131`. Sentinel control [3] drift
   regexes re-pinned 41 -> 43.
 - #111 `test(sync)` -> `84c3ee6` - 12 new pytest cases covering the sync
   controller's untested surface: GCP write path (describe / create-on-missing /
   add-version / timeout / failure), `parse_args` usage-error contract, and
   `main()` exit codes 0/1/2/3. pytest mirror 29 -> 41; mirrors bumped at
   `ADAPTERS.md:305`, `skills/architecture-360-audit/SKILL.md:451`,
-  `profile.md:427` transcript, `RESUME.md:104`. Sentinel control [3]'s
+  `profile.md:427` transcript, `RESUME.md:131`. Sentinel control [3]'s
   hardcoded drift count re-pinned 29 -> 41.
 - #110 `fix(migrate)` -> `8ba4a49` - `sec migrate undo|revert|--undo` short-circuited
   the migrator's arg parse (bin/sec-migrator:37), so `sec migrate undo EXTRA`
@@ -513,7 +540,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   branch now rejects trailing operands with a tagged `[ERROR]` + exit 2 before
   any transaction-log access. Dispatch section [2d3] pins it (undo EXTRA /
   --undo EXTRA / revert EXTRA all refused pre-TX-check). Mirrors 85 -> 86 at
-  `profile.md:22`, `ADAPTERS.md:55`, `ADAPTERS.md:264`, `RESUME.md:103`.
+  `profile.md:22`, `ADAPTERS.md:55`, `ADAPTERS.md:264`, `RESUME.md:130`.
 - #109 `test(sentinel)` -> `eaf4c0a` - sentinel section 17 now guards RESUME.md's
   suite-count line + `Sentinel = N cases / M assertions` total against the live
   suites (they were hand-bumped, unguarded). Case [25] proves it. Mirrors
@@ -524,7 +551,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   OPERATOR_MANUAL; `completions/_sec` regenerated. Sentinel section 19 +
   case [24] pin the 10 surfaces; dispatch `[22u]` updated off the old union
   guard. Mirrors 23 -> 24 at `profile.md:22`/`:641`, `ADAPTERS.md:56`/`:262`,
-  `RESUME.md:87`; suite now 24 cases / 250 assertions.
+  `RESUME.md:114`; suite now 24 cases / 250 assertions.
 - #107 `fix(readme)` -> `1d61880` (resume `e1dffcc`) - README front page
   pinned to the live CLI: quoted `sec --help` + sec.conf sample byte-identical
   to `bin/sec`, migrate bullet lists all 5 destination backends, session
@@ -577,9 +604,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 87, install 9, sentinel 41, sync_guard 16,
-write_honesty 15. Sentinel = 41 cases / 418 assertions. HISTORY.md is at
-8135/8192 bytes - the next narrative addition must compact an older clause first
+mirrors in sync): dispatch 87, install 9, sentinel 42, sync_guard 16,
+write_honesty 15. Sentinel = 42 cases / 430 assertions. HISTORY.md is at
+8104/8192 bytes - the next narrative addition must compact an older clause first
 (#120's entry compacted the 2026-10-13 paragraph and moved #130-#137's detail
 into `history/2026-10-13.md`, since that detail had only ever lived here; the
 drift-control sweep compacted it again).

@@ -60,7 +60,7 @@ any transaction-log access (dispatch 85 -> 86 sections).
 Issue #111 covered the sync controller's untested surface: the GCP
 write path (describe / create-on-missing / add-version / timeout / failure),
 the `parse_args` usage-error contract, and `main()`'s exit codes (pytest
-29 -> 41; mirrors bumped at ADAPTERS.md:305, audit SKILL.md:451; control
+29 -> 41; mirrors bumped at ADAPTERS.md:305, skills/architecture-360-audit/SKILL.md:451; control
 [3] re-pinned).
 Issue #112 covered `infer_suggested_name`'s env/project tag branch (generic
 name + notes with `env: tag` -> `name (tag)`, needs_rename) — the username
@@ -72,33 +72,31 @@ packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
 `history/2026-10-12.md`.
 
 **2026-10-13**: the guard-hardening lane closed two more classes plus one
-real product bug. #119-#126 swept and guarded stale current-state claims (audit
-profile line anchors, README's backend universe, RESUME's own size claim, and
-two F041 dead config keys -- the per-tenant `cli` line and `[global]
-auto_rotate`). #127-#136 guarded bin/sec's tenant help line, ADAPTERS.md's
-pack/persona census, profile.md's code-prose counts and tracked-file transcript,
-sentinel section 7's shadowable first-match, and the 360-audit-skill-forge spec
-(41 cases / 418 assertions). #137 was the lane's first *product* bug: `bin/sec`
-ran `set -u` and expanded the possibly-empty `SCOPE_ARGS` bare, a fatal
-`unbound variable` on bash < 4.4, so `sec get` died on stock macOS while Linux
-CI stayed green; four sites fixed, plus a source scanner (dispatch case [32]).
-#120's repo-side half closed the observability gap behind its own
-un-diagnosable flake: the pytest mirror reported a failing suite as only its
-last 2000 chars, so for the long dispatch suite a planted check name appeared
-0 times in the report; it now names every `  FAIL:` line with its section
-(53 -> 58 tests). That bump exposed a hand-pinned mirror -- case [22]'s
-`53 passed` drift literals -- now derived. The
-same sweep finished the job across the rest of the drift controls: every
-hardcoded live count or numeral word in `tests/test_sentinel.sh` is now derived
-from the live tree (a `num_word` helper picks a numeral that differs from the
-live one, because a `_NUM_WORDS`-keyed check ignores a digit, so a digit swap
-would have silently no-op'd), and `sentinel.sh` no longer prints a pinned
-`all 12 reachable`. The first pass grepped replacement prefixes and so missed
-six; dumping every corruption heredoc caught them (sibling dispatchers, bin
-helpers, tenant aliases, core principles, scanner suites, gate suites).
-Negative control: forcing the wrong word back onto the live value turns those
-controls into no-ops, 10 then 12 assertions fail. Tracker holds
-#51, #67, #92, #126. Full narrative: `history/2026-10-13.md`.
+real product bug. #119-#136 swept and guarded stale current-state claims:
+audit profile line anchors, README's backend universe, RESUME's own size
+claim, two F041 dead config keys, bin/sec's tenant help line, ADAPTERS.md's
+pack/persona census, profile.md's code-prose counts and tracked-file
+transcript, sentinel section 7's shadowable first-match, and the
+360-audit-skill-forge spec (42 cases / 430 assertions). #137 was the lane's
+first *product* bug: `bin/sec` ran `set -u` and expanded the possibly-empty
+`SCOPE_ARGS` bare, a fatal `unbound variable` on bash < 4.4, so `sec get` died
+on stock macOS while Linux CI stayed green; four sites fixed, plus a source
+scanner (dispatch case [32]). #120's repo-side half closed the observability
+gap behind its own un-diagnosable flake: the pytest mirror reported a failing
+suite as only its last 2000 chars; it now names every `  FAIL:` line with its
+section (53 -> 58 tests), and the hand-pinned `53 passed` drift literals that
+bump exposed are now derived. The same sweep derived every remaining live
+count and numeral word in `tests/test_sentinel.sh` (a `num_word` helper picks
+a numeral differing from the live one, because a `_NUM_WORDS`-keyed check
+ignores a digit, so a digit swap would have silently no-op'd); its first pass
+grepped replacement prefixes and missed six, dumping every corruption heredoc
+caught them, and forcing the wrong word onto the live value fails 10 then 12
+assertions. #138 found the class one layer out: `citations` walked only the
+audit skill's two docs, leaving RESUME.md's and HISTORY.md's 58 anchors
+unverified, and two bare line-451 citations of the audit `SKILL.md` were
+silently resolving to the 50-line root `SKILL.md` (24 tracked files share that
+basename). Both are qualified; the repo docs now get an anchor-resolution pass (path, EOF,
+reversed range) with its own drift control. Tracker holds #51, #67, #92, #126. Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
