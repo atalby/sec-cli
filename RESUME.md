@@ -1,5 +1,28 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (18th run): shipped **#126** -- bin/sec's `get_cfg_val`
+silently dropped any `sec.conf` line with no `=`, so a typo'd key
+(`default_backend bitwarden`) was ignored with no signal: the highest-severity
+class left, a silent drop in a credential-adjacent parser. Took the
+cheapest-reasonable-path design call (warn, not reject): the arm now prints a
+tagged `[WARN] sec.conf: ignoring malformed line <NR> (no =): <text>` to stderr
+and the parse result plus exit code are UNCHANGED; the awk call's `2>/dev/null`
+was dropped so the warning is not swallowed (`|| echo "$default_val"` still
+covers an awk failure). Zero line shift -- the edit is confined to the existing
+`eq==0` line and the closing redirect, because ~60 repo-doc citations point at
+`bin/sec:NNN`. Proven red first (new dispatch section [18d]: malformed config
+still routes to the default AND emits the tagged WARN at line 2; a well-formed
+control yields the exact default with no WARN). Live dispatch 87 -> 88; mirrors
+bumped (profile.md:22, profile.md tagged census `sec` 25 -> 26, ADAPTERS.md:55,
+ADAPTERS.md:264, RESUME mirrors-in-sync line), HISTORY.md compacted to 7893/8192.
+
+Resume here next run: the tracker's open items are #67 (fresh 360 audit, Step-1
+scope approval needed), #92 and #51 (hub-side, not this repo). Both the
+first-match-shadow and silent-drop classes now look exhausted (this run closed
+the last silent-drop arm); the productive next question is the one #67 was filed
+to answer -- a fresh 360 sweep against the current tree, which needs the human's
+scope approval.
+
 Session 2026-10-13 (17th run): #141 -- the audit slot's first-match shadow, third
 instance, same class as #140. The migrator SOURCE guard read
 `re.search(r'fetch_source_items\(\) \{\n\s*case "\$SRC" in\n([\s\S]*?)\n\s*\*\)')`,
@@ -22,7 +45,7 @@ target file can carry more than one match. The only `n=0` sites are by design --
 44 cases / 452 assertions (each `ok ` branch is paired with a `no `, so a case
 with 4 branches is +8).
 
-Resume here next run: the tracker's open items are #126 (sec.conf parser
+Left for the next run: the tracker's open items were #126 (sec.conf parser
 silently skips a key with no '='; needs the human design call -- reject vs
 tagged WARN), #67 (fresh 360 audit, Step-1 scope approval needed), #92 and #51
 (hub-side, not this repo). Beyond those, the remaining first-match class lives
@@ -646,9 +669,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 87, install 9, sentinel 44, sync_guard 16,
+mirrors in sync): dispatch 88, install 9, sentinel 44, sync_guard 16,
 write_honesty 15. Sentinel = 44 cases / 452 assertions. HISTORY.md is at
-8181/8192 bytes - the next narrative addition must compact an older clause first
+7893/8192 bytes - the next narrative addition must compact an older clause first
 (#120's entry compacted the 2026-10-13 paragraph and moved #130-#137's detail
 into `history/2026-10-13.md`, since that detail had only ever lived here; the
 drift-control sweep compacted it again; #140's entry compacted it a third time).

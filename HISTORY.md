@@ -97,24 +97,21 @@ silently. #140 closed the same first-match class at the audit slot: the migrate
 and alias guards took the first regex hit, so a duplicate above the canonical
 one fed them a set they then agreed with; both now select the canonical
 block/gate line and flag duplicates (case [39], 452 assertions); #141 anchored
-the migrator source guard too (case [40]). Tracker holds #51, #67, #92, #126.
+the migrator source guard too (case [40]). #126 closed a real parser
+silent-drop: `bin/sec`'s `get_cfg_val` skipped any `sec.conf` line with no `=`,
+so a typo like `default_backend bitwarden` was ignored with no signal; it now
+emits a tagged `[WARN]` naming the line (in-place, no line shift; dispatch
+[18d]). Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
 split losslessly into per-date archives under `history/`, and
 `sentinel.sh coverage` gained a guard so the file cannot silently re-bloat. The day then swept
-dispatcher/completion/argv/doc-honesty residuals (#40–#66): completion
-alias parity + ps1 honest-scoping (#56/#57), the fish/ps1 flag surface (#60),
-the `sec.conf` commented-key parser (#55), `jq`'s dependency reach (#54), the
-sync-controller provenance text (#53), the keeper's keep-alive/setup no longer
-re-exposing the master password on argv (#52), the argv sweep moving the secret
-off `jq`/`bw`/`op`/`vault`/`infisical` child argv (#58/#59 — only `bws secret
-create` retains argv, a vendor limit), the GitLab sync write path (#61), the
-GCP create-if-absent branch (#62), dead pre-commit surface (#63), the skill's
-stale `SEC_TEST_DISPATCH` (#65), `sentinel.sh citations` (#66), and a
-baseline-red defect — an ungitignored local `.venv/` swept into the tracked set
-failing the denominator (#68; now ignored). All five bash suites and the
+dispatcher/completion/argv/doc-honesty residuals (#40–#66; detail in
+`history/2026-10-11.md`), notably moving secrets off child argv (#58/#59 —
+only `bws secret create` retains argv, a vendor limit) and a baseline-red
+ungitignored local `.venv/` (#68; now ignored). All five bash suites and the
 pytest mirror (58 tests) pass. Full narrative:
 `history/2026-10-11.md` / `history/2026-10-12.md`.
 
