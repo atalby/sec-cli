@@ -1,6 +1,32 @@
 # Resume point - sec-cli
 
-Session 2026-10-14 (23rd run): shipped **#145** -- the unguarded-current-state
+Session 2026-10-14 (24th run): shipped **#145** -- two items. (1) The
+unguarded-current-state sweep's next instance: `docs/SECURITY.md`'s "File
+Permissions Architecture" section states six path->mode pairs (0700/0600) but
+nothing re-verified them against the live `chmod` calls in `bin/sec`,
+`bin/bw-session-keeper`, `bin/sec-organizer`, `bin/sec-migrator`. Sentinel
+section 25 resolves each documented path from its source variable
+(`$CONFIG_DIR`, `$SESSION_FILE`, ...), checks the doc mode against both its own
+inline chmod and the live chmod, and fails if a guarded path stops being
+documented. (2) The previous run's section 24 (the timeout-claim guard) had
+shipped with NO probes and NO issue -- closed here with case [44]; case [45]
+covers section 25. Both cases proven red first (drift probes fail, controls
+green), then green. Sentinel 45 -> 47 cases / 468 -> 504 assertions; mirrors
+bumped at `profile.md:22`, `profile.md:641` (forty-seven), `ADAPTERS.md:56`,
+`ADAPTERS.md:262`, this file's mirrors-in-sync + `Sentinel =` lines;
+HISTORY.md 2026-10-14 block extended and `history/2026-10-14.md` appended.
+
+Resume here next run: the tracker's open items are #67 (fresh 360 audit --
+its Step-1 gate needs explicit human scope approval; must NOT be started
+autonomously) and #92 + #51 (hub-side, not this repo). The highest-value
+autonomous pattern remains: sweep for the next unguarded current-state claim
+(this run's #145 was exactly that), or another sentinel-robustness class;
+the theoretical `re.search` scope-grab hardening stays conditional as noted
+in "Next autonomous work".
+
+Session 2026-10-14 (23rd run): shipped sentinel section 24 (no issue was filed
+at the time and it added no probes -- both closed by the 24th run under #145)
+-- the unguarded-current-state
 sweep's next instance: ARCHITECTURE.md + OPERATOR_MANUAL.md claimed "every
 backend call has a timeout (default 60s, SEC_SYNC_TIMEOUT overrides)" but
 nothing verified the live `bin/sec-sync-controller.py` actually has `timeout=`
@@ -784,15 +810,15 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 45, sync_guard 16,
-write_honesty 15. Sentinel = 45 cases / 468 assertions. HISTORY.md is at
-5606/8192 bytes - the next narrative addition must still compact first if it
-would cross the budget (#144's entry compacted the 2026-10-12 paragraph, its
-detail already living in `history/2026-10-12.md`, and added
-`history/2026-10-14.md`).
+mirrors in sync): dispatch 92, install 9, sentinel 47, sync_guard 16,
+write_honesty 15. Sentinel = 47 cases / 504 assertions. HISTORY.md is at
+6208/8192 bytes - the next narrative addition must still compact first if it
+would cross the budget (#145's entry extended the 2026-10-14 paragraph and
+appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
-No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
-#105; full-suite + pytest-mirror check is cheap enough to run on every touch.
+No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each
+guard case re-runs full coverage a few times); the pytest mirror adds ~3.5 min.
+Run both when a sentinel section changes.
 
 ## Gotchas worth not rediscovering
 

@@ -3047,6 +3047,244 @@ else
     no "the control copy's OK line did not name the matched banner version"
     printf '%s\n' "$OUT"
 fi
+echo "[44] ARCHITECTURE.md + OPERATOR_MANUAL.md timeout claims and the live controller must agree (issue #145)"
+WORK_T16A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T16B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T16C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T16CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T16A" "$WORK_T16B" "$WORK_T16C" "$WORK_T16CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T16A/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"(has a timeout \(default )\d+(s, `SEC_SYNC_TIMEOUT` overrides\))",
+    r"\g<1>99\g<2>",
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no timeout claim to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T16A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md's timeout default drifts"
+else
+    no "coverage accepted a drifted ARCHITECTURE timeout default"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/ARCHITECTURE.md says default timeout is 99s, expected 60s" <<<"$OUT"; then
+    ok "coverage names ARCHITECTURE.md's drifted timeout default"
+else
+    no "coverage did not name the ARCHITECTURE timeout default drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T16B/docs/OPERATOR_MANUAL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"(Each backend call is bounded \(default )\d+(s, `SEC_SYNC_TIMEOUT` overrides\))",
+    r"\g<1>30\g<2>",
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("docs/OPERATOR_MANUAL.md carries no timeout claim to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T16B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when OPERATOR_MANUAL.md's timeout default drifts"
+else
+    no "coverage accepted a drifted OPERATOR_MANUAL timeout default"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/OPERATOR_MANUAL.md says default timeout is 30s, expected 60s" <<<"$OUT"; then
+    ok "coverage names OPERATOR_MANUAL.md's drifted timeout default"
+else
+    no "coverage did not name the OPERATOR_MANUAL timeout default drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T16C/bin/sec-sync-controller.py" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r'(BACKEND_TIMEOUT = float\(os\.environ\.get\("SEC_SYNC_TIMEOUT", ")\d+("\)\))',
+    r"\g<1>30\g<2>",
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("bin/sec-sync-controller.py carries no BACKEND_TIMEOUT default to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T16C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the controller's BACKEND_TIMEOUT default drifts"
+else
+    no "coverage accepted a drifted controller BACKEND_TIMEOUT default"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "bin/sec-sync-controller.py BACKEND_TIMEOUT default is 30, expected 60" <<<"$OUT"; then
+    ok "coverage names the controller's drifted BACKEND_TIMEOUT default"
+else
+    no "coverage did not name the controller BACKEND_TIMEOUT drift"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T16CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (timeout claims agree) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] timeout claim:" <<<"$OUT"; then
+    ok "the control copy's OK line names the timeout claim"
+else
+    no "the control copy's OK line did not name the timeout claim"
+    printf '%s\n' "$OUT"
+fi
+echo "[45] docs/SECURITY.md's file-permission claims must match the live chmod calls (issue #145)"
+WORK_T17A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T17B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T17C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T17D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T17CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T17A" "$WORK_T17B" "$WORK_T17C" "$WORK_T17D" "$WORK_T17CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T17A/docs/SECURITY.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"(~/.sec/sec\.conf`?: Configuration file mode `)0600(`)",
+    r"\g<1>0644\g<2>",
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("docs/SECURITY.md carries no sec.conf mode 0600 to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T17A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SECURITY.md's stated mode disagrees with its own chmod"
+else
+    no "coverage accepted a SECURITY.md mode disagreeing with its own chmod"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/SECURITY.md: ~/.sec/sec.conf states mode 0644 but its own chmod says 600" <<<"$OUT"; then
+    ok "coverage names the SECURITY.md self-inconsistent mode"
+else
+    no "coverage did not name the SECURITY.md self-inconsistent mode"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T17B/docs/SECURITY.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"(~/.sec/sec\.conf`?: Configuration file mode `)0600(` \(`chmod )600(`\))",
+    r"\g<1>0644\g<2>644\g<3>",
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("docs/SECURITY.md carries no sec.conf mode/chmod pair to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T17B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SECURITY.md's mode disagrees with the live chmod"
+else
+    no "coverage accepted a SECURITY.md mode disagreeing with the live chmod"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/SECURITY.md: ~/.sec/sec.conf claims mode 0644, live chmod is 600" <<<"$OUT"; then
+    ok "coverage names the SECURITY.md mode vs live-chmod mismatch"
+else
+    no "coverage did not name the SECURITY.md mode vs live-chmod mismatch"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T17C/docs/SECURITY.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"- `~/.cache/bitwarden/session`: [^\n]*\n", "", s, count=1)
+if n != 1:
+    sys.exit("docs/SECURITY.md carries no session line to remove")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T17C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SECURITY.md stops documenting a guarded path"
+else
+    no "coverage accepted a SECURITY.md that drops a guarded path"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/SECURITY.md no longer documents a mode for ~/.cache/bitwarden/session" <<<"$OUT"; then
+    ok "coverage names the SECURITY.md path it no longer documents"
+else
+    no "coverage did not name the dropped SECURITY.md path"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T17D/bin/bw-session-keeper" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r'chmod 600 "\$SESSION_FILE"', 'chmod 644 "$SESSION_FILE"', s, count=1)
+if n != 1:
+    sys.exit("bin/bw-session-keeper carries no SESSION_FILE chmod to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T17D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a live chmod drifts from SECURITY.md"
+else
+    no "coverage accepted a live chmod drifting from SECURITY.md"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/SECURITY.md: ~/.cache/bitwarden/session claims mode 0600, live chmod is 644" <<<"$OUT"; then
+    ok "coverage names the live-chmod drift for the session key"
+else
+    no "coverage did not name the live-chmod drift for the session key"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T17CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (permissions agree) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] security perms:" <<<"$OUT"; then
+    ok "the control copy's OK line names the SECURITY.md permission check"
+else
+    no "the control copy's OK line did not name the SECURITY.md permission check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

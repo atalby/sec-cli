@@ -652,6 +652,7 @@ _NUM_WORDS = {
     "thirty-five": 35, "thirty-six": 36, "thirty-seven": 37, "thirty-eight": 38,
     "thirty-nine": 39, "forty": 40, "forty-one": 41, "forty-two": 42,
     "forty-three": 43, "forty-four": 44, "forty-five": 45,
+    "forty-six": 46, "forty-seven": 47,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1806,6 +1807,103 @@ if _ctrl_src:
         if "urllib.request.urlopen(" in line and "timeout=" not in window:
             timeout_claim_mismatches.append(f"bin/sec-sync-controller.py line {i+1}: urlopen without timeout=")
 
+# --- 25. docs/SECURITY.md's file-permission claims must match the live chmod calls ---
+security_perm_mismatches = []
+try:
+    with open(os.path.join(repo, "docs", "SECURITY.md"), encoding="utf-8") as _fh:
+        _security_text = _fh.read()
+except OSError:
+    _security_text = ""
+_security_srcs = {}
+for _rel in ("bin/sec", "bin/bw-session-keeper", "bin/sec-organizer", "bin/sec-migrator"):
+    try:
+        with open(os.path.join(repo, *_rel.split("/")), encoding="utf-8") as _fh:
+            _security_srcs[_rel] = _fh.read()
+    except OSError:
+        _security_srcs[_rel] = ""
+
+# Resolve $VAR / ${VAR} assignments so a chmod's target can be compared to the
+# path the doc writes.
+_security_env = {"HOME": "~"}
+for _rel in ("bin/sec", "bin/bw-session-keeper", "bin/sec-organizer", "bin/sec-migrator"):
+    for _vm in re.finditer(r'^\s*([A-Za-z_]\w*)="([^"]*)"', _security_srcs[_rel], re.M):
+        _security_env.setdefault(_vm.group(1), _vm.group(2))
+
+
+def _security_expand(_val):
+    for _ in range(6):
+        _new = re.sub(
+            r"\$\{?(\w+)\}?",
+            lambda _m: _security_env.get(_m.group(1), _m.group(0)),
+            _val,
+        )
+        if _new == _val:
+            break
+        _val = _new
+    return re.sub(r"\$\{?\w+\}?", "*", _val)
+
+
+# doc path -> (source file, variable the path is assigned to)
+_SECURITY_PERMS = {
+    "~/.sec/": ("bin/sec", "CONFIG_DIR"),
+    "~/.sec/sec.conf": ("bin/sec", "CONFIG_FILE"),
+    "~/.cache/bitwarden/": ("bin/bw-session-keeper", "CACHE_DIR"),
+    "~/.cache/bitwarden/session": ("bin/bw-session-keeper", "SESSION_FILE"),
+    "~/.cache/bitwarden/snapshot_*.json": ("bin/sec-organizer", "snapshot_file"),
+    "~/.cache/bitwarden/migration_transaction.json": ("bin/sec-migrator", "TX_FILE"),
+}
+_security_block = re.search(
+    r"## [^\n]*File Permissions Architecture(.*?)(?=\n## |\Z)", _security_text, re.S
+)
+_security_claims = {}
+if not _security_block:
+    security_perm_mismatches.append("docs/SECURITY.md carries no 'File Permissions Architecture' section")
+else:
+    for _pm in re.finditer(
+        r"- `([^`]+)`: [^\n]*?mode `(\d{4})` \(`chmod (0?[0-7]{3})`\)", _security_block.group(1)
+    ):
+        _p_path, _p_mode, _p_chmod = _pm.group(1), _pm.group(2), _pm.group(3)
+        if ("0" + _p_chmod.lstrip("0")) != _p_mode:
+            security_perm_mismatches.append(
+                f"docs/SECURITY.md: {_p_path} states mode {_p_mode} but its own chmod says {_p_chmod}"
+            )
+        _security_claims[_p_path] = _p_mode
+
+    for _p_path, _p_mode in _security_claims.items():
+        if _p_path not in _SECURITY_PERMS:
+            security_perm_mismatches.append(
+                f"docs/SECURITY.md states a mode for {_p_path}, but the sentinel binds no live source to it"
+            )
+            continue
+        _src_rel, _var = _SECURITY_PERMS[_p_path]
+        _src = _security_srcs.get(_src_rel, "")
+        _live_expr = _security_env.get(_var)
+        _live_path = _security_expand(_live_expr) if _live_expr else ""
+        _p_regex = re.escape(_p_path.rstrip("/")).replace(r"\*", ".*")
+        if not re.fullmatch(_p_regex, _live_path.rstrip("/")):
+            security_perm_mismatches.append(
+                f"docs/SECURITY.md: {_p_path} maps to {_src_rel} ${_var}, "
+                f"whose live assignment is '{_live_path or 'unset'}'"
+            )
+            continue
+        _live_chmod_m = re.search(r'chmod (\d+) "\$' + re.escape(_var) + r'"', _src)
+        if not _live_chmod_m:
+            security_perm_mismatches.append(
+                f"docs/SECURITY.md: {_p_path} is claimed mode {_p_mode}, "
+                f"but {_src_rel} has no chmod on ${_var}"
+            )
+        elif ("0" + _live_chmod_m.group(1).lstrip("0")) != _p_mode:
+            security_perm_mismatches.append(
+                f"docs/SECURITY.md: {_p_path} claims mode {_p_mode}, "
+                f"live chmod is {_live_chmod_m.group(1)}"
+            )
+
+    for _p_path in _SECURITY_PERMS:
+        if _p_path not in _security_claims:
+            security_perm_mismatches.append(
+                f"docs/SECURITY.md no longer documents a mode for {_p_path}"
+            )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -1947,6 +2045,10 @@ if timeout_claim_mismatches:
     failures.append(f"{len(timeout_claim_mismatches)} timeout claim drift(s) vs ARCHITECTURE.md/OPERATOR_MANUAL.md/bin/sec-sync-controller.py")
     for _m in timeout_claim_mismatches:
         print(f"{ERROR} timeout claim: {_m}")
+if security_perm_mismatches:
+    failures.append(f"{len(security_perm_mismatches)} SECURITY.md file-permission drift(s) vs the live chmod calls")
+    for _m in security_perm_mismatches:
+        print(f"{ERROR} security perms: {_m}")
 
 if failures:
     for f in failures:
@@ -1976,6 +2078,7 @@ print(f"{OK} tenant help line: bin/sec's `Configured Tenants:` lists exactly the
 print(f"{OK} code census: profile.md's SYNC_KEYS count + sync-controller timeout sites + install.sh/bin/sec zero-timeout claim match the live code")
 print(f"{OK} HIAE banner: docs/ARCHITECTURE.md matches AGENTS.md (v{_agents_hiae.group(1)})")
 print(f"{OK} timeout claim: ARCHITECTURE.md + OPERATOR_MANUAL.md default 60s + SEC_SYNC_TIMEOUT override match bin/sec-sync-controller.py")
+print(f"{OK} security perms: docs/SECURITY.md's file-mode claims match the live chmod calls")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

@@ -16,7 +16,15 @@ banner across AGENTS.md and docs/ARCHITECTURE.md and fails on a mismatch or
 on either banner being absent (the hub checker skips absent banners). Proven
 red first (case [43], 7 failures; two test bugs found in RED), then green
 across all five suites + pytest 58 + coverage/citations. Sentinel 44 -> 45
-cases / 452 -> 468 assertions. Tracker holds #51, #67, #92.
+cases / 452 -> 468 assertions. #145 then swept the same class one file over:
+docs/SECURITY.md's "File Permissions Architecture" states six path->mode
+pairs with no guard, so a dropped `chmod` would leave the security doc lying
+with CI green; sentinel section 25 resolves each doc path from its source
+variable and checks the mode against both its own inline chmod and the live
+chmod, both directions. #145 also closed the previous run's untested debt:
+section 24 (the timeout-claim guard) had shipped with no issue and no probes;
+case [44] now covers it, case [45] covers section 25. Sentinel 45 -> 47 cases
+/ 468 -> 504 assertions. Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
