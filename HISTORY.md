@@ -39,16 +39,14 @@ natural-language mode claims: README.md's snapshot mode, OPERATOR_MANUAL.md's
 snapshot mode + path, and ARCHITECTURE.md's session, umask, cache-dir, plan,
 and sec.conf modes stated in prose with no guard; sentinel section 27 binds
 each to its live chmod/umask (case [49], proven red first). Sentinel 49 -> 51
-cases / 532 -> 568 assertions. #150 then swept the runtime-dependency + env-var
-class: README.md's + ARCHITECTURE.md's 'Runtime dependencies beyond coreutils:
-jq ... python3 ...' sentence and every documented SEC_* var name had no guard;
-sentinel section 28 binds the dep set to install.sh's `for _dep` loop and each
-documented SEC_* var to a live bin/ reader (case [50], proven red first).
-Sentinel 51 -> 52 cases / 568 -> 588 assertions. #151 then swept the
-run-injection class: README.md's + ARCHITECTURE.md's prose naming the
-`sec run` injection backends (bws/op/infisical) had no guard; sentinel
-section 29 binds three prose sites to bin/sec's `run)` arm (case [51],
-proven red first). Sentinel 52 -> 53 cases / 588 -> 608 assertions.
+cases / 532 -> 568 assertions. #150 guarded the runtime-dependency sentence +
+documented SEC_* var names (README.md + ARCHITECTURE.md vs install.sh's
+`for _dep` loop + bin/; section 28, case [50], proven red first). #151 guarded
+the `sec run` injection-backend prose (README.md + ARCHITECTURE.md vs bin/sec's
+`run)` arm; section 29, case [51], proven red first). #152 guarded the
+classifier-category names (README.md + ARCHITECTURE.md vs bin/sec-classify.py's
+CATEGORY_WEIGHTS keys + the `general` fallback; section 30, case [52], proven
+red first). Sentinel 49 -> 54 cases / 532 -> 628 assertions.
 Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 

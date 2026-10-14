@@ -3963,6 +3963,126 @@ else
     printf '%s\n' "$OUT"
 fi
 echo
+echo "[52] README.md / ARCHITECTURE.md classifier-category claims must name live bin/sec-classify.py CATEGORY_WEIGHTS keys (issue #152)"
+WORK_T24A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T24B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T24C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T24D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T24CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T24A" "$WORK_T24B" "$WORK_T24C" "$WORK_T24D" "$WORK_T24CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T24A/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"`infrastructure/ssh`\)\.", "`infrastructure/shell`).", s, count=1)
+if n != 1:
+    sys.exit("README.md carries no classifier category list to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T24A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when README.md names a non-live classifier category"
+else
+    no "coverage accepted a README.md classifier-category drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "README.md names classifier categories infrastructure/shell, but bin/sec-classify.py's CATEGORY_WEIGHTS declares" <<<"$OUT"; then
+    ok "coverage names the README.md classifier-category drift"
+else
+    no "coverage did not name the README.md classifier-category drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T24B/bin/sec-classify.py" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r'"infrastructure/ssh": \{', '"infrastructure/sshd": {', s, count=1)
+if n != 1:
+    sys.exit("bin/sec-classify.py carries no 'infrastructure/ssh' category key to rename")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T24B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a live classifier category is renamed away"
+else
+    no "coverage accepted a renamed live classifier category"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "README.md names classifier categories infrastructure/ssh, but bin/sec-classify.py's CATEGORY_WEIGHTS declares" <<<"$OUT"; then
+    ok "coverage names the README.md category that drifted from a renamed live key"
+else
+    no "coverage did not name the drifted README.md category"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T24C/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"claims `cloud/gcp` instead", "claims `cloud/google` instead", s, count=1)
+if n != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no 'claims `cloud/gcp`' clause to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T24C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md names a non-live classifier category"
+else
+    no "coverage accepted an ARCHITECTURE.md classifier-category drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/ARCHITECTURE.md says a GCP service-account URI claims cloud/google, but bin/sec-classify.py's CATEGORY_WEIGHTS declares" <<<"$OUT"; then
+    ok "coverage names the ARCHITECTURE.md classifier-category drift"
+else
+    no "coverage did not name the ARCHITECTURE.md classifier-category drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T24D/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"now classifies `cloud/aws`", "classifies `cloud/aws`", s, count=1)
+if n != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no 'now classifies `cloud/aws`' clause to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T24D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md drops the classifier sentence shape"
+else
+    no "coverage accepted a dropped ARCHITECTURE.md classifier sentence"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/ARCHITECTURE.md no longer states the login-field classification examples in the guarded form" <<<"$OUT"; then
+    ok "coverage names the dropped ARCHITECTURE.md classifier sentence"
+else
+    no "coverage did not name the dropped ARCHITECTURE.md classifier sentence"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T24CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (classifier categories agree) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] classifier categories:" <<<"$OUT"; then
+    ok "the control copy's OK line names the classifier-category check"
+else
+    no "the control copy's OK line did not name the classifier-category check"
+    printf '%s\n' "$OUT"
+fi
+echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
     exit 0

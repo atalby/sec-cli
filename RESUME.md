@@ -1,5 +1,23 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (32nd run): shipped **#152** -- the classifier-category
+claims (README.md:15's example list, docs/ARCHITECTURE.md:12's login-field
+examples) had no guard. Sentinel section 30 parses the live `CATEGORY_WEIGHTS`
+keys from bin/sec-classify.py, asserts the `general` fallback literal survives,
+and requires every category named in both docs to be a live key (case [52],
+four probes + control, proven red first). Sentinel 53 -> 54 cases / 608 -> 628
+assertions; mirrors bumped at `profile.md:22`, `profile.md:641` (fifty-four),
+`ADAPTERS.md:56`, `ADAPTERS.md:262`, this file's mirrors-in-sync + `Sentinel =`
+lines and HISTORY.md size (7885/8192, the 2026-10-14 paragraph compacted to
+fit); HISTORY.md 2026-10-14 block extended and `history/2026-10-14.md` appended.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#152 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-14 (31st run): shipped **#151** -- the `sec run` env-injection
 backend prose (README.md:11 + :136 comment, ARCHITECTURE.md:22) had no guard;
 only the byte-identical `sec --help` block copy was covered (section 18).
@@ -544,7 +562,10 @@ binds the dep set to install.sh's `for _dep` loop and each documented `SEC_*`
 var to a live bin/ reader. The 31st run shipped #151: the `sec run`
 env-injection backend prose (README.md + ARCHITECTURE.md) was the next
 unguarded doc-name claim, so sentinel section 29 binds every prose site to the
-live bin/sec `run)` arm's case patterns. Next candidates, in
+live bin/sec `run)` arm's case patterns. The 32nd run shipped #152: the
+classifier-category names (README.md + ARCHITECTURE.md) were the next unguarded
+doc-name claim, so sentinel section 30 binds them to bin/sec-classify.py's
+`CATEGORY_WEIGHTS` keys + the `general` fallback. Next candidates, in
 order: any remaining single-`re.search` count-grabs of that shape (below), then
 the fresh 360 audit (#67, after human scope approval).
 Cheapest concrete next candidates, in order:
@@ -604,6 +625,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #152 `feat(sentinel)` - the classifier-category names (README.md:15 + docs/ARCHITECTURE.md:12) had no guard. Sentinel section 30 parses the live `CATEGORY_WEIGHTS` keys from bin/sec-classify.py and the `general` fallback, requiring every category named in both docs to be a live key (case [52], four probes + control). Sentinel 53 -> 54 cases / 608 -> 628 assertions.
 - #151 `feat(sentinel)` - the `sec run` env-injection backend prose (README.md:11
   + :136, docs/ARCHITECTURE.md:22) had no guard; only the byte-identical
   `sec --help` block copy was covered. Sentinel section 29 parses the live
@@ -967,9 +989,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 53, sync_guard 16,
-write_honesty 15. Sentinel = 53 cases / 608 assertions. HISTORY.md is at
-8026/8192 bytes - the next narrative addition must still compact first if it
+mirrors in sync): dispatch 92, install 9, sentinel 54, sync_guard 16,
+write_honesty 15. Sentinel = 54 cases / 628 assertions. HISTORY.md is at
+7885/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
 and appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

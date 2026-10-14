@@ -654,6 +654,7 @@ _NUM_WORDS = {
     "forty-three": 43, "forty-four": 44, "forty-five": 45,
     "forty-six": 46, "forty-seven": 47, "forty-eight": 48, "forty-nine": 49,
     "fifty": 50, "fifty-one": 51, "fifty-two": 52, "fifty-three": 53,
+    "fifty-four": 54,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2175,6 +2176,64 @@ else:
                 "README.md / docs/ARCHITECTURE.md no longer state that `bitwarden` is a plain exec"
             )
 
+classify_mismatches = []
+_classify_src = _nl_read("bin/sec-classify.py")
+_cw_m = re.search(r"CATEGORY_WEIGHTS\s*=\s*\{([\s\S]*?)\n\}", _classify_src)
+_live_cats = set()
+if _cw_m is None:
+    classify_mismatches.append(
+        "bin/sec-classify.py no longer declares a CATEGORY_WEIGHTS map"
+    )
+else:
+    _live_cats = set(re.findall(r'\n    "([^"]+)":', _cw_m.group(1)))
+    if not _live_cats:
+        classify_mismatches.append(
+            "bin/sec-classify.py's CATEGORY_WEIGHTS map exposes no top-level category keys"
+        )
+if not re.search(r'"category":\s*"general"', _classify_src):
+    classify_mismatches.append(
+        "bin/sec-classify.py no longer emits a `general` fallback category"
+    )
+_rd_cat_m = re.search(
+    r"categorize secrets into clean folder structures \(([^)]*)\)",
+    _nl_read("README.md"),
+)
+if _rd_cat_m is None:
+    classify_mismatches.append(
+        "README.md no longer states the classifier category examples in the guarded form"
+    )
+elif _live_cats:
+    _rd_unknown = sorted(set(re.findall(r"`([^`]+)`", _rd_cat_m.group(1))) - _live_cats)
+    if _rd_unknown:
+        classify_mismatches.append(
+            f"README.md names classifier categories {', '.join(_rd_unknown)}, "
+            f"but bin/sec-classify.py's CATEGORY_WEIGHTS declares "
+            f"{', '.join(sorted(_live_cats))}"
+        )
+_ar_cat_m = re.search(
+    r"now classifies `([^`]+)` instead of falling back to `([^`]+)`, and a GCP "
+    r"service-account URI \([^)]*\) claims `([^`]+)`",
+    _nl_read("docs/ARCHITECTURE.md"),
+)
+if _ar_cat_m is None:
+    classify_mismatches.append(
+        "docs/ARCHITECTURE.md no longer states the login-field classification examples in the guarded form"
+    )
+else:
+    _ar_aws, _ar_general, _ar_gcp = _ar_cat_m.groups()
+    for _tok, _label in ((_ar_aws, "AWS key"), (_ar_gcp, "GCP service-account URI")):
+        if _tok not in _live_cats:
+            classify_mismatches.append(
+                f"docs/ARCHITECTURE.md says a {_label} claims {_tok}, but "
+                f"bin/sec-classify.py's CATEGORY_WEIGHTS declares "
+                f"{', '.join(sorted(_live_cats))}"
+            )
+    if _ar_general != "general":
+        classify_mismatches.append(
+            f"docs/ARCHITECTURE.md says the fallback category is {_ar_general}, "
+            f"but bin/sec-classify.py emits `general`"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2340,6 +2399,12 @@ if run_inject_mismatches:
     )
     for _m in run_inject_mismatches:
         print(f"{ERROR} run injection: {_m}")
+if classify_mismatches:
+    failures.append(
+        f"{len(classify_mismatches)} classifier-category claim drift(s) vs bin/sec-classify.py"
+    )
+    for _m in classify_mismatches:
+        print(f"{ERROR} classify categories: {_m}")
 
 if failures:
     for f in failures:
@@ -2374,6 +2439,7 @@ print(f"{OK} sec.conf mode prose: README.md + docs/MULTI_TENANCY.md match the li
 print(f"{OK} natural-language mode claims: README.md + docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md match the live chmod/umask calls")
 print(f"{OK} runtime-dependency + env-var claims: README.md + docs/ARCHITECTURE.md dep lists and the documented SEC_* vars match install.sh + bin/")
 print(f"{OK} run-injection claims: README.md + docs/ARCHITECTURE.md name exactly the backends bin/sec injects via ({', '.join(sorted(_run_live))})")
+print(f"{OK} classifier categories: README.md + docs/ARCHITECTURE.md name only live CATEGORY_WEIGHTS keys ({', '.join(sorted(_live_cats))}) + the `general` fallback")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)
