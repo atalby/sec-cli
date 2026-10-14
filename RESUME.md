@@ -1,5 +1,24 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (34th run): shipped **#154** -- docs/ARCHITECTURE.md:16's
+`bin/sec.ps1` subcommand-surface claim (native subset `get`/`set`/`run` +
+`housekeep`/`migrate`; bash-only full surface) had no guard. Sentinel section 32
+parses the `bin/sec.ps1` `switch ($Command)` arms and `bin/sec`'s top-level
+dispatch arms, requires the documented native subset to equal the live ps1 arms,
+and requires every bash-only command to be absent from ps1 and be a real
+`bin/sec` command (case [54], four probes + control, proven red first). Sentinel
+55 -> 56 cases / 648 -> 668 assertions; mirrors bumped at `profile.md:22`,
+`profile.md:641` (fifty-six), `ADAPTERS.md:56`, `ADAPTERS.md:262`, this file's
+mirrors-in-sync + `Sentinel =` lines and HISTORY.md size (8035/8192); HISTORY.md
+2026-10-14 block extended and `history/2026-10-14.md` appended.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#154 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-14 (33rd run): shipped **#153** -- the `sec completion` surface
 (OPERATOR_MANUAL.md:95-96's shell set, `powershell`->`ps1` alias, and the claim
 that `completions/_sec` mirrors the zsh output) had no guard. Sentinel section 31
@@ -588,7 +607,10 @@ doc-name claim, so sentinel section 30 binds them to bin/sec-classify.py's
 `CATEGORY_WEIGHTS` keys + the `general` fallback. The 33rd run shipped #153: the
 completion surface (OPERATOR_MANUAL.md) was the next unguarded doc-name claim,
 so sentinel section 31 binds its shell set + alias + `completions/_sec` to the
-live bin/sec completion dispatch. Next candidates, in
+live bin/sec completion dispatch. The 34th run shipped #154: docs/ARCHITECTURE.md
+bin/sec.ps1's native subset + bash-only full surface was the next unguarded
+doc-name claim, so sentinel section 32 binds it to the live ps1 switch arms +
+bin/sec dispatch. Next candidates, in
 order: any remaining single-`re.search` count-grabs of that shape (below), then
 the fresh 360 audit (#67, after human scope approval).
 Cheapest concrete next candidates, in order:
@@ -648,6 +670,7 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #154 `feat(sentinel)` - docs/ARCHITECTURE.md:16's `bin/sec.ps1` subcommand-surface claim had no guard. Sentinel section 32 parses the ps1 `switch ($Command)` arms + bin/sec's dispatch arms, requiring the documented native subset to equal the live ps1 arms and every bash-only command to be absent from ps1 and be a real bin/sec command (case [54], four probes + control). Sentinel 55 -> 56 cases / 648 -> 668 assertions.
 - #153 `feat(sentinel)` - the `sec completion` surface (OPERATOR_MANUAL.md:95-96) had no guard. Sentinel section 31 parses the shell arms from bin/sec's completion dispatch and requires the doc's shell set + `powershell`->`ps1` alias to match the live grouping, and `completions/_sec` to be byte-identical to live `bin/sec completion zsh` (case [53], four probes + control). Sentinel 54 -> 55 cases / 628 -> 648 assertions.
 - #152 `feat(sentinel)` - the classifier-category names (README.md:15 + docs/ARCHITECTURE.md:12) had no guard. Sentinel section 30 parses the live `CATEGORY_WEIGHTS` keys from bin/sec-classify.py and the `general` fallback, requiring every category named in both docs to be a live key (case [52], four probes + control). Sentinel 53 -> 54 cases / 608 -> 628 assertions.
 - #151 `feat(sentinel)` - the `sec run` env-injection backend prose (README.md:11
@@ -1013,9 +1036,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 55, sync_guard 16,
-write_honesty 15. Sentinel = 55 cases / 648 assertions. HISTORY.md is at
-8056/8192 bytes - the next narrative addition must still compact first if it
+mirrors in sync): dispatch 92, install 9, sentinel 56, sync_guard 16,
+write_honesty 15. Sentinel = 56 cases / 668 assertions. HISTORY.md is at
+8035/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
 and appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

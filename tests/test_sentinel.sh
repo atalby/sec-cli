@@ -4201,6 +4201,125 @@ else
     no "the control copy's OK line did not name the completion-surface check"
     printf '%s\n' "$OUT"
 fi
+echo "[54] docs/ARCHITECTURE.md's bin/sec.ps1 native subset + bin/sec-only full surface must match the live dispatch (issue #154)"
+WORK_T26A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T26B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T26C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T26D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T26CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T26A" "$WORK_T26B" "$WORK_T26C" "$WORK_T26D" "$WORK_T26CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T26A/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"`get`, `set`, `run` natively", "`get`, `set`, `sync` natively", s, count=1)
+if n != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no bin/sec.ps1 native subset to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T26A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md's bin/sec.ps1 native subset drifts"
+else
+    no "coverage accepted a bin/sec.ps1 native-subset drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/ARCHITECTURE.md names bin/sec.ps1 native subcommands get, housekeep, migrate, set, sync, but bin/sec.ps1 implements get, housekeep, migrate, run, set" <<<"$OUT"; then
+    ok "coverage names the bin/sec.ps1 native-subset drift"
+else
+    no "coverage did not name the bin/sec.ps1 native-subset drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T26B/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"`setup-keychain`, `completion`, and", "`setup-keychain`, `migrate`, and", s, count=1)
+if n != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no bin/sec 'full surface' list to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T26B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md names a ps1 command as bin/sec-only"
+else
+    no "coverage accepted a bin/sec-only command that ps1 also implements"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/ARCHITECTURE.md says \`migrate\` lives only in bin/sec, but bin/sec.ps1 also implements it" <<<"$OUT"; then
+    ok "coverage names the bin/sec-only command ps1 also implements"
+else
+    no "coverage did not name the bin/sec-only command ps1 also implements"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T26C/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"\(`sync`, `unlock`, `rotate`", "(`snych`, `unlock`, `rotate`", s, count=1)
+if n != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no bin/sec 'full surface' list to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T26C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md names a non-command as bin/sec-only"
+else
+    no "coverage accepted a non-command in the bin/sec surface list"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/ARCHITECTURE.md names \`snych\` as part of bin/sec's surface, but bin/sec dispatches no \`snych\` command" <<<"$OUT"; then
+    ok "coverage names the non-command in the bin/sec surface list"
+else
+    no "coverage did not name the non-command in the bin/sec surface list"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T26D/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r" by delegating to the bash helpers", " by delegating", s, count=1)
+if n != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no bin/sec.ps1 delegation phrase to drop")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T26D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md drops the bin/sec.ps1 native-subset sentence"
+else
+    no "coverage accepted a dropped bin/sec.ps1 native-subset sentence"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/ARCHITECTURE.md no longer states bin/sec.ps1's native subcommand subset in the guarded form" <<<"$OUT"; then
+    ok "coverage names the dropped bin/sec.ps1 native-subset sentence"
+else
+    no "coverage did not name the dropped bin/sec.ps1 native-subset sentence"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T26CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (ps1 surface agrees) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] ps1 surface:" <<<"$OUT"; then
+    ok "the control copy's OK line names the ps1-surface check"
+else
+    no "the control copy's OK line did not name the ps1-surface check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

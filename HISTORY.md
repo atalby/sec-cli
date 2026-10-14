@@ -34,21 +34,21 @@ count mirrors: the 'suite counts ... mirrors in sync' line and the
 'Sentinel = N cases / M assertions' total were searched over the whole
 append-heavy narrative, so an earlier echo of either shape would shadow the
 real claim inside `## Verified baseline`; both searches are now scoped to that
-section's body (case [48], proven red first). #149 then swept the last
-natural-language mode claims: README.md's snapshot mode, OPERATOR_MANUAL.md's
-snapshot mode + path, and ARCHITECTURE.md's session, umask, cache-dir, plan,
-and sec.conf modes stated in prose with no guard; sentinel section 27 binds
-each to its live chmod/umask (case [49], proven red first). Sentinel 49 -> 51
-cases / 532 -> 568 assertions. #150 guarded the runtime-dependency sentence +
+section's body (case [48], proven red first). #149 guarded the last prose
+natural-language mode claims (README.md + OPERATOR_MANUAL.md + ARCHITECTURE.md
+vs their live chmod/umask; section 27, case [49], proven red first). Sentinel
+49 -> 51 cases / 532 -> 568 assertions. #150 guarded the runtime-dependency sentence +
 documented SEC_* var names (README.md + ARCHITECTURE.md vs install.sh's
 `for _dep` loop + bin/; section 28, case [50], proven red first). #151 guarded
 the `sec run` injection-backend prose (README.md + ARCHITECTURE.md vs bin/sec's
 `run)` arm; section 29, case [51], proven red first). #152 guarded the
 classifier-category names (README.md + ARCHITECTURE.md vs bin/sec-classify.py's
 CATEGORY_WEIGHTS keys + the `general` fallback; section 30, case [52], proven
-red first). #153 guarded the completion surface (OPERATOR_MANUAL.md's shell set +
-alias + completions/_sec vs bin/sec's completion dispatch; section 31, case
-[53], proven red first). Sentinel 49 -> 55 cases / 532 -> 648 assertions.
+red first). #153 guarded the completion surface (OPERATOR_MANUAL.md vs bin/sec's
+completion dispatch + completions/_sec; section 31, case [53]). #154 guarded
+ARCHITECTURE.md's bin/sec.ps1 native-subset + bash-only full-surface claim vs the
+live dispatch (section 32, case [54]; both proven red first). Sentinel 49 -> 56
+cases / 532 -> 668 assertions.
 Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 

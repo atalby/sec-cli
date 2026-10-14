@@ -656,6 +656,7 @@ _NUM_WORDS = {
     "fifty": 50, "fifty-one": 51, "fifty-two": 52, "fifty-three": 53,
     "fifty-four": 54,
     "fifty-five": 55,
+    "fifty-six": 56,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2298,6 +2299,56 @@ else:
             "completions/_sec is not byte-identical to live 'bin/sec completion zsh' output"
         )
 
+ps1_surface_mismatches = []
+_ps1_text = _nl_read("bin/sec.ps1")
+_ps1_arms = set(re.findall(r'^\s+"([a-z][a-z0-9-]*)"\s*\{', _ps1_text, re.M))
+_sec_cmds = set()
+for _arm in re.findall(r"^    ([a-z0-9|_-]+)\)", _sec_text, re.M):
+    for _tok in _arm.split("|"):
+        if not _tok.startswith("-"):
+            _sec_cmds.add(_tok)
+
+_arch_ps1_text = _nl_read("docs/ARCHITECTURE.md")
+_ps1_native_m = re.search(
+    r"core subcommand subset — (.*?) by delegating to the bash helpers",
+    _arch_ps1_text,
+)
+_ps1_full_m = re.search(
+    r"the full surface \(([^)]*)\) lives only in `bin/sec`",
+    _arch_ps1_text,
+)
+
+if not _ps1_arms:
+    ps1_surface_mismatches.append(
+        "bin/sec.ps1 carries no recognizable `switch ($Command)` arms to compare the docs against"
+    )
+if _ps1_native_m is None:
+    ps1_surface_mismatches.append(
+        "docs/ARCHITECTURE.md no longer states bin/sec.ps1's native subcommand subset in the guarded form"
+    )
+elif _ps1_arms:
+    _ps1_doc_native = set(re.findall(r"`([a-z0-9-]+)`", _ps1_native_m.group(1)))
+    if _ps1_doc_native != _ps1_arms:
+        ps1_surface_mismatches.append(
+            f"docs/ARCHITECTURE.md names bin/sec.ps1 native subcommands {', '.join(sorted(_ps1_doc_native))}, "
+            f"but bin/sec.ps1 implements {', '.join(sorted(_ps1_arms))}"
+        )
+if _ps1_full_m is None:
+    ps1_surface_mismatches.append(
+        "docs/ARCHITECTURE.md no longer states bin/sec's bash-only 'full surface' in the guarded form"
+    )
+else:
+    for _pc in sorted(set(re.findall(r"`([a-z0-9-]+)`", _ps1_full_m.group(1)))):
+        if _pc in _ps1_arms:
+            ps1_surface_mismatches.append(
+                f"docs/ARCHITECTURE.md says `{_pc}` lives only in bin/sec, but bin/sec.ps1 also implements it"
+            )
+        elif _pc not in _sec_cmds:
+            ps1_surface_mismatches.append(
+                f"docs/ARCHITECTURE.md names `{_pc}` as part of bin/sec's surface, "
+                f"but bin/sec dispatches no `{_pc}` command"
+            )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2475,6 +2526,12 @@ if completion_mismatches:
     )
     for _m in completion_mismatches:
         print(f"{ERROR} completion surface: {_m}")
+if ps1_surface_mismatches:
+    failures.append(
+        f"{len(ps1_surface_mismatches)} bin/sec.ps1 subcommand-surface claim drift(s) vs bin/sec's dispatch"
+    )
+    for _m in ps1_surface_mismatches:
+        print(f"{ERROR} ps1 surface: {_m}")
 
 if failures:
     for f in failures:
@@ -2511,6 +2568,7 @@ print(f"{OK} runtime-dependency + env-var claims: README.md + docs/ARCHITECTURE.
 print(f"{OK} run-injection claims: README.md + docs/ARCHITECTURE.md name exactly the backends bin/sec injects via ({', '.join(sorted(_run_live))})")
 print(f"{OK} classifier categories: README.md + docs/ARCHITECTURE.md name only live CATEGORY_WEIGHTS keys ({', '.join(sorted(_live_cats))}) + the `general` fallback")
 print(f"{OK} completion surfaces: OPERATOR_MANUAL.md's shell set + alias and completions/_sec match the live bin/sec completion dispatch")
+print(f"{OK} ps1 surface: docs/ARCHITECTURE.md's bin/sec.ps1 native subset + bin/sec-only 'full surface' match the live dispatch")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)
