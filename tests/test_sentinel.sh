@@ -4437,6 +4437,125 @@ else
     no "the control copy's OK line did not name the security-executables check"
     printf '%s\n' "$OUT"
 fi
+echo "[58] docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md's sec sync exit-code contract must match bin/sec-sync-controller.py (issue #156)"
+WORK_T34A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T34B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T34C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T34D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T34CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T34A" "$WORK_T34B" "$WORK_T34C" "$WORK_T34D" "$WORK_T34CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T34A/docs/OPERATOR_MANUAL.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`3` one or more backend writes failed"
+new = "three one or more backend writes failed"
+if s.count(old) != 1:
+    sys.exit("docs/OPERATOR_MANUAL.md carries no sync exit-code `3` to drop")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_T34A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when OPERATOR_MANUAL.md drops the sync '3' exit code"
+else
+    no "coverage accepted a dropped sync '3' exit code in OPERATOR_MANUAL.md"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/OPERATOR_MANUAL.md's sync exit codes are [0, 1, 2], but bin/sec-sync-controller.py returns [0, 1, 2, 3]" <<<"$OUT"; then
+    ok "coverage names the dropped sync '3' exit code in OPERATOR_MANUAL.md"
+else
+    no "coverage did not name the dropped sync '3' exit code in OPERATOR_MANUAL.md"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T34B/docs/OPERATOR_MANUAL.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`0` every attempted write succeeded"
+new = "`9` every attempted write succeeded"
+if s.count(old) != 1:
+    sys.exit("docs/OPERATOR_MANUAL.md carries no sync exit-code `0` to corrupt")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_T34B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when OPERATOR_MANUAL.md names a bogus sync exit code"
+else
+    no "coverage accepted a bogus sync exit code in OPERATOR_MANUAL.md"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/OPERATOR_MANUAL.md's sync exit codes are [1, 2, 3, 9], but bin/sec-sync-controller.py returns [0, 1, 2, 3]" <<<"$OUT"; then
+    ok "coverage names the bogus sync exit code in OPERATOR_MANUAL.md"
+else
+    no "coverage did not name the bogus sync exit code in OPERATOR_MANUAL.md"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T34C/docs/ARCHITECTURE.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "(contract: 0 success / 1 no keys / 2 confirmation / 3 backend write failure)"
+new = "(contract: 0 success / 1 no keys / 3 backend write failure)"
+if s.count(old) != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no sync exit-code contract clause to corrupt")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_T34C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md drops the sync '2' exit code"
+else
+    no "coverage accepted a dropped sync '2' exit code in ARCHITECTURE.md"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/ARCHITECTURE.md's sync exit-code contract is [0, 1, 3], but bin/sec-sync-controller.py returns [0, 1, 2, 3]" <<<"$OUT"; then
+    ok "coverage names the dropped sync '2' exit code in ARCHITECTURE.md"
+else
+    no "coverage did not name the dropped sync '2' exit code in ARCHITECTURE.md"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T34D/bin/sec-sync-controller.py" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "No active keys found"
+new = "No active keys present"
+if s.count(old) != 1:
+    sys.exit("bin/sec-sync-controller.py carries no 'No active keys found' anchor to drop")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_T34D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when bin/sec-sync-controller.py drops an exit-code meaning anchor"
+else
+    no "coverage accepted a dropped exit-code meaning anchor in bin/sec-sync-controller.py"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "bin/sec-sync-controller.py no longer carries the 1-code anchor 'No active keys found'" <<<"$OUT"; then
+    ok "coverage names the dropped exit-code meaning anchor in bin/sec-sync-controller.py"
+else
+    no "coverage did not name the dropped exit-code meaning anchor in bin/sec-sync-controller.py"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T34CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (sync exit-code contract agrees) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] sync exit codes:" <<<"$OUT"; then
+    ok "the control copy's OK line names the sync-exit-code check"
+else
+    no "the control copy's OK line did not name the sync-exit-code check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

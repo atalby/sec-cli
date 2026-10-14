@@ -658,6 +658,7 @@ _NUM_WORDS = {
     "fifty-five": 55,
     "fifty-six": 56,
     "fifty-seven": 57,
+    "fifty-eight": 58,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2392,6 +2393,66 @@ for _se_label, _se_pat, _se_live in (
             f"{', '.join(sorted(_se_live)) or '(none)'}"
         )
 
+# --- 34. `sec sync`'s exit-code contract prose (docs/OPERATOR_MANUAL.md +
+#         docs/ARCHITECTURE.md) must match bin/sec-sync-controller.py (issue #156) --
+sync_exit_mismatches = []
+_sync_ctrl_src = _nl_read("bin/sec-sync-controller.py")
+_sync_main_m = re.search(r"\ndef main\(\):([\s\S]*?)\nif __name__", _sync_ctrl_src)
+_live_sync_codes = set()
+if _sync_main_m is None:
+    sync_exit_mismatches.append(
+        "bin/sec-sync-controller.py no longer declares a `def main()` ... `if __name__` "
+        "block to read the sync exit codes from"
+    )
+else:
+    _live_sync_codes = {
+        int(_m) for _m in re.findall(r"^\s*return (\d+)\s*$", _sync_main_m.group(1), re.M)
+    }
+    if _live_sync_codes != {0, 1, 2, 3}:
+        sync_exit_mismatches.append(
+            f"bin/sec-sync-controller.py's main() returns {sorted(_live_sync_codes)}, "
+            f"expected the documented sync contract {{0, 1, 2, 3}}"
+        )
+    for _sx_anchor, _sx_code in (
+        ("No active keys found", 1),
+        ("Confirmation required", 2),
+        ("unknown argument", 2),
+        ("CENTRAL SECRET SYNC FAILED", 3),
+    ):
+        if _sx_anchor not in _sync_ctrl_src:
+            sync_exit_mismatches.append(
+                f"bin/sec-sync-controller.py no longer carries the {_sx_code}-code "
+                f"anchor {_sx_anchor!r}"
+            )
+
+_op_exit_m = re.search(r"Exit codes:\s*(.+)", _nl_read("docs/OPERATOR_MANUAL.md"))
+if _op_exit_m is None:
+    sync_exit_mismatches.append(
+        "docs/OPERATOR_MANUAL.md no longer states the sync `Exit codes:` line in the "
+        "guarded form"
+    )
+else:
+    _op_sync_codes = {int(_d) for _d in re.findall(r"`(\d)`", _op_exit_m.group(1))}
+    if _op_sync_codes != _live_sync_codes:
+        sync_exit_mismatches.append(
+            f"docs/OPERATOR_MANUAL.md's sync exit codes are {sorted(_op_sync_codes)}, "
+            f"but bin/sec-sync-controller.py returns {sorted(_live_sync_codes)}"
+        )
+
+_arch_exit_m = re.search(r"\(contract:\s*([^)]*)\)", _nl_read("docs/ARCHITECTURE.md"))
+if _arch_exit_m is None:
+    sync_exit_mismatches.append(
+        "docs/ARCHITECTURE.md no longer states the sync `(contract: ...)` clause in the "
+        "guarded form"
+    )
+else:
+    _arch_sync_codes = {int(_d) for _d in re.findall(r"\b(\d)\b", _arch_exit_m.group(1))}
+    if _arch_sync_codes != _live_sync_codes:
+        sync_exit_mismatches.append(
+            f"docs/ARCHITECTURE.md's sync exit-code contract is {sorted(_arch_sync_codes)}, "
+            f"but bin/sec-sync-controller.py returns {sorted(_live_sync_codes)}"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2581,6 +2642,12 @@ if sec_exec_mismatches:
     )
     for _m in sec_exec_mismatches:
         print(f"{ERROR} security executables: {_m}")
+if sync_exit_mismatches:
+    failures.append(
+        f"{len(sync_exit_mismatches)} sync exit-code contract drift(s) vs bin/sec-sync-controller.py"
+    )
+    for _m in sync_exit_mismatches:
+        print(f"{ERROR} sync exit codes: {_m}")
 
 if failures:
     for f in failures:
@@ -2619,6 +2686,7 @@ print(f"{OK} classifier categories: README.md + docs/ARCHITECTURE.md name only l
 print(f"{OK} completion surfaces: OPERATOR_MANUAL.md's shell set + alias and completions/_sec match the live bin/sec completion dispatch")
 print(f"{OK} ps1 surface: docs/ARCHITECTURE.md's bin/sec.ps1 native subset + bin/sec-only 'full surface' match the live dispatch")
 print(f"{OK} security executables: docs/SECURITY.md's executable list matches the live bin/ tree ({len(_live_bash_execs)} bash, {len(_live_py_execs)} python, {len(_live_ps_execs)} powershell)")
+print(f"{OK} sync exit codes: docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md enumerate exactly bin/sec-sync-controller.py's returned codes ({', '.join(str(c) for c in sorted(_live_sync_codes))})")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

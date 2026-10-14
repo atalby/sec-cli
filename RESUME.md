@@ -1,5 +1,30 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (36th run): shipped **#156** -- `sec sync`'s exit-code
+contract is enumerated in two project-owned docs (docs/OPERATOR_MANUAL.md:93's
+`Exit codes: 0 ... 1 ... 2 ... 3 ...` line and docs/ARCHITECTURE.md:15's
+`(contract: 0 success / 1 no keys / 2 confirmation / 3 backend write failure)`
+clause) but no sentinel section read either -- section 24 guards only the
+timeout claim on that same line. Sentinel section 34 derives the live code set
+from bin/sec-sync-controller.py's `main()` `return N` statements plus four
+meaning anchors (`No active keys found`, `Confirmation required`,
+`unknown argument`, `CENTRAL SECRET SYNC FAILED`), and requires both docs to
+enumerate exactly that set (case [58], four probes + control, proven red first:
+dropping `3` from OPERATOR_MANUAL.md, dropping `2` from ARCHITECTURE.md, and
+renaming the `No active keys found` anchor each made coverage fail with RC=1).
+Sentinel 57 -> 58 cases / 688 -> 708 assertions; mirrors bumped at
+`profile.md:22`, `profile.md:641` (fifty-eight), `ADAPTERS.md:56`,
+`ADAPTERS.md:262`, this file's mirrors-in-sync + `Sentinel =` lines and
+HISTORY.md size; HISTORY.md 2026-10-14 block extended and
+`history/2026-10-14.md` appended.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#156 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-14 (35th run): shipped **#155** -- docs/SECURITY.md:34's
 executables enumeration (the Auditability bullet) had no guard and had gone
 stale: it named five executables (4 bash + 1 python) but the live tracked
@@ -1059,9 +1084,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 57, sync_guard 16,
-write_honesty 15. Sentinel = 57 cases / 688 assertions. HISTORY.md is at
-8183/8192 bytes - the next narrative addition must still compact first if it
+mirrors in sync): dispatch 92, install 9, sentinel 58, sync_guard 16,
+write_honesty 15. Sentinel = 58 cases / 708 assertions. HISTORY.md is at
+8003/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
 and appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
