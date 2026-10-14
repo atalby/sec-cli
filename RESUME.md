@@ -1,5 +1,25 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (21st run): swept the three remaining targets named by the
+20th run (`bin/sec-sync-controller.py`, `bin/bw-session-keeper`,
+`bin/hyer-mcp.sh`) and found NO F015-class masking. The controller checks
+`p.returncode`, uses `urlopen(..., timeout=BACKEND_TIMEOUT)`, and returns
+3/2/1 on failed-count / confirmation / zero-keys; the keeper guards unlock
+with `[[ -n "$raw_session" ]]` and reads the master password via
+`--passwordenv` (never argv); `hyer-mcp.sh` is fully `[ERROR]` + exit 1
+fail-closed. Also re-verified the OLD 360 audit
+(`docs/360/runs/2026-10-09-000410/findings.json`, 55 findings F001-F055) is
+fully remediated by the #40-#66 sweep, and fuzzed 20 edge-case CLI
+invocations (no crashes, no false successes, no hangs). Conclusion: the
+fail-open masking class is exhausted repo-wide and no autonomously-actionable
+defect remains. No files changed this run.
+
+Resume here next run: no non-gated work remains. Every open tracker item is
+gated -- #67 (a FRESH 360 audit) needs a human scope decision (full vs
+scoped) before its Step 1 may run and must NOT be started autonomously; #92
+and #51 are hub-side (not this repo). If the operator wants a new unit, the
+only substantive option is #67 once a human approves its scope.
+
 Session 2026-10-14 (20th run): shipped **#143** -- the F015 fail-open sweep one
 file over, into `bin/sec-organizer`'s `cmd_plan`. Its source-listing reads
 normalized a backend failure to `[]` (`bw list items` / `bws secret list` /
@@ -17,12 +37,13 @@ profile.md:22, profile.md tagged census `sec-organizer` 41 -> 42, profile.md
 ADAPTERS.md:55, ADAPTERS.md:264, the RESUME mirrors-in-sync line, HISTORY.md
 8150/8192.
 
-Resume here next run: the tracker's open items are #67 (fresh 360 audit,
+Left for the next run: the tracker's open items were #67 (fresh 360 audit,
 Step-1 scope approval needed), #92 and #51 (hub-side, not this repo). The
-fail-open masking class is now closed in `bin/sec`, `bin/sec-migrator` and
-`bin/sec-organizer`; the next sweep targets the remaining JSON readers --
+fail-open masking class was closed in `bin/sec`, `bin/sec-migrator` and
+`bin/sec-organizer`; the next sweep targeted the remaining JSON readers --
 `sec-sync-controller.py`, `bw-session-keeper`, `hyer-mcp.sh` -- for a read that
-masks a parse failure behind `2>/dev/null || echo 0` / `|| echo ''`.
+masks a parse failure behind `2>/dev/null || echo 0` / `|| echo ''`. (The 21st
+run above did that sweep and found them clean.)
 
 Session 2026-10-14 (19th run): shipped **#142** -- the #126 sweep's own
 F015-class residual, found one file over in `bin/sec-migrator`. Two `jq`
