@@ -818,6 +818,29 @@ RC18C=$?
 set -e
 if [[ $RC18C -eq 0 ]] && [[ "$OUT18C" == "pw-MY_API_KEY" ]]; then pass "substring key default_backend_extra did not set default_backend"; else fail "substring key collided (rc=$RC18C out=$OUT18C)"; fi
 
+echo "[18d] sec.conf: a key written with no '=' must warn on stderr, not vanish (issue #126)"
+H18D="$(new_home "$WORK/h18d")"
+printf '[global]\ndefault_backend bitwarden\n\n[bitwarden]\nauto_rotate = false\n' >"$H18D/.sec/sec.conf"
+set +e
+OUT18D="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H18D" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "$REPO_ROOT/bin/sec" get MY_API_KEY 2>&1 </dev/null)"
+RC18D=$?
+set -e
+if [[ $RC18D -eq 0 ]] && grep -q "pw-MY_API_KEY" <<<"$OUT18D"; then pass "malformed sec.conf line left routing on the default (bitwarden)"; else fail "malformed line changed routing (rc=$RC18D out=$OUT18D)"; fi
+if grep -qF "[WARN] sec.conf: ignoring malformed line 2 (no =): default_backend bitwarden" <<<"$OUT18D"; then pass "malformed sec.conf line warns on stderr, naming the tagged line number"; else fail "no tagged [WARN] for the malformed line: $OUT18D"; fi
+H18E="$(new_home "$WORK/h18e")"
+printf '[global]\ndefault_backend = bitwarden\n\n[bitwarden]\nauto_rotate = false\n' >"$H18E/.sec/sec.conf"
+set +e
+OUT18E="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H18E" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "$REPO_ROOT/bin/sec" get MY_API_KEY 2>&1 </dev/null)"
+RC18E=$?
+set -e
+if [[ $RC18E -eq 0 ]] && [[ "$OUT18E" == "pw-MY_API_KEY" ]]; then pass "control: a well-formed sec.conf emits no [WARN]"; else fail "control: clean config rc=$RC18E out=$OUT18E"; fi
+
 MINBIN="$WORK/minbin"
 mkdir -p "$MINBIN"
 for _b in bash cat chmod mkdir uname tr grep jq; do

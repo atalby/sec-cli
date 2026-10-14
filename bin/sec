@@ -51,7 +51,7 @@ get_cfg_val() {
         /^\[/ { in_s=0 }
         in_s {
             eq = index($0, "=")
-            if (eq == 0) next
+            if (eq == 0) { printf "[WARN] sec.conf: ignoring malformed line %d (no =): %s\n", NR, $0 > "/dev/stderr"; next }
             name = substr($0, 1, eq - 1)
             gsub(/^[ \t]+|[ \t]+$/, "", name)
             if (name == k) {
@@ -63,7 +63,7 @@ get_cfg_val() {
             }
         }
         END { if (!found) print "'"$default_val"'" }
-    ' "$CONFIG_FILE" 2>/dev/null || echo "$default_val"
+    ' "$CONFIG_FILE" || echo "$default_val"
 }
 
 DEFAULT_BACKEND="$(get_cfg_val "global" "default_backend" "bitwarden")"
