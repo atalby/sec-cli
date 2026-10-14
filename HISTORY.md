@@ -8,15 +8,11 @@ deleted, every file searchable). A new session reads this summary by
 default, not the whole history.
 
 **2026-10-14**: #144 closed the unguarded-current-state sweep's next instance:
-docs/ARCHITECTURE.md's HIAE Protocol version banner had no in-repo guard --
-only the hand-run hub `check_version_banners.py`, whose PASS transcript sits
-quoted in profile.md -- so a fleet-sync AGENTS.md HIAE bump would leave the
-project banner stale with CI green. Sentinel section 23 now compares the
-banner across AGENTS.md and docs/ARCHITECTURE.md and fails on a mismatch or
-on either banner being absent (the hub checker skips absent banners). Proven
-red first (case [43], 7 failures; two test bugs found in RED), then green
-across all five suites + pytest 58 + coverage/citations. Sentinel 44 -> 45
-cases / 452 -> 468 assertions. #145 then swept the same class one file over:
+docs/ARCHITECTURE.md's HIAE version banner had no in-repo guard (only the
+hand-run hub `check_version_banners.py`, quoted in profile.md), so a
+fleet-sync AGENTS.md bump would leave it stale with CI green; sentinel
+section 23 now compares the banner vs AGENTS.md (case [43], proven red
+first). #145 then swept the same class one file over:
 docs/SECURITY.md's "File Permissions Architecture" states six path->mode
 pairs with no guard, so a dropped `chmod` would leave the security doc lying
 with CI green; sentinel section 25 resolves each doc path from its source
@@ -48,7 +44,12 @@ class: README.md's + ARCHITECTURE.md's 'Runtime dependencies beyond coreutils:
 jq ... python3 ...' sentence and every documented SEC_* var name had no guard;
 sentinel section 28 binds the dep set to install.sh's `for _dep` loop and each
 documented SEC_* var to a live bin/ reader (case [50], proven red first).
-Sentinel 51 -> 52 cases / 568 -> 588 assertions. Tracker holds #51, #67, #92.
+Sentinel 51 -> 52 cases / 568 -> 588 assertions. #151 then swept the
+run-injection class: README.md's + ARCHITECTURE.md's prose naming the
+`sec run` injection backends (bws/op/infisical) had no guard; sentinel
+section 29 binds three prose sites to bin/sec's `run)` arm (case [51],
+proven red first). Sentinel 52 -> 53 cases / 588 -> 608 assertions.
+Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected

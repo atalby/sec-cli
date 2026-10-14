@@ -1,5 +1,25 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (31st run): shipped **#151** -- the `sec run` env-injection
+backend prose (README.md:11 + :136 comment, ARCHITECTURE.md:22) had no guard;
+only the byte-identical `sec --help` block copy was covered (section 18).
+Sentinel section 29 parses the live injection backends from bin/sec's `run)`
+arm `case` patterns (`<patterns>) exec <wrapper> run --`) and requires every
+prose site to name exactly that set, plus both docs to still call `bitwarden`
+a plain exec (case [51], four probes + control, proven red first). Sentinel
+52 -> 53 cases / 588 -> 608 assertions; mirrors bumped at `profile.md:22`,
+`profile.md:641` (fifty-three), `ADAPTERS.md:56`, `ADAPTERS.md:262`, this
+file's mirrors-in-sync + `Sentinel =` lines and HISTORY.md size (8026/8192,
+the 2026-10-14 paragraph compacted to fit); HISTORY.md 2026-10-14 block
+extended and `history/2026-10-14.md` appended.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#151 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-14 (30th run): shipped **#150** -- the runtime-dependency
 sentence (README.md + ARCHITECTURE.md) and the documented `SEC_*` env vars had
 no sentinel guard. Sentinel section 28 binds the README/ARCHITECTURE
@@ -521,7 +541,10 @@ now binds each to its live chmod/umask. The 30th run shipped #150: the
 runtime-dependency sentence (README.md + ARCHITECTURE.md) and the documented
 `SEC_*` env vars were the last unguarded doc-name claims, so sentinel section 28
 binds the dep set to install.sh's `for _dep` loop and each documented `SEC_*`
-var to a live bin/ reader. Next candidates, in
+var to a live bin/ reader. The 31st run shipped #151: the `sec run`
+env-injection backend prose (README.md + ARCHITECTURE.md) was the next
+unguarded doc-name claim, so sentinel section 29 binds every prose site to the
+live bin/sec `run)` arm's case patterns. Next candidates, in
 order: any remaining single-`re.search` count-grabs of that shape (below), then
 the fresh 360 audit (#67, after human scope approval).
 Cheapest concrete next candidates, in order:
@@ -581,6 +604,13 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #151 `feat(sentinel)` - the `sec run` env-injection backend prose (README.md:11
+  + :136, docs/ARCHITECTURE.md:22) had no guard; only the byte-identical
+  `sec --help` block copy was covered. Sentinel section 29 parses the live
+  injection backends from bin/sec's `run)` arm case patterns and requires each
+  prose site to name exactly that set, plus both docs to still call `bitwarden`
+  a plain exec (case [51], four probes + control). Sentinel 52 -> 53 cases /
+  588 -> 608 assertions.
 - #150 `feat(sentinel)` - the runtime-dependency sentence (README.md:5 +
   docs/ARCHITECTURE.md:6) and the documented `SEC_*` env vars were the last
   unguarded doc-name claims. Sentinel section 28 binds the dep set parsed from
@@ -937,9 +967,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 52, sync_guard 16,
-write_honesty 15. Sentinel = 52 cases / 588 assertions. HISTORY.md is at
-8068/8192 bytes - the next narrative addition must still compact first if it
+mirrors in sync): dispatch 92, install 9, sentinel 53, sync_guard 16,
+write_honesty 15. Sentinel = 53 cases / 608 assertions. HISTORY.md is at
+8026/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
 and appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

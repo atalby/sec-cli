@@ -653,7 +653,7 @@ _NUM_WORDS = {
     "thirty-nine": 39, "forty": 40, "forty-one": 41, "forty-two": 42,
     "forty-three": 43, "forty-four": 44, "forty-five": 45,
     "forty-six": 46, "forty-seven": 47, "forty-eight": 48, "forty-nine": 49,
-    "fifty": 50, "fifty-one": 51, "fifty-two": 52,
+    "fifty": 50, "fifty-one": 51, "fifty-two": 52, "fifty-three": 53,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2106,6 +2106,75 @@ for _dv in sorted(_doc_secvars - _live_secvars):
         f"the docs name {_dv}, but no bin/ source or install.sh reads it"
     )
 
+# --- 29. `sec run` env-injection backends (README.md prose + ARCHITECTURE.md
+#         in-memory-injection claim) must match the live bin/sec run arm (#151) --
+run_inject_mismatches = []
+_run_arm_m = re.search(r"\n\s*run\)\n([\s\S]*?)\n\s*;;", _sec_text)
+_run_live = set()
+if _run_arm_m is None:
+    run_inject_mismatches.append(
+        "bin/sec carries no `run)` dispatch arm to compare the run-injection docs against"
+    )
+else:
+    for _arm in re.findall(
+        r"\n\s*([a-z0-9|]+)\)\s+exec\s+[a-z0-9]+\s+run\s+--", _run_arm_m.group(1)
+    ):
+        for _t in _arm.split("|"):
+            _run_live.add("op" if _t in ("1pass", "op") else _t)
+    if not _run_live:
+        run_inject_mismatches.append(
+            "bin/sec's run arm carries no `exec <wrapper> run --` injection backend"
+        )
+    else:
+        _run_doc_sites = (
+            (
+                "README.md",
+                r"delegates to the vendor run-wrapper",
+                r"For `([a-z0-9]+)`, `([a-z0-9]+)` and `([a-z0-9]+)`, `sec run",
+            ),
+            (
+                "README.md",
+                r"env injection only for",
+                r"env injection only for ([a-z0-9/]+);",
+            ),
+            (
+                "docs/ARCHITECTURE.md",
+                r"secrets reach child process environments",
+                r"For ([`a-z0-9/]+), secrets reach child process environments",
+            ),
+        )
+        for _ri_rel, _ri_marker, _ri_pat in _run_doc_sites:
+            _ri_text = _nl_read(_ri_rel)
+            if _ri_marker not in _ri_text:
+                run_inject_mismatches.append(
+                    f"{_ri_rel} no longer states the run-injection backend set in the guarded form"
+                )
+                continue
+            _ri_m = re.search(_ri_pat, _ri_text)
+            if _ri_m is None:
+                run_inject_mismatches.append(
+                    f"{_ri_rel} states the run-injection backend set in a form this guard cannot parse"
+                )
+                continue
+            _ri_named = set()
+            for _g in _ri_m.groups():
+                for _t in _g.replace("`", "").split("/"):
+                    _ri_named.add("op" if _t in ("1pass", "op") else _t)
+            _ri_named.discard("")
+            if _ri_named != _run_live:
+                run_inject_mismatches.append(
+                    f"{_ri_rel} names run-injection backends "
+                    f"{', '.join(sorted(_ri_named))}, but bin/sec injects via "
+                    f"{', '.join(sorted(_run_live))}"
+                )
+        if not all(
+            _nl_read(_pe_rel).count("plain exec") >= 1
+            for _pe_rel in ("README.md", "docs/ARCHITECTURE.md")
+        ):
+            run_inject_mismatches.append(
+                "README.md / docs/ARCHITECTURE.md no longer state that `bitwarden` is a plain exec"
+            )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2265,6 +2334,12 @@ if dep_env_mismatches:
     )
     for _m in dep_env_mismatches:
         print(f"{ERROR} dep/env claim: {_m}")
+if run_inject_mismatches:
+    failures.append(
+        f"{len(run_inject_mismatches)} `sec run` injection-backend claim drift(s) vs the live bin/sec run arm"
+    )
+    for _m in run_inject_mismatches:
+        print(f"{ERROR} run injection: {_m}")
 
 if failures:
     for f in failures:
@@ -2298,6 +2373,7 @@ print(f"{OK} security perms: docs/SECURITY.md's file-mode claims match the live 
 print(f"{OK} sec.conf mode prose: README.md + docs/MULTI_TENANCY.md match the live bin/sec chmod ({_live_sec_conf_mode})")
 print(f"{OK} natural-language mode claims: README.md + docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md match the live chmod/umask calls")
 print(f"{OK} runtime-dependency + env-var claims: README.md + docs/ARCHITECTURE.md dep lists and the documented SEC_* vars match install.sh + bin/")
+print(f"{OK} run-injection claims: README.md + docs/ARCHITECTURE.md name exactly the backends bin/sec injects via ({', '.join(sorted(_run_live))})")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)
