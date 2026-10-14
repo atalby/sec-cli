@@ -475,7 +475,11 @@ the pattern is now line-anchored. The 28th run shipped #148: a full audit of the
 today, but RESUME.md's two own count mirrors (mirrors-in-sync line and the
 `Sentinel = N cases / M assertions` total) were still searched over the whole
 append-heavy file, so an earlier narrative echo could shadow the real claim; both
-are now scoped to the `## Verified baseline` section body. Next candidates, in
+are now scoped to the `## Verified baseline` section body. The 29th run shipped
+#149: the last five natural-language mode claims (README.md + OPERATOR_MANUAL.md
+snapshot mode/path; ARCHITECTURE.md session, umask, cache-dir, plan, and sec.conf
+modes) were the remaining unguarded current-state claims, so sentinel section 27
+now binds each to its live chmod/umask. Next candidates, in
 order: any remaining single-`re.search` count-grabs of that shape (below), then
 the fresh 360 audit (#67, after human scope approval).
 Cheapest concrete next candidates, in order:
@@ -535,6 +539,12 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #149 `feat(sentinel)` - the last five unguarded natural-language mode claims:
+  README.md's snapshot mode, OPERATOR_MANUAL.md's snapshot mode + path, and
+  ARCHITECTURE.md's session/umask/cache-dir/plan/sec.conf modes now bind to
+  the live `bin/sec-organizer`, `bin/bw-session-keeper`, and `install.sh`
+  chmod/umask calls via sentinel section 27 (case [49], six probes + control).
+  Sentinel 50 -> 51 cases / 540 -> 568 assertions.
 - #148 `fix(sentinel)` - RESUME.md's own two count mirrors (the 'suite counts
   ... mirrors in sync' line and the 'Sentinel = N cases / M assertions' total)
   were the remaining non-anchored first-match count-grabs of the #118/#128/
@@ -878,9 +888,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 50, sync_guard 16,
-write_honesty 15. Sentinel = 50 cases / 540 assertions. HISTORY.md is at
-7343/8192 bytes - the next narrative addition must still compact first if it
+mirrors in sync): dispatch 92, install 9, sentinel 51, sync_guard 16,
+write_honesty 15. Sentinel = 51 cases / 568 assertions. HISTORY.md is at
+7659/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
 and appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

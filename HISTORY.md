@@ -38,8 +38,12 @@ count mirrors: the 'suite counts ... mirrors in sync' line and the
 'Sentinel = N cases / M assertions' total were searched over the whole
 append-heavy narrative, so an earlier echo of either shape would shadow the
 real claim inside `## Verified baseline`; both searches are now scoped to that
-section's body (case [48], proven red first). Sentinel 49 -> 50 cases /
-532 -> 540 assertions. Tracker holds #51, #67, #92.
+section's body (case [48], proven red first). #149 then swept the last
+natural-language mode claims: README.md's snapshot mode, OPERATOR_MANUAL.md's
+snapshot mode + path, and ARCHITECTURE.md's session, umask, cache-dir, plan,
+and sec.conf modes stated in prose with no guard; sentinel section 27 binds
+each to its live chmod/umask (case [49], proven red first). Sentinel 49 -> 51
+cases / 532 -> 568 assertions. Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected

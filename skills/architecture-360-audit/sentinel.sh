@@ -653,7 +653,7 @@ _NUM_WORDS = {
     "thirty-nine": 39, "forty": 40, "forty-one": 41, "forty-two": 42,
     "forty-three": 43, "forty-four": 44, "forty-five": 45,
     "forty-six": 46, "forty-seven": 47, "forty-eight": 48, "forty-nine": 49,
-    "fifty": 50,
+    "fifty": 50, "fifty-one": 51,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1953,6 +1953,110 @@ for _cm_rel in ("README.md", "docs/MULTI_TENANCY.md"):
             f"{_sec_conf_chmod_m.group(1)}"
         )
 
+# --- 27. natural-language mode claims in README.md / docs/OPERATOR_MANUAL.md /
+#         docs/ARCHITECTURE.md must match the live chmod/umask calls (issue #149)
+nl_mode_mismatches = []
+try:
+    with open(os.path.join(repo, "install.sh"), encoding="utf-8") as _fh:
+        _install_src = _fh.read()
+except OSError:
+    _install_src = ""
+
+
+def _nl_read(_rel):
+    try:
+        with open(os.path.join(repo, *_rel.split("/")), encoding="utf-8") as _fh:
+            return _fh.read()
+    except OSError:
+        return ""
+
+
+def _nl_live(_src, _pattern):
+    _m = re.search(_pattern, _src)
+    return "0" + _m.group(1).lstrip("0") if _m else ""
+
+
+def _nl_norm(_mode):
+    return "0" + _mode.lstrip("0")
+
+
+def _nl_check(_doc, _text, _pattern, _live, _what, _live_name):
+    _m = re.search(_pattern, _text)
+    if not _m:
+        nl_mode_mismatches.append(
+            f"{_doc} no longer states the {_what} in the guarded form"
+        )
+    elif not _live:
+        nl_mode_mismatches.append(
+            f"{_doc} states the {_what} {_m.group(1)}, but {_live_name} binds no live chmod"
+        )
+    elif _nl_norm(_m.group(1)) != _live:
+        nl_mode_mismatches.append(
+            f"{_doc} states the {_what} {_m.group(1)}, but {_live_name} says {_live.lstrip('0')}"
+        )
+
+
+_org_src = _security_srcs.get("bin/sec-organizer", "")
+_keeper_src = _security_srcs.get("bin/bw-session-keeper", "")
+_org_snapshot = _nl_live(_org_src, r'chmod (\d+) "\$snapshot_file"')
+_org_plan = _nl_live(_org_src, r'chmod (\d+) "\$snapshot_file" "\$PLAN_FILE"')
+_org_umask = _nl_live(_org_src, r"(?m)^umask (\d+)")
+_org_dir = _nl_live(_org_src, r'chmod (\d+) "\$CACHE_DIR"')
+_keeper_session = _nl_live(_keeper_src, r'chmod (\d+) "\$SESSION_FILE"')
+_install_conf = _nl_live(_install_src, r'chmod (\d+) "\$CONFIG_DIR/sec\.conf"')
+
+_nl_readme = _nl_read("README.md")
+_nl_opman = _nl_read("docs/OPERATOR_MANUAL.md")
+_nl_arch = _nl_read("docs/ARCHITECTURE.md")
+
+_nl_check(
+    "README.md", _nl_readme,
+    r"Saves mode `(\d{4})` metadata-only snapshots",
+    _org_snapshot, "pre-apply snapshot mode", "the sec-organizer snapshot chmod",
+)
+_nl_check(
+    "docs/OPERATOR_MANUAL.md", _nl_opman,
+    r"mode `(\d{4})` metadata-only pre-apply backup snapshot",
+    _org_snapshot, "pre-apply snapshot mode", "the sec-organizer snapshot chmod",
+)
+_nl_check(
+    "docs/ARCHITECTURE.md", _nl_arch,
+    r"sessions stored in a (\d{4}) plaintext file",
+    _keeper_session, "session-file mode", "the bw-session-keeper session chmod",
+)
+_nl_check(
+    "docs/ARCHITECTURE.md", _nl_arch,
+    r"`umask (\d{3})`",
+    _org_umask, "umask", "the sec-organizer umask",
+)
+_nl_check(
+    "docs/ARCHITECTURE.md", _nl_arch,
+    r"`chmod (\d{3})` on `~/\.cache/bitwarden`",
+    _org_dir, "cache-dir mode", "the sec-organizer cache-dir chmod",
+)
+_nl_check(
+    "docs/ARCHITECTURE.md", _nl_arch,
+    r"the plan lands (\d{4})",
+    _org_plan, "plan mode", "the sec-organizer plan chmod",
+)
+_nl_check(
+    "docs/ARCHITECTURE.md", _nl_arch,
+    r"`sec\.conf` created mode (\d{3})",
+    _install_conf, "sec.conf mode", "the install.sh sec.conf chmod",
+)
+
+_opman_path_m = re.search(r"backup snapshot \(`([^`]+)`\)", _nl_opman)
+_live_snapshot_path = _security_expand(_security_env.get("LATEST_SNAPSHOT") or "")
+if not _opman_path_m:
+    nl_mode_mismatches.append(
+        "docs/OPERATOR_MANUAL.md no longer names the pre-apply snapshot path"
+    )
+elif _live_snapshot_path and _opman_path_m.group(1) != _live_snapshot_path:
+    nl_mode_mismatches.append(
+        f"docs/OPERATOR_MANUAL.md names {_opman_path_m.group(1)}, but the live "
+        f"snapshot path is {_live_snapshot_path}"
+    )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2102,6 +2206,10 @@ if conf_mode_mismatches:
     failures.append(f"{len(conf_mode_mismatches)} sec.conf mode prose drift(s) vs the live bin/sec chmod")
     for _m in conf_mode_mismatches:
         print(f"{ERROR} sec.conf mode: {_m}")
+if nl_mode_mismatches:
+    failures.append(f"{len(nl_mode_mismatches)} natural-language mode claim drift(s) vs the live chmod/umask calls")
+    for _m in nl_mode_mismatches:
+        print(f"{ERROR} mode prose: {_m}")
 
 if failures:
     for f in failures:
@@ -2133,6 +2241,7 @@ print(f"{OK} HIAE banner: docs/ARCHITECTURE.md matches AGENTS.md (v{_agents_hiae
 print(f"{OK} timeout claim: ARCHITECTURE.md + OPERATOR_MANUAL.md default 60s + SEC_SYNC_TIMEOUT override match bin/sec-sync-controller.py")
 print(f"{OK} security perms: docs/SECURITY.md's file-mode claims match the live chmod calls")
 print(f"{OK} sec.conf mode prose: README.md + docs/MULTI_TENANCY.md match the live bin/sec chmod ({_live_sec_conf_mode})")
+print(f"{OK} natural-language mode claims: README.md + docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md match the live chmod/umask calls")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

@@ -3525,6 +3525,205 @@ else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"
 fi
+
+echo "[49] README.md / OPERATOR_MANUAL.md / ARCHITECTURE.md natural-language mode claims must match the live chmod/umask calls (issue #149)"
+WORK_T21A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T21B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T21C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T21D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T21E="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T21F="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T21CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T21A" "$WORK_T21B" "$WORK_T21C" "$WORK_T21D" "$WORK_T21E" "$WORK_T21F" "$WORK_T21CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T21A/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"Saves mode `0600` metadata-only snapshots",
+    "Saves mode `0644` metadata-only snapshots",
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("README.md carries no snapshot mode 0600 claim to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T21A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when README.md's snapshot mode drifts"
+else
+    no "coverage accepted a README.md snapshot mode drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "README.md states the pre-apply snapshot mode 0644, but the sec-organizer snapshot chmod says 600" <<<"$OUT"; then
+    ok "coverage names the README.md snapshot mode drift"
+else
+    no "coverage did not name the README.md snapshot mode drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T21B/docs/OPERATOR_MANUAL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"`~/.cache/bitwarden/snapshot_latest\.json`",
+    "`~/.cache/bitwarden/old_snapshot.json`",
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("docs/OPERATOR_MANUAL.md carries no snapshot path to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T21B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when OPERATOR_MANUAL.md's snapshot path drifts"
+else
+    no "coverage accepted an OPERATOR_MANUAL.md snapshot path drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/OPERATOR_MANUAL.md names ~/.cache/bitwarden/old_snapshot.json, but the live snapshot path is ~/.cache/bitwarden/snapshot_latest.json" <<<"$OUT"; then
+    ok "coverage names the OPERATOR_MANUAL.md snapshot path drift"
+else
+    no "coverage did not name the OPERATOR_MANUAL.md snapshot path drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T21C/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"sessions stored in a 0600 plaintext file",
+    "sessions stored in a 0644 plaintext file",
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no session 0600 claim to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T21C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md's session mode drifts"
+else
+    no "coverage accepted an ARCHITECTURE.md session mode drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/ARCHITECTURE.md states the session-file mode 0644, but the bw-session-keeper session chmod says 600" <<<"$OUT"; then
+    ok "coverage names the ARCHITECTURE.md session mode drift"
+else
+    no "coverage did not name the ARCHITECTURE.md session mode drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T21D/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s, n1 = re.subn(r"`umask 077`", "`umask 022`", s, count=1)
+s, n2 = re.subn(
+    r"`chmod 700` on `~/.cache/bitwarden`", "`chmod 755` on `~/.cache/bitwarden`", s, count=1
+)
+s, n3 = re.subn(r"the plan lands 0600", "the plan lands 0644", s, count=1)
+if n1 != 1 or n2 != 1 or n3 != 1:
+    sys.exit(f"docs/ARCHITECTURE.md sec-organizer claims not found: {n1} {n2} {n3}")
+open(p, "w", encoding="utf-8").write(s)
+PY
+OUT="$(cd "$WORK_T21D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md's umask/cache-dir/plan modes drift"
+else
+    no "coverage accepted ARCHITECTURE.md umask/cache-dir/plan drifts"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/ARCHITECTURE.md states the umask 022, but the sec-organizer umask says 77" <<<"$OUT"; then
+    ok "coverage names the ARCHITECTURE.md umask drift"
+else
+    no "coverage did not name the ARCHITECTURE.md umask drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T21E/install.sh" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r'chmod 600 "\$CONFIG_DIR/sec\.conf"',
+    'chmod 644 "$CONFIG_DIR/sec.conf"',
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("install.sh carries no CONFIG_DIR/sec.conf chmod to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T21E" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the live install.sh sec.conf chmod drifts"
+else
+    no "coverage accepted a live install.sh sec.conf chmod drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/ARCHITECTURE.md states the sec.conf mode 600, but the install.sh sec.conf chmod says 644" <<<"$OUT"; then
+    ok "coverage names the live install.sh sec.conf chmod drift"
+else
+    no "coverage did not name the live install.sh sec.conf chmod drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T21F/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"Saves mode `0600` metadata-only snapshots",
+    "Saves metadata-only snapshots",
+    s,
+    count=1,
+)
+if n != 1:
+    sys.exit("README.md carries no snapshot mode clause to remove")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T21F" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when README.md stops stating the snapshot mode"
+else
+    no "coverage accepted README.md dropping the snapshot mode claim"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "README.md no longer states the pre-apply snapshot mode in the guarded form" <<<"$OUT"; then
+    ok "coverage names the dropped README.md snapshot mode claim"
+else
+    no "coverage did not name the dropped README.md snapshot mode claim"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T21CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (mode prose agrees) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] natural-language mode claims:" <<<"$OUT"; then
+    ok "the control copy's OK line names the natural-language mode claim check"
+else
+    no "the control copy's OK line did not name the natural-language mode claim check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
