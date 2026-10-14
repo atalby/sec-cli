@@ -3405,6 +3405,51 @@ else
     no "the control copy's OK line did not name the sec.conf mode prose check"
     printf '%s\n' "$OUT"
 fi
+echo "[47] ADAPTERS.md's 'current suites:' guard must not be shadowed by an earlier inline mention (issue #147)"
+WORK_T19A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T19CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T19A" "$WORK_T19CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T19A/ADAPTERS.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+if "current suites:" not in s:
+    sys.exit("ADAPTERS.md carries no current-suites snapshot line")
+lines = s.splitlines(keepends=True)
+shadow = "Note: an earlier inline current suites: dispatch 0, write-honesty 0, sentinel 0, sync-guard 0, install 0; mention must not shadow the snapshot.\n"
+lines.insert(1, shadow)
+open(p, "w", encoding="utf-8").write("".join(lines))
+PY
+OUT="$(cd "$WORK_T19A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "coverage ignores an earlier inline 'current suites:' mention"
+else
+    no "coverage let an earlier inline 'current suites:' mention shadow the real snapshot"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "adapters suite counts:" <<<"$OUT"; then
+    ok "coverage still resolves the real 'current suites:' snapshot"
+else
+    no "coverage did not resolve the real 'current suites:' snapshot"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T19CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (unshadowed snapshot) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "adapters suite counts:" <<<"$OUT"; then
+    ok "the control copy's OK line names the adapters suite counts"
+else
+    no "the control copy's OK line did not name the adapters suite counts"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

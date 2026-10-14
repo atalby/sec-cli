@@ -599,7 +599,7 @@ try:
         _adapters_text = _fh.read()
 except OSError:
     _adapters_text = ""
-_cs_scope = re.search(r"current suites:([^;]*)", _adapters_text)
+_cs_scope = re.search(r"(?m)^[ \t]*current suites:([^;]*)", _adapters_text)
 if not _cs_scope:
     adapters_mismatches.append("ADAPTERS.md carries no 'current suites:' snapshot line")
 else:
@@ -652,7 +652,7 @@ _NUM_WORDS = {
     "thirty-five": 35, "thirty-six": 36, "thirty-seven": 37, "thirty-eight": 38,
     "thirty-nine": 39, "forty": 40, "forty-one": 41, "forty-two": 42,
     "forty-three": 43, "forty-four": 44, "forty-five": 45,
-    "forty-six": 46, "forty-seven": 47, "forty-eight": 48,
+    "forty-six": 46, "forty-seven": 47, "forty-eight": 48, "forty-nine": 49,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:

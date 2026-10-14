@@ -442,9 +442,12 @@ audit-skill family's cross-file shape claims are now exhaustively guarded. The
 26th run shipped #146: the `~/.sec/sec.conf` mode `0600` natural-language copies
 in README.md and docs/MULTI_TENANCY.md were the next unguarded current-state
 claims; sentinel section 26 now ties both to the live `bin/sec` chmod on
-`$CONFIG_FILE`. Next candidates, in order: the remaining theoretical
-`re.search` scope-grabs (below), then the fresh 360 audit (#67, after human
-scope approval).
+`$CONFIG_FILE`. The 27th run shipped #147: section 9's `current suites:`
+extractor was the last non-anchored first-match count-grab of the #118/#136
+shape, so an earlier inline mention could shadow the real ADAPTERS.md snapshot;
+the pattern is now line-anchored. Next candidates, in order: any remaining
+single-`re.search` count-grabs of that shape (below), then the fresh 360 audit
+(#67, after human scope approval).
 Cheapest concrete next candidates, in order:
 - The **pytest-count mirror family is now self-maintaining** (case [22]'s
   controls derive the live collection count, the pattern case [27] already
@@ -501,6 +504,15 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   live gitlab.com login. This repo is GitHub-tracked, so `gh` is used.
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
+
+- #147 `fix(sentinel)` - section 9's `current suites:` extractor was the last
+  non-anchored first-match count-grab of the #118/#136 shape: an earlier inline
+  (non-line-start) `current suites:` mention in ADAPTERS.md could shadow the real
+  snapshot and fire five false `[ERROR] adapters suite:` lines. The regex is now
+  line-anchored (`(?m)^[ \t]*current suites:`). Case [47] (probe + control).
+  Sentinel 48 -> 49 cases / 524 -> 532 assertions; mirrors bumped at
+  `profile.md:22`, `profile.md:641` (forty-nine), `ADAPTERS.md:56`,
+  `ADAPTERS.md:262`, and the baseline `Sentinel =` line.
 
 - #146 `fix(sentinel)` - the `~/.sec/sec.conf` mode `0600` prose in README.md:48
   and docs/MULTI_TENANCY.md:9 was unguarded (only docs/SECURITY.md's differing
@@ -823,10 +835,10 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 48, sync_guard 16,
-write_honesty 15. Sentinel = 48 cases / 524 assertions. HISTORY.md is at
-6625/8192 bytes - the next narrative addition must still compact first if it
-would cross the budget (#146's entry extended the 2026-10-14 paragraph and
+mirrors in sync): dispatch 92, install 9, sentinel 49, sync_guard 16,
+write_honesty 15. Sentinel = 49 cases / 532 assertions. HISTORY.md is at
+6928/8192 bytes - the next narrative addition must still compact first if it
+would cross the budget (#146/#147's entries extended the 2026-10-14 paragraph and
 appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each

@@ -29,7 +29,11 @@ the config-file mode outside SECURITY.md: README.md and docs/MULTI_TENANCY.md
 both state `~/.sec/sec.conf` (mode `0600`) with no guard, so sentinel section 26
 resolves the live `bin/sec` chmod on `$CONFIG_FILE` and fails if either doc's
 stated mode drifts, names a different path, or drops the claim (case [46]).
-Sentinel 47 -> 48 cases / 504 -> 524 assertions. Tracker holds #51, #67, #92.
+Sentinel 47 -> 48 cases / 504 -> 524 assertions. #147 then hardened the
+2026-10-13 first-match class one notch: section 9's `current suites:` extractor
+was non-anchored, so an earlier inline mention shadowed the real ADAPTERS.md
+snapshot; the pattern is now line-anchored (case [47], proven red first).
+Sentinel 48 -> 49 cases / 524 -> 532 assertions. Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
