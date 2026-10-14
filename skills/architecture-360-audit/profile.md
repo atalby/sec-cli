@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (15 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (44 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (88 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (15 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (44 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (90 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#51`, `#67`, `#92`) |
@@ -668,7 +668,7 @@ agree? AGENTS §8 mandates one `[ TAG ]` line per event for machine-parsed
 stdout — measured 2026-10-12 (`grep -cE '\[ ?(OK|INFO|WARN|ERROR) ?\]'`; re-measured
 after #41/#42/#44/#45/#48/#77 added tagged lines): 7 of the 8 tracked `bin/` entries emit tagged
 output (`sec` 26, `sec-organizer` 41, `sec-sync-controller.py` 30,
-`sec-migrator` 24, `bw-session-keeper` 17, `sec.ps1` 11, `hyer-mcp.sh` 4
+`sec-migrator` 26, `bw-session-keeper` 17, `sec.ps1` 11, `hyer-mcp.sh` 4
 lines); the sole zero is `bin/sec-classify.py`, and `install.sh` (outside
 `bin/`) also emits none. Harness entry points
 (`SKILL.md`, `CLAUDE.md`, `.gemini/`, `skills/REGISTRY.md`) are part of the
@@ -750,7 +750,7 @@ long-running process is `bin/bw-session-keeper` with its session file at
 failures are visible to an operator, and whether any runbook exists for it
 (none does — absence is the finding).
 
-### 10. Domain specialist: secret-management correctness -- `bin/sec-classify.py:186`, `bin/sec-organizer:201`, `bin/sec-migrator:147`, `docs/MULTI_TENANCY.md:1`
+### 10. Domain specialist: secret-management correctness -- `bin/sec-classify.py:186`, `bin/sec-organizer:201`, `bin/sec-migrator:151`, `docs/MULTI_TENANCY.md:1`
 
 The dimension this repository exists to own: does the tool do correct secret
 management? Lenses: classification correctness (`classify_item` at
@@ -758,7 +758,7 @@ management? Lenses: classification correctness (`classify_item` at
 classification propagate to an apply?), housekeeping safety (pre-apply
 `snapshot_file` at `bin/sec-organizer:201` — can `revert` lose data if interrupted,
 and does plan/apply use identical classification?), migration atomicity
-(transaction state at `bin/sec-migrator:147` — is a mid-migration crash
+(transaction state at `bin/sec-migrator:151` — is a mid-migration crash
 recoverable, is a secret ever written to both backends in an inconsistent
 order?), and multi-tenant boundary correctness (`docs/MULTI_TENANCY.md:1` —
 can tenant A's key resolve to tenant B's item through the name-matching and

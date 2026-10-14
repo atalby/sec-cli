@@ -131,7 +131,11 @@ fetch_source_items() {
 }
 
 items_json="$(fetch_source_items)"
-count="$(echo "$items_json" | jq '. | length' 2>/dev/null || echo 0)"
+if ! count="$(printf '%s' "$items_json" | jq '. | length' 2>/dev/null)"; then
+    echo "[ERROR] corrupt or unreadable listing from source backend '$SRC'. Migration is blocked; verify the backend output." >&2
+    exit 1
+fi
+count="${count:-0}"
 
 if [[ "$count" -eq 0 ]]; then
     echo "[INFO] Zero items found in source backend '$SRC'."
@@ -170,7 +174,10 @@ if [[ "$MODE" == "apply" ]]; then
     trap 'trap_error "interrupted"' INT TERM
 
     if [[ -f "$TX_FILE" ]]; then
-        existing_items="$(jq -r '.createdItems // [] | length' "$TX_FILE" 2>/dev/null || echo 0)"
+        if ! existing_items="$(jq -r '.createdItems // [] | length' "$TX_FILE" 2>/dev/null)"; then
+            echo "[ERROR] corrupt or unreadable migration transaction log ($TX_FILE). Resolve it before starting a new migration." >&2
+            exit 1
+        fi
         if [[ "${existing_items:-0}" -gt 0 ]]; then
             echo "[ERROR] unresolved migration transaction at $TX_FILE ($existing_items created items). Run 'sec migrate --undo' first." >&2
             exit 1

@@ -703,6 +703,31 @@ if grep -q "Discovered 2" <<<"$OUT"; then pass "discovers 2 fixture items"; else
 if grep -q "^\[ OK \] Migration Plan Summary: Ready to migrate 2" <<<"$OUT"; then pass "tagged ready-to-migrate counts 2"; else fail "no tagged 'Ready to migrate 2' in: $OUT"; fi
 if grep -q "^\[INFO\] Discovered 2" <<<"$OUT"; then pass "tagged Discovered counts 2"; else fail "no tagged 'Discovered 2' in: $OUT"; fi
 
+echo "[15b] F0F2 class: migrate fails closed on an unparseable source listing (issue #142)"
+H2B="$(new_home "$WORK/h15b")"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2B" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "SEC_TEST_BW_ITEMS=this is not valid json" \
+    "$REPO_ROOT/bin/sec" migrate --from bitwarden --to 1pass --plan 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] corrupt or unreadable listing from source backend 'bitwarden'" <<<"$OUT"; then pass "unparseable source listing -> exit 1 + tagged error"; else fail "unparseable source rc=$RC out=[$OUT]"; fi
+if grep -q "Zero items found" <<<"$OUT"; then fail "unparseable source still reported 'Zero items found' (silent no-op): $OUT"; else pass "unparseable source did not report a false zero-items success"; fi
+
+echo "[15c] F015 class: migrate --apply blocks on a corrupt transaction log (issue #142)"
+H2C="$(new_home "$WORK/h15c")"
+mkdir -p "$H2C/.cache/bitwarden"
+printf 'this is not valid json' >"$H2C/.cache/bitwarden/migration_transaction.json"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2C" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "$REPO_ROOT/bin/sec" migrate --from bitwarden --to 1pass --apply 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] corrupt or unreadable migration transaction log" <<<"$OUT"; then pass "corrupt TX log -> apply exit 1 + tagged error"; else fail "corrupt TX apply rc=$RC out=[$OUT]"; fi
+if grep -q "Migration Successfully Completed" <<<"$OUT"; then fail "corrupt TX log still completed a migration (masked as empty): $OUT"; else pass "corrupt TX log blocked the migration"; fi
+
 echo "[16] sec-classify.py direct smoke"
 set +e
 OUT="$(printf '%s' '{"name":"aws-access-key","login":{"username":"a@example.com"},"notes":"","fields":[]}' \
