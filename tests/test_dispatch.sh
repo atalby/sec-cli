@@ -690,6 +690,49 @@ if grep -q "Backend: op" <<<"$OUTOP"; then pass "op plan selects the op backend"
 OPCAT="$(jq -r '.actions[0].targetFolder // empty' "$PLANOP" 2>/dev/null || true)"
 if [[ "$OPCAT" == "cloud/aws" ]]; then pass "op plan sees the full item (AKIA in password -> cloud/aws)"; else fail "op plan category='$OPCAT' (expected cloud/aws; F048 fidelity)"; fi
 
+echo "[14c] F015 class: housekeep plan fails closed on an unparseable bw listing (issue #143)"
+H2D="$(new_home "$WORK/h14c")"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2D" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "SEC_TEST_BW_ITEMS=this is not valid json" \
+    "$REPO_ROOT/bin/sec" housekeep plan 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] corrupt or unreadable listing from backend 'bw'" <<<"$OUT"; then pass "unparseable bw listing -> exit 1 + tagged error"; else fail "unparseable bw listing rc=$RC out=[$OUT]"; fi
+if grep -q "Plan saved" <<<"$OUT"; then fail "unparseable bw listing still saved a false plan: $OUT"; else pass "unparseable bw listing did not save a false plan"; fi
+
+echo "[14d] F015 class: housekeep plan fails closed on a failing bws listing (issue #143)"
+BWSBIN2="$WORK/bwsbin2"
+mkdir -p "$BWSBIN2"
+cat >"$BWSBIN2/bws" <<'EOF'
+#!/usr/bin/env bash
+if [[ "${1:-} ${2:-}" == "secret list" ]]; then
+    n=0
+    [[ -f "$SEC_TEST_BWS_COUNT" ]] && n="$(cat "$SEC_TEST_BWS_COUNT")"
+    n=$((n + 1))
+    echo "$n" >"$SEC_TEST_BWS_COUNT"
+    if [[ "$n" -le 1 ]]; then
+        echo '[]'
+        exit 0
+    fi
+    exit 1
+fi
+exit 0
+EOF
+chmod +x "$BWSBIN2/bws"
+H2E="$(new_home "$WORK/h14d")"
+set +e
+OUT="$(env -i "PATH=$BWSBIN2:/usr/bin:/bin" "HOME=$H2E" \
+    "SEC_TEST_BWS_COUNT=$WORK/h14d.count" \
+    "$REPO_ROOT/bin/sec" housekeep plan 2>&1 </dev/null)"
+RC=$?
+set -e
+if grep -q "Backend: bws" <<<"$OUT"; then pass "bws plan selects the bws backend"; else fail "bws plan backend is not bws: $OUT"; fi
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] corrupt or unreadable listing from backend 'bws'" <<<"$OUT"; then pass "failing bws listing -> exit 1 + tagged error"; else fail "failing bws listing rc=$RC out=[$OUT]"; fi
+if grep -q "Plan saved" <<<"$OUT"; then fail "failing bws listing still saved a false plan: $OUT"; else pass "failing bws listing did not save a false plan"; fi
+
 echo "[15] migrate plan executes the migrator"
 set +e
 OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2" \

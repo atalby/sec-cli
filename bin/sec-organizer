@@ -45,9 +45,18 @@ detect_backend() {
     fi
 }
 
+require_json_array() {
+    local label="$1" payload="$2"
+    if [[ -z "$payload" ]] || ! printf '%s' "$payload" | jq -e 'type == "array"' >/dev/null 2>&1; then
+        echo "[ERROR] corrupt or unreadable listing from backend '$label'. Refusing to build a housekeeping plan from an unverified source." >&2
+        exit 1
+    fi
+}
+
 collect_op_items() {
     local list ids out id full
-    list="$(op item list --format=json 2>/dev/null || echo "[]")"
+    list="$(op item list --format=json 2>/dev/null || true)"
+    require_json_array op "$list"
     ids="$(echo "$list" | jq -r '(.[]? | .id) // empty' 2>/dev/null || true)"
     out="[]"
     if [[ -z "$ids" ]]; then
@@ -79,7 +88,7 @@ collect_op_items() {
 
 # 1. Generate Housekeeping & Disambiguation Plan
 cmd_plan() {
-    local backend
+    local backend raw
     backend="$(detect_backend)"
     echo "[INFO] Fleet Secret Housekeeping Plan (Backend: $backend, ML Disambiguation Enabled)"
 
@@ -89,12 +98,17 @@ cmd_plan() {
             exit 1
         fi
         folders_json="$(bw list folders 2>/dev/null || echo "[]")"
-        items_json="$(bw list items 2>/dev/null || echo "[]")"
+        items_json="$(bw list items 2>/dev/null || true)"
+        require_json_array bw "$items_json"
     elif [[ "$backend" == "op" ]]; then
-        items_json="$(collect_op_items)"
+        if ! items_json="$(collect_op_items)"; then
+            exit 1
+        fi
         folders_json="[]"
     elif [[ "$backend" == "bws" ]]; then
-        items_json="$(bws secret list 2>/dev/null | jq '[.[] | {id: .id, name: .key, notes: .note}]' || echo "[]")"
+        raw="$(bws secret list 2>/dev/null || true)"
+        require_json_array bws "$raw"
+        items_json="$(printf '%s' "$raw" | jq '[.[] | {id: .id, name: .key, notes: .note}]')"
         folders_json="[]"
     else
         echo "[ERROR] No active, unlocked secret manager backend detected." >&2
