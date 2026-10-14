@@ -1,5 +1,29 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (20th run): shipped **#143** -- the F015 fail-open sweep one
+file over, into `bin/sec-organizer`'s `cmd_plan`. Its source-listing reads
+normalized a backend failure to `[]` (`bw list items` / `bws secret list` /
+`op item list` behind `2>/dev/null || echo "[]"`), so a broken backend made the
+item loop iterate zero times and printed `[INFO] Plan Summary: 0 secrets ...`
+plus `[ OK ] Plan saved` and exited 0 -- a false success in a credential
+housekeeping plan. Added a `require_json_array` guard that rejects an empty
+payload or a non-array listing with a tagged `[ERROR] corrupt or unreadable
+listing from backend '<x>'` + exit 1; a legitimate empty vault (`[]`) still
+passes. Proven red first (four new assertions: section [14c] bw path with
+`SEC_TEST_BW_ITEMS` malformed, section [14d] bws path via a counter stub that
+reaches the bws branch), then green (dispatch 90 -> 92). Mirrors bumped:
+profile.md:22, profile.md tagged census `sec-organizer` 41 -> 42, profile.md
+`bin/sec-organizer:201` -> `:215` and `:296` -> `:310` (the +14 shift),
+ADAPTERS.md:55, ADAPTERS.md:264, the RESUME mirrors-in-sync line, HISTORY.md
+8150/8192.
+
+Resume here next run: the tracker's open items are #67 (fresh 360 audit,
+Step-1 scope approval needed), #92 and #51 (hub-side, not this repo). The
+fail-open masking class is now closed in `bin/sec`, `bin/sec-migrator` and
+`bin/sec-organizer`; the next sweep targets the remaining JSON readers --
+`sec-sync-controller.py`, `bw-session-keeper`, `hyer-mcp.sh` -- for a read that
+masks a parse failure behind `2>/dev/null || echo 0` / `|| echo ''`.
+
 Session 2026-10-14 (19th run): shipped **#142** -- the #126 sweep's own
 F015-class residual, found one file over in `bin/sec-migrator`. Two `jq`
 reads still swallowed a parse failure behind `2>/dev/null || echo 0`: the
@@ -15,7 +39,7 @@ profile.md tagged census `sec-migrator` 24 -> 26, profile.md
 `bin/sec-migrator:147` -> `:151` (the +4 shift), ADAPTERS.md:55,
 ADAPTERS.md:264, the RESUME mirrors-in-sync line, HISTORY.md 8158/8192.
 
-Resume here next run: the tracker's open items are #67 (fresh 360 audit,
+Left for the next run: the tracker's open items are #67 (fresh 360 audit,
 Step-1 scope approval needed), #92 and #51 (hub-side, not this repo). The
 jq/fail-open masking class is now exhausted in `bin/sec` and
 `bin/sec-migrator`; the natural next unit is the same sweep against the OTHER
@@ -693,9 +717,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 90, install 9, sentinel 44, sync_guard 16,
+mirrors in sync): dispatch 92, install 9, sentinel 44, sync_guard 16,
 write_honesty 15. Sentinel = 44 cases / 452 assertions. HISTORY.md is at
-8158/8192 bytes - the next narrative addition must compact an older clause first
+8150/8192 bytes - the next narrative addition must compact an older clause first
 (#120's entry compacted the 2026-10-13 paragraph and moved #130-#137's detail
 into `history/2026-10-13.md`, since that detail had only ever lived here; the
 drift-control sweep compacted it again; #140's entry compacted it a third time;

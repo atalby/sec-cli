@@ -11,7 +11,7 @@ default, not the whole history.
 wholesale (#71-#80): `sec get`, `set`/`create` and `unlock`/`rotate`/
 `keep` reject an unknown `--flag`/`-f*` at the operand position with a
 tagged `[ERROR]` + exit 2 before any backend call (same contract #73
-shipped for `sec.ps1`; keys/passwords must not begin with `-`), the
+shipped for `sec.ps1`), the
 same arms reject trailing/dropped operands (`run` stays variadic;
 `rotate`/`keep` reject positionals, `unlock`/`setup-keychain` take one
 optional password), `sec get --scope` rejects a flag-like folder
@@ -21,10 +21,9 @@ name, `sec housekeep`/`organize` no longer drops extra operands, and a
 vanishing when `uv` is absent) verified as a duplicate of #51's payload
 and closed. Issue
 #78-#80 closed the completion-parity class: fish omitted the tenant-prefix
-words the other surfaces offer; no housekeep subcommands followed the
-`organize` alias; and all four surfaces advertised only `plan/apply/revert`
-(now `undo`/`restore` too, matching `sec-organizer`); guard [22s] pins it
-(dispatch 74 -> 75; `completions/_sec` regenerated).
+words; no housekeep subcommands followed the `organize` alias; all four surfaces
+advertised only `plan/apply/revert` (now `undo`/`restore`, matching
+`sec-organizer`); guard [22s] pins it (dispatch 74 -> 75).
 Issue #81 fixed the ps1 completion runtime (`$commandAst.ArgumentElements`
 -> `CommandElements`, so ps1 subcommand completion had been dead code) and
 pinned the `powershell` shell word plus the migrate backend values; #82
@@ -41,9 +40,7 @@ shipped classifier could never produce — now pinned by dispatch section
 structural claims: MULTI_TENANCY.md's alias count vs bin/sec's tenant regex,
 profile.md's CI checkout pin, OPERATOR_MANUAL.md's principle count, SKILL.md's
 suite/step/persona/scope/severity counts, and profile.md §3's four suite
-count-words plus the pytest-mirror count (section 17; CI's `Run bash suites`
-step has no pytest, so case [22] had to mirror the guard's `_pytest_available`
-precondition). Issues #99/#100 closed the last silent-drop arms —
+count-words plus the pytest-mirror count (section 17). Issues #99/#100 closed the last silent-drop arms —
 `sec completion <shell> <extra>`, `sec help <x>` and `sec version <x>` all
 exited 0 while dropping the operand; each now rejects it with a tagged
 `[ERROR]` + exit 2 (dispatch 80 -> 82 sections).
@@ -54,7 +51,7 @@ token (#103 parses each surface's own list and asserts all 15) (dispatch 83 ->
 85 sections).
 Issue #110 closed the last silent-drop arm in the migrator: `sec migrate
 undo|revert|--undo` short-circuited the argument parse, so `sec migrate undo
-EXTRA` dropped the operand and proceeded to the rollback path; the undo
+EXTRA` dropped the operand; the undo
 branch now rejects trailing operands with a tagged `[ERROR]` + exit 2 before
 any transaction-log access (dispatch 85 -> 86 sections).
 Issue #111 covered the sync controller's untested surface: the GCP
@@ -104,7 +101,11 @@ emits a tagged `[WARN]` naming the line (in-place, no line shift; dispatch
 [18d]). #142 closed the F015-class residual: `sec-migrator` masked `jq`
 parse failures in two reads (a malformed source listing reported "Zero
 items found" + exit 0; a corrupt apply-mode transaction log was ignored),
-both now tagged `[ERROR]` + exit 1 (dispatch 88 -> 90). Tracker holds #51,
+both now tagged `[ERROR]` + exit 1 (dispatch 88 -> 90). #143 swept the F015
+class one file over: `sec-organizer`'s plan read normalized a bw/op/bws
+listing failure to `[]`, so a broken backend produced a false "0 secrets"
+plan + exit 0; a `require_json_array` guard now rejects an empty or non-array
+listing with a tagged `[ERROR]` + exit 1 (dispatch 90 -> 92). Tracker holds #51,
 #67, #92.
 Full narrative: `history/2026-10-13.md`.
 
@@ -113,8 +114,7 @@ in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was
 split losslessly into per-date archives under `history/`, and
 `sentinel.sh coverage` gained a guard so the file cannot silently re-bloat. The day then swept
 dispatcher/completion/argv/doc-honesty residuals (#40–#66; detail in
-`history/2026-10-11.md`), notably moving secrets off child argv (#58/#59 —
-only `bws secret create` retains argv, a vendor limit) and a baseline-red
+`history/2026-10-11.md`), notably moving secrets off child argv (#58/#59) and a baseline-red
 ungitignored local `.venv/` (#68; now ignored). All five bash suites and the
 pytest mirror (58 tests) pass. Full narrative:
 `history/2026-10-11.md` / `history/2026-10-12.md`.
