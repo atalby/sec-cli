@@ -3450,6 +3450,81 @@ else
     no "the control copy's OK line did not name the adapters suite counts"
     printf '%s\n' "$OUT"
 fi
+
+echo "[48] RESUME.md's Verified-baseline count mirrors must not be shadowed by an earlier mention (issue #148)"
+WORK_T20A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T20CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T20A" "$WORK_T20CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T20A/RESUME.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+sec = re.search(r"(?m)^## Verified baseline.*?\n([\s\S]*?)\n## ", s)
+if not sec:
+    sys.exit("RESUME.md: no Verified baseline section to probe")
+body = sec.group(1)
+cm = re.search(
+    r"mirrors in sync\): ([a-z_]+) (\d+), ([a-z_]+) (\d+), ([a-z_]+) (\d+),"
+    r" ([a-z_]+) (\d+),\s*\n([a-z_]+) (\d+)\.",
+    body,
+)
+if not cm:
+    sys.exit("RESUME.md: baseline section has no mirrors-in-sync line")
+am = re.search(r"Sentinel = (\d+) cases / (\d+) assertions", body)
+if not am:
+    sys.exit("RESUME.md: baseline section has no Sentinel line")
+g = cm.groups()
+shadow = (
+    "\nHistorical echo (must not shadow the baseline): the suite counts (all"
+    " mirrors in sync): {k0} {n0}, {k1} {n1}, {k2} {n2}, {k3} {n3},\n"
+    "{k4} {n4}. Sentinel = {c} cases / {a} assertions.\n\n"
+).format(
+    k0=g[0], n0=g[1], k1=g[2], n1=g[3], k2=g[4], n2=g[5], k3=g[6], n3=g[7],
+    k4=g[8], n4=g[9], c=am.group(1), a=am.group(2),
+)
+drift = re.sub(r"sentinel (\d+)", lambda m: "sentinel " + str(int(m.group(1)) - 1), body, count=1)
+drift = re.sub(
+    r"(Sentinel = \d+ cases / )(\d+)( assertions)",
+    lambda m: m.group(1) + str(int(m.group(2)) - 1) + m.group(3),
+    drift,
+    count=1,
+)
+if drift == body:
+    sys.exit("RESUME.md: baseline counts not found to drift")
+s = s[: sec.start()] + shadow + s[sec.start():].replace(body, drift, 1)
+open(p, "w", encoding="utf-8").write(s)
+PY
+OUT="$(cd "$WORK_T20A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when an earlier echo shadows the baseline count mirrors"
+else
+    no "coverage let an earlier echo shadow the baseline count mirrors"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "RESUME.md says sentinel [0-9]*, live suite has" <<<"$OUT"; then
+    ok "coverage names the real drifted suite count behind the shadow"
+else
+    no "coverage did not name the real drifted suite count behind the shadow"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "RESUME.md says Sentinel = [0-9]* assertions, live suite has" <<<"$OUT"; then
+    ok "coverage names the real drifted assertion total behind the shadow"
+else
+    no "coverage did not name the real drifted assertion total behind the shadow"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T20CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (unshadowed baseline) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

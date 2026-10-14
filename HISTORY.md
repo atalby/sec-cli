@@ -33,7 +33,13 @@ Sentinel 47 -> 48 cases / 504 -> 524 assertions. #147 then hardened the
 2026-10-13 first-match class one notch: section 9's `current suites:` extractor
 was non-anchored, so an earlier inline mention shadowed the real ADAPTERS.md
 snapshot; the pattern is now line-anchored (case [47], proven red first).
-Sentinel 48 -> 49 cases / 524 -> 532 assertions. Tracker holds #51, #67, #92.
+#148 swept the same non-anchored first-match class into RESUME.md's two own
+count mirrors: the 'suite counts ... mirrors in sync' line and the
+'Sentinel = N cases / M assertions' total were searched over the whole
+append-heavy narrative, so an earlier echo of either shape would shadow the
+real claim inside `## Verified baseline`; both searches are now scoped to that
+section's body (case [48], proven red first). Sentinel 49 -> 50 cases /
+532 -> 540 assertions. Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected

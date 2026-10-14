@@ -653,6 +653,7 @@ _NUM_WORDS = {
     "thirty-nine": 39, "forty": 40, "forty-one": 41, "forty-two": 42,
     "forty-three": 43, "forty-four": 44, "forty-five": 45,
     "forty-six": 46, "forty-seven": 47, "forty-eight": 48, "forty-nine": 49,
+    "fifty": 50,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1259,20 +1260,34 @@ if _pytest_available:
                 )
 
 # RESUME.md is itself a hand-bumped count mirror (its 'suite counts ... mirrors
-# in sync' line + the 'Sentinel = N cases / M assertions' total) with no guard.
+# in sync' line + the 'Sentinel = N cases / M assertions' total). Both live
+# inside the '## Verified baseline' section, so the searches are scoped to that
+# section's body: an earlier narrative echo of either shape must not shadow the
+# real claim (the first-match class, #118/#128/#135/#147/#148).
 try:
     with open(os.path.join(repo, "RESUME.md"), encoding="utf-8") as _fh:
         _resume_text = _fh.read()
 except OSError:
     _resume_text = ""
 
+_resume_baseline_m = re.search(
+    r"(?m)^## Verified baseline.*?\n([\s\S]*?)\n## ", _resume_text
+)
+if not _resume_baseline_m:
+    count_claim_mismatches.append("RESUME.md carries no '## Verified baseline' section")
+    _resume_body = ""
+else:
+    _resume_body = _resume_baseline_m.group(1)
+
 _resume_counts_m = re.search(
     r"mirrors in sync\): ([a-z_]+) (\d+), ([a-z_]+) (\d+), ([a-z_]+) (\d+),"
     r" ([a-z_]+) (\d+),\s*\n([a-z_]+) (\d+)\.",
-    _resume_text,
+    _resume_body,
 )
 if not _resume_counts_m:
-    count_claim_mismatches.append("RESUME.md carries no 'suite counts ... mirrors in sync' line")
+    count_claim_mismatches.append(
+        "RESUME.md's Verified baseline section carries no 'suite counts ... mirrors in sync' line"
+    )
 else:
     _rg = _resume_counts_m.groups()
     for _i in range(0, len(_rg), 2):
@@ -1287,9 +1302,11 @@ else:
                 f"RESUME.md says {_key} {_num}, live suite has {_live}"
             )
 
-_resume_assert_m = re.search(r"Sentinel = (\d+) cases / (\d+) assertions", _resume_text)
+_resume_assert_m = re.search(r"Sentinel = (\d+) cases / (\d+) assertions", _resume_body)
 if not _resume_assert_m:
-    count_claim_mismatches.append("RESUME.md carries no 'Sentinel = N cases / M assertions' line")
+    count_claim_mismatches.append(
+        "RESUME.md's Verified baseline section carries no 'Sentinel = N cases / M assertions' line"
+    )
 else:
     _rcases, _rasserts = int(_resume_assert_m.group(1)), int(_resume_assert_m.group(2))
     _live_cases = suite_counts.get("sentinel")
@@ -1310,13 +1327,8 @@ else:
             f"RESUME.md says Sentinel = {_rasserts} assertions, live suite has {_live_asserts}"
         )
 
-_resume_baseline_m = re.search(
-    r"(?m)^## Verified baseline.*?\n([\s\S]*?)\n## ", _resume_text
-)
-if not _resume_baseline_m:
-    count_claim_mismatches.append("RESUME.md carries no '## Verified baseline' section")
-else:
-    _rbytes_m = re.search(r"(\d+)/(\d+) bytes", _resume_baseline_m.group(1))
+if _resume_baseline_m:
+    _rbytes_m = re.search(r"(\d+)/(\d+) bytes", _resume_body)
     if not _rbytes_m:
         count_claim_mismatches.append(
             "RESUME.md's Verified baseline states no 'N/8192 bytes' HISTORY.md size"

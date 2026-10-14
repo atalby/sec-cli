@@ -1,5 +1,30 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (28th run): shipped **#148** -- the last realistic
+first-match shadow of the #118/#128/#135/#147 class. RESUME.md's own two count
+mirrors (the 'suite counts ... mirrors in sync' line and the
+'Sentinel = N cases / M assertions' total) were searched over the whole
+append-heavy narrative by sentinel section 17, so an earlier 'Shipped this
+session' echo of either shape could shadow the real claim inside
+`## Verified baseline` and pass a drifted line. Both searches are now scoped to
+that section's body (the convention its sibling bytes check already used).
+Case [48] proven red first (unfixed guard exited 0 with three failures, clean
+control exited 0). Sentinel 49 -> 50 cases / 532 -> 540 assertions; mirrors
+bumped at `profile.md:22`, `profile.md:641` (fifty), `ADAPTERS.md:56`,
+`ADAPTERS.md:262`, this file's mirrors-in-sync + `Sentinel =` lines;
+HISTORY.md 2026-10-14 block extended and `history/2026-10-14.md` appended.
+The 45-site single-`re.search` audit run this session found every remaining
+extractor matching exactly once; the two RESUME.md sites were the only ones on
+a shadow-prone (append-heavy) file, so the class is now swept to its realistic
+floor.
+
+Resume here next run: the tracker's open items are #67 (fresh 360 audit --
+its Step-1 gate needs explicit human scope approval; must NOT be started
+autonomously) and #92 + #51 (hub-side, not this repo). No non-gated tracker
+item remains, and the #118-family sentinel-robustness sweep is complete; the
+next autonomous move is the fresh 360 audit (#67) only after human approval, or
+another unguarded-current-state claim if one surfaces.
+
 Session 2026-10-14 (24th run): shipped **#145** -- two items. (1) The
 unguarded-current-state sweep's next instance: `docs/SECURITY.md`'s "File
 Permissions Architecture" section states six path->mode pairs (0700/0600) but
@@ -445,9 +470,14 @@ claims; sentinel section 26 now ties both to the live `bin/sec` chmod on
 `$CONFIG_FILE`. The 27th run shipped #147: section 9's `current suites:`
 extractor was the last non-anchored first-match count-grab of the #118/#136
 shape, so an earlier inline mention could shadow the real ADAPTERS.md snapshot;
-the pattern is now line-anchored. Next candidates, in order: any remaining
-single-`re.search` count-grabs of that shape (below), then the fresh 360 audit
-(#67, after human scope approval).
+the pattern is now line-anchored. The 28th run shipped #148: a full audit of the
+45 remaining single-`re.search` extractors found every one matching exactly once
+today, but RESUME.md's two own count mirrors (mirrors-in-sync line and the
+`Sentinel = N cases / M assertions` total) were still searched over the whole
+append-heavy file, so an earlier narrative echo could shadow the real claim; both
+are now scoped to the `## Verified baseline` section body. Next candidates, in
+order: any remaining single-`re.search` count-grabs of that shape (below), then
+the fresh 360 audit (#67, after human scope approval).
 Cheapest concrete next candidates, in order:
 - The **pytest-count mirror family is now self-maintaining** (case [22]'s
   controls derive the live collection count, the pattern case [27] already
@@ -458,14 +488,14 @@ Cheapest concrete next candidates, in order:
   dimensions` sites and the `live suite has 9` expectation literal this
   section used to name are all derived now; verified gone this run). No
   hand-pinned numeral remains.
-- (largely swept) A sentinel-robustness class: the guards added ad hoc
+- (swept this run) A sentinel-robustness class: the guards added ad hoc
   (#123-#136) each attach to a specific section. #136 closed the last "a file it
-  does not read" (the forge). The one remaining lead is theoretical: sweep the
-  remaining single `re.search(...)` extractors for the same non-anchored/
-  scope-grab shape (e.g. section 9's `re.search(r"current suites:([^;]*)")`
-  scope grab -- ADAPTERS.md has one such site today, so no shadow is live until
-  a second mention appears); harden only if a doc edit could realistically
-  create a second mention.
+  does not read" (the forge). The 28th run (#148) swept the remaining single
+  `re.search(...)` extractors: a full audit (45 sites) confirms every one matches
+  exactly once today, and the two RESUME.md mirrors whose file could realistically
+  grow a shadowing echo are now scoped to their section. No non-anchored
+  first-match count-grab on a shadow-prone doc remains; the rest are on
+  low-drift code/doc surfaces where a second same-shape mention is implausible.
 - **#126** (filed 3rd run, CLOSED in the 18th run) - `get_cfg_val`'s awk
   parser silently skipped a line with no `=`; the design call was taken the
   cheapest-reasonable-path way: a tagged `[WARN]` naming the line, parse
@@ -504,6 +534,19 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   live gitlab.com login. This repo is GitHub-tracked, so `gh` is used.
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
+
+- #148 `fix(sentinel)` - RESUME.md's own two count mirrors (the 'suite counts
+  ... mirrors in sync' line and the 'Sentinel = N cases / M assertions' total)
+  were the remaining non-anchored first-match count-grabs of the #118/#128/
+  #135/#147 shape. Both live inside `## Verified baseline`, but section 17
+  searched the whole append-heavy narrative, so an earlier 'Shipped this
+  session' echo of either shape could shadow the real claim and pass a drifted
+  line (fail-open). Both searches are now scoped to the Verified baseline
+  section body (the convention its sibling bytes check already used). Case [48]
+  proven red first: unfixed guard exited 0 with three failures, clean control
+  exited 0. Sentinel 49 -> 50 cases / 532 -> 540 assertions; `_NUM_WORDS`
+  gained `fifty`; mirrors bumped at `profile.md:22`, `profile.md:641`,
+  `ADAPTERS.md:56`, `ADAPTERS.md:262`, and the baseline `Sentinel =` line.
 
 - #147 `fix(sentinel)` - section 9's `current suites:` extractor was the last
   non-anchored first-match count-grab of the #118/#136 shape: an earlier inline
@@ -835,11 +878,11 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 49, sync_guard 16,
-write_honesty 15. Sentinel = 49 cases / 532 assertions. HISTORY.md is at
-6928/8192 bytes - the next narrative addition must still compact first if it
-would cross the budget (#146/#147's entries extended the 2026-10-14 paragraph and
-appended to `history/2026-10-14.md`).
+mirrors in sync): dispatch 92, install 9, sentinel 50, sync_guard 16,
+write_honesty 15. Sentinel = 50 cases / 540 assertions. HISTORY.md is at
+7343/8192 bytes - the next narrative addition must still compact first if it
+would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
+and appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each
 guard case re-runs full coverage a few times); the pytest mirror adds ~3.5 min.
