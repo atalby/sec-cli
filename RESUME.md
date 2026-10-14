@@ -1,5 +1,31 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (39th run): shipped **#159** -- docs/SECURITY.md:14's
+Snapshot Exposure row claimed a backup snapshot stores "only item UUIDs,
+original titles, and folder IDs", which is stale (the live snapshot, a
+byte-copy of the plan file, carries ten fields: seven per action plus
+`backend`/`timestamp`/`actions`) and unguarded (sections 25/33/35 read
+SECURITY.md but not line 14). Sentinel section 36 parses the live action
+object (`[{"id": $id, ...}]`) and envelope (`{backend: $backend, ...}`) from
+bin/sec-organizer, requires the doc's `metadata fields only (...)` set to
+equal that union in both directions, and keeps the "passwords and secret
+values are not present" invariant as its own anchor. The doc was restated to
+the live ten-field enumeration; the invariant sentence survives. Case [60]
+(two probes + control, proven red first: dropping `newName` from the doc and
+renaming the live field to `proposedName` each made coverage fail RC=1 with
+the field-set mismatch line). Sentinel 59 -> 60 cases / 724 -> 736
+assertions; mirrors bumped at `profile.md:22`, `profile.md:641` (sixty),
+`ADAPTERS.md:56`, `ADAPTERS.md:262`, this file's mirrors-in-sync +
+`Sentinel =` lines; HISTORY.md 8059 -> 8121/8192 (the #144/#145 clauses
+compacted to fit) and `history/2026-10-14.md` appended.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#159 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-14 (38th run): shipped **#158** -- docs/SECURITY.md:12-13
 (Shell History Leak -> Silent Stdin Prompts; Process Table Snooping ->
 In-Memory Injection) state seven `never in argv` mitigation tokens
@@ -704,7 +730,12 @@ so sentinel section 31 binds its shell set + alias + `completions/_sec` to the
 live bin/sec completion dispatch. The 34th run shipped #154: docs/ARCHITECTURE.md
 bin/sec.ps1's native subset + bash-only full surface was the next unguarded
 doc-name claim, so sentinel section 32 binds it to the live ps1 switch arms +
-bin/sec dispatch. Next candidates, in
+bin/sec dispatch. The 35th run shipped #155 (SECURITY.md's executables
+enumeration, section 33), the 36th #156 and the 37th #157 (the `sec sync`
+exit-code contract, section 34, extended to SKILL.md), the 38th #158
+(SECURITY.md's argv/stdin mitigation tokens, section 35), and the 39th #159
+(SECURITY.md's snapshot-contents claim vs bin/sec-organizer's live ten-field
+schema, section 36). Next candidates, in
 order: any remaining single-`re.search` count-grabs of that shape (below), then
 the fresh 360 audit (#67, after human scope approval).
 Cheapest concrete next candidates, in order:
@@ -764,6 +795,15 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #159 `feat(sentinel)` - docs/SECURITY.md:14's Snapshot Exposure row claimed a
+  backup snapshot stores "only item UUIDs, original titles, and folder IDs",
+  which is stale (the live snapshot carries ten fields: seven per action plus
+  the `backend`/`timestamp`/`actions` envelope) and unguarded. Sentinel section
+  36 parses the live action object + envelope from bin/sec-organizer and
+  requires the doc's `metadata fields only (...)` set to equal that union in
+  both directions, with the "passwords and secret values are not present"
+  invariant as its own anchor (case [60], two probes + control). Sentinel
+  59 -> 60 cases / 724 -> 736 assertions.
 - #154 `feat(sentinel)` - docs/ARCHITECTURE.md:16's `bin/sec.ps1` subcommand-surface claim had no guard. Sentinel section 32 parses the ps1 `switch ($Command)` arms + bin/sec's dispatch arms, requiring the documented native subset to equal the live ps1 arms and every bash-only command to be absent from ps1 and be a real bin/sec command (case [54], four probes + control). Sentinel 55 -> 56 cases / 648 -> 668 assertions.
 - #153 `feat(sentinel)` - the `sec completion` surface (OPERATOR_MANUAL.md:95-96) had no guard. Sentinel section 31 parses the shell arms from bin/sec's completion dispatch and requires the doc's shell set + `powershell`->`ps1` alias to match the live grouping, and `completions/_sec` to be byte-identical to live `bin/sec completion zsh` (case [53], four probes + control). Sentinel 54 -> 55 cases / 628 -> 648 assertions.
 - #152 `feat(sentinel)` - the classifier-category names (README.md:15 + docs/ARCHITECTURE.md:12) had no guard. Sentinel section 30 parses the live `CATEGORY_WEIGHTS` keys from bin/sec-classify.py and the `general` fallback, requiring every category named in both docs to be a live key (case [52], four probes + control). Sentinel 53 -> 54 cases / 608 -> 628 assertions.
@@ -1130,9 +1170,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 59, sync_guard 16,
-write_honesty 15. Sentinel = 59 cases / 724 assertions. HISTORY.md is at
-8059/8192 bytes - the next narrative addition must still compact first if it
+mirrors in sync): dispatch 92, install 9, sentinel 60, sync_guard 16,
+write_honesty 15. Sentinel = 60 cases / 736 assertions. HISTORY.md is at
+8121/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
 and appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

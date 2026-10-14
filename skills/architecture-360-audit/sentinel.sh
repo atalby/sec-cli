@@ -658,7 +658,7 @@ _NUM_WORDS = {
     "fifty-five": 55,
     "fifty-six": 56,
     "fifty-seven": 57,
-    "fifty-eight": 58, "fifty-nine": 59,
+    "fifty-eight": 58, "fifty-nine": 59, "sixty": 60,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2497,6 +2497,56 @@ for _doc_tok, _live_rel, _live_tok in _sec_proc_pairs:
             f"{_live_rel} no longer carries `{_live_tok}`"
         )
 
+# --- 36. docs/SECURITY.md's snapshot-contents claim (which fields a backup
+#         snapshot stores) must match the live bin/sec-organizer schema
+#         (issue #159) -------------------------------------------------------
+snap_fields_mismatches = []
+_org_snap_text = _nl_read("bin/sec-organizer")
+_live_snap_fields = set()
+_act_obj_m = re.search(r'\[\{"id": \$id,(.*?)\}\]', _org_snap_text, re.S)
+if _act_obj_m is None:
+    snap_fields_mismatches.append(
+        "bin/sec-organizer carries no recognizable snapshot action-object "
+        "construction to compare docs/SECURITY.md against"
+    )
+else:
+    _live_snap_fields = {"id"} | set(
+        re.findall(r'"([a-zA-Z][a-zA-Z0-9]*)":\s*\$', _act_obj_m.group(1))
+    )
+_tl_obj_m = re.search(r"\{backend: \$backend,([^}]*)\}", _org_snap_text)
+if _tl_obj_m is None:
+    snap_fields_mismatches.append(
+        "bin/sec-organizer carries no recognizable snapshot top-level envelope "
+        "to compare docs/SECURITY.md against"
+    )
+else:
+    _live_snap_fields |= {"backend"} | set(
+        re.findall(r"([a-zA-Z][a-zA-Z0-9]*):\s*\$", _tl_obj_m.group(1))
+    )
+
+_sec_snap_text = _nl_read("docs/SECURITY.md")
+_sec_snap_m = re.search(r"metadata fields only \(([^)]*)\)", _sec_snap_text)
+if _sec_snap_m is None:
+    snap_fields_mismatches.append(
+        "docs/SECURITY.md no longer states its snapshot field set in the guarded "
+        "`metadata fields only (...)` form"
+    )
+elif _live_snap_fields:
+    _doc_snap_fields = set(re.findall(r"`([a-zA-Z][a-zA-Z0-9]*)`", _sec_snap_m.group(1)))
+    if _doc_snap_fields != _live_snap_fields:
+        snap_fields_mismatches.append(
+            f"docs/SECURITY.md enumerates snapshot fields {sorted(_doc_snap_fields)}, "
+            f"but bin/sec-organizer writes {sorted(_live_snap_fields)}"
+        )
+if not re.search(
+    r"Passwords and secret values are \*\*not\*\* present in snapshot files",
+    _sec_snap_text,
+):
+    snap_fields_mismatches.append(
+        "docs/SECURITY.md no longer states that passwords and secret values are "
+        "absent from snapshot files"
+    )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2698,6 +2748,12 @@ if sec_proc_mismatches:
     )
     for _m in sec_proc_mismatches:
         print(f"{ERROR} security process table: {_m}")
+if snap_fields_mismatches:
+    failures.append(
+        f"{len(snap_fields_mismatches)} SECURITY.md snapshot-contents drift(s) vs bin/sec-organizer's live schema"
+    )
+    for _m in snap_fields_mismatches:
+        print(f"{ERROR} security snapshot fields: {_m}")
 
 if failures:
     for f in failures:
@@ -2738,6 +2794,7 @@ print(f"{OK} ps1 surface: docs/ARCHITECTURE.md's bin/sec.ps1 native subset + bin
 print(f"{OK} security executables: docs/SECURITY.md's executable list matches the live bin/ tree ({len(_live_bash_execs)} bash, {len(_live_py_execs)} python, {len(_live_ps_execs)} powershell)")
 print(f"{OK} sync exit codes: docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md + skills/architecture-360-audit/SKILL.md enumerate exactly bin/sec-sync-controller.py's returned codes ({', '.join(str(c) for c in sorted(_live_sync_codes))})")
 print(f"{OK} security process table: docs/SECURITY.md's argv/stdin mitigations still exist in the live bin/ code")
+print(f"{OK} security snapshot fields: docs/SECURITY.md's snapshot field set matches bin/sec-organizer's live schema ({len(_live_snap_fields)} field(s))")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

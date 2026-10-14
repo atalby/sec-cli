@@ -7,17 +7,15 @@ record is archived per period under `history/` (append-only, nothing
 deleted, every file searchable). A new session reads this summary by
 default, not the whole history.
 
-**2026-10-14**: #144 closed the unguarded-current-state sweep's next instance:
-docs/ARCHITECTURE.md's HIAE version banner had no in-repo guard (only the
-hand-run hub `check_version_banners.py`, quoted in profile.md), so a
-fleet-sync AGENTS.md bump would leave it stale with CI green; sentinel
-section 23 now compares the banner vs AGENTS.md (case [43], proven red
+**2026-10-14**: #144: docs/ARCHITECTURE.md's HIAE version banner had no
+in-repo guard (only the hand-run hub `check_version_banners.py`), so a
+fleet-sync bump would leave it stale with CI green; sentinel
+section 23 compares it vs AGENTS.md (case [43], proven red
 first). #145 then swept the same class one file over:
-docs/SECURITY.md's "File Permissions Architecture" states six path->mode
-pairs with no guard, so a dropped `chmod` would leave the security doc lying
-with CI green; sentinel section 25 resolves each doc path from its source
-variable and checks the mode against both its own inline chmod and the live
-chmod, both directions. #145 also closed section 24's untested debt (case [44])
+docs/SECURITY.md's six path->mode pairs had no guard, so a dropped
+`chmod` would leave the security doc lying with CI green; sentinel
+section 25 resolves each doc path from its source
+variable and checks the mode against its inline and the live chmod. #145 also closed section 24's untested debt (case [44])
 and covered section 25 (case [45]). Sentinel 45 -> 47 cases
 / 468 -> 504 assertions. #146 swept the same class to the two docs quoting the config mode outside
 SECURITY.md (README.md, docs/MULTI_TENANCY.md state `~/.sec/sec.conf` mode
@@ -47,8 +45,12 @@ codes + meaning anchors; section 34, case [58]); #157 extended it to SKILL.md's
 stale `exit codes 0/1/2` (now 0/1/2/3). #158 guarded SECURITY.md's seven
 `never in argv` mitigation tokens (Silent Stdin Prompts + In-Memory Injection)
 against their live mechanisms in bin/sec, bin/sec.ps1, bin/bw-session-keeper and
-bin/sec-migrator (section 35, case [59]). Every case proven red first.
-Sentinel 49 -> 59 cases / 532 -> 724 assertions.
+bin/sec-migrator (section 35, case [59]). #159 guarded SECURITY.md's
+snapshot-contents claim ("only item UUIDs, original titles, and folder
+IDs", stale) against bin/sec-organizer's live ten-field snapshot schema
+(section 36, case [60]; both probes + control proven red first). Every case
+proven red first.
+Sentinel 49 -> 60 cases / 532 -> 736 assertions.
 Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 

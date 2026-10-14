@@ -4650,6 +4650,73 @@ else
     no "the control copy's OK line did not name the process-table mitigation check"
     printf '%s\n' "$OUT"
 fi
+echo "[60] docs/SECURITY.md's snapshot-contents field enumeration must match bin/sec-organizer's live snapshot schema (issue #159)"
+WORK_T36A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T36B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T36CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for _w in "$WORK_T36A" "$WORK_T36B" "$WORK_T36CTRL"; do
+    seed "$_w"
+done
+python3 - "$WORK_T36A/docs/SECURITY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`newName`, "
+if s.count(old) != 1:
+    sys.exit("docs/SECURITY.md field list no longer carries the `newName` token to drop")
+open(p, "w", encoding="utf-8").write(s.replace(old, "", 1))
+PY
+OUT="$(cd "$WORK_T36A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SECURITY.md drops a live snapshot field"
+else
+    no "coverage accepted a dropped snapshot field in SECURITY.md"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF 'docs/SECURITY.md enumerates snapshot fields' <<<"$OUT"; then
+    ok "coverage names the drifted snapshot field enumeration"
+else
+    no "coverage did not name the drifted snapshot field enumeration"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T36B/bin/sec-organizer" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = '"newName": $new_name'
+if s.count(old) != 1:
+    sys.exit("bin/sec-organizer no longer carries the \"newName\" action field to rename")
+open(p, "w", encoding="utf-8").write(s.replace(old, '"proposedName": $new_name', 1))
+PY
+OUT="$(cd "$WORK_T36B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the live snapshot schema drifts from the doc"
+else
+    no "coverage accepted a live snapshot schema drift from the doc"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF 'but bin/sec-organizer writes' <<<"$OUT"; then
+    ok "coverage names the live snapshot schema drift"
+else
+    no "coverage did not name the live snapshot schema drift"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T36CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (snapshot field enumeration agrees) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] security snapshot fields:" <<<"$OUT"; then
+    ok "the control copy's OK line names the snapshot-fields check"
+else
+    no "the control copy's OK line did not name the snapshot-fields check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
