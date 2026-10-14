@@ -1,5 +1,28 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (35th run): shipped **#155** -- docs/SECURITY.md:34's
+executables enumeration (the Auditability bullet) had no guard and had gone
+stale: it named five executables (4 bash + 1 python) but the live tracked
+`bin/` tree holds eight (5 bash incl. `bin/hyer-mcp.sh`, 2 python incl.
+`bin/sec-sync-controller.py`, 1 PowerShell). Sentinel section 33 groups every
+single-segment tracked `bin/` file by its shebang (python -> py3, `#!` + sh ->
+bash, `.ps1` -> PowerShell, else a mismatch) and requires the doc's
+`POSIX Bash (...)`, `Python 3 (...)`, `PowerShell (...)` group lists to equal
+the live sets and the `Executables are human-readable` anchor to survive
+(case [57], four probes + control, proven red first: reverting the doc to its
+stale form made coverage fail with both mismatch lines and RC=1). Sentinel
+56 -> 57 cases / 668 -> 688 assertions; mirrors bumped at `profile.md:22`,
+`profile.md:641` (fifty-seven), `ADAPTERS.md:56`, `ADAPTERS.md:262`, this
+file's mirrors-in-sync + `Sentinel =` lines and HISTORY.md size; HISTORY.md
+2026-10-14 block extended and `history/2026-10-14.md` appended.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#155 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-14 (34th run): shipped **#154** -- docs/ARCHITECTURE.md:16's
 `bin/sec.ps1` subcommand-surface claim (native subset `get`/`set`/`run` +
 `housekeep`/`migrate`; bash-only full surface) had no guard. Sentinel section 32
@@ -1036,9 +1059,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 56, sync_guard 16,
-write_honesty 15. Sentinel = 56 cases / 668 assertions. HISTORY.md is at
-8035/8192 bytes - the next narrative addition must still compact first if it
+mirrors in sync): dispatch 92, install 9, sentinel 57, sync_guard 16,
+write_honesty 15. Sentinel = 57 cases / 688 assertions. HISTORY.md is at
+8183/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
 and appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

@@ -31,5 +31,5 @@
 ## 🔍 Auditability
 
 `sec-cli` is built with **zero external compiled binaries or third-party tracking dependencies**:
-- Executables are human-readable POSIX Bash (`bin/sec`, `bin/bw-session-keeper`, `bin/sec-organizer`, `bin/sec-migrator`), Python 3 (`bin/sec-classify.py`), and PowerShell (`bin/sec.ps1`).
+- Executables are human-readable POSIX Bash (`bin/sec`, `bin/bw-session-keeper`, `bin/sec-organizer`, `bin/sec-migrator`, `bin/hyer-mcp.sh`), Python 3 (`bin/sec-classify.py`, `bin/sec-sync-controller.py`), and PowerShell (`bin/sec.ps1`).
 - Every line of code can be audited line-by-line in under 5 minutes.

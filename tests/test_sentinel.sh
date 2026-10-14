@@ -4320,6 +4320,123 @@ else
     no "the control copy's OK line did not name the ps1-surface check"
     printf '%s\n' "$OUT"
 fi
+echo "[57] docs/SECURITY.md's executables enumeration must match the live bin/ tree grouped by shebang (issue #155)"
+WORK_T33A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T33B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T33C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T33D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T33CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T33A" "$WORK_T33B" "$WORK_T33C" "$WORK_T33D" "$WORK_T33CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T33A/docs/SECURITY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`bin/sec-migrator`, `bin/hyer-mcp.sh`), Python 3"
+new = "`bin/sec-migrator`), Python 3"
+if s.count(old) != 1:
+    sys.exit("docs/SECURITY.md carries no POSIX Bash executable list to corrupt")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_T33A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SECURITY.md drops a bash executable from its POSIX Bash group"
+else
+    no "coverage accepted a dropped bash executable in SECURITY.md's POSIX Bash group"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/SECURITY.md names POSIX Bash executables bin/bw-session-keeper, bin/sec, bin/sec-migrator, bin/sec-organizer, but the live bin/ tree has bin/bw-session-keeper, bin/hyer-mcp.sh, bin/sec, bin/sec-migrator, bin/sec-organizer" <<<"$OUT"; then
+    ok "coverage names the dropped bash executable in SECURITY.md's POSIX Bash group"
+else
+    no "coverage did not name the dropped bash executable in SECURITY.md's POSIX Bash group"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T33B/docs/SECURITY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`bin/sec-classify.py`, `bin/sec-sync-controller.py`), and PowerShell"
+new = "`bin/sec-classify.py`), and PowerShell"
+if s.count(old) != 1:
+    sys.exit("docs/SECURITY.md carries no Python 3 executable list to corrupt")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_T33B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SECURITY.md drops a python executable from its Python 3 group"
+else
+    no "coverage accepted a dropped python executable in SECURITY.md's Python 3 group"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/SECURITY.md names Python 3 executables bin/sec-classify.py, but the live bin/ tree has bin/sec-classify.py, bin/sec-sync-controller.py" <<<"$OUT"; then
+    ok "coverage names the dropped python executable in SECURITY.md's Python 3 group"
+else
+    no "coverage did not name the dropped python executable in SECURITY.md's Python 3 group"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T33C/docs/SECURITY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`bin/sec-migrator`, `bin/hyer-mcp.sh`), Python 3"
+new = "`bin/sec-migrator`, `bin/hyer-mcp.sh`, `bin/ghost.sh`), Python 3"
+if s.count(old) != 1:
+    sys.exit("docs/SECURITY.md carries no POSIX Bash executable list to extend")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_T33C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SECURITY.md names a nonexistent bash executable"
+else
+    no "coverage accepted a nonexistent bash executable in SECURITY.md"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/SECURITY.md names POSIX Bash executables bin/bw-session-keeper, bin/ghost.sh, bin/hyer-mcp.sh, bin/sec, bin/sec-migrator, bin/sec-organizer, but the live bin/ tree has bin/bw-session-keeper, bin/hyer-mcp.sh, bin/sec, bin/sec-migrator, bin/sec-organizer" <<<"$OUT"; then
+    ok "coverage names the nonexistent bash executable in SECURITY.md"
+else
+    no "coverage did not name the nonexistent bash executable in SECURITY.md"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T33D/docs/SECURITY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+if s.count("Executables are human-readable") != 1:
+    sys.exit("docs/SECURITY.md carries no executable-enumeration anchor phrase to drop")
+open(p, "w", encoding="utf-8").write(s.replace("Executables are human-readable", "Executables are legible", 1))
+PY
+OUT="$(cd "$WORK_T33D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SECURITY.md drops the executable-enumeration anchor phrase"
+else
+    no "coverage accepted a dropped executable-enumeration anchor phrase in SECURITY.md"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/SECURITY.md no longer enumerates its executables in the guarded 'Executables are human-readable ...' form" <<<"$OUT"; then
+    ok "coverage names the dropped executable-enumeration anchor phrase"
+else
+    no "coverage did not name the dropped executable-enumeration anchor phrase"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T33CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (SECURITY.md executable list agrees) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] security executables:" <<<"$OUT"; then
+    ok "the control copy's OK line names the security-executables check"
+else
+    no "the control copy's OK line did not name the security-executables check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

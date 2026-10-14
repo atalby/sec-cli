@@ -657,6 +657,7 @@ _NUM_WORDS = {
     "fifty-four": 54,
     "fifty-five": 55,
     "fifty-six": 56,
+    "fifty-seven": 57,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2349,6 +2350,48 @@ else:
                 f"but bin/sec dispatches no `{_pc}` command"
             )
 
+# --- 33. docs/SECURITY.md's executables enumeration must match the live
+#         tracked bin/ tree grouped by shebang (issue #155) -----------------
+sec_exec_mismatches = []
+_sec_exec_doc = _nl_read("docs/SECURITY.md")
+_live_bash_execs, _live_py_execs, _live_ps_execs = set(), set(), set()
+for _be in sorted(f for f in tracked if f.startswith("bin/") and f.count("/") == 1):
+    _be_first = (_nl_read(_be).splitlines() or [""])[0]
+    if "python" in _be_first:
+        _live_py_execs.add(_be)
+    elif _be_first.startswith("#!") and ("bash" in _be_first or "sh" in _be_first):
+        _live_bash_execs.add(_be)
+    elif _be.endswith(".ps1"):
+        _live_ps_execs.add(_be)
+    else:
+        sec_exec_mismatches.append(
+            f"tracked bin/ executable {_be} carries no recognizable shebang: {_be_first!r}"
+        )
+if "Executables are human-readable" not in _sec_exec_doc:
+    sec_exec_mismatches.append(
+        "docs/SECURITY.md no longer enumerates its executables in the guarded "
+        "'Executables are human-readable ...' form"
+    )
+for _se_label, _se_pat, _se_live in (
+    ("POSIX Bash", r"POSIX Bash \(([^)]*)\)", _live_bash_execs),
+    ("Python 3", r"Python 3 \(([^)]*)\)", _live_py_execs),
+    ("PowerShell", r"PowerShell \(([^)]*)\)", _live_ps_execs),
+):
+    _se_m = re.search(_se_pat, _sec_exec_doc)
+    if _se_m is None:
+        sec_exec_mismatches.append(
+            f"docs/SECURITY.md no longer states its {_se_label} executable group "
+            f"in the guarded form"
+        )
+        continue
+    _se_doc = set(re.findall(r"`(bin/[^`]+)`", _se_m.group(1)))
+    if _se_doc != _se_live:
+        sec_exec_mismatches.append(
+            f"docs/SECURITY.md names {_se_label} executables "
+            f"{', '.join(sorted(_se_doc)) or '(none)'}, but the live bin/ tree has "
+            f"{', '.join(sorted(_se_live)) or '(none)'}"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2532,6 +2575,12 @@ if ps1_surface_mismatches:
     )
     for _m in ps1_surface_mismatches:
         print(f"{ERROR} ps1 surface: {_m}")
+if sec_exec_mismatches:
+    failures.append(
+        f"{len(sec_exec_mismatches)} SECURITY.md executable-enumeration drift(s) vs the live bin/ tree"
+    )
+    for _m in sec_exec_mismatches:
+        print(f"{ERROR} security executables: {_m}")
 
 if failures:
     for f in failures:
@@ -2569,6 +2618,7 @@ print(f"{OK} run-injection claims: README.md + docs/ARCHITECTURE.md name exactly
 print(f"{OK} classifier categories: README.md + docs/ARCHITECTURE.md name only live CATEGORY_WEIGHTS keys ({', '.join(sorted(_live_cats))}) + the `general` fallback")
 print(f"{OK} completion surfaces: OPERATOR_MANUAL.md's shell set + alias and completions/_sec match the live bin/sec completion dispatch")
 print(f"{OK} ps1 surface: docs/ARCHITECTURE.md's bin/sec.ps1 native subset + bin/sec-only 'full surface' match the live dispatch")
+print(f"{OK} security executables: docs/SECURITY.md's executable list matches the live bin/ tree ({len(_live_bash_execs)} bash, {len(_live_py_execs)} python, {len(_live_ps_execs)} powershell)")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

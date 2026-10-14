@@ -47,8 +47,10 @@ CATEGORY_WEIGHTS keys + the `general` fallback; section 30, case [52], proven
 red first). #153 guarded the completion surface (OPERATOR_MANUAL.md vs bin/sec's
 completion dispatch + completions/_sec; section 31, case [53]). #154 guarded
 ARCHITECTURE.md's bin/sec.ps1 native-subset + bash-only full-surface claim vs the
-live dispatch (section 32, case [54]; both proven red first). Sentinel 49 -> 56
-cases / 532 -> 668 assertions.
+live dispatch (section 32, case [54]; both proven red first). #155 guarded
+docs/SECURITY.md's executables enumeration vs the live tracked bin/ tree grouped
+by shebang (section 33, case [57], proven red first). Sentinel 49 -> 57
+cases / 532 -> 688 assertions.
 Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
