@@ -1,5 +1,28 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (37th run): shipped **#157** -- the `sec sync` exit-code
+contract is enumerated in a third project-owned place,
+skills/architecture-360-audit/SKILL.md:82 (Non-negotiables rule 9, "Preserve
+contracts"), which still stated `exit codes 0/1/2` while the live controller
+returns `{0, 1, 2, 3}` (code 3 = `CENTRAL SECRET SYNC FAILED`). Section 34
+(issue #156) read only OPERATOR_MANUAL.md + ARCHITECTURE.md, so the SKILL.md
+claim was stale and unguarded. Extended section 34 to parse SKILL.md's
+`exit codes N/...)` clause and require it to equal `_live_sync_codes`, and
+corrected that line to `exit codes 0/1/2/3`. Probe E added to case [58]
+(corrupting SKILL.md's codes to 0/1/2 -> `coverage` RC=1 with
+`skills/architecture-360-audit/SKILL.md's sync exit codes are [0, 1, 2], but
+bin/sec-sync-controller.py returns [0, 1, 2, 3]`), proven red first. Case count
+stays 58 (a probe, not a case); assertions 708 -> 712; mirrors bumped at this
+file's `Sentinel =` line and HISTORY.md size (8003 -> 8116/8192); HISTORY.md
+2026-10-14 block extended and `history/2026-10-14.md` appended.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#157 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-14 (36th run): shipped **#156** -- `sec sync`'s exit-code
 contract is enumerated in two project-owned docs (docs/OPERATOR_MANUAL.md:93's
 `Exit codes: 0 ... 1 ... 2 ... 3 ...` line and docs/ARCHITECTURE.md:15's
@@ -1085,8 +1108,8 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 92, install 9, sentinel 58, sync_guard 16,
-write_honesty 15. Sentinel = 58 cases / 708 assertions. HISTORY.md is at
-8003/8192 bytes - the next narrative addition must still compact first if it
+write_honesty 15. Sentinel = 58 cases / 712 assertions. HISTORY.md is at
+8116/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
 and appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

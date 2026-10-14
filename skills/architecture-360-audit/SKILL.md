@@ -79,7 +79,7 @@ Bind these into every run. They are not style preferences.
    `sec` subcommand surface and its usage text, the `sec.conf` file format
    and its mode-600 location at `$HOME/.sec/sec.conf`, the `sec sync`
    confirmation behavior (`--dry-run` preview, TTY `y/N` or `--yes`,
-   exit codes 0/1/2), the `install.sh` bootstrap environment variables
+   exit codes 0/1/2/3), the `install.sh` bootstrap environment variables
    (`SEC_REPO_URL`, `SEC_BOOTSTRAP_DIR`), and the `completions/_sec`
    completion surface. Any proposed change must state explicitly whether it
    alters one. An alteration is a breaking change requiring a decision, not

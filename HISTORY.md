@@ -47,8 +47,9 @@ docs/SECURITY.md's executables enumeration vs the live tracked bin/ tree grouped
 by shebang (section 33, case [57], proven red first). #156 guarded `sec sync`'s
 exit-code contract (OPERATOR_MANUAL.md + ARCHITECTURE.md vs
 bin/sec-sync-controller.py's returned codes + meaning anchors; section 34,
-case [58], proven red first). Sentinel 49 -> 58
-cases / 532 -> 708 assertions.
+case [58], proven red first); #157 extended that guard to the contract's third
+enumeration, SKILL.md's stale `exit codes 0/1/2` (now 0/1/2/3). Sentinel 49 -> 58
+cases / 532 -> 712 assertions.
 Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 

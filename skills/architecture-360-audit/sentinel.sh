@@ -2394,7 +2394,8 @@ for _se_label, _se_pat, _se_live in (
         )
 
 # --- 34. `sec sync`'s exit-code contract prose (docs/OPERATOR_MANUAL.md +
-#         docs/ARCHITECTURE.md) must match bin/sec-sync-controller.py (issue #156) --
+#         docs/ARCHITECTURE.md + skills/architecture-360-audit/SKILL.md) must match
+#         bin/sec-sync-controller.py (issues #156, #157) -------------------------
 sync_exit_mismatches = []
 _sync_ctrl_src = _nl_read("bin/sec-sync-controller.py")
 _sync_main_m = re.search(r"\ndef main\(\):([\s\S]*?)\nif __name__", _sync_ctrl_src)
@@ -2451,6 +2452,23 @@ else:
         sync_exit_mismatches.append(
             f"docs/ARCHITECTURE.md's sync exit-code contract is {sorted(_arch_sync_codes)}, "
             f"but bin/sec-sync-controller.py returns {sorted(_live_sync_codes)}"
+        )
+
+_skill_exit_m = re.search(
+    r"exit codes (\d(?:/\d)+)\)", _nl_read("skills/architecture-360-audit/SKILL.md")
+)
+if _skill_exit_m is None:
+    sync_exit_mismatches.append(
+        "skills/architecture-360-audit/SKILL.md no longer states the sync "
+        "`exit codes N/...` clause in the guarded form"
+    )
+else:
+    _skill_sync_codes = {int(_d) for _d in _skill_exit_m.group(1).split("/")}
+    if _skill_sync_codes != _live_sync_codes:
+        sync_exit_mismatches.append(
+            f"skills/architecture-360-audit/SKILL.md's sync exit codes are "
+            f"{sorted(_skill_sync_codes)}, but bin/sec-sync-controller.py returns "
+            f"{sorted(_live_sync_codes)}"
         )
 
 if want_list:
@@ -2686,7 +2704,7 @@ print(f"{OK} classifier categories: README.md + docs/ARCHITECTURE.md name only l
 print(f"{OK} completion surfaces: OPERATOR_MANUAL.md's shell set + alias and completions/_sec match the live bin/sec completion dispatch")
 print(f"{OK} ps1 surface: docs/ARCHITECTURE.md's bin/sec.ps1 native subset + bin/sec-only 'full surface' match the live dispatch")
 print(f"{OK} security executables: docs/SECURITY.md's executable list matches the live bin/ tree ({len(_live_bash_execs)} bash, {len(_live_py_execs)} python, {len(_live_ps_execs)} powershell)")
-print(f"{OK} sync exit codes: docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md enumerate exactly bin/sec-sync-controller.py's returned codes ({', '.join(str(c) for c in sorted(_live_sync_codes))})")
+print(f"{OK} sync exit codes: docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md + skills/architecture-360-audit/SKILL.md enumerate exactly bin/sec-sync-controller.py's returned codes ({', '.join(str(c) for c in sorted(_live_sync_codes))})")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

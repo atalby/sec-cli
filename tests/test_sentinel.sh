@@ -4437,13 +4437,14 @@ else
     no "the control copy's OK line did not name the security-executables check"
     printf '%s\n' "$OUT"
 fi
-echo "[58] docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md's sec sync exit-code contract must match bin/sec-sync-controller.py (issue #156)"
+echo "[58] docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md + skills/architecture-360-audit/SKILL.md's sec sync exit-code contract must match bin/sec-sync-controller.py (issues #156, #157)"
 WORK_T34A="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T34B="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T34C="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T34D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T34E="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T34CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for W in "$WORK_T34A" "$WORK_T34B" "$WORK_T34C" "$WORK_T34D" "$WORK_T34CTRL"; do
+for W in "$WORK_T34A" "$WORK_T34B" "$WORK_T34C" "$WORK_T34D" "$WORK_T34E" "$WORK_T34CTRL"; do
     seed "$W"
 done
 python3 - "$WORK_T34A/docs/OPERATOR_MANUAL.md" <<'PY'
@@ -4540,6 +4541,30 @@ if grep -qF "bin/sec-sync-controller.py no longer carries the 1-code anchor 'No 
     ok "coverage names the dropped exit-code meaning anchor in bin/sec-sync-controller.py"
 else
     no "coverage did not name the dropped exit-code meaning anchor in bin/sec-sync-controller.py"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T34E/skills/architecture-360-audit/SKILL.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "exit codes 0/1/2/3)"
+new = "exit codes 0/1/2)"
+if s.count(old) != 1:
+    sys.exit("skills/architecture-360-audit/SKILL.md carries no sync 'exit codes 0/1/2/3' clause to corrupt")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_T34E" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SKILL.md drops the sync '3' exit code"
+else
+    no "coverage accepted a dropped sync '3' exit code in SKILL.md"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "skills/architecture-360-audit/SKILL.md's sync exit codes are [0, 1, 2], but bin/sec-sync-controller.py returns [0, 1, 2, 3]" <<<"$OUT"; then
+    ok "coverage names the dropped sync '3' exit code in SKILL.md"
+else
+    no "coverage did not name the dropped sync '3' exit code in SKILL.md"
     printf '%s\n' "$OUT"
 fi
 OUT="$(cd "$WORK_T34CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
