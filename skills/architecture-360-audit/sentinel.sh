@@ -652,7 +652,7 @@ _NUM_WORDS = {
     "thirty-five": 35, "thirty-six": 36, "thirty-seven": 37, "thirty-eight": 38,
     "thirty-nine": 39, "forty": 40, "forty-one": 41, "forty-two": 42,
     "forty-three": 43, "forty-four": 44, "forty-five": 45,
-    "forty-six": 46, "forty-seven": 47,
+    "forty-six": 46, "forty-seven": 47, "forty-eight": 48,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1904,6 +1904,43 @@ else:
                 f"docs/SECURITY.md no longer documents a mode for {_p_path}"
             )
 
+# --- 26. ~/.sec/sec.conf mode prose in README.md + docs/MULTI_TENANCY.md must
+#         match the live bin/sec chmod (issue #146) --------------------------
+conf_mode_mismatches = []
+_sec_conf_live_path = _security_expand(_security_env.get("CONFIG_FILE") or "")
+_sec_conf_chmod_m = re.search(
+    r'chmod (\d+) "\$CONFIG_FILE"', _security_srcs.get("bin/sec", "")
+)
+_live_sec_conf_mode = (
+    "0" + _sec_conf_chmod_m.group(1).lstrip("0") if _sec_conf_chmod_m else ""
+)
+for _cm_rel in ("README.md", "docs/MULTI_TENANCY.md"):
+    try:
+        with open(os.path.join(repo, *_cm_rel.split("/")), encoding="utf-8") as _fh:
+            _cm_text = _fh.read()
+    except OSError:
+        _cm_text = ""
+    _cm = re.search(r"`([^`]*sec\.conf)`\s*\(mode\s*`(\d{4})`\)", _cm_text)
+    if not _cm:
+        conf_mode_mismatches.append(
+            f"{_cm_rel} no longer states the ~/.sec/sec.conf mode in the guarded form"
+        )
+        continue
+    if _cm.group(1) != _sec_conf_live_path:
+        conf_mode_mismatches.append(
+            f"{_cm_rel} names {_cm.group(1)} but the live config file is "
+            f"{_sec_conf_live_path or 'unset'}"
+        )
+    if not _sec_conf_chmod_m:
+        conf_mode_mismatches.append(
+            f"{_cm_rel} states a sec.conf mode but bin/sec has no chmod on $CONFIG_FILE"
+        )
+    elif _cm.group(2) != _live_sec_conf_mode:
+        conf_mode_mismatches.append(
+            f"{_cm_rel} states mode {_cm.group(2)} but the live bin/sec chmod says "
+            f"{_sec_conf_chmod_m.group(1)}"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2049,6 +2086,10 @@ if security_perm_mismatches:
     failures.append(f"{len(security_perm_mismatches)} SECURITY.md file-permission drift(s) vs the live chmod calls")
     for _m in security_perm_mismatches:
         print(f"{ERROR} security perms: {_m}")
+if conf_mode_mismatches:
+    failures.append(f"{len(conf_mode_mismatches)} sec.conf mode prose drift(s) vs the live bin/sec chmod")
+    for _m in conf_mode_mismatches:
+        print(f"{ERROR} sec.conf mode: {_m}")
 
 if failures:
     for f in failures:
@@ -2079,6 +2120,7 @@ print(f"{OK} code census: profile.md's SYNC_KEYS count + sync-controller timeout
 print(f"{OK} HIAE banner: docs/ARCHITECTURE.md matches AGENTS.md (v{_agents_hiae.group(1)})")
 print(f"{OK} timeout claim: ARCHITECTURE.md + OPERATOR_MANUAL.md default 60s + SEC_SYNC_TIMEOUT override match bin/sec-sync-controller.py")
 print(f"{OK} security perms: docs/SECURITY.md's file-mode claims match the live chmod calls")
+print(f"{OK} sec.conf mode prose: README.md + docs/MULTI_TENANCY.md match the live bin/sec chmod ({_live_sec_conf_mode})")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

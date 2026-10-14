@@ -3286,6 +3286,126 @@ else
     printf '%s\n' "$OUT"
 fi
 echo
+echo "[46] README.md + docs/MULTI_TENANCY.md sec.conf mode prose must match the live bin/sec chmod (issue #146)"
+WORK_T18A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T18B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T18C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T18D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T18CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T18A" "$WORK_T18B" "$WORK_T18C" "$WORK_T18D" "$WORK_T18CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T18A/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(`~/.sec/sec\.conf` \(mode `)0600(`\))", r"\g<1>0644\g<2>", s, count=1)
+if n != 1:
+    sys.exit("README.md carries no sec.conf (mode 0600) prose to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T18A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when README.md's sec.conf mode drifts"
+else
+    no "coverage accepted a README.md sec.conf mode drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "README.md states mode 0644 but the live bin/sec chmod says 600" <<<"$OUT"; then
+    ok "coverage names the README.md sec.conf mode drift"
+else
+    no "coverage did not name the README.md sec.conf mode drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T18B/docs/MULTI_TENANCY.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(`~/.sec/sec\.conf` \(mode `)0600(`\))", r"\g<1>0644\g<2>", s, count=1)
+if n != 1:
+    sys.exit("docs/MULTI_TENANCY.md carries no sec.conf (mode 0600) prose to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T18B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when docs/MULTI_TENANCY.md's sec.conf mode drifts"
+else
+    no "coverage accepted a docs/MULTI_TENANCY.md sec.conf mode drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/MULTI_TENANCY.md states mode 0644 but the live bin/sec chmod says 600" <<<"$OUT"; then
+    ok "coverage names the docs/MULTI_TENANCY.md sec.conf mode drift"
+else
+    no "coverage did not name the docs/MULTI_TENANCY.md sec.conf mode drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T18C/bin/sec" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r'chmod 600 "\$CONFIG_FILE"', 'chmod 644 "$CONFIG_FILE"', s, count=1)
+if n != 1:
+    sys.exit("bin/sec carries no CONFIG_FILE chmod to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T18C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the live sec.conf chmod drifts from the doc prose"
+else
+    no "coverage accepted a live sec.conf chmod drift from the doc prose"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "README.md states mode 0600 but the live bin/sec chmod says 644" <<<"$OUT"; then
+    ok "coverage names the live sec.conf chmod drift"
+else
+    no "coverage did not name the live sec.conf chmod drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T18D/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r" \(mode `0600`\)", "", s, count=1)
+if n != 1:
+    sys.exit("README.md carries no sec.conf mode clause to remove")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T18D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when README.md stops stating the sec.conf mode"
+else
+    no "coverage accepted README.md dropping the sec.conf mode claim"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "README.md no longer states the ~/.sec/sec.conf mode in the guarded form" <<<"$OUT"; then
+    ok "coverage names the dropped README.md sec.conf mode claim"
+else
+    no "coverage did not name the dropped README.md sec.conf mode claim"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T18CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (sec.conf mode prose agrees) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] sec.conf mode prose:" <<<"$OUT"; then
+    ok "the control copy's OK line names the sec.conf mode prose check"
+else
+    no "the control copy's OK line did not name the sec.conf mode prose check"
+    printf '%s\n' "$OUT"
+fi
+echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
     exit 0

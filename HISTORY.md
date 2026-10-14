@@ -24,7 +24,12 @@ variable and checks the mode against both its own inline chmod and the live
 chmod, both directions. #145 also closed the previous run's untested debt:
 section 24 (the timeout-claim guard) had shipped with no issue and no probes;
 case [44] now covers it, case [45] covers section 25. Sentinel 45 -> 47 cases
-/ 468 -> 504 assertions. Tracker holds #51, #67, #92.
+/ 468 -> 504 assertions. #146 swept the same class into the two docs that quote
+the config-file mode outside SECURITY.md: README.md and docs/MULTI_TENANCY.md
+both state `~/.sec/sec.conf` (mode `0600`) with no guard, so sentinel section 26
+resolves the live `bin/sec` chmod on `$CONFIG_FILE` and fails if either doc's
+stated mode drifts, names a different path, or drops the claim (case [46]).
+Sentinel 47 -> 48 cases / 504 -> 524 assertions. Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected

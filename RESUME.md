@@ -438,9 +438,13 @@ now same-line-bound + `findall` all-must-match like section 9), and the 10th
 run shipped #136 (the sentinel read every current-state file except the
 360-audit-skill-forge generator spec; section 16 now cross-checks the forge's
 declared shape against the live SKILL.md). profile.md's numeric claims and the
-audit-skill family's cross-file shape claims are now exhaustively guarded. Next
-candidates, in order: the remaining theoretical `re.search` scope-grabs (below),
-then the fresh 360 audit (#67, after human scope approval).
+audit-skill family's cross-file shape claims are now exhaustively guarded. The
+26th run shipped #146: the `~/.sec/sec.conf` mode `0600` natural-language copies
+in README.md and docs/MULTI_TENANCY.md were the next unguarded current-state
+claims; sentinel section 26 now ties both to the live `bin/sec` chmod on
+`$CONFIG_FILE`. Next candidates, in order: the remaining theoretical
+`re.search` scope-grabs (below), then the fresh 360 audit (#67, after human
+scope approval).
 Cheapest concrete next candidates, in order:
 - The **pytest-count mirror family is now self-maintaining** (case [22]'s
   controls derive the live collection count, the pattern case [27] already
@@ -497,6 +501,15 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   live gitlab.com login. This repo is GitHub-tracked, so `gh` is used.
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
+
+- #146 `fix(sentinel)` - the `~/.sec/sec.conf` mode `0600` prose in README.md:48
+  and docs/MULTI_TENANCY.md:9 was unguarded (only docs/SECURITY.md's differing
+  wording was, via section 25). Section 26 reuses the section-25 helpers to
+  resolve the live `bin/sec` chmod on `$CONFIG_FILE` and fails when either doc's
+  stated mode drifts, names a different path, or drops the claim. Case [46], four
+  probes + control. Sentinel 47 -> 48 cases / 504 -> 524 assertions; mirrors
+  bumped at `profile.md:22`, `profile.md:641` (forty-eight), `ADAPTERS.md:56`,
+  `ADAPTERS.md:262`, and the baseline `Sentinel =` line.
 
 - #120 `fix(test)` - the repo-side observability half of the flaky-dispatch
   issue, and the reason that issue was undiagnosable. The mirror reported a
@@ -810,10 +823,10 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 47, sync_guard 16,
-write_honesty 15. Sentinel = 47 cases / 504 assertions. HISTORY.md is at
-6208/8192 bytes - the next narrative addition must still compact first if it
-would cross the budget (#145's entry extended the 2026-10-14 paragraph and
+mirrors in sync): dispatch 92, install 9, sentinel 48, sync_guard 16,
+write_honesty 15. Sentinel = 48 cases / 524 assertions. HISTORY.md is at
+6625/8192 bytes - the next narrative addition must still compact first if it
+would cross the budget (#146's entry extended the 2026-10-14 paragraph and
 appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each
