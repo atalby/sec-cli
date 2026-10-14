@@ -19,17 +19,14 @@ with CI green; sentinel section 25 resolves each doc path from its source
 variable and checks the mode against both its own inline chmod and the live
 chmod, both directions. #145 also closed section 24's untested debt (case [44])
 and covered section 25 (case [45]). Sentinel 45 -> 47 cases
-/ 468 -> 504 assertions. #146 swept the same class into the two docs that quote
-the config-file mode outside SECURITY.md: README.md and docs/MULTI_TENANCY.md
-both state `~/.sec/sec.conf` (mode `0600`) with no guard, so sentinel section 26
-resolves the live `bin/sec` chmod on `$CONFIG_FILE` and fails if either doc's
-stated mode drifts, names a different path, or drops the claim (case [46]).
-Sentinel 47 -> 48 cases / 504 -> 524 assertions. #147 then line-anchored section
-9's `current suites:` extractor (an earlier inline mention shadowed the real
-ADAPTERS.md snapshot; case [47], red first). #148 scoped RESUME.md's two own
-count mirrors ('suite counts ... mirrors in sync' and 'Sentinel = N cases / M
-assertions') to `## Verified baseline`'s body so an earlier echo cannot shadow
-the real claim (case [48], proven red first). #149 guarded the last prose
+/ 468 -> 504 assertions. #146 swept the same class to the two docs quoting the config mode outside
+SECURITY.md (README.md, docs/MULTI_TENANCY.md state `~/.sec/sec.conf` mode
+`0600`); section 26 resolves bin/sec's `$CONFIG_FILE` chmod and fails if a doc's
+mode drifts, names another path, or drops the claim (case [46]).
+Sentinel 47 -> 48 cases / 504 -> 524 assertions. #147 line-anchored section 9's
+`current suites:` extractor (a shadowing inline mention; case [47]). #148 scoped
+RESUME.md's two count mirrors to `## Verified baseline` so an earlier echo
+cannot shadow them (case [48]). #149 guarded the last prose
 natural-language mode claims (README.md + OPERATOR_MANUAL.md + ARCHITECTURE.md
 vs their live chmod/umask; section 27, case [49], proven red first). Sentinel
 49 -> 51 cases / 532 -> 568 assertions. #150 guarded the runtime-dependency sentence +
@@ -44,12 +41,14 @@ completion dispatch + completions/_sec; section 31, case [53]). #154 guarded
 ARCHITECTURE.md's bin/sec.ps1 native-subset + bash-only full-surface claim vs the
 live dispatch (section 32, case [54]; both proven red first). #155 guarded
 docs/SECURITY.md's executables enumeration vs the live tracked bin/ tree grouped
-by shebang (section 33, case [57], proven red first). #156 guarded `sec sync`'s
-exit-code contract (OPERATOR_MANUAL.md + ARCHITECTURE.md vs
-bin/sec-sync-controller.py's returned codes + meaning anchors; section 34,
-case [58], proven red first); #157 extended that guard to the contract's third
-enumeration, SKILL.md's stale `exit codes 0/1/2` (now 0/1/2/3). Sentinel 49 -> 58
-cases / 532 -> 712 assertions.
+by shebang (section 33, case [57]). #156 guarded `sec sync`'s exit-code contract
+(OPERATOR_MANUAL.md + ARCHITECTURE.md vs bin/sec-sync-controller.py's returned
+codes + meaning anchors; section 34, case [58]); #157 extended it to SKILL.md's
+stale `exit codes 0/1/2` (now 0/1/2/3). #158 guarded SECURITY.md's seven
+`never in argv` mitigation tokens (Silent Stdin Prompts + In-Memory Injection)
+against their live mechanisms in bin/sec, bin/sec.ps1, bin/bw-session-keeper and
+bin/sec-migrator (section 35, case [59]). Every case proven red first.
+Sentinel 49 -> 59 cases / 532 -> 724 assertions.
 Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 

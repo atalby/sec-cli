@@ -4581,6 +4581,75 @@ else
     no "the control copy's OK line did not name the sync-exit-code check"
     printf '%s\n' "$OUT"
 fi
+echo "[59] docs/SECURITY.md's process-table / in-memory-injection mitigations must still exist in the live bin/ code (issue #158)"
+WORK_T35A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T35B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T35CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T35A" "$WORK_T35B" "$WORK_T35CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T35A/docs/SECURITY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "read -rsp"
+new = "read -rs"
+if s.count(old) != 1:
+    sys.exit("docs/SECURITY.md carries no `read -rsp` mitigation to drop")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_T35A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SECURITY.md drops a stdin-prompt mitigation token"
+else
+    no "coverage accepted a dropped stdin-prompt mitigation token in SECURITY.md"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF 'docs/SECURITY.md no longer states its `read -rsp` mitigation' <<<"$OUT"; then
+    ok "coverage names the dropped stdin-prompt mitigation token in SECURITY.md"
+else
+    no "coverage did not name the dropped stdin-prompt mitigation token in SECURITY.md"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T35B/bin/bw-session-keeper" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "bw unlock --passwordenv"
+new = "bw unlock --pwenv"
+if s.count(old) != 1:
+    sys.exit("bin/bw-session-keeper carries no `bw unlock --passwordenv` anchor to drop")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_T35B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the live bin/ code drops a claimed mitigation mechanism"
+else
+    no "coverage accepted a dropped mitigation mechanism in the live bin/ code"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF 'docs/SECURITY.md still claims the `bw unlock --passwordenv` mitigation, but bin/bw-session-keeper no longer carries `bw unlock --passwordenv`' <<<"$OUT"; then
+    ok "coverage names the dropped mitigation mechanism in the live bin/ code"
+else
+    no "coverage did not name the dropped mitigation mechanism in the live bin/ code"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T35CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (process-table mitigations agree) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] security process table:" <<<"$OUT"; then
+    ok "the control copy's OK line names the process-table mitigation check"
+else
+    no "the control copy's OK line did not name the process-table mitigation check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

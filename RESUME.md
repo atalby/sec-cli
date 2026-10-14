@@ -1,5 +1,28 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (38th run): shipped **#158** -- docs/SECURITY.md:12-13
+(Shell History Leak -> Silent Stdin Prompts; Process Table Snooping ->
+In-Memory Injection) state seven `never in argv` mitigation tokens
+(`read -rsp`, `-AsSecureString`, `bw unlock --passwordenv`, `op item create -`,
+`value=-`, `bws secret create`, `KEY=@path`) but no sentinel section read them.
+Sentinel section 35 asserts each doc token survives AND its live mechanism
+still exists in the named bin/ file (bin/sec, bin/sec.ps1, bin/bw-session-keeper,
+bin/sec-migrator); the `KEY=@path` bullet binds to `infisical secrets set` in
+bin/sec-migrator. Case [59] (two probes + control, proven red first: breaking
+SECURITY.md's `read -rsp` and dropping `bw unlock --passwordenv` from
+bin/bw-session-keeper each made coverage fail RC=1). Sentinel 58 -> 59 cases /
+712 -> 724 assertions; mirrors bumped at `profile.md:22`, `profile.md:641`
+(fifty-nine), `ADAPTERS.md:56`, `ADAPTERS.md:262`, this file's mirrors-in-sync +
+`Sentinel =` lines and HISTORY.md size; HISTORY.md 2026-10-14 block extended and
+`history/2026-10-14.md` appended.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#158 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-14 (37th run): shipped **#157** -- the `sec sync` exit-code
 contract is enumerated in a third project-owned place,
 skills/architecture-360-audit/SKILL.md:82 (Non-negotiables rule 9, "Preserve
@@ -1107,9 +1130,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 58, sync_guard 16,
-write_honesty 15. Sentinel = 58 cases / 712 assertions. HISTORY.md is at
-8116/8192 bytes - the next narrative addition must still compact first if it
+mirrors in sync): dispatch 92, install 9, sentinel 59, sync_guard 16,
+write_honesty 15. Sentinel = 59 cases / 724 assertions. HISTORY.md is at
+8059/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
 and appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

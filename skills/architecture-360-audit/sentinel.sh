@@ -658,7 +658,7 @@ _NUM_WORDS = {
     "fifty-five": 55,
     "fifty-six": 56,
     "fifty-seven": 57,
-    "fifty-eight": 58,
+    "fifty-eight": 58, "fifty-nine": 59,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2471,6 +2471,32 @@ else:
             f"{sorted(_live_sync_codes)}"
         )
 
+# --- 35. docs/SECURITY.md's process-table / in-memory-injection mitigations
+#         (the `never in argv` guarantees) must still exist in the live bin/
+#         code (issue #158) --------------------------------------------------
+sec_proc_mismatches = []
+_sec_proc_doc = _nl_read("docs/SECURITY.md")
+_sec_proc_pairs = (
+    ("read -rsp", "bin/sec", "read -rsp"),
+    ("-AsSecureString", "bin/sec.ps1", "-AsSecureString"),
+    ("bw unlock --passwordenv", "bin/bw-session-keeper", "bw unlock --passwordenv"),
+    ("op item create -", "bin/sec", "op item create -"),
+    ("value=-", "bin/sec-migrator", "value=-"),
+    ("bws secret create", "bin/sec", "bws secret create"),
+    ("KEY=@path", "bin/sec-migrator", "infisical secrets set"),
+)
+for _doc_tok, _live_rel, _live_tok in _sec_proc_pairs:
+    if _doc_tok not in _sec_proc_doc:
+        sec_proc_mismatches.append(
+            f"docs/SECURITY.md no longer states its `{_doc_tok}` mitigation"
+        )
+        continue
+    if _live_tok not in _nl_read(_live_rel):
+        sec_proc_mismatches.append(
+            f"docs/SECURITY.md still claims the `{_doc_tok}` mitigation, but "
+            f"{_live_rel} no longer carries `{_live_tok}`"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2666,6 +2692,12 @@ if sync_exit_mismatches:
     )
     for _m in sync_exit_mismatches:
         print(f"{ERROR} sync exit codes: {_m}")
+if sec_proc_mismatches:
+    failures.append(
+        f"{len(sec_proc_mismatches)} SECURITY.md process-table mitigation drift(s) vs the live bin/ code"
+    )
+    for _m in sec_proc_mismatches:
+        print(f"{ERROR} security process table: {_m}")
 
 if failures:
     for f in failures:
@@ -2705,6 +2737,7 @@ print(f"{OK} completion surfaces: OPERATOR_MANUAL.md's shell set + alias and com
 print(f"{OK} ps1 surface: docs/ARCHITECTURE.md's bin/sec.ps1 native subset + bin/sec-only 'full surface' match the live dispatch")
 print(f"{OK} security executables: docs/SECURITY.md's executable list matches the live bin/ tree ({len(_live_bash_execs)} bash, {len(_live_py_execs)} python, {len(_live_ps_execs)} powershell)")
 print(f"{OK} sync exit codes: docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md + skills/architecture-360-audit/SKILL.md enumerate exactly bin/sec-sync-controller.py's returned codes ({', '.join(str(c) for c in sorted(_live_sync_codes))})")
+print(f"{OK} security process table: docs/SECURITY.md's argv/stdin mitigations still exist in the live bin/ code")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)
