@@ -101,7 +101,11 @@ the migrator source guard too (case [40]). #126 closed a real parser
 silent-drop: `bin/sec`'s `get_cfg_val` skipped any `sec.conf` line with no `=`,
 so a typo like `default_backend bitwarden` was ignored with no signal; it now
 emits a tagged `[WARN]` naming the line (in-place, no line shift; dispatch
-[18d]). Tracker holds #51, #67, #92.
+[18d]). #142 closed the F015-class residual: `sec-migrator` masked `jq`
+parse failures in two reads (a malformed source listing reported "Zero
+items found" + exit 0; a corrupt apply-mode transaction log was ignored),
+both now tagged `[ERROR]` + exit 1 (dispatch 88 -> 90). Tracker holds #51,
+#67, #92.
 Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared

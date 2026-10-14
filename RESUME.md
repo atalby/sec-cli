@@ -1,5 +1,29 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (19th run): shipped **#142** -- the #126 sweep's own
+F015-class residual, found one file over in `bin/sec-migrator`. Two `jq`
+reads still swallowed a parse failure behind `2>/dev/null || echo 0`: the
+source-listing count (a backend emitting non-JSON while exiting 0 became
+`count=0`, printing `[INFO] Zero items found` and exit 0 -- a fail-open
+false success in a credential migration) and the apply-mode transaction
+check (a corrupt `migration_transaction.json` masked as 0, so an unresolved
+transaction was ignored and then overwritten by `save_tx`). Both now use the
+F015 `if ! var="$(jq ...)"` convention: tagged `[ERROR]` + exit 1. Proven red
+first (both returned rc=0 with the false-success text), then green (dispatch
+88 -> 90; new sections [15b] and [15c]). Mirrors bumped: profile.md:22,
+profile.md tagged census `sec-migrator` 24 -> 26, profile.md
+`bin/sec-migrator:147` -> `:151` (the +4 shift), ADAPTERS.md:55,
+ADAPTERS.md:264, the RESUME mirrors-in-sync line, HISTORY.md 8158/8192.
+
+Resume here next run: the tracker's open items are #67 (fresh 360 audit,
+Step-1 scope approval needed), #92 and #51 (hub-side, not this repo). The
+jq/fail-open masking class is now exhausted in `bin/sec` and
+`bin/sec-migrator`; the natural next unit is the same sweep against the OTHER
+bin scripts that read JSON (`sec-organizer.py`, `sec-sync-controller.py`,
+`bw-session-keeper`, `hyer-mcp.sh`) for a read that masks a parse failure
+behind `2>/dev/null || echo 0`/`|| echo ''`. (`bin/sec-migrator` line 248
+still masks but is unreachable -- fix#1 exits first.)
+
 Session 2026-10-14 (18th run): shipped **#126** -- bin/sec's `get_cfg_val`
 silently dropped any `sec.conf` line with no `=`, so a typo'd key
 (`default_backend bitwarden`) was ignored with no signal: the highest-severity
@@ -16,7 +40,7 @@ control yields the exact default with no WARN). Live dispatch 87 -> 88; mirrors
 bumped (profile.md:22, profile.md tagged census `sec` 25 -> 26, ADAPTERS.md:55,
 ADAPTERS.md:264, RESUME mirrors-in-sync line), HISTORY.md compacted to 7893/8192.
 
-Resume here next run: the tracker's open items are #67 (fresh 360 audit, Step-1
+Left for the next run: the tracker's open items were #67 (fresh 360 audit, Step-1
 scope approval needed), #92 and #51 (hub-side, not this repo). Both the
 first-match-shadow and silent-drop classes now look exhausted (this run closed
 the last silent-drop arm); the productive next question is the one #67 was filed
@@ -669,12 +693,13 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 88, install 9, sentinel 44, sync_guard 16,
+mirrors in sync): dispatch 90, install 9, sentinel 44, sync_guard 16,
 write_honesty 15. Sentinel = 44 cases / 452 assertions. HISTORY.md is at
-7893/8192 bytes - the next narrative addition must compact an older clause first
+8158/8192 bytes - the next narrative addition must compact an older clause first
 (#120's entry compacted the 2026-10-13 paragraph and moved #130-#137's detail
 into `history/2026-10-13.md`, since that detail had only ever lived here; the
-drift-control sweep compacted it again; #140's entry compacted it a third time).
+drift-control sweep compacted it again; #140's entry compacted it a third time;
+#142's entry compacted the #126 clause a fourth).
 109 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.
