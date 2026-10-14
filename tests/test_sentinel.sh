@@ -4083,6 +4083,125 @@ else
     printf '%s\n' "$OUT"
 fi
 echo
+echo "[53] OPERATOR_MANUAL.md's completion shell set, alias, and completions/_sec must match the live bin/sec completion dispatch (issue #153)"
+WORK_T25A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T25B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T25C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T25D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T25CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T25A" "$WORK_T25B" "$WORK_T25C" "$WORK_T25D" "$WORK_T25CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T25A/docs/OPERATOR_MANUAL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"`sec completion \{zsh\|bash\|fish\|ps1\}`", "`sec completion {zsh|bash|fish|ksh}`", s, count=1)
+if n != 1:
+    sys.exit("docs/OPERATOR_MANUAL.md carries no completion shell set to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T25A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when OPERATOR_MANUAL.md's completion shell set drifts"
+else
+    no "coverage accepted a completion shell-set drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/OPERATOR_MANUAL.md names completion shells bash, fish, ksh, zsh, but bin/sec accepts" <<<"$OUT"; then
+    ok "coverage names the completion shell-set drift"
+else
+    no "coverage did not name the completion shell-set drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T25B/docs/OPERATOR_MANUAL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"`powershell` is accepted as an alias for `ps1`", "`pwsh` is accepted as an alias for `ps1`", s, count=1)
+if n != 1:
+    sys.exit("docs/OPERATOR_MANUAL.md carries no completion alias sentence to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T25B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the completion alias drifts"
+else
+    no "coverage accepted a completion alias drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/OPERATOR_MANUAL.md documents the completion alias pwsh -> ps1, but bin/sec groups powershell with ps1" <<<"$OUT"; then
+    ok "coverage names the completion alias drift"
+else
+    no "coverage did not name the completion alias drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T25C/completions/_sec" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2 = s.replace("_sec", "_secX", 1)
+if s2 == s:
+    sys.exit("completions/_sec carries no token to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T25C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when completions/_sec drifts from the live zsh output"
+else
+    no "coverage accepted a completions/_sec drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "completions/_sec is not byte-identical to live 'bin/sec completion zsh' output" <<<"$OUT"; then
+    ok "coverage names the completions/_sec byte drift"
+else
+    no "coverage did not name the completions/_sec byte drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T25D/docs/OPERATOR_MANUAL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r" \(`powershell` is accepted as an alias for `ps1`\)", "", s, count=1)
+if n != 1:
+    sys.exit("docs/OPERATOR_MANUAL.md carries no completion alias parenthetical to drop")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T25D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when OPERATOR_MANUAL.md drops the completion-alias sentence"
+else
+    no "coverage accepted a dropped completion-alias sentence"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/OPERATOR_MANUAL.md no longer states the completion-alias sentence" <<<"$OUT"; then
+    ok "coverage names the dropped completion-alias sentence"
+else
+    no "coverage did not name the dropped completion-alias sentence"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T25CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (completion surfaces agree) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] completion surfaces:" <<<"$OUT"; then
+    ok "the control copy's OK line names the completion-surface check"
+else
+    no "the control copy's OK line did not name the completion-surface check"
+    printf '%s\n' "$OUT"
+fi
+echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
     exit 0

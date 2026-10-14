@@ -46,7 +46,9 @@ the `sec run` injection-backend prose (README.md + ARCHITECTURE.md vs bin/sec's
 `run)` arm; section 29, case [51], proven red first). #152 guarded the
 classifier-category names (README.md + ARCHITECTURE.md vs bin/sec-classify.py's
 CATEGORY_WEIGHTS keys + the `general` fallback; section 30, case [52], proven
-red first). Sentinel 49 -> 54 cases / 532 -> 628 assertions.
+red first). #153 guarded the completion surface (OPERATOR_MANUAL.md's shell set +
+alias + completions/_sec vs bin/sec's completion dispatch; section 31, case
+[53], proven red first). Sentinel 49 -> 55 cases / 532 -> 648 assertions.
 Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 

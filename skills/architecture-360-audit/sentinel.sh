@@ -655,6 +655,7 @@ _NUM_WORDS = {
     "forty-six": 46, "forty-seven": 47, "forty-eight": 48, "forty-nine": 49,
     "fifty": 50, "fifty-one": 51, "fifty-two": 52, "fifty-three": 53,
     "fifty-four": 54,
+    "fifty-five": 55,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2234,6 +2235,69 @@ else:
             f"but bin/sec-classify.py emits `general`"
         )
 
+completion_mismatches = []
+_comp_canon = []
+_comp_aliases = {}
+for _arm in re.findall(r"\n\s+([a-z0-9|]+)\)\n\s+cat <<'EOF'", _sec_text):
+    _toks = _arm.split("|")
+    _comp_canon.append(_toks[0])
+    for _al in _toks[1:]:
+        _comp_aliases[_al] = _toks[0]
+if not _comp_canon:
+    completion_mismatches.append(
+        "bin/sec exposes no shell arms in its completion dispatch to compare the docs against"
+    )
+
+_opman_text = _nl_read("docs/OPERATOR_MANUAL.md")
+_cm_shells_m = re.search(r"`sec completion \{([^}]*)\}`", _opman_text)
+if _cm_shells_m is None:
+    completion_mismatches.append(
+        "docs/OPERATOR_MANUAL.md no longer states the completion shell set in the guarded form"
+    )
+elif _comp_canon:
+    _cm_doc_shells = set(_cm_shells_m.group(1).split("|"))
+    if _cm_doc_shells != set(_comp_canon):
+        completion_mismatches.append(
+            f"docs/OPERATOR_MANUAL.md names completion shells {', '.join(sorted(_cm_doc_shells))}, "
+            f"but bin/sec accepts {', '.join(sorted(_comp_canon))}"
+        )
+
+_cm_alias_m = re.search(r"`([a-z0-9]+)` is accepted as an alias for `([a-z0-9]+)`", _opman_text)
+if _cm_alias_m is None:
+    completion_mismatches.append(
+        "docs/OPERATOR_MANUAL.md no longer states the completion-alias sentence"
+    )
+elif _comp_aliases and {_cm_alias_m.group(1): _cm_alias_m.group(2)} != _comp_aliases:
+    completion_mismatches.append(
+        f"docs/OPERATOR_MANUAL.md documents the completion alias "
+        f"{_cm_alias_m.group(1)} -> {_cm_alias_m.group(2)}, but bin/sec groups "
+        f"{', '.join(f'{_a} with {_c}' for _a, _c in sorted(_comp_aliases.items()))}"
+    )
+
+try:
+    with open(os.path.join(repo, "completions", "_sec"), encoding="utf-8") as _fh:
+        _comp_tracked = _fh.read()
+except OSError:
+    _comp_tracked = None
+    completion_mismatches.append(
+        "completions/_sec is missing (the docs claim it mirrors the zsh completion output)"
+    )
+
+try:
+    _live_zsh = subprocess.run(
+        ["bash", os.path.join(repo, "bin", "sec"), "completion", "zsh"],
+        capture_output=True, text=True, check=True,
+    ).stdout
+except Exception as _exc:
+    completion_mismatches.append(
+        f"could not run 'bin/sec completion zsh' to compare completions/_sec against: {_exc}"
+    )
+else:
+    if _comp_tracked is not None and _comp_tracked != _live_zsh:
+        completion_mismatches.append(
+            "completions/_sec is not byte-identical to live 'bin/sec completion zsh' output"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2405,6 +2469,12 @@ if classify_mismatches:
     )
     for _m in classify_mismatches:
         print(f"{ERROR} classify categories: {_m}")
+if completion_mismatches:
+    failures.append(
+        f"{len(completion_mismatches)} completion-surface claim drift(s) vs the live bin/sec completion dispatch"
+    )
+    for _m in completion_mismatches:
+        print(f"{ERROR} completion surface: {_m}")
 
 if failures:
     for f in failures:
@@ -2440,6 +2510,7 @@ print(f"{OK} natural-language mode claims: README.md + docs/OPERATOR_MANUAL.md +
 print(f"{OK} runtime-dependency + env-var claims: README.md + docs/ARCHITECTURE.md dep lists and the documented SEC_* vars match install.sh + bin/")
 print(f"{OK} run-injection claims: README.md + docs/ARCHITECTURE.md name exactly the backends bin/sec injects via ({', '.join(sorted(_run_live))})")
 print(f"{OK} classifier categories: README.md + docs/ARCHITECTURE.md name only live CATEGORY_WEIGHTS keys ({', '.join(sorted(_live_cats))}) + the `general` fallback")
+print(f"{OK} completion surfaces: OPERATOR_MANUAL.md's shell set + alias and completions/_sec match the live bin/sec completion dispatch")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)
