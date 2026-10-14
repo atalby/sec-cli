@@ -1711,6 +1711,32 @@ else:
                 f"live file has {_live_zero}"
             )
 
+hiae_mismatches = []
+_HIAE_BANNER_RE = re.compile(
+    r"HIAE Protocol(?:\s+Version)?[:,\*\s]*v?(\d+\.\d+(?:\.\d+)?)", re.IGNORECASE
+)
+try:
+    with open(os.path.join(repo, "AGENTS.md"), encoding="utf-8") as _fh:
+        _agents_text = _fh.read()
+except OSError:
+    _agents_text = ""
+try:
+    with open(os.path.join(repo, "docs", "ARCHITECTURE.md"), encoding="utf-8") as _fh:
+        _hiae_arch_text = _fh.read()
+except OSError:
+    _hiae_arch_text = ""
+_agents_hiae = _HIAE_BANNER_RE.search(re.sub(r"\s+", " ", _agents_text))
+_arch_hiae = _HIAE_BANNER_RE.search(re.sub(r"\s+", " ", _hiae_arch_text))
+if not _agents_hiae:
+    hiae_mismatches.append("AGENTS.md carries no HIAE Protocol version banner")
+if not _arch_hiae:
+    hiae_mismatches.append("docs/ARCHITECTURE.md carries no HIAE Protocol version banner")
+if _agents_hiae and _arch_hiae and _agents_hiae.group(1) != _arch_hiae.group(1):
+    hiae_mismatches.append(
+        f"docs/ARCHITECTURE.md banner says v{_arch_hiae.group(1)}, "
+        f"AGENTS.md says v{_agents_hiae.group(1)}"
+    )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -1844,6 +1870,10 @@ if code_census_mismatches:
     )
     for _m in code_census_mismatches:
         print(f"{ERROR} code census: {_m}")
+if hiae_mismatches:
+    failures.append(f"{len(hiae_mismatches)} HIAE Protocol version banner drift(s) vs AGENTS.md")
+    for _m in hiae_mismatches:
+        print(f"{ERROR} HIAE banner: {_m}")
 
 if failures:
     for f in failures:
@@ -1871,6 +1901,7 @@ print(f"{OK} migrate surfaces: source/destination backend sets agree across migr
 print(f"{OK} version claim: OPERATOR_MANUAL.md's documented `--version` output matches live 'bin/sec version'")
 print(f"{OK} tenant help line: bin/sec's `Configured Tenants:` lists exactly the routable aliases")
 print(f"{OK} code census: profile.md's SYNC_KEYS count + sync-controller timeout sites + install.sh/bin/sec zero-timeout claim match the live code")
+print(f"{OK} HIAE banner: docs/ARCHITECTURE.md matches AGENTS.md (v{_agents_hiae.group(1)})")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

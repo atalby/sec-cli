@@ -2953,6 +2953,100 @@ else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"
 fi
+echo "[43] AGENTS.md and docs/ARCHITECTURE.md HIAE Protocol version banners must agree (issue #144)"
+WORK_S15A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S15B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S15C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S15CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_S15A" "$WORK_S15B" "$WORK_S15C" "$WORK_S15CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_S15A/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"(\*\*HIAE Protocol Version\*\*:\s*)v[\d.]+", r"\g<1>v9.9.9", s, count=1)
+if n != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no HIAE Protocol Version banner to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_S15A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when docs/ARCHITECTURE.md's banner disagrees with AGENTS.md"
+else
+    no "coverage accepted an ARCHITECTURE banner disagreeing with AGENTS.md"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "docs/ARCHITECTURE.md banner says v9\.9\.9, AGENTS.md says v[0-9]+\.[0-9]+" <<<"$OUT"; then
+    ok "coverage names both banner versions in the mismatch"
+else
+    no "coverage did not name both banner versions in the mismatch"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_S15B/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"\*\*HIAE Protocol Version\*\*:[^\n]*\n", "", s, count=1)
+if n != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no HIAE Protocol Version banner to remove")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_S15B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the ARCHITECTURE banner is missing entirely"
+else
+    no "coverage accepted a missing ARCHITECTURE banner"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/ARCHITECTURE.md carries no HIAE Protocol version banner" <<<"$OUT"; then
+    ok "coverage names the missing ARCHITECTURE banner"
+else
+    no "coverage did not name the missing ARCHITECTURE banner"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_S15C/AGENTS.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"\(HIAE Protocol v[\d.]+\)", "", s, count=1)
+if n != 1:
+    sys.exit("AGENTS.md carries no HIAE Protocol banner to remove")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_S15C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when AGENTS.md's own banner is missing"
+else
+    no "coverage accepted a missing AGENTS.md banner"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "AGENTS.md carries no HIAE Protocol version banner" <<<"$OUT"; then
+    ok "coverage names the missing AGENTS.md banner"
+else
+    no "coverage did not name the missing AGENTS.md banner"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_S15CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (banners agree) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] HIAE banner: docs/ARCHITECTURE.md matches AGENTS.md \(v[0-9]+\.[0-9]+(\.[0-9]+)?\)" <<<"$OUT"; then
+    ok "the control copy's OK line names the matched banner version"
+else
+    no "the control copy's OK line did not name the matched banner version"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

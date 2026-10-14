@@ -7,66 +7,26 @@ record is archived per period under `history/` (append-only, nothing
 deleted, every file searchable). A new session reads this summary by
 default, not the whole history.
 
-**2026-10-12**: the flag-misparse / operand-honesty sweep closed
-wholesale (#71-#80): `sec get`, `set`/`create` and `unlock`/`rotate`/
-`keep` reject an unknown `--flag`/`-f*` at the operand position with a
-tagged `[ERROR]` + exit 2 before any backend call (same contract #73
-shipped for `sec.ps1`), the
-same arms reject trailing/dropped operands (`run` stays variadic;
-`rotate`/`keep` reject positionals, `unlock`/`setup-keychain` take one
-optional password), `sec get --scope` rejects a flag-like folder
-name, `sec housekeep`/`organize` no longer drops extra operands, and a
-`bw-session-keeper` `rotate`/`keep` whose vault refresh failed died under
-`set -e` — now exit 1 + tagged `[ERROR]`. Issue #64 (pre-commit
-vanishing when `uv` is absent) verified as a duplicate of #51's payload
-and closed. Issue
-#78-#80 closed the completion-parity class: fish omitted the tenant-prefix
-words; no housekeep subcommands followed the `organize` alias; all four surfaces
-advertised only `plan/apply/revert` (now `undo`/`restore`, matching
-`sec-organizer`); guard [22s] pins it (dispatch 74 -> 75).
-Issue #81 fixed the ps1 completion runtime (`$commandAst.ArgumentElements`
--> `CommandElements`, so ps1 subcommand completion had been dead code) and
-pinned the `powershell` shell word plus the migrate backend values; #82
-added the bare `help`/`version` subcommands; #83 added `get --scope` /
-`set|create --type`; guards [22t]-[22w] pin them (dispatch 75 -> 79;
-`completions/_sec` regenerated). Issues #84-#91 closed
-the census-drift class (#84-#90; details in `history/2026-10-12.md`); section 13
-asserts every tracked `bin/` helper is referenced by `tests/test_dispatch.sh`. #91 guarded
-the three bash-suite-count claims, re-derived from `tests/*.sh`
-(section 14; sentinel 17 -> 18 cases).
-Issue #93 repaired README.md's `sec housekeep` sample output, which the
-shipped classifier could never produce — now pinned by dispatch section
-[16-honesty], taxonomy unchanged. Issues #94-#98 guarded the remaining
-structural claims: MULTI_TENANCY.md's alias count vs bin/sec's tenant regex,
-profile.md's CI checkout pin, OPERATOR_MANUAL.md's principle count, SKILL.md's
-suite/step/persona/scope/severity counts, and profile.md §3's four suite
-count-words plus the pytest-mirror count (section 17). Issues #99/#100 closed the last silent-drop arms —
-`sec completion <shell> <extra>`, `sec help <x>` and `sec version <x>` all
-exited 0 while dropping the operand; each now rejects it with a tagged
-`[ERROR]` + exit 2 (dispatch 80 -> 82 sections).
-Issues #101-#103 tied the completion surfaces to the dispatcher: `sec --help`
-prints a line for every subcommand and non-flag arm, the tenant set is identical
-across dispatcher/usage/completions, and each surface offers every subcommand
-token (#103 parses each surface's own list and asserts all 15) (dispatch 83 ->
-85 sections).
-Issue #110 closed the last silent-drop arm in the migrator: `sec migrate
-undo|revert|--undo` short-circuited the argument parse, so `sec migrate undo
-EXTRA` dropped the operand; the undo
-branch now rejects trailing operands with a tagged `[ERROR]` + exit 2 before
-any transaction-log access (dispatch 85 -> 86 sections).
-Issue #111 covered the sync controller's untested surface: the GCP
-write path (describe / create-on-missing / add-version / timeout / failure),
-the `parse_args` usage-error contract, and `main()`'s exit codes (pytest
-29 -> 41; mirrors bumped at ADAPTERS.md:305, skills/architecture-360-audit/SKILL.md:451; control
-[3] re-pinned).
-Issue #112 covered `infer_suggested_name`'s env/project tag branch (generic
-name + notes with `env: tag` -> `name (tag)`, needs_rename) — the username
-path was tested, the regex path was not (pytest 41 -> 43; mirrors bumped;
-control [3] re-pinned).
-Open items: #67 (360 audit —
-needs human scope approval), #51 (hub-side, tracked upstream), #92 (hub-side:
-packs persona-count + AGENTS.md core-trait count unguarded). Full narrative:
-`history/2026-10-12.md`.
+**2026-10-14**: #144 closed the unguarded-current-state sweep's next instance:
+docs/ARCHITECTURE.md's HIAE Protocol version banner had no in-repo guard --
+only the hand-run hub `check_version_banners.py`, whose PASS transcript sits
+quoted in profile.md -- so a fleet-sync AGENTS.md HIAE bump would leave the
+project banner stale with CI green. Sentinel section 23 now compares the
+banner across AGENTS.md and docs/ARCHITECTURE.md and fails on a mismatch or
+on either banner being absent (the hub checker skips absent banners). Proven
+red first (case [43], 7 failures; two test bugs found in RED), then green
+across all five suites + pytest 58 + coverage/citations. Sentinel 44 -> 45
+cases / 452 -> 468 assertions. Tracker holds #51, #67, #92.
+Full narrative: `history/2026-10-14.md`.
+
+**2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
+unknown flags and dropped operands with tagged `[ERROR]` + exit 2; completion
+parity and runtime fixed (#78-#83); the census-drift class closed (#84-#91,
+sentinel 17 -> 18 cases); README's housekeep sample repaired (#93); structural
+claims guarded (#94-#98); the last silent-drop arms closed (#99/#100,
+#110-#112); completion surfaces tied to the dispatcher (#101-#103); the sync
+controller's write path and the naming branch covered (pytest 29 -> 43);
+#64 closed as a duplicate of #51's payload. Detail: `history/2026-10-12.md`.
 
 **2026-10-13**: the guard-hardening lane closed more guard classes plus one
 real product bug. #119-#136 swept and guarded stale current-state claims:
@@ -121,6 +81,7 @@ pytest mirror (58 tests) pass. Full narrative:
 
 ## Archive
 
+- [2026-10-14](history/2026-10-14.md)
 - [2026-10-13](history/2026-10-13.md)
 - [2026-10-12](history/2026-10-12.md)
 - [2026-10-11](history/2026-10-11.md)

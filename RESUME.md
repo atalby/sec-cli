@@ -1,5 +1,38 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (22nd run): shipped **#144** -- the unguarded-current-state
+sweep's next instance (the class #129-#139 worked). `docs/ARCHITECTURE.md:3`'s
+HIAE Protocol version banner had NO in-repo guard (`grep -n HIAE` over
+`sentinel.sh` and `tests/` -> zero matches); the only live gate was the
+hand-run hub script `~/sandbox/hyer/scripts/check_version_banners.py`, whose
+PASS transcript sits quoted at `profile.md:501-504` but nothing re-runs it, so
+a fleet-sync bump of `AGENTS.md` would leave the project banner stale with CI
+green. Sentinel section 23 now compares the banner (same regex shape as the
+hub checker's, whitespace-unwrapped) across `AGENTS.md` vs
+`docs/ARCHITECTURE.md`: either banner absent fails (the hub checker skips
+absent banners -- an absent check is not a passing one, #98 class), and a
+version mismatch names both sides. Proven red first (case [43], four probes:
+banner corrupted to v9.9.9 / banner line deleted / AGENTS.md banner deleted /
+control; RED = 7 failures since coverage exited 0 on all three drifts), then
+green. Two test bugs surfaced while turning it green, both in the new test:
+probe C's removal regex needed no leading space (`AGENTS.md:38` begins the
+line with `(`), and the control grep allowed only one version dot (`v5.39.1`
+has two). Sentinel 44 -> 45 cases / 452 -> 468 assertions; mirrors bumped at
+`profile.md:22`, `profile.md:641`, `ADAPTERS.md:56`, `ADAPTERS.md:262`, this
+file's mirrors-in-sync + `Sentinel =` lines; HISTORY.md compacted (2026-10-12
+block) to 5606/8192 and gained `history/2026-10-14.md`. This run also
+corrected stale text below: the "three hand-pinned English numerals" bullet
+was already done by 9a4938e/f129881, and #126 is closed (warn design call,
+run 18).
+
+Resume here next run: the tracker's open items are #67 (fresh 360 audit --
+its Step-1 gate needs explicit human scope approval; must NOT be started
+autonomously) and #92 + #51 (hub-side, not this repo). The highest-value
+autonomous pattern remains: sweep for the next unguarded current-state claim
+(this run's #144 was exactly that), or another sentinel-robustness class;
+the theoretical `re.search` scope-grab hardening stays conditional as noted
+in "Next autonomous work".
+
 Session 2026-10-14 (21st run): swept the three remaining targets named by the
 20th run (`bin/sec-sync-controller.py`, `bin/bw-session-keeper`,
 `bin/hyer-mcp.sh`) and found NO F015-class masking. The controller checks
@@ -111,7 +144,7 @@ python (65 `re.search`/`re.match` sites, 21 resolved texts) reports no site whos
 target file can carry more than one match. The only `n=0` sites are by design --
 `_pkg_live` is a loop-local read of a pack's PACK.md, and the `_btext`
 `[ TAG ]` scan is the zero-tag producer census. Live counts now: sentinel
-44 cases / 452 assertions (each `ok ` branch is paired with a `no `, so a case
+45 cases / 468 assertions (each `ok ` branch is paired with a `no `, so a case
 with 4 branches is +8).
 
 Left for the next run: the tracker's open items were #126 (sec.conf parser
@@ -338,12 +371,11 @@ Written 2026-10-12 after closing #118 (commit `aa0eb12`), #117 (commit
 `5e295c1`), #113 (commit `d4890c3`) and #112 (commit `d9fb2d3`), all pushed.
 This lane shipped a long run of guard/fix/perf units (#97..#123), all CI-green.
 
-The open item **#120** below has no in-repo remedy yet; every other open item
-is hub-side or human-gated. If the lane is run again, the highest-value
-candidates are a fresh sweep for the next unguarded current-state claim (as
-#116, #117, #123 and #130-#132 were) or another sentinel-robustness class (as
-#118 was), then the fresh 360 audit (#67, after human scope approval).
-
+Every open item is hub-side or human-gated (#120 was closed this run). If
+the lane is run again, the highest-value candidates are a fresh sweep for the
+next unguarded current-state claim (as #116, #117, #123, #130-#132 and #144
+were) or another sentinel-robustness class (as #118 was), then the fresh 360
+audit (#67, after human scope approval).
 ## Next autonomous work
 
 The 5th-run sweep of ADAPTERS.md / docs/ARCHITECTURE.md / docs/OPERATOR_MANUAL.md
@@ -363,15 +395,13 @@ then the fresh 360 audit (#67, after human scope approval).
 Cheapest concrete next candidates, in order:
 - The **pytest-count mirror family is now self-maintaining** (case [22]'s
   controls derive the live collection count, the pattern case [27] already
-  used), but that fix only covered the mirrors case [22] touches. The wider
-  lesson worth sweeping: `tests/test_sentinel.sh` mostly derives its drift
-  controls (`r"(...)\\d+"` -> `999`), but exactly three still pin an English
-  numeral by hand -- `twelve personas` (line 1091), `Nine install sections`
-  (line 1209), `twelve bound audit dimensions` (line 2586) -- plus the
-  expectation literal `"... for tests/test_install.sh, live suite has 9"`
-  (line 1260). All four go stale silently-ish on the next count bump (they do
-  fail loudly, as `count not found to corrupt`, but only after the bump).
-  Convert each to the derived form. Concrete, bounded, self-verifying.
+  used), and the wider lesson it taught -- convert every hand-pinned
+  English-numeral drift control in `tests/test_sentinel.sh` to the derived
+  `num_word` form -- was swept to completion in commits 9a4938e/f129881
+  (the `twelve personas` / `Nine install sections` / `twelve bound audit
+  dimensions` sites and the `live suite has 9` expectation literal this
+  section used to name are all derived now; verified gone this run). No
+  hand-pinned numeral remains.
 - (largely swept) A sentinel-robustness class: the guards added ad hoc
   (#123-#136) each attach to a specific section. #136 closed the last "a file it
   does not read" (the forge). The one remaining lead is theoretical: sweep the
@@ -380,19 +410,11 @@ Cheapest concrete next candidates, in order:
   scope grab -- ADAPTERS.md has one such site today, so no shadow is live until
   a second mention appears); harden only if a doc edit could realistically
   create a second mention.
-- **#126** (filed 3rd run) - `get_cfg_val`'s awk parser silently skips a line
-  with no `=`, so a `default_backend bitwarden` typo is ignored with no signal
-  and falls back to the built-in default. The intended behavior (reject the
-  file vs emit a tagged `[WARN]`) is a design decision that changes CLI output,
-  so it needs a human call, not an autonomous edit. Filed rather than fixed
-  because #123 and #125 both touched this parser and never considered its
-  failure modes, and a silent ignore in a credential-adjacent parser is the
-  highest-severity class left in this repo.
+- **#126** (filed 3rd run, CLOSED in the 18th run) - `get_cfg_val`'s awk
+  parser silently skipped a line with no `=`; the design call was taken the
+  cheapest-reasonable-path way: a tagged `[WARN]` naming the line, parse
+  result and exit code unchanged (dispatch [18d]). No in-repo action left.
 The rest are gated and not autonomously actionable:
-- **#120** (one-off flaky `test_dispatch.sh` failure in pre-commit Step 5) -
-  the repo-side observability half shipped this run (the mirror now names the
-  failing check + its section); only the hub-side hook fix is left, and it is
-  out of scope. The flake itself was still not reproducible.
 - **#67** (fresh 360 audit) - its Step-1 gate needs explicit human scope approval.
 - **#92** (hub-side: two unguarded counts in hub-owned files) - gotcha 6; no
   in-repo remedy.
@@ -414,10 +436,11 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   configured for this repository point to a known GitLab host" (re-confirmed
   2026-10-13 against a live `glab auth status`, which IS authenticated --
   for gitlab.com, which this repo is not on).
-- Open issues: **#126** (needs a human call - `get_cfg_val`'s awk parser
-  silently skips a key with no `=`; reject-vs-warn is a design decision);
-  **#67** (fresh 360 audit - human scope gate); **#92** (hub-side unguarded
-  counts); **#51** (hub-side handoff, tracked upstream). #120 closed this run.
+- Open issues: **#67** (fresh 360 audit - human scope gate); **#92**
+  (hub-side unguarded counts); **#51** (hub-side handoff, tracked upstream).
+  **#126** closed in the 18th run (warn design call, dispatch [18d]); #120
+  closed earlier (repo-side observability half shipped, hook fix stayed
+  hub-side). Re-verified live via `gh issue list` this run.
 - Operator standing order says the tracker is GitLab/`glab`; re-verified this
   run that it is not -- `git remote -v` is `git@github.com:atalby/sec-cli.git`
   and `glab issue list` fails with "None of the git remotes configured for this
@@ -738,14 +761,13 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 44, sync_guard 16,
-write_honesty 15. Sentinel = 44 cases / 452 assertions. HISTORY.md is at
-8150/8192 bytes - the next narrative addition must compact an older clause first
-(#120's entry compacted the 2026-10-13 paragraph and moved #130-#137's detail
-into `history/2026-10-13.md`, since that detail had only ever lived here; the
-drift-control sweep compacted it again; #140's entry compacted it a third time;
-#142's entry compacted the #126 clause a fourth).
-109 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
+mirrors in sync): dispatch 92, install 9, sentinel 45, sync_guard 16,
+write_honesty 15. Sentinel = 45 cases / 468 assertions. HISTORY.md is at
+5606/8192 bytes - the next narrative addition must still compact first if it
+would cross the budget (#144's entry compacted the 2026-10-12 paragraph, its
+detail already living in `history/2026-10-12.md`, and added
+`history/2026-10-14.md`).
+110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~40s after
 #105; full-suite + pytest-mirror check is cheap enough to run on every touch.
 
