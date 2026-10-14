@@ -1,5 +1,24 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (29th run): shipped **#149** -- the last unguarded
+natural-language mode claims. Five prose mode facts across three docs had no
+sentinel guard: README.md's snapshot mode, OPERATOR_MANUAL.md's snapshot mode +
+path, and ARCHITECTURE.md's session, umask, cache-dir, plan, and sec.conf
+modes. Sentinel section 27 binds each to its live chmod/umask in
+`bin/sec-organizer`, `bin/bw-session-keeper`, and `install.sh` (case [49], six
+probes + control; the guard was proven to fire before green). Sentinel
+50 -> 51 cases / 540 -> 568 assertions; mirrors bumped at `profile.md:22`,
+`profile.md:641` (fifty-one), `ADAPTERS.md:56`, `ADAPTERS.md:262`, this file's
+mirrors-in-sync + `Sentinel =` lines and HISTORY.md size (7659/8192);
+HISTORY.md 2026-10-14 block extended and `history/2026-10-14.md` appended.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#149 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-14 (28th run): shipped **#148** -- the last realistic
 first-match shadow of the #118/#128/#135/#147 class. RESUME.md's own two count
 mirrors (the 'suite counts ... mirrors in sync' line and the
