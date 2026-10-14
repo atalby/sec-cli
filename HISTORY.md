@@ -96,7 +96,9 @@ decomposition names a controller count with no drift control, so it could rot
 silently. #140 closed the same first-match class at the audit slot: the migrate
 and alias guards took the first regex hit, so a duplicate above the canonical
 one fed them a set they then agreed with; both now select the canonical
-block/gate line and flag duplicates (case [39], 444 assertions). Tracker holds #51, #67, #92, #126. Full narrative: `history/2026-10-13.md`.
+block/gate line and flag duplicates (case [39], 452 assertions); #141 anchored
+the migrator source guard too (case [40]). Tracker holds #51, #67, #92, #126.
+Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared
 in `ADAPTERS.md` (AGENTS.md §5) — the single 103 KB `HISTORY.md` was

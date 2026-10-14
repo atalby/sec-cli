@@ -1,33 +1,34 @@
 # Resume point - sec-cli
 
-Session 2026-10-13 (16th run): #140 -- the audit slot's own first-match
-shadows. Two coverage guards read the first regex hit in the tree, so a
-duplicate above the canonical one fed them a set they then agreed with:
-`bin/sec-migrator` carries two `case "$DST" in` blocks (destination allow-list
-at 103, op dispatch at 195) and `bin/sec` carries two `=~ ^(...)$` alias
-regexes (dispatcher gate at 73, scope gate at 473). Both were proven red first
-(untagged shadow allow-list above the real one + infisical dropped from the
-real one still printed "migrate surfaces agree"; a dead alias regex above the
-gate + keychain dropped still printed "MULTI_TENANCY.md tenant aliases match").
-Both guards now select the canonical candidate by a property only it has (the
-`[ERROR] Destination backend` reject arm; the line beginning
-`if [[ $# -ge 2 ]] && [[ "$1" =~ ^(`) and flag more than one. Case [39] pins
-both with three probes. Two failed attempts to reuse: a 400-char lookahead for
-the reject arm (the injected shadow sits directly above the real block, so its
-window reaches the real arm), and a line-based alias anchor requiring `"$1"`
-and `-ge 2` anywhere on the line (a shadow inserted after the
-`if [[ $# -ge 2 ]] && ` prefix satisfies both).
+Session 2026-10-13 (17th run): #141 -- the audit slot's first-match shadow, third
+instance, same class as #140. The migrator SOURCE guard read
+`re.search(r'fetch_source_items\(\) \{\n\s*case "\$SRC" in\n([\s\S]*?)\n\s*\*\)')`,
+i.e. the first function-name match in `bin/sec-migrator`, so a second
+`fetch_source_items() { case "$SRC" in` block above the real one fed
+`_mig_src_set` the shadow's set. Proven red first: an untagged shadow carrying
+all three arms above the real block, with the real `bws)` arm deleted, still
+printed `[ OK ] migrate surfaces: source/destination backend sets agree`
+(coverage exit 0). The guard now takes every `fetch_source_items()` block from
+`re.finditer`, uses the first, and appends to `migrate_mismatches` when there is
+more than one: `[ERROR] migrate: bin/sec-migrator carries 2 fetch_source_items()
+source blocks, expected exactly 1`. Case [40] pins it with three probes (shadow +
+bws dropped, bws dropped with no shadow, unmutated control).
+
+Also closed out the sweep this run: the AST count over the now-fixed coverage
+python (65 `re.search`/`re.match` sites, 21 resolved texts) reports no site whose
+target file can carry more than one match. The only `n=0` sites are by design --
+`_pkg_live` is a loop-local read of a pack's PACK.md, and the `_btext`
+`[ TAG ]` scan is the zero-tag producer census. Live counts now: sentinel
+44 cases / 452 assertions (each `ok ` branch is paired with a `no `, so a case
+with 4 branches is +8).
 
 Resume here next run: the tracker's open items are #126 (sec.conf parser
 silently skips a key with no '='; needs the human design call -- reject vs
 tagged WARN), #67 (fresh 360 audit, Step-1 scope approval needed), #92 and #51
-(hub-side, not this repo). The audit-slot sweep's next candidate is the
-migrator SOURCE allow-list guard and the `_mig_src_set` cross-surface check
-(the twin of the destination guard just fixed, same shape at
-`sentinel.sh`'s `case "\$SRC" in` site), then any remaining
-`re.search`/`re.match` site in the coverage python whose file carries more
-than one potential match (re-run the /tmp/sweep_research.py-style AST count
-against the now-fixed file).
+(hub-side, not this repo). Beyond those, the remaining first-match class lives
+outside the audit slot's python: any bin script whose allow-list is read by a
+consumer elsewhere (shell completion generators, install.sh's section census)
+is worth the same AST count against ITS consumer.
 
 Session 2026-10-13 (15th run): #139 -- profile.md's bin/ decomposition states
 two numbers ("N sibling executables, N Python controller") and sentinel checks
@@ -645,9 +646,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 87, install 9, sentinel 43, sync_guard 16,
-write_honesty 15. Sentinel = 43 cases / 444 assertions. HISTORY.md is at
-8124/8192 bytes - the next narrative addition must compact an older clause first
+mirrors in sync): dispatch 87, install 9, sentinel 44, sync_guard 16,
+write_honesty 15. Sentinel = 44 cases / 452 assertions. HISTORY.md is at
+8181/8192 bytes - the next narrative addition must compact an older clause first
 (#120's entry compacted the 2026-10-13 paragraph and moved #130-#137's detail
 into `history/2026-10-13.md`, since that detail had only ever lived here; the
 drift-control sweep compacted it again; #140's entry compacted it a third time).
