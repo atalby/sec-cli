@@ -653,7 +653,7 @@ _NUM_WORDS = {
     "thirty-nine": 39, "forty": 40, "forty-one": 41, "forty-two": 42,
     "forty-three": 43, "forty-four": 44, "forty-five": 45,
     "forty-six": 46, "forty-seven": 47, "forty-eight": 48, "forty-nine": 49,
-    "fifty": 50, "fifty-one": 51,
+    "fifty": 50, "fifty-one": 51, "fifty-two": 52,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2057,6 +2057,55 @@ elif _live_snapshot_path and _opman_path_m.group(1) != _live_snapshot_path:
         f"snapshot path is {_live_snapshot_path}"
     )
 
+# --- 28. documented runtime-dependency + SEC_* env-var claims must match the
+#         live install.sh dependency check and bin/ sources (issue #150) ------
+dep_env_mismatches = []
+_dep_marker = "Runtime dependencies beyond coreutils:"
+_dep_live_m = re.search(r"for\s+_dep\s+in\s+([^;]+);", _install_src)
+_dep_live = set(_dep_live_m.group(1).split()) if _dep_live_m else set()
+for _de_rel in ("README.md", "docs/ARCHITECTURE.md"):
+    _de_tail = _nl_read(_de_rel).split(_dep_marker, 1)
+    _de_deps = (
+        set(re.findall(r"`([a-z][a-z0-9_]+)`", _de_tail[1].split(".", 1)[0]))
+        if len(_de_tail) == 2
+        else set()
+    )
+    if not _de_deps:
+        dep_env_mismatches.append(
+            f"{_de_rel} no longer states the runtime-dependency list in the guarded form"
+        )
+    elif _de_deps != _dep_live:
+        dep_env_mismatches.append(
+            f"{_de_rel} names runtime dependencies {', '.join(sorted(_de_deps))}, "
+            f"but install.sh checks {', '.join(sorted(_dep_live)) or 'none'}"
+        )
+
+_doc_secvars = set()
+for _de_rel in (
+    "README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/OPERATOR_MANUAL.md",
+    "docs/SECURITY.md",
+    "docs/MULTI_TENANCY.md",
+):
+    _doc_secvars |= set(re.findall(r"SEC_[A-Z_]+", _nl_read(_de_rel)))
+_live_secvars = set(re.findall(r"SEC_[A-Z_]+", _install_src))
+try:
+    for _bf in sorted(os.listdir(os.path.join(repo, "bin"))):
+        _bfp = os.path.join(repo, "bin", _bf)
+        if os.path.isfile(_bfp):
+            try:
+                with open(_bfp, encoding="utf-8") as _fh:
+                    _live_secvars |= set(re.findall(r"SEC_[A-Z_]+", _fh.read()))
+            except OSError:
+                pass
+except OSError:
+    pass
+for _dv in sorted(_doc_secvars - _live_secvars):
+    dep_env_mismatches.append(
+        f"the docs name {_dv}, but no bin/ source or install.sh reads it"
+    )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2210,6 +2259,12 @@ if nl_mode_mismatches:
     failures.append(f"{len(nl_mode_mismatches)} natural-language mode claim drift(s) vs the live chmod/umask calls")
     for _m in nl_mode_mismatches:
         print(f"{ERROR} mode prose: {_m}")
+if dep_env_mismatches:
+    failures.append(
+        f"{len(dep_env_mismatches)} runtime-dependency/env-var doc claim drift(s) vs install.sh + bin/"
+    )
+    for _m in dep_env_mismatches:
+        print(f"{ERROR} dep/env claim: {_m}")
 
 if failures:
     for f in failures:
@@ -2242,6 +2297,7 @@ print(f"{OK} timeout claim: ARCHITECTURE.md + OPERATOR_MANUAL.md default 60s + S
 print(f"{OK} security perms: docs/SECURITY.md's file-mode claims match the live chmod calls")
 print(f"{OK} sec.conf mode prose: README.md + docs/MULTI_TENANCY.md match the live bin/sec chmod ({_live_sec_conf_mode})")
 print(f"{OK} natural-language mode claims: README.md + docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md match the live chmod/umask calls")
+print(f"{OK} runtime-dependency + env-var claims: README.md + docs/ARCHITECTURE.md dep lists and the documented SEC_* vars match install.sh + bin/")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

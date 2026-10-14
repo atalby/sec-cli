@@ -3724,6 +3724,125 @@ else
     no "the control copy's OK line did not name the natural-language mode claim check"
     printf '%s\n' "$OUT"
 fi
+echo "[50] README.md / ARCHITECTURE.md runtime-dependency lists and the documented SEC_* env vars must match install.sh + bin/ (issue #150)"
+WORK_T22A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T22B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T22C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T22D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T22CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_T22A" "$WORK_T22B" "$WORK_T22C" "$WORK_T22D" "$WORK_T22CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_T22A/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"`python3`", "`python4`", s, count=1)
+if n != 1:
+    sys.exit("README.md carries no `python3` dependency token to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T22A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when README.md's runtime-dependency list drifts"
+else
+    no "coverage accepted a README.md runtime-dependency drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "README.md names runtime dependencies jq, python4, but install.sh checks jq, python3" <<<"$OUT"; then
+    ok "coverage names the README.md runtime-dependency drift"
+else
+    no "coverage did not name the README.md runtime-dependency drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T22B/install.sh" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"for _dep in jq python3; do", "for _dep in jq python3 yq; do", s, count=1)
+if n != 1:
+    sys.exit("install.sh carries no 'for _dep in jq python3' loop to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T22B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the live install.sh dependency list drifts"
+else
+    no "coverage accepted a live install.sh dependency drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "README.md names runtime dependencies jq, python3, but install.sh checks jq, python3, yq" <<<"$OUT"; then
+    ok "coverage names the live install.sh dependency drift"
+else
+    no "coverage did not name the live install.sh dependency drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T22C/docs/OPERATOR_MANUAL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"SEC_ALLOW_PLAINTEXT_MASTER_PASS=1", "SEC_ALLOW_PLAINTEXT_MASTER_PW=1", s, count=1)
+if n != 1:
+    sys.exit("docs/OPERATOR_MANUAL.md carries no SEC_ALLOW_PLAINTEXT_MASTER_PASS to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T22C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a documented SEC_* env var has no live reader"
+else
+    no "coverage accepted a documented SEC_* env var with no live reader"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "the docs name SEC_ALLOW_PLAINTEXT_MASTER_PW, but no bin/ source or install.sh reads it" <<<"$OUT"; then
+    ok "coverage names the unread documented SEC_* env var"
+else
+    no "coverage did not name the unread documented SEC_* env var"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T22D/docs/ARCHITECTURE.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"Runtime dependencies beyond coreutils:", "Runtime deps:", s, count=1)
+if n != 1:
+    sys.exit("docs/ARCHITECTURE.md carries no runtime-dependency sentence to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T22D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ARCHITECTURE.md stops stating the runtime-dependency list"
+else
+    no "coverage accepted ARCHITECTURE.md dropping the runtime-dependency claim"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/ARCHITECTURE.md no longer states the runtime-dependency list in the guarded form" <<<"$OUT"; then
+    ok "coverage names the dropped ARCHITECTURE.md runtime-dependency claim"
+else
+    no "coverage did not name the dropped ARCHITECTURE.md runtime-dependency claim"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T22CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (dep/env claims agree) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] runtime-dependency \+ env-var claims:" <<<"$OUT"; then
+    ok "the control copy's OK line names the runtime-dependency/env-var check"
+else
+    no "the control copy's OK line did not name the runtime-dependency/env-var check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

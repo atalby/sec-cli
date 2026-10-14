@@ -1,5 +1,24 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (30th run): shipped **#150** -- the runtime-dependency
+sentence (README.md + ARCHITECTURE.md) and the documented `SEC_*` env vars had
+no sentinel guard. Sentinel section 28 binds the README/ARCHITECTURE
+"Runtime dependencies beyond coreutils: `jq` ... `python3` ..." sentence to
+install.sh's `for _dep in jq python3` loop, and requires every `SEC_*` token
+named in the five shipped docs to appear in install.sh or a file under bin/
+(case [50], four probes + control, proven to fire first). Sentinel 51 -> 52
+cases / 568 -> 588 assertions; mirrors bumped at `profile.md:22`,
+`profile.md:641` (fifty-two), `ADAPTERS.md:56`, `ADAPTERS.md:262`, this file's
+mirrors-in-sync + `Sentinel =` lines and HISTORY.md size (8068/8192);
+HISTORY.md 2026-10-14 block extended and `history/2026-10-14.md` appended.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#150 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-14 (29th run): shipped **#149** -- the last unguarded
 natural-language mode claims. Five prose mode facts across three docs had no
 sentinel guard: README.md's snapshot mode, OPERATOR_MANUAL.md's snapshot mode +
@@ -498,7 +517,11 @@ are now scoped to the `## Verified baseline` section body. The 29th run shipped
 #149: the last five natural-language mode claims (README.md + OPERATOR_MANUAL.md
 snapshot mode/path; ARCHITECTURE.md session, umask, cache-dir, plan, and sec.conf
 modes) were the remaining unguarded current-state claims, so sentinel section 27
-now binds each to its live chmod/umask. Next candidates, in
+now binds each to its live chmod/umask. The 30th run shipped #150: the
+runtime-dependency sentence (README.md + ARCHITECTURE.md) and the documented
+`SEC_*` env vars were the last unguarded doc-name claims, so sentinel section 28
+binds the dep set to install.sh's `for _dep` loop and each documented `SEC_*`
+var to a live bin/ reader. Next candidates, in
 order: any remaining single-`re.search` count-grabs of that shape (below), then
 the fresh 360 audit (#67, after human scope approval).
 Cheapest concrete next candidates, in order:
@@ -558,6 +581,13 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
 
+- #150 `feat(sentinel)` - the runtime-dependency sentence (README.md:5 +
+  docs/ARCHITECTURE.md:6) and the documented `SEC_*` env vars were the last
+  unguarded doc-name claims. Sentinel section 28 binds the dep set parsed from
+  the sentence to install.sh's `for _dep in jq python3` loop, and requires every
+  `SEC_*` token named in the five shipped docs to appear in install.sh or a file
+  under bin/ (case [50], four probes + control). Sentinel 51 -> 52 cases /
+  568 -> 588 assertions.
 - #149 `feat(sentinel)` - the last five unguarded natural-language mode claims:
   README.md's snapshot mode, OPERATOR_MANUAL.md's snapshot mode + path, and
   ARCHITECTURE.md's session/umask/cache-dir/plan/sec.conf modes now bind to
@@ -907,9 +937,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 51, sync_guard 16,
-write_honesty 15. Sentinel = 51 cases / 568 assertions. HISTORY.md is at
-7659/8192 bytes - the next narrative addition must still compact first if it
+mirrors in sync): dispatch 92, install 9, sentinel 52, sync_guard 16,
+write_honesty 15. Sentinel = 52 cases / 588 assertions. HISTORY.md is at
+8068/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
 and appended to `history/2026-10-14.md`).
 110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

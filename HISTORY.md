@@ -43,7 +43,12 @@ natural-language mode claims: README.md's snapshot mode, OPERATOR_MANUAL.md's
 snapshot mode + path, and ARCHITECTURE.md's session, umask, cache-dir, plan,
 and sec.conf modes stated in prose with no guard; sentinel section 27 binds
 each to its live chmod/umask (case [49], proven red first). Sentinel 49 -> 51
-cases / 532 -> 568 assertions. Tracker holds #51, #67, #92.
+cases / 532 -> 568 assertions. #150 then swept the runtime-dependency + env-var
+class: README.md's + ARCHITECTURE.md's 'Runtime dependencies beyond coreutils:
+jq ... python3 ...' sentence and every documented SEC_* var name had no guard;
+sentinel section 28 binds the dep set to install.sh's `for _dep` loop and each
+documented SEC_* var to a live bin/ reader (case [50], proven red first).
+Sentinel 51 -> 52 cases / 568 -> 588 assertions. Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
