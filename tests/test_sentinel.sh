@@ -2876,6 +2876,83 @@ else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"
 fi
+echo "[40] a shadow fetch_source_items() block must not mask the real migrator source guard (issue #141 shadow class)"
+WORK_S14A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S14B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_S14CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_S14A" "$WORK_S14B" "$WORK_S14CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_S14A/bin/sec-migrator" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+m = re.search(r"        bws\)\n            bws secret list [^\n]*\n            ;;\n", s)
+if not m:
+    sys.exit("bin/sec-migrator: no bws source arm to probe")
+s = s[:m.start()] + s[m.end():]
+idx = s.index("fetch_source_items() {")
+shadow = (
+    "fetch_source_items() {\n"
+    '    case "$SRC" in\n'
+    "        bitwarden|bw)\n"
+    "            :\n"
+    "            ;;\n"
+    "        1password|1pass|op)\n"
+    "            :\n"
+    "            ;;\n"
+    "        bws)\n"
+    "            :\n"
+    "            ;;\n"
+    "        *)\n"
+    "            :\n"
+    "            ;;\n"
+    "    esac\n"
+    "}\n\n"
+)
+open(p, "w", encoding="utf-8").write(s[:idx] + shadow + s[idx:])
+PY
+OUT="$(cd "$WORK_S14A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a shadowed fetch_source_items() block masks the real source guard"
+else
+    no "coverage accepted a shadowed migrator source allow-list"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "fetch_source_items() source blocks" <<<"$OUT"; then
+    ok "coverage names the shadowed migrator source allow-list"
+else
+    no "coverage did not name the shadowed migrator source allow-list"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_S14B/bin/sec-migrator" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+m = re.search(r"        bws\)\n            bws secret list [^\n]*\n            ;;\n", s)
+if not m:
+    sys.exit("bin/sec-migrator: no bws source arm to probe")
+open(p, "w", encoding="utf-8").write(s[:m.start()] + s[m.end():])
+PY
+OUT="$(cd "$WORK_S14B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage still catches a genuinely dropped migrator source arm"
+else
+    no "coverage accepted a migrator source arm dropped from the real block"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_S14CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (unmutated fetch_source_items) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

@@ -1476,9 +1476,18 @@ def _mig_canon(_s):
     return {_ALIAS[_t] for _t in re.findall(r"[a-z0-9]+", _s.lower()) if _t in _ALIAS}
 
 
-_mig_src_block_m = re.search(
-    r'fetch_source_items\(\) \{\n\s*case "\$SRC" in\n([\s\S]*?)\n\s*\*\)', _mig_text
-)
+_mig_src_blocks = [
+    _c
+    for _c in re.finditer(
+        r'fetch_source_items\(\) \{\n\s*case "\$SRC" in\n([\s\S]*?)\n\s*\*\)', _mig_text
+    )
+]
+_mig_src_block_m = _mig_src_blocks[0] if _mig_src_blocks else None
+if len(_mig_src_blocks) > 1:
+    migrate_mismatches.append(
+        "bin/sec-migrator carries %d fetch_source_items() source blocks, expected exactly 1"
+        % len(_mig_src_blocks)
+    )
 _mig_src_set = None
 if _mig_src_block_m is None:
     migrate_mismatches.append("bin/sec-migrator carries no fetch_source_items() source case block")
