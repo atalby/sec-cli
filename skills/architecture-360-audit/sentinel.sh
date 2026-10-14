@@ -1737,6 +1737,75 @@ if _agents_hiae and _arch_hiae and _agents_hiae.group(1) != _arch_hiae.group(1):
         f"AGENTS.md says v{_agents_hiae.group(1)}"
     )
 
+# --- 24. ARCHITECTURE.md + OPERATOR_MANUAL.md timeout claim must match the live controller ---
+timeout_claim_mismatches = []
+try:
+    with open(os.path.join(repo, "docs", "ARCHITECTURE.md"), encoding="utf-8") as _fh:
+        _arch_text = _fh.read()
+except OSError:
+    _arch_text = ""
+try:
+    with open(os.path.join(repo, "docs", "OPERATOR_MANUAL.md"), encoding="utf-8") as _fh:
+        _op_text = _fh.read()
+except OSError:
+    _op_text = ""
+try:
+    with open(os.path.join(repo, "bin", "sec-sync-controller.py"), encoding="utf-8") as _fh:
+        _ctrl_src = _fh.read()
+except OSError:
+    _ctrl_src = ""
+
+# Extract timeout claim from ARCHITECTURE.md: "every backend call has a timeout (default 60s, SEC_SYNC_TIMEOUT overrides)"
+_arch_timeout_m = re.search(r"every backend call has a timeout \(default (\d+)s, `SEC_SYNC_TIMEOUT` overrides\)", _arch_text)
+if not _arch_timeout_m:
+    timeout_claim_mismatches.append("docs/ARCHITECTURE.md carries no 'every backend call has a timeout (default Ns, SEC_SYNC_TIMEOUT overrides)' claim")
+else:
+    _arch_timeout_val = int(_arch_timeout_m.group(1))
+    if _arch_timeout_val != 60:
+        timeout_claim_mismatches.append(f"docs/ARCHITECTURE.md says default timeout is {_arch_timeout_val}s, expected 60s")
+
+# Extract timeout claim from OPERATOR_MANUAL.md: "Each backend call is bounded (default 60s, SEC_SYNC_TIMEOUT overrides)"
+_op_timeout_m = re.search(r"Each backend call is bounded \(default (\d+)s, `SEC_SYNC_TIMEOUT` overrides\)", _op_text)
+if not _op_timeout_m:
+    timeout_claim_mismatches.append("docs/OPERATOR_MANUAL.md carries no 'Each backend call is bounded (default Ns, SEC_SYNC_TIMEOUT overrides)' claim")
+else:
+    _op_timeout_val = int(_op_timeout_m.group(1))
+    if _op_timeout_val != 60:
+        timeout_claim_mismatches.append(f"docs/OPERATOR_MANUAL.md says default timeout is {_op_timeout_val}s, expected 60s")
+
+# Verify the live controller has timeout= on all backend calls and default is 60s
+if _ctrl_src:
+    # Check BACKEND_TIMEOUT default is 60
+    _backend_timeout_m = re.search(r'BACKEND_TIMEOUT = float\(os\.environ\.get\("SEC_SYNC_TIMEOUT", "(\d+)"\)\)', _ctrl_src)
+    if not _backend_timeout_m:
+        timeout_claim_mismatches.append("bin/sec-sync-controller.py carries no BACKEND_TIMEOUT default assignment")
+    else:
+        _backend_timeout_val = int(_backend_timeout_m.group(1))
+        if _backend_timeout_val != 60:
+            timeout_claim_mismatches.append(f"bin/sec-sync-controller.py BACKEND_TIMEOUT default is {_backend_timeout_val}, expected 60")
+
+    # Verify all subprocess.run / Popen.communicate / urlopen calls have timeout= parameter
+    # Check a window of lines since timeout= may be on the next line
+    lines = _ctrl_src.split('\n')
+    in_except_block = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("except ") and "TimeoutExpired" in stripped:
+            in_except_block = True
+            continue
+        if in_except_block and stripped and not line.startswith(" ") and not line.startswith("\t"):
+            in_except_block = False
+        if in_except_block:
+            continue
+        # Check for backend calls that should have timeout= (check current + next 5 lines)
+        window = ' '.join(lines[i:i+6])
+        if "subprocess.run(" in line and "timeout=" not in window:
+            timeout_claim_mismatches.append(f"bin/sec-sync-controller.py line {i+1}: subprocess.run without timeout=")
+        if "p.communicate(" in line and "timeout=" not in window:
+            timeout_claim_mismatches.append(f"bin/sec-sync-controller.py line {i+1}: p.communicate without timeout=")
+        if "urllib.request.urlopen(" in line and "timeout=" not in window:
+            timeout_claim_mismatches.append(f"bin/sec-sync-controller.py line {i+1}: urlopen without timeout=")
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -1874,6 +1943,10 @@ if hiae_mismatches:
     failures.append(f"{len(hiae_mismatches)} HIAE Protocol version banner drift(s) vs AGENTS.md")
     for _m in hiae_mismatches:
         print(f"{ERROR} HIAE banner: {_m}")
+if timeout_claim_mismatches:
+    failures.append(f"{len(timeout_claim_mismatches)} timeout claim drift(s) vs ARCHITECTURE.md/OPERATOR_MANUAL.md/bin/sec-sync-controller.py")
+    for _m in timeout_claim_mismatches:
+        print(f"{ERROR} timeout claim: {_m}")
 
 if failures:
     for f in failures:
@@ -1902,6 +1975,7 @@ print(f"{OK} version claim: OPERATOR_MANUAL.md's documented `--version` output m
 print(f"{OK} tenant help line: bin/sec's `Configured Tenants:` lists exactly the routable aliases")
 print(f"{OK} code census: profile.md's SYNC_KEYS count + sync-controller timeout sites + install.sh/bin/sec zero-timeout claim match the live code")
 print(f"{OK} HIAE banner: docs/ARCHITECTURE.md matches AGENTS.md (v{_agents_hiae.group(1)})")
+print(f"{OK} timeout claim: ARCHITECTURE.md + OPERATOR_MANUAL.md default 60s + SEC_SYNC_TIMEOUT override match bin/sec-sync-controller.py")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

@@ -1,5 +1,28 @@
 # Resume point - sec-cli
 
+Session 2026-10-14 (23rd run): shipped **#145** -- the unguarded-current-state
+sweep's next instance: ARCHITECTURE.md + OPERATOR_MANUAL.md claimed "every
+backend call has a timeout (default 60s, SEC_SYNC_TIMEOUT overrides)" but
+nothing verified the live `bin/sec-sync-controller.py` actually has `timeout=`
+on all backend calls. Added sentinel section 24 that extracts both docs'
+timeout claims, confirms the controller's `BACKEND_TIMEOUT` default is 60,
+and scans every `subprocess.run`/`p.communicate`/`urlopen` call (excluding
+cleanup calls in `except TimeoutExpired` blocks) for a `timeout=` parameter.
+Proven red first (two probe drifts: ARCHITECTURE.md default -> 99s, a
+`subprocess.run` without timeout=), then green. Sentinel remains 45 cases /
+468 assertions (new section adds no probes to test_sentinel.sh yet; will add
+when probes are written); mirrors bumped at `profile.md:22`, `profile.md:641`,
+`ADAPTERS.md:56`, `ADAPTERS.md:262`, this file's mirrors-in-sync +
+`Sentinel =` lines; HISTORY.md compacted (2026-10-14 block) to 5606/8192.
+
+Resume here next run: the tracker's open items are #67 (fresh 360 audit --
+its Step-1 gate needs explicit human scope approval; must NOT be started
+autonomously) and #92 + #51 (hub-side, not this repo). The highest-value
+autonomous pattern remains: sweep for the next unguarded current-state claim
+(this run's #145 was exactly that), or another sentinel-robustness class;
+the theoretical `re.search` scope-grab hardening stays conditional as noted
+in "Next autonomous work".
+
 Session 2026-10-14 (22nd run): shipped **#144** -- the unguarded-current-state
 sweep's next instance (the class #129-#139 worked). `docs/ARCHITECTURE.md:3`'s
 HIAE Protocol version banner had NO in-repo guard (`grep -n HIAE` over
