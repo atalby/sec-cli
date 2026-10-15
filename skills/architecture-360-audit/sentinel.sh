@@ -2424,6 +2424,31 @@ else:
                 f"but bin/sec dispatches no `{_pc}` command"
             )
 
+_ps1_delegating = set()
+_ps1_segs = re.split(r'^\s+"([a-z][a-z0-9-]*)"\s*\{', _ps1_text, flags=re.M)
+for _pi in range(1, len(_ps1_segs) - 1, 2):
+    if "bash $scriptPath" in _ps1_segs[_pi + 1]:
+        _ps1_delegating.add(_ps1_segs[_pi])
+_ps1_native_arms = _ps1_arms - _ps1_delegating
+_rd_mt_m = re.search(r"\*\*Windows Native\*\*(.*)", _nl_read("README.md"))
+if _rd_mt_m is None:
+    ps1_surface_mismatches.append(
+        "README.md no longer carries its 'Windows Native' Multi-OS Support Matrix row"
+    )
+else:
+    _rd_mt_cells = _rd_mt_m.group(1).split("|")
+    _rd_ps1_cell = _rd_mt_cells[2] if len(_rd_mt_cells) > 3 else ""
+    if "full surface via Git Bash" not in _rd_ps1_cell:
+        ps1_surface_mismatches.append(
+            "README.md's Windows Native PowerShell cell no longer states 'full surface via Git Bash'"
+        )
+    _rd_ps1_named = set(re.findall(r"`([a-z0-9-]+)`", _rd_ps1_cell))
+    if _ps1_native_arms and _rd_ps1_named != _ps1_native_arms:
+        ps1_surface_mismatches.append(
+            f"README.md's Windows Native PowerShell cell names {', '.join(sorted(_rd_ps1_named))}, "
+            f"but bin/sec.ps1 implements natively (non-delegating) {', '.join(sorted(_ps1_native_arms))}"
+        )
+
 # --- 33. docs/SECURITY.md's executables enumeration must match the live
 #         tracked bin/ tree grouped by shebang (issue #155) -----------------
 sec_exec_mismatches = []
@@ -3351,7 +3376,7 @@ print(f"{OK} runtime-dependency + env-var claims: README.md + docs/ARCHITECTURE.
 print(f"{OK} run-injection claims: README.md + docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md + docs/SECURITY.md name exactly the backends bin/sec injects via ({', '.join(sorted(_run_live))})")
 print(f"{OK} classifier categories: README.md + docs/ARCHITECTURE.md name only live CATEGORY_WEIGHTS keys ({', '.join(sorted(_live_cats))}) + the `general` fallback")
 print(f"{OK} completion surfaces: OPERATOR_MANUAL.md's shell set + alias and completions/_sec match the live bin/sec completion dispatch")
-print(f"{OK} ps1 surface: docs/ARCHITECTURE.md's bin/sec.ps1 native subset + bin/sec-only 'full surface' match the live dispatch")
+print(f"{OK} ps1 surface: docs/ARCHITECTURE.md's bin/sec.ps1 native subset + bin/sec-only 'full surface' and README.md's Multi-OS matrix PowerShell cell match the live dispatch")
 print(f"{OK} security executables: docs/SECURITY.md's executable list matches the live bin/ tree ({len(_live_bash_execs)} bash, {len(_live_py_execs)} python, {len(_live_ps_execs)} powershell)")
 print(f"{OK} sync exit codes: docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md + skills/architecture-360-audit/SKILL.md enumerate exactly bin/sec-sync-controller.py's returned codes ({', '.join(str(c) for c in sorted(_live_sync_codes))})")
 print(f"{OK} security process table: docs/SECURITY.md's argv/stdin mitigations still exist in the live bin/ code")

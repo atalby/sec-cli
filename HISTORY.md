@@ -65,7 +65,10 @@ Thirteenth, #175 made section 29 also read docs/OPERATOR_MANUAL.md, which restat
 sentence) plus a `plain exec` claim, while the guard read only README + ARCHITECTURE --
 [51], assertions 828 -> 836. Fourteenth, #176 made section 29 also read
 docs/SECURITY.md's Disk Storage Leak row (the fourth doc restating the same
-backend set), [51], assertions 836 -> 840.
+backend set), [51], assertions 836 -> 840. Fifteenth, #177 extended the
+ps1-surface guard to README.md's Multi-OS matrix PowerShell cell, which restated
+the bin/sec.ps1 native subset that only ARCHITECTURE.md was checked against,
+[54], assertions 840 -> 844.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected

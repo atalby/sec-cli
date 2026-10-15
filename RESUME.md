@@ -1,5 +1,28 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (55th run): shipped **#177** -- README.md's Multi-OS Support
+Matrix (the Windows Native row) restates the bin/sec.ps1 native subcommand subset
+in a table cell "Native PowerShell (core: `get`/`set`/`run`; full surface via Git
+Bash)", but the ps1-surface guard read only docs/ARCHITECTURE.md, so dropping or
+renaming a ps1 arm would red-flag ARCHITECTURE.md while README's cell stayed
+stale and green. Fix: the guard now derives the non-delegating ("native") arm
+set from bin/sec.ps1 (arms whose body lacks `bash $scriptPath`, here get/set/run)
+and requires README's Windows Native PowerShell cell to name exactly those plus
+keep its "full surface via Git Bash" phrase; the OK line names README.md too.
+Probe case [54] gained WORK_T26E (README cell native-set drift), asserting
+coverage exits nonzero and names the README.md drift, plus the green control.
+Mirrors: ADAPTERS.md:32 "Last updated", RESUME.md baseline below (840 -> 844
+assertions; case count stays 64), HISTORY.md 7512 -> 7728 bytes. Full battery
+green (dispatch/install/sync_guard/write_honesty/sentinel ALL PASSED, pytest 58,
+coverage + citations RC=0); narrative appended to history/2026-10-15.md.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously), and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#177 class); if none surfaces, the fresh 360 audit
+(#67) only after human approval.
+
 Session 2026-10-15 (54th run): shipped **#176** -- docs/SECURITY.md's Disk Storage
 Leak row (line 11) is a *fourth* doc restating the `sec run` injection-backend set
 ("Vendor run-wrappers (`bws`/`op`/`infisical`) inject secrets into process memory"),
@@ -1535,9 +1558,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 107, install 9, sentinel 64, sync_guard 16,
-write_honesty 17. Sentinel = 64 cases / 840 assertions. HISTORY.md is at
-7512/8192 bytes - headroom of 680 bytes before its budget (the 2026-10-15 block
-was compacted to fold in #166-#174; the full narratives live in
+write_honesty 17. Sentinel = 64 cases / 844 assertions. HISTORY.md is at
+7728/8192 bytes - headroom of 464 bytes before its budget (the 2026-10-15 block
+was compacted to fold in #166-#177; the full narratives live in
 `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each

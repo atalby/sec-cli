@@ -4375,13 +4375,14 @@ else
     no "the control copy's OK line did not name the completion-surface check"
     printf '%s\n' "$OUT"
 fi
-echo "[54] docs/ARCHITECTURE.md's bin/sec.ps1 native subset + bin/sec-only full surface must match the live dispatch (issue #154)"
+echo "[54] docs/ARCHITECTURE.md's + README.md's bin/sec.ps1 native subset + bin/sec-only full surface must match the live dispatch (issues #154/#177)"
 WORK_T26A="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T26B="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T26C="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T26D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T26E="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T26CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for W in "$WORK_T26A" "$WORK_T26B" "$WORK_T26C" "$WORK_T26D" "$WORK_T26CTRL"; do
+for W in "$WORK_T26A" "$WORK_T26B" "$WORK_T26C" "$WORK_T26D" "$WORK_T26E" "$WORK_T26CTRL"; do
     seed "$W"
 done
 python3 - "$WORK_T26A/docs/ARCHITECTURE.md" <<'PY'
@@ -4478,6 +4479,30 @@ if grep -qF "docs/ARCHITECTURE.md no longer states bin/sec.ps1's native subcomma
     ok "coverage names the dropped bin/sec.ps1 native-subset sentence"
 else
     no "coverage did not name the dropped bin/sec.ps1 native-subset sentence"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T26E/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"\(core: `get`/`set`/`run`; full surface via Git Bash\)", "(core: `get`/`sync`/`run`; full surface via Git Bash)", s, count=1)
+if n != 1:
+    sys.exit("README.md carries no Multi-OS PowerShell cell to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T26E" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when README.md's Multi-OS PowerShell cell drifts"
+else
+    no "coverage accepted a README.md Multi-OS PowerShell-cell drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "README.md's Windows Native PowerShell cell names get, run, sync, but bin/sec.ps1 implements natively (non-delegating) get, run, set" <<<"$OUT"; then
+    ok "coverage names the README.md Multi-OS PowerShell-cell drift"
+else
+    no "coverage did not name the README.md Multi-OS PowerShell-cell drift"
     printf '%s\n' "$OUT"
 fi
 OUT="$(cd "$WORK_T26CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
