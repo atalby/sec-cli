@@ -1241,11 +1241,11 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 94, install 9, sentinel 63, sync_guard 16,
+mirrors in sync): dispatch 95, install 9, sentinel 63, sync_guard 16,
 write_honesty 15. Sentinel = 63 cases / 792 assertions. HISTORY.md is at
-8117/8192 bytes - the next narrative addition must still compact first if it
-would cross the budget (compacted the 2026-10-14 and the 2026-10-15 #162 clause;
-each appended to `history/2026-10-15.md`).
+8173/8192 bytes - the next narrative addition must still compact first if it
+would cross the budget (compacted the 2026-10-11/12/13/14 blocks and the
+2026-10-15 #162 clause; each appended to `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each
 guard case re-runs full coverage a few times); the pytest mirror adds ~3.5 min.

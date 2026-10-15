@@ -532,8 +532,9 @@ EOF
                         if [[ "$item_name" == *"/"* ]] && [[ "${item_name##*/}" == "attachment" ]]; then
                             real_item_name="${item_name%/*}"
                             attachment_file="$field_name"
-                            item_id="$(bw_list_items --search "$real_item_name" "${SCOPE_ARGS[@]+${SCOPE_ARGS[@]}}" | jq -r --arg n "$real_item_name" '[.[] | select(.name == $n)][0].id // empty')"
-                            if [[ "$item_id" == "ERR" ]]; then exit 1; fi
+                            items_json="$(bw_list_items --search "$real_item_name" "${SCOPE_ARGS[@]+${SCOPE_ARGS[@]}}")"
+                            [[ "$items_json" == "ERR" ]] && exit 1
+                            item_id="$(echo "$items_json" | jq -r --arg n "$real_item_name" '[.[] | select(.name == $n)][0].id // empty')"
                             if [[ -n "$item_id" ]]; then
                                 BW_SESSION="${BW_SESSION:-}" bw get attachment "$attachment_file" --itemid "$item_id" --raw 2>/dev/null && exit 0
                             fi

@@ -41,6 +41,10 @@ case "${1:-}" in
                         *) shift ;;
                     esac
                 done
+                if [ -n "${SEC_TEST_BW_FAIL_SEARCH:-}" ] && [ "$SEARCH_Q" = "${SEC_TEST_BW_FAIL_SEARCH:-}" ]; then
+                    echo "Error: vault is locked." >&2
+                    exit 1
+                fi
                 if [ -n "$FOLDER_ID" ]; then
                     if [ "$FOLDER_ID" = "null" ]; then
                         items="$(jq -c '[.[] | select((.folderId // "") == "")]' <<<"$ITEMS")"
@@ -505,6 +509,36 @@ OUT="$(run_sec "$H" get MY_API_KEY/attachment/secret.txt 2>&1)"
 RC=$?
 set -e
 if [[ $RC -eq 0 ]] && [[ "$OUT" == "attachment-content" ]]; then pass "bw get item/attachment/file -> attachment-content"; else fail "attachment get rc=$RC out=$OUT"; fi
+
+echo "[4d] attachment item lookup: a failing list must exit 1 with a tagged error, not leak a jq parse error as exit 4 (#164)"
+H4D="$(new_home "$WORK/h4d")"
+set +e
+OUT4D="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H4D" \
+    "SEC_TEST_BW_FAIL_SEARCH=MY_API_KEY" "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" \
+    "SEC_TEST_BWS_LOG=$BWSLOG" "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "$REPO_ROOT/bin/sec" bw get MY_API_KEY/attachment/secret.txt 2>&1 </dev/null)"
+RC4D=$?
+set -e
+if [[ $RC4D -eq 1 ]]; then pass "attachment lookup failure exits 1 (not jq's 4)"; else fail "attachment lookup failure rc=$RC4D (expected 1) out=$OUT4D"; fi
+if grep -qi "parse error" <<<"$OUT4D"; then fail "raw jq parse error leaked to the user: $OUT4D"; else pass "no raw jq parse error in the output"; fi
+if grep -q "^\[ERROR\]" <<<"$OUT4D"; then pass "attachment lookup failure emits a tagged [ERROR]"; else fail "no tagged [ERROR] in: $OUT4D"; fi
+if grep -q "attachment-content" <<<"$OUT4D"; then fail "failed lookup still reported attachment content: $OUT4D"; else pass "failed lookup reports no content"; fi
+set +e
+OUT4DH="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H4D" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" \
+    "SEC_TEST_BWS_LOG=$BWSLOG" "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "$REPO_ROOT/bin/sec" bw get MY_API_KEY/attachment/secret.txt 2>&1 </dev/null)"
+RC4DH=$?
+set -e
+if [[ $RC4DH -eq 0 ]] && [[ "$OUT4DH" == "attachment-content" ]]; then pass "attachment happy path still works after the guard fix"; else fail "attachment happy path rc=$RC4DH out=$OUT4DH"; fi
+set +e
+OUT4DMISS="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H4D" \
+    "SEC_TEST_BW_FAIL_SEARCH=github-app" "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" \
+    "SEC_TEST_BWS_LOG=$BWSLOG" "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "$REPO_ROOT/bin/sec" bw get github-app/attachment/report.pdf 2>&1 </dev/null)"
+RC4DMISS=$?
+set -e
+if [[ $RC4DMISS -eq 1 ]]; then pass "attachment lookup failure on a second item name also exits 1"; else fail "second item rc=$RC4DMISS (expected 1) out=$OUT4DMISS"; fi
 
 echo "[5] bw get: miss exits 1 with tenant error"
 set +e
