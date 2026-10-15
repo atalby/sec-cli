@@ -7,50 +7,36 @@ record is archived per period under `history/` (append-only, nothing
 deleted, every file searchable). A new session reads this summary by
 default, not the whole history.
 
-**2026-10-14**: #144: docs/ARCHITECTURE.md's HIAE version banner had no
-in-repo guard (only the hand-run hub `check_version_banners.py`), so a
-fleet-sync bump would leave it stale with CI green; sentinel
-section 23 compares it vs AGENTS.md (case [43]). #145 swept the same class
-one file over: docs/SECURITY.md's six path->mode pairs had no guard, so a
-dropped `chmod` would leave the security doc lying with CI green; sentinel
-section 25 resolves each doc path from its source variable and checks the
-mode against its live chmod (cases [44]/[45]). #146 guarded the two docs
-quoting the config mode outside SECURITY.md (section 26, case [46]).
-#147 line-anchored section 9's `current suites:` extractor (a shadowing
-inline mention; case [47]); #148 scoped RESUME.md's two count mirrors to
-`## Verified baseline` (case [48]). #149 guarded the last prose
-natural-language mode claims (README.md + OPERATOR_MANUAL.md + ARCHITECTURE.md
-vs their live chmod/umask; section 27, case [49], proven red first).
-Sentinel 49 -> 51 cases / 532 -> 568 assertions. #150 guarded the runtime-dependency sentence +
-documented SEC_* var names (README.md + ARCHITECTURE.md vs install.sh's
-`for _dep` loop + bin/; section 28, case [50], proven red first). #151 guarded
-the `sec run` injection-backend prose (README.md + ARCHITECTURE.md vs bin/sec's
-`run)` arm; section 29, case [51], proven red first). #152 guarded the
-classifier-category names (README.md + ARCHITECTURE.md vs bin/sec-classify.py's
-CATEGORY_WEIGHTS keys + the `general` fallback; section 30, case [52], proven
-red first). #153 guarded the completion surface (OPERATOR_MANUAL.md vs bin/sec's
-completion dispatch + completions/_sec; section 31, case [53]). #154 guarded
-ARCHITECTURE.md's bin/sec.ps1 native-subset + bash-only full-surface claim vs the
-live dispatch (section 32, case [54]; both proven red first). #155 guarded
-docs/SECURITY.md's executables enumeration vs the live tracked bin/ tree grouped
-by shebang (section 33, case [57]). #156 guarded `sec sync`'s exit-code contract
-(OPERATOR_MANUAL.md + ARCHITECTURE.md vs bin/sec-sync-controller.py's returned
-codes + meaning anchors; section 34, case [58]); #157 extended it to SKILL.md's
-stale `exit codes 0/1/2` (now 0/1/2/3). #158/#159 guarded SECURITY.md's
-`never in argv` mitigation tokens and its snapshot-contents claim (which had
-gone stale) against their live mechanisms (sections 35/36, cases [59]/[60]).
-Sentinel 49 -> 60 cases / 532 -> 736 assertions.
-Tracker holds #51, #67, #92.
+**2026-10-14**: the unguarded-current-state-claim sweep ran #144-#159, one
+project-owned doc claim per issue, each closed by a sentinel section that derives
+the live value from the code and requires the doc to match: HIAE banner (#144),
+SECURITY.md path->mode pairs (#145), the two docs quoting the config mode
+(#146), the section-9 suite extractor (#147), RESUME.md's count mirrors (#148),
+natural-language mode prose (#149), runtime deps + SEC_* vars (#150), `sec run`
+injection backends (#151), classifier categories (#152), the completion surface
+(#153), the bin/sec.ps1 surface (#154), SECURITY.md's executable census (#155),
+`sec sync` exit codes (#156, extended to SKILL.md in #157), SECURITY.md's argv
+mitigations (#158) and snapshot-contents field set (#159, which had gone stale).
+Sentinel 49 -> 60 cases / 532 -> 736 assertions. Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
-**2026-10-15**: #160 swept the unguarded-current-state class to
-docs/ARCHITECTURE.md's `install.sh` bullet: the bootstrap clone dir, install
-destination, `bin/` helper set (the `bin/*` wording was imprecise —
-`bin/hyer-mcp.sh` is never installed), piped-mode empty-dir fallback, LICENSE
-copy name, and missing-git diagnosis had no guard. Sentinel section 37 checks
-each against install.sh's live behavior (case [61], five probes + control
-proven red first). Sentinel 60 -> 61 cases / 736 -> 760 assertions.
-Tracker holds #51, #67, #92.
+**2026-10-15**: two more passes of the same sweep. First, docs/ARCHITECTURE.md's
+`install.sh` bullet (bootstrap clone dir, install destination, `bin/` helper set --
+the `bin/*` wording was imprecise, `bin/hyer-mcp.sh` is never installed -- the
+piped-mode empty-dir fallback, the LICENSE copy name, the missing-git diagnosis)
+had no guard; sentinel section 37 checks each against install.sh (case [61], five
+probes + control proven red first). Its commit cites "issue #160" but no such
+issue was ever filed -- the tracker sat at 159 until this run filed its own
+finding, which took #160, so that citation is a dead reference.
+Second, docs/MULTI_TENANCY.md's `auto_rotate` contract claimed a two-branch
+true/false rule "for each tenant section"; live bin/sec reads the key once and
+consults it only in the `bitwarden|bw)` arm, `op` and `vault` prompt
+unconditionally, `bws`/`infisical`/`keychain` have no auth arm at all, and the
+prompt is a fallback reached under `auto_rotate = true` too -- not a false-branch.
+The doc became a per-backend table; sentinel section 38 derives the
+consulted/prompting/no-arm sets from `ensure_tenant_auth` (case [62], three
+probes + control proven red first). Sentinel 60 -> 62 cases / 736 -> 776
+assertions. Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected

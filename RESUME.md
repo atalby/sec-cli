@@ -1,5 +1,44 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (41st run): shipped **#160** -- the resume point's standing
+sweep ("next unguarded current-state claim, the #129-#160 class") landed on
+docs/MULTI_TENANCY.md:59-62, whose `auto_rotate` contract claimed a two-branch
+`true`/`false` rule "for each tenant section". Live bin/sec reads the key once
+(`ensure_tenant_auth`, line 87) and consults it at exactly two places, lines 103
+and 113, both inside the `bitwarden|bw)` arm: `op` and `vault` prompt
+unconditionally, `bws`/`infisical`/`keychain` have no auth arm at all -- so the
+`true` branch holds for 1 of 6 backends. The `false` branch was also inverted: the
+prompt is not gated on the key, it is the fallback reached under
+`auto_rotate = true` whenever `bw-session-keeper rotate` leaves the vault locked.
+No sentinel section read those lines (the MULTI_TENANCY sections cover only the
+alias list at line 38 and the sec.conf mode prose at line 9, issue #146). The doc
+became a per-backend table plus an explicit prompt-is-a-fallback sentence.
+Sentinel section 38 derives three live sets from ensure_tenant_auth -- the
+canonical backends (the `cli=` mapping case plus any dispatcher-regex alias not
+grouped in it, which is how `keychain` is found), the arms referencing
+`$auto_rotate`, and the arms carrying a prompt token -- and requires the doc's
+table to equal them row for row. Case [62], three probes + control, all proven
+red first: the doc's `1pass` row flipped to `yes`, an `$auto_rotate` consult
+injected into the live `1pass|op)` arm, and the fallback sentence re-worded each
+made coverage fail RC=1. Sentinel 61 -> 62 cases / 760 -> 776 assertions, with
+`"sixty-two": 62` added to the count-word table. Mirrors bumped at `profile.md:22`,
+`profile.md:641` (sixty-two), `ADAPTERS.md:56`, `ADAPTERS.md:262`, this file's
+mirrors-in-sync + `Sentinel =` lines; HISTORY.md compacted (the 2026-10-14
+#144-#159 clauses rewritten) to fit the 8192-byte budget with the new entry, and
+`history/2026-10-15.md` appended.
+
+Tracker correction made this run: run 40's commit cites "issue #160" for the
+install-path work, but no such issue was ever filed (GitHub's max was #159 before
+this run filed #160). That citation is a dead reference; recorded in HISTORY.md and
+history/2026-10-15.md rather than left to be rediscovered.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#160 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-15 (40th run): shipped **#160** -- the resume point's standing
 sweep ("next unguarded current-state claim, the #129-#159 class") landed on
 docs/ARCHITECTURE.md:18's `install.sh` bullet, whose claims no sentinel section
@@ -1202,9 +1241,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 61, sync_guard 16,
-write_honesty 15. Sentinel = 61 cases / 760 assertions. HISTORY.md is at
-7940/8192 bytes - the next narrative addition must still compact first if it
+mirrors in sync): dispatch 92, install 9, sentinel 62, sync_guard 16,
+write_honesty 15. Sentinel = 62 cases / 776 assertions. HISTORY.md is at
+7043/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (#160 compacted the #144-#154 clauses to fit the
 2026-10-15 entry and appended to `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

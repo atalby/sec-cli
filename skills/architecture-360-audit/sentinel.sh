@@ -659,6 +659,7 @@ _NUM_WORDS = {
     "fifty-six": 56,
     "fifty-seven": 57,
     "fifty-eight": 58, "fifty-nine": 59, "sixty": 60, "sixty-one": 61,
+    "sixty-two": 62,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2660,6 +2661,86 @@ else:
             "(the `command -v git` check must precede `git clone`)"
         )
 
+# --- 38. docs/MULTI_TENANCY.md's auto_rotate table must match bin/sec's live
+#         ensure_tenant_auth arms (which tenants consult auto_rotate, which
+#         prompt, which have no auth arm) -- issue #160 -------------------
+auto_rotate_mismatches = []
+_mt_canon = set()
+_mt_auto = set()
+_mt_prompt = set()
+_mt_arms = set()
+_mt_fn_m = re.search(r"^ensure_tenant_auth\(\) \{\n([\s\S]*?)^\}\n", _sec_text, re.M)
+_mt_cli_blocks = (
+    list(re.finditer(r'^    case "\$tenant" in\n([\s\S]*?)^    esac$', _mt_fn_m.group(1), re.M))
+    if _mt_fn_m
+    else []
+)
+_mt_cli_arms = {}
+if _mt_cli_blocks:
+    for _m in re.finditer(r"^        ([A-Za-z0-9_|]+)\)\s*cli=", _mt_cli_blocks[0].group(1), re.M):
+        _mt_cli_arms[_m.group(1)] = _m.group(1).split("|")
+_mt_auth_arms = {}
+if len(_mt_cli_blocks) > 1:
+    _mt_cur = None
+    for _ln in _mt_cli_blocks[-1].group(1).splitlines():
+        _a = re.match(r"^        ([A-Za-z0-9_|]+)\)\s*$", _ln)
+        if _a:
+            _mt_cur = _a.group(1)
+            _mt_auth_arms[_mt_cur] = []
+        elif _mt_cur is not None:
+            _mt_auth_arms[_mt_cur].append(_ln)
+
+if _mt_cli_blocks and _mt_auth_arms:
+    _mt_alias_members = {a for grp in _mt_cli_arms.values() for a in grp}
+    _mt_canon = {grp[0] for grp in _mt_cli_arms.values()}
+    if _live_aliases:
+        _mt_canon |= _live_aliases - _mt_alias_members
+    for _hdr, _lines in _mt_auth_arms.items():
+        _txt = "\n".join(_lines)
+        _canon = _hdr.split("|")[0]
+        _mt_arms.add(_canon)
+        if "auto_rotate" in _txt:
+            _mt_auto.add(_canon)
+        if re.search(r"unlock|op signin|vault login", _txt):
+            _mt_prompt.add(_canon)
+    _mt_rows = {}
+    for _ln in _nl_read("docs/MULTI_TENANCY.md").splitlines():
+        _r = re.match(r"^\|\s*`([a-z0-9]+)`\s*\|\s*(yes|no|no auth arm)\s*\|", _ln)
+        if _r:
+            _mt_rows[_r.group(1)] = _r.group(2)
+    if not _mt_rows:
+        auto_rotate_mismatches.append(
+            "docs/MULTI_TENANCY.md carries no per-backend auto_rotate table"
+        )
+    else:
+        if set(_mt_rows) != _mt_canon:
+            auto_rotate_mismatches.append(
+                f"docs/MULTI_TENANCY.md's auto_rotate table covers {sorted(_mt_rows)}, "
+                f"but bin/sec routes {sorted(_mt_canon)}"
+            )
+        for _b, _want in sorted(
+            (
+                (_b, "yes" if _b in _mt_auto else "no" if _b in _mt_prompt else "no auth arm")
+                for _b in _mt_canon
+            )
+        ):
+            _got = _mt_rows.get(_b)
+            if _got != _want:
+                auto_rotate_mismatches.append(
+                    f"docs/MULTI_TENANCY.md says {_b} is '{_got}', but bin/sec's "
+                    f"ensure_tenant_auth makes it '{_want}'"
+                )
+    if "fallback, not an `auto_rotate = false` branch" not in _nl_read("docs/MULTI_TENANCY.md"):
+        auto_rotate_mismatches.append(
+            "docs/MULTI_TENANCY.md no longer states that the interactive prompt is a "
+            "fallback rather than an `auto_rotate = false` branch"
+        )
+else:
+    auto_rotate_mismatches.append(
+        "bin/sec carries no parseable ensure_tenant_auth tenant arms to compare "
+        "docs/MULTI_TENANCY.md's auto_rotate table against"
+    )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2873,6 +2954,13 @@ if install_claim_mismatches:
     )
     for _m in install_claim_mismatches:
         print(f"{ERROR} install-path claim: {_m}")
+if auto_rotate_mismatches:
+    failures.append(
+        f"{len(auto_rotate_mismatches)} MULTI_TENANCY.md auto_rotate claim drift(s) "
+        f"vs bin/sec's live ensure_tenant_auth"
+    )
+    for _m in auto_rotate_mismatches:
+        print(f"{ERROR} auto_rotate claim: {_m}")
 
 if failures:
     for f in failures:
@@ -2915,6 +3003,8 @@ print(f"{OK} sync exit codes: docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md + s
 print(f"{OK} security process table: docs/SECURITY.md's argv/stdin mitigations still exist in the live bin/ code")
 print(f"{OK} security snapshot fields: docs/SECURITY.md's snapshot field set matches bin/sec-organizer's live schema ({len(_live_snap_fields)} field(s))")
 print(f"{OK} install-path claims: docs/ARCHITECTURE.md's bootstrap clone, install destination, installable helper set, piped-mode fallback, LICENSE copy name, and missing-git diagnosis match install.sh")
+if not auto_rotate_mismatches:
+    print(f"{OK} auto_rotate claims: docs/MULTI_TENANCY.md's per-backend table matches bin/sec's live ensure_tenant_auth arms (auto_rotate consulted: {sorted(_mt_auto) or 'none'}; prompting: {sorted(_mt_prompt) or 'none'}; no auth arm: {sorted(_mt_canon - _mt_arms) or 'none'})")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

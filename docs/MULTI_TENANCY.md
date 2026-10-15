@@ -56,7 +56,19 @@ sec vault get myapp/production/DATABASE_URL
 
 ## 🔐 Auto-Rotate vs. Interactive Login
 
-For each tenant section in `~/.sec/sec.conf`:
+`auto_rotate` (default `true`) is read per tenant section by `bin/sec`'s
+`ensure_tenant_auth`, but it only *drives* behavior for the backends that have an auth
+arm there. The per-backend response when the vault is locked or expired:
 
-- `auto_rotate = true`: When vault status is locked or expired, `sec` attempts background key refresh using stored macOS Keychain or Linux Secret Service entries.
-- `auto_rotate = false`: When vault status is locked, `sec` prompts interactively for manual authentication (`bw unlock`, `op signin`, `vault login`).
+| Backend | `auto_rotate` consulted | Response when locked |
+|---|---|---|
+| `bitwarden` | yes | Background key refresh via `bin/bw-session-keeper rotate` (stored macOS Keychain / Linux Secret Service), then prompts interactively if the vault is *still* locked |
+| `1pass` | no | Prompts interactively with `op signin`, whatever `auto_rotate` is set to |
+| `vault` | no | Prompts interactively with `vault login`, whatever `auto_rotate` is set to |
+| `bws` | no auth arm | `ensure_tenant_auth` performs no session handling |
+| `infisical` | no auth arm | `ensure_tenant_auth` performs no session handling |
+| `keychain` | no auth arm | `ensure_tenant_auth` performs no session handling |
+
+The interactive prompt is a **fallback, not an `auto_rotate = false` branch**: with
+`auto_rotate = true`, `bitwarden` still reaches `bw-session-keeper unlock` whenever the
+rotate step leaves the vault locked.

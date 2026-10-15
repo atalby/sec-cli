@@ -4862,6 +4862,100 @@ else
     no "the control copy's OK line did not name the install-path check"
     printf '%s\n' "$OUT"
 fi
+
+echo "[62] docs/MULTI_TENANCY.md's auto_rotate table must match bin/sec's live ensure_tenant_auth arms (issue #160)"
+WORK_T38A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T38B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T38C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T38CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for _w in "$WORK_T38A" "$WORK_T38B" "$WORK_T38C" "$WORK_T38CTRL"; do
+    seed "$_w"
+done
+python3 - "$WORK_T38A/docs/MULTI_TENANCY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "| `1pass` | no |"
+if s.count(old) != 1:
+    sys.exit("docs/MULTI_TENANCY.md no longer marks 1pass as not consulting auto_rotate")
+open(p, "w", encoding="utf-8").write(s.replace(old, "| `1pass` | yes |", 1))
+PY
+OUT="$(cd "$WORK_T38A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the doc claims a backend consults auto_rotate that does not"
+else
+    no "coverage accepted a doc auto_rotate-consulted claim the live code contradicts"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/MULTI_TENANCY.md says 1pass is 'yes', but bin/sec's ensure_tenant_auth makes it 'no'" <<<"$OUT"; then
+    ok "coverage names the drifted backend in the auto_rotate table"
+else
+    no "coverage did not name the drifted backend in the auto_rotate table"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T38B/bin/sec" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "        1pass|op)\n            if ! op whoami"
+if s.count(old) != 1:
+    sys.exit("bin/sec no longer starts the 1pass auth arm with the op whoami probe")
+open(p, "w", encoding="utf-8").write(
+    s.replace(old, '        1pass|op)\n            if [[ "$auto_rotate" == "true" ]]; then :; fi\n            if ! op whoami', 1)
+)
+PY
+OUT="$(cd "$WORK_T38B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the live code starts consulting auto_rotate for a backend the doc excludes"
+else
+    no "coverage accepted a live auto_rotate-consulted set wider than the doc's"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "but bin/sec's ensure_tenant_auth makes it 'yes'" <<<"$OUT"; then
+    ok "coverage names the live auto_rotate-consulted widening"
+else
+    no "coverage did not name the live auto_rotate-consulted widening"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T38C/docs/MULTI_TENANCY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "fallback, not an `auto_rotate = false` branch"
+if s.count(old) != 1:
+    sys.exit("docs/MULTI_TENANCY.md no longer carries the fallback-vs-auto_rotate=false sentence")
+open(p, "w", encoding="utf-8").write(s.replace(old, "the auto_rotate = false branch", 1))
+PY
+OUT="$(cd "$WORK_T38C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the prompt-is-a-fallback sentence is lost"
+else
+    no "coverage accepted the loss of the prompt-is-a-fallback sentence"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "no longer states that the interactive prompt is a fallback" <<<"$OUT"; then
+    ok "coverage names the lost prompt-fallback anchor"
+else
+    no "coverage did not name the lost prompt-fallback anchor"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T38CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (auto_rotate claims agree) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] auto_rotate claims:" <<<"$OUT"; then
+    ok "the control copy's OK line names the auto_rotate check"
+else
+    no "the control copy's OK line did not name the auto_rotate check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
