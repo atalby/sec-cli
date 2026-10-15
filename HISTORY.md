@@ -60,6 +60,10 @@ tracked `.mcp.json.example`) against the live launcher, [64]; sentinel 63 -> 64 
 Twelfth, #174 made section 18b also read docs/ARCHITECTURE.md's Overview sentence (the
 same universe + sync-target claim as README's) so both front sentences must name the live
 migrator universe and every controller target, [31]; assertions 820 -> 828.
+Thirteenth, #175 made section 29 also read docs/OPERATOR_MANUAL.md, which restates the
+`sec run` injection backends twice (its RAM-only list and its "only when the tenant is"
+sentence) plus a `plain exec` claim, while the guard read only README + ARCHITECTURE --
+[51], assertions 828 -> 836.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected

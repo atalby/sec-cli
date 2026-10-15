@@ -1,5 +1,30 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (53rd run): shipped **#175** -- docs/OPERATOR_MANUAL.md restates
+the `sec run` injection-backend set in two places (line 11's "credentials into RAM
+only for `bws`/`op`/`infisical`" list and line 61's "only when the tenant is
+`bws`, `op` or `infisical`" sentence) plus a `bitwarden` "plain exec" claim, but
+sentinel section 29's `_run_doc_sites` read only README.md (2 sites) +
+docs/ARCHITECTURE.md (1 site) and its `plain exec` check covered the same two, so
+an injection-backend change would red-flag those two docs while the third repeating
+the claim drifted silently green. Fix: section 29 gained both OPERATOR_MANUAL sites
+(line 11's slash-delimited list, line 61's comma/`or`-delimited sentence) and
+OPERATOR_MANUAL joined the `plain exec` site list; the OK line now names all three
+docs. Probe case [51] gained WORK_T23E (RAM-list drift) and WORK_T23F (tenant
+sentence drift), each asserting coverage exits nonzero and names the
+OPERATOR_MANUAL drift, plus the green control. Mirrors: ADAPTERS.md:32 "Last
+updated", RESUME.md baseline below (828 -> 836 assertions; the case count stays
+64, so no count-word table change), HISTORY.md 7058 -> 7350 bytes. Full battery green
+(dispatch/install/sync_guard/write_honesty/sentinel ALL PASSED, pytest 58,
+coverage + citations RC=0); narrative appended to history/2026-10-15.md.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously), and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#175 class); if none surfaces, the fresh 360 audit
+(#67) only after human approval.
+
 Session 2026-10-15 (52nd run): shipped **#174** -- docs/ARCHITECTURE.md's Overview
 carried the same class of front-page claim as README.md's (the backend universe and
 the `sec sync` targets), but sentinel section 18b only ever read README.md, so a
@@ -1489,8 +1514,8 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 107, install 9, sentinel 64, sync_guard 16,
-write_honesty 17. Sentinel = 64 cases / 828 assertions. HISTORY.md is at
-7058/8192 bytes - headroom of 1134 bytes before its budget (the 2026-10-15 block
+write_honesty 17. Sentinel = 64 cases / 836 assertions. HISTORY.md is at
+7350/8192 bytes - headroom of 842 bytes before its budget (the 2026-10-15 block
 was compacted to fold in #166-#174; the full narratives live in
 `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

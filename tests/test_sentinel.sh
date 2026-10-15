@@ -3947,8 +3947,10 @@ WORK_T23A="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23B="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23C="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T23E="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T23F="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for W in "$WORK_T23A" "$WORK_T23B" "$WORK_T23C" "$WORK_T23D" "$WORK_T23CTRL"; do
+for W in "$WORK_T23A" "$WORK_T23B" "$WORK_T23C" "$WORK_T23D" "$WORK_T23E" "$WORK_T23F" "$WORK_T23CTRL"; do
     seed "$W"
 done
 python3 - "$WORK_T23A/README.md" <<'PY'
@@ -4045,6 +4047,54 @@ if grep -q "docs/ARCHITECTURE.md no longer states the run-injection backend set 
     ok "coverage names the dropped ARCHITECTURE.md run-injection claim"
 else
     no "coverage did not name the dropped ARCHITECTURE.md run-injection claim"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T23E/docs/OPERATOR_MANUAL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"credentials into RAM only for `bws`/`op`/`infisical` \(", "credentials into RAM only for `bws`/`op`/`vault` (", s, count=1)
+if n != 1:
+    sys.exit("docs/OPERATOR_MANUAL.md carries no 'credentials into RAM only for `bws`/`op`/`infisical`' list to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T23E" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when OPERATOR_MANUAL.md's injection-backend list drifts"
+else
+    no "coverage accepted an OPERATOR_MANUAL.md run-injection backend drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/OPERATOR_MANUAL.md names run-injection backends bws, op, vault, but bin/sec injects via bws, infisical, op" <<<"$OUT"; then
+    ok "coverage names the OPERATOR_MANUAL.md run-injection backend drift"
+else
+    no "coverage did not name the OPERATOR_MANUAL.md run-injection backend drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T23F/docs/OPERATOR_MANUAL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"only when the tenant is `bws`, `op` or `infisical`", "only when the tenant is `bws`, `op` or `vault`", s, count=1)
+if n != 1:
+    sys.exit("docs/OPERATOR_MANUAL.md carries no 'only when the tenant is `bws`, `op` or `infisical`' sentence to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T23F" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when OPERATOR_MANUAL.md's run-injection sentence drifts"
+else
+    no "coverage accepted an OPERATOR_MANUAL.md run-injection sentence drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/OPERATOR_MANUAL.md names run-injection backends bws, op, vault, but bin/sec injects via bws, infisical, op" <<<"$OUT"; then
+    ok "coverage names the OPERATOR_MANUAL.md run-injection sentence drift"
+else
+    no "coverage did not name the OPERATOR_MANUAL.md run-injection sentence drift"
     printf '%s\n' "$OUT"
 fi
 OUT="$(cd "$WORK_T23CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
