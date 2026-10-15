@@ -59,16 +59,24 @@ the bw stub's `get template item` as proof the substitution happened. Dispatch
 93 -> 94; bin/sec.ps1 tagged-line census 11 -> 12. The functional half runs in CI
 (ubuntu-latest ships pwsh, from the run log) and here against a portable arm64
 pwsh extract.
-Fifth, the bitwarden attachment-read path had a dead guard (#164): `bw_list_items`
-signals failure by printing a literal `ERR` on stdout, and three of its four
-consumers capture it before testing; line 535 piped it straight into jq, so the
-`[[ "$item_id" == "ERR" ]]` test could never fire and `set -e`/`pipefail` leaked
-jq's exit status -- a failed lookup printed a raw untagged `parse error` and
-exited 4, a code bin/sec never returns, from the same `bw list items` failure that
-exits 1 everywhere else. Now capture-then-guard, as its siblings did. Case [4d],
-six assertions, red-first 294/3 -> 297/0, one default-off knob.
-Dispatch 94 -> 95 sections.
-Sixth, the #162/#164 failure-honesty hole lived in three `sec-organizer` write paths (#165): revert's `bw get item` read was a dead guard (a failed substitution kills the script under `pipefail`, so exit 77 escaped, the second action never ran, zero error output -- a silent half-revert); `folders_json` kept the `|| echo "[]"` mask unvalidated (garbage at exit 0 reached jq -- exit 4, the #164 signature); the apply/revert pipelines ran unguarded (failing `bw get template` leaked a raw `TOKEN-abc123` diagnostic as exit 66, failing `bw encode` surfaced as uninterpretable 141). Fixed with the file's own idioms (`|| true`, `require_json_array`, `if ! ...; then rc=1; continue; fi`). Cases [14e-h], 24 assertions, 15 FAILs red-first with the exact issue signatures, then green. Dispatch 95 -> 99; organizer tagged census 42 -> 46; two profile.md anchors re-pinned. Verification also caught a stub bug: `${VAR:-default}` truncates at the first inner `}`, so the folders default is now a single-quoted literal.
+Fifth, the bitwarden attachment-read path had a dead guard (#164): line 535 piped
+`bw_list_items`'s literal `ERR` sentinel straight into jq, so its ERR test could
+never fire and a failed lookup leaked a raw `parse error` + exit 4. Now
+capture-then-guard, as its three siblings did. Case [4d], dispatch 94 -> 95.
+Sixth, the same failure-honesty hole lived in three `sec-organizer` write paths
+(#165): a dead-guard `bw get item` read (silent half-revert), the unvalidated
+`folders_json` mask (garbage-RC0 -> raw jq exit 4), and unguarded apply/revert
+pipelines (raw `TOKEN-abc123` as exit 66, `bw encode` as 141). Fixed with the
+file's own idioms; cases [14e-h], dispatch 95 -> 99; a `${VAR:-default}` stub bug
+was caught in verification. Seventh, #166-#169 closed the class's remaining
+reads: four silent-death backend reads in bin/sec + keeper (#166, cases [14i-m]);
+the sec-migrator `bws project list` twin + three create-response jqs (#167,
+write-honesty [15]); the README migrate bullet that presented destination-only
+backends as bidirectional sources (#168, sentinel 19b); and #169 un-hollowed
+sec-organizer's three `bw list folders` reads, whose `|| echo "[]"` mask made the
+adjacent `require_json_array` guard unreachable -- a failing read yielded a false
+plan and a false apply success (cases [14n]/[14o], dispatch 105 -> 107); #170
+tracks the sec-migrator source-listing twin.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
