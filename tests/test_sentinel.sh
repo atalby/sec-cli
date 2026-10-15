@@ -4957,6 +4957,102 @@ else
     printf '%s\n' "$OUT"
 fi
 echo
+echo "[63] docs/SECURITY.md's plaintext-fallback contract must match bin/bw-session-keeper + bin/sec-migrator (issue #161)"
+WORK_T39A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T39B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T39C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T39CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for _w in "$WORK_T39A" "$WORK_T39B" "$WORK_T39C" "$WORK_T39CTRL"; do
+    seed "$_w"
+done
+python3 - "$WORK_T39A/docs/SECURITY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "the fallback file is mode-0600 at `~/.cache/bitwarden/master_pass`"
+if s.count(old) != 1:
+    sys.exit("docs/SECURITY.md no longer states the mode-0600 fallback path")
+open(p, "w", encoding="utf-8").write(
+    s.replace(old, "the fallback file is mode-0644 at `~/.cache/bitwarden/master_pass`", 1)
+)
+PY
+OUT="$(cd "$WORK_T39A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the doc claims a looser fallback-file mode than the live chmod"
+else
+    no "coverage accepted a mode-0644 master-pass fallback claim the live chmod contradicts"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "claims the fallback file is mode-0600, but bin/bw-session-keeper chmods it" <<<"$OUT"; then
+    ok "coverage names the fallback-file mode drift"
+else
+    no "coverage did not name the fallback-file mode drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T39B/bin/bw-session-keeper" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = '        if [[ "${SEC_ALLOW_PLAINTEXT_MASTER_PASS:-0}" != "1" ]]; then\n            echo "[ERROR] No keychain backend (security/secret-tool); refusing to store the master password in a plaintext file. Install libsecret (secret-tool) or set SEC_ALLOW_PLAINTEXT_MASTER_PASS=1 to accept the mode-0600 file fallback." >&2\n            exit 1\n        fi\n'
+if s.count(old) != 1:
+    sys.exit("bin/bw-session-keeper no longer refuses the plaintext store without the opt-in")
+open(p, "w", encoding="utf-8").write(s.replace(old, "", 1))
+PY
+OUT="$(cd "$WORK_T39B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the live store-side refusal is removed"
+else
+    no "coverage accepted live code that stores the master password in plaintext without the opt-in"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "claims the keeper refuses to store a plaintext file without SEC_ALLOW_PLAINTEXT_MASTER_PASS" <<<"$OUT"; then
+    ok "coverage names the missing store-side refusal"
+else
+    no "coverage did not name the missing store-side refusal"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T39C/docs/SECURITY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "the transient `infisical` staging file, created 0600 and unlinked immediately after `secrets set`"
+if s.count(old) != 1:
+    sys.exit("docs/SECURITY.md no longer describes the infisical staging file")
+open(p, "w", encoding="utf-8").write(
+    s.replace(old, "the transient `infisical` staging file, created 0644 and unlinked at exit", 1)
+)
+PY
+OUT="$(cd "$WORK_T39C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the infisical staging-file claim drifts from bin/sec-migrator"
+else
+    no "coverage accepted an infisical staging-file claim the live code contradicts"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "does not carry the guarded 'created 0600' mode for the infisical staging file" <<<"$OUT"; then
+    ok "coverage names the drifted infisical staging-file mode"
+else
+    no "coverage did not name the drifted infisical staging-file mode"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T39CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (plaintext-fallback contract agrees) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] plaintext-fallback contract:" <<<"$OUT"; then
+    ok "the control copy's OK line names the plaintext-fallback check"
+else
+    no "the control copy's OK line did not name the plaintext-fallback check"
+    printf '%s\n' "$OUT"
+fi
+echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
     exit 0

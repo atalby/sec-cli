@@ -659,7 +659,7 @@ _NUM_WORDS = {
     "fifty-six": 56,
     "fifty-seven": 57,
     "fifty-eight": 58, "fifty-nine": 59, "sixty": 60, "sixty-one": 61,
-    "sixty-two": 62,
+    "sixty-two": 62, "sixty-three": 63,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2741,6 +2741,168 @@ else:
         "docs/MULTI_TENANCY.md's auto_rotate table against"
     )
 
+# --- 39. docs/SECURITY.md's plaintext-fallback contract (the master-pass
+#         opt-in var, its store+read refusal, its live path + mode) and the
+#         on-disk exception census in the Disk Storage Leak row must match
+#         bin/bw-session-keeper + bin/sec-migrator (issue #161) --------------
+mp_mismatches = []
+_keeper_text = _nl_read("bin/bw-session-keeper")
+_migrator_text = _nl_read("bin/sec-migrator")
+_sec_md_text = _nl_read("docs/SECURITY.md")
+_mp_path = ""
+_mp_mode = ""
+_dsl_mode = ""
+
+
+def _fn_body(_text, _name):
+    _m = re.search(rf"^{_name}\(\) \{{\n([\s\S]*?)^\}}\n", _text, re.M)
+    return _m.group(1) if _m else ""
+
+
+_mp_get = _fn_body(_keeper_text, "get_master_password")
+_mp_save = _fn_body(_keeper_text, "save_master_password")
+_mp_optin = sorted(
+    set(re.findall(r"SEC_[A-Z_]*MASTER[A-Z_]*", _mp_get))
+    | set(re.findall(r"SEC_[A-Z_]*MASTER[A-Z_]*", _mp_save))
+)
+_mp_row_m = re.search(r"^\| \*\*Master Password Storage\*\*.*$", _sec_md_text, re.M)
+if not _mp_get or not _mp_save:
+    mp_mismatches.append(
+        "bin/bw-session-keeper carries no parseable get_master_password/save_master_password "
+        "pair to compare docs/SECURITY.md's plaintext-fallback contract against"
+    )
+elif _mp_row_m is None:
+    mp_mismatches.append(
+        "docs/SECURITY.md carries no 'Master Password Storage' row in the guarded form"
+    )
+else:
+    _mp_row = _mp_row_m.group(0)
+    if len(_mp_optin) != 1:
+        mp_mismatches.append(
+            f"bin/bw-session-keeper gates the plaintext fallback on {len(_mp_optin)} distinct "
+            f"opt-in var(s) ({', '.join(_mp_optin) or 'none'}), expected exactly 1"
+        )
+    else:
+        _mp_var = _mp_optin[0]
+        if _mp_var not in _mp_row:
+            mp_mismatches.append(
+                f"docs/SECURITY.md no longer names {_mp_var} as the plaintext-fallback opt-in"
+            )
+        if "refuses" not in _mp_row or "store or read" not in _mp_row:
+            mp_mismatches.append(
+                "docs/SECURITY.md no longer states in the guarded form that the keeper "
+                "'refuses' to 'store or read' the plaintext file without the opt-in"
+            )
+        _mp_store_gate = re.search(rf'{re.escape(_mp_var)}:-[0-9]+\}}"?\s*!=\s*"1"', _mp_save)
+        _mp_read_gate = re.search(rf'{re.escape(_mp_var)}:-[0-9]+\}}"?\s*==\s*"1"', _mp_get)
+        _mp_writes_file = bool(re.search(r">\s*\"?\$MASTER_PASS_FILE", _mp_save))
+        _mp_reads_file = '"$MASTER_PASS_FILE"' in _mp_get
+        if not _mp_store_gate or not _mp_writes_file:
+            mp_mismatches.append(
+                f"docs/SECURITY.md claims the keeper refuses to store a plaintext file "
+                f"without {_mp_var}, but bin/bw-session-keeper's save_master_password "
+                f"{'writes' if _mp_writes_file else 'never writes'} $MASTER_PASS_FILE behind "
+                f"{'a non-' if _mp_store_gate else 'no '}{_mp_var} gate"
+            )
+        if not _mp_read_gate or not _mp_reads_file:
+            mp_mismatches.append(
+                f"docs/SECURITY.md claims the keeper refuses to read a plaintext file without "
+                f"{_mp_var}, but bin/bw-session-keeper's get_master_password "
+                f"{'' if _mp_reads_file else 'never touches '} $MASTER_PASS_FILE behind "
+                f"{'an' if _mp_read_gate else 'no'} {_mp_var} gate"
+            )
+    _mp_path = _security_expand(_security_env.get("MASTER_PASS_FILE") or "")
+    if not _mp_path:
+        mp_mismatches.append(
+            "bin/bw-session-keeper assigns no MASTER_PASS_FILE path for docs/SECURITY.md's "
+            "fallback-path claim to be checked against"
+        )
+    elif f"`{_mp_path}`" not in _mp_row:
+        mp_mismatches.append(
+            f"docs/SECURITY.md names no fallback file at `{_mp_path}`, but "
+            f"bin/bw-session-keeper's MASTER_PASS_FILE expands to it"
+        )
+    _mp_chmod_m = re.search(r'chmod (\d+) "\$MASTER_PASS_FILE"', _keeper_text)
+    if not _mp_chmod_m:
+        mp_mismatches.append(
+            "bin/bw-session-keeper has no chmod on $MASTER_PASS_FILE, so docs/SECURITY.md's "
+            "fallback-file mode claim is unverifiable"
+        )
+    else:
+        _mp_mode = "0" + _mp_chmod_m.group(1).lstrip("0")
+        if f"mode-{_mp_mode}" not in _mp_row:
+            mp_mismatches.append(
+                f"docs/SECURITY.md claims the fallback file is mode-{_mp_mode}, but "
+                f"bin/bw-session-keeper chmods it {_mp_chmod_m.group(1)}"
+            )
+
+_dsl_row_m = re.search(r"^\| \*\*Disk Storage Leak\*\*.*$", _sec_md_text, re.M)
+_dsl_clause_m = (
+    re.search(r"Documented on-disk exceptions, all mode (\d{4}):([^\n]*)$", _dsl_row_m.group(0))
+    if _dsl_row_m
+    else None
+)
+_inf_arm_m = re.search(r"^\s*infisical\)\n([\s\S]*?)^ {16};;", _migrator_text, re.M)
+if _dsl_clause_m is None:
+    mp_mismatches.append(
+        "docs/SECURITY.md carries no 'Documented on-disk exceptions, all mode NNNN:' census "
+        "in its Disk Storage Leak row"
+    )
+else:
+    _dsl_mode, _dsl_clause = _dsl_clause_m.group(1), _dsl_clause_m.group(2)
+    for _exc_tok, _exc_what in (
+        ("session", "the session-key file"),
+        ("master-pass", "the master-pass file"),
+        ("infisical", "the infisical staging file"),
+    ):
+        if _exc_tok not in _dsl_clause:
+            mp_mismatches.append(
+                f"docs/SECURITY.md's on-disk exception census no longer names {_exc_what}"
+            )
+    if "staging" not in _dsl_clause:
+        mp_mismatches.append(
+            "docs/SECURITY.md's on-disk exception census no longer calls the infisical file a "
+            "transient staging file"
+        )
+    if f"created {_dsl_mode}" not in _dsl_clause:
+        mp_mismatches.append(
+            f"docs/SECURITY.md's on-disk exception census does not carry the guarded "
+            f"'created {_dsl_mode}' mode for the infisical staging file, but its own leading "
+            f"clause claims all exceptions are mode {_dsl_mode}"
+        )
+    if "unlinked immediately after `secrets set`" not in _dsl_clause:
+        mp_mismatches.append(
+            "docs/SECURITY.md no longer states that the infisical staging file is unlinked "
+            "immediately after `secrets set`"
+        )
+    if _inf_arm_m is None:
+        mp_mismatches.append(
+            "bin/sec-migrator carries no parseable `infisical)` arm to compare "
+            "docs/SECURITY.md's staging-file claim against"
+        )
+    else:
+        _inf_txt = _inf_arm_m.group(1)
+        _inf_chmod_m = re.search(r'chmod (\d+) "\$([a-z_]+)"', _inf_txt)
+        _inf_var = _inf_chmod_m.group(2) if _inf_chmod_m else ""
+        if "mktemp" not in _inf_txt or not _inf_chmod_m:
+            mp_mismatches.append(
+                "bin/sec-migrator's `infisical)` arm creates no mktemp'd + chmod'd staging "
+                "file, so docs/SECURITY.md's claim is unverifiable"
+            )
+        else:
+            _inf_mode = "0" + _inf_chmod_m.group(1).lstrip("0")
+            if _inf_mode != _dsl_mode:
+                mp_mismatches.append(
+                    f"docs/SECURITY.md claims all on-disk exceptions are mode {_dsl_mode}, but "
+                    f"bin/sec-migrator chmods the infisical staging file {_inf_mode}"
+                )
+            if len(re.findall(rf'rm -f "\$?{re.escape(_inf_var)}"', _inf_txt)) < 2:
+                mp_mismatches.append(
+                    "docs/SECURITY.md claims the infisical staging file is unlinked immediately "
+                    "after `secrets set`, but bin/sec-migrator's `infisical)` arm does not "
+                    "remove it on both the success and failure branches"
+                )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -2961,6 +3123,13 @@ if auto_rotate_mismatches:
     )
     for _m in auto_rotate_mismatches:
         print(f"{ERROR} auto_rotate claim: {_m}")
+if mp_mismatches:
+    failures.append(
+        f"{len(mp_mismatches)} SECURITY.md plaintext-fallback contract drift(s) vs "
+        f"bin/bw-session-keeper + bin/sec-migrator"
+    )
+    for _m in mp_mismatches:
+        print(f"{ERROR} plaintext-fallback contract: {_m}")
 
 if failures:
     for f in failures:
@@ -3005,6 +3174,8 @@ print(f"{OK} security snapshot fields: docs/SECURITY.md's snapshot field set mat
 print(f"{OK} install-path claims: docs/ARCHITECTURE.md's bootstrap clone, install destination, installable helper set, piped-mode fallback, LICENSE copy name, and missing-git diagnosis match install.sh")
 if not auto_rotate_mismatches:
     print(f"{OK} auto_rotate claims: docs/MULTI_TENANCY.md's per-backend table matches bin/sec's live ensure_tenant_auth arms (auto_rotate consulted: {sorted(_mt_auto) or 'none'}; prompting: {sorted(_mt_prompt) or 'none'}; no auth arm: {sorted(_mt_canon - _mt_arms) or 'none'})")
+if not mp_mismatches:
+    print(f"{OK} plaintext-fallback contract: docs/SECURITY.md's master-pass opt-in/refusal/path/mode and on-disk exception census match bin/bw-session-keeper ({_mp_optin[0] if len(_mp_optin) == 1 else 'n/a'}, {_mp_path or 'n/a'}, mode-{_mp_mode if _mp_chmod_m else 'n/a'}) + bin/sec-migrator's infisical staging file (mode {_dsl_mode if _dsl_clause_m else 'n/a'})")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

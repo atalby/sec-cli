@@ -20,7 +20,7 @@ mitigations (#158) and snapshot-contents field set (#159, which had gone stale).
 Sentinel 49 -> 60 cases / 532 -> 736 assertions. Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
-**2026-10-15**: two more passes of the same sweep. First, docs/ARCHITECTURE.md's
+**2026-10-15**: three more passes of the same sweep. First, docs/ARCHITECTURE.md's
 `install.sh` bullet (bootstrap clone dir, install destination, `bin/` helper set --
 the `bin/*` wording was imprecise, `bin/hyer-mcp.sh` is never installed -- the
 piped-mode empty-dir fallback, the LICENSE copy name, the missing-git diagnosis)
@@ -35,8 +35,21 @@ unconditionally, `bws`/`infisical`/`keychain` have no auth arm at all, and the
 prompt is a fallback reached under `auto_rotate = true` too -- not a false-branch.
 The doc became a per-backend table; sentinel section 38 derives the
 consulted/prompting/no-arm sets from `ensure_tenant_auth` (case [62], three
-probes + control proven red first). Sentinel 60 -> 62 cases / 736 -> 776
-assertions. Tracker holds #51, #67, #92.
+probes + control proven red first). Third, docs/SECURITY.md's master-password row
+and the Disk Storage Leak census were unguarded, and their claims are currently
+TRUE -- the highest blast radius in the class, since a silent regression would
+write a Bitwarden master password to disk in cleartext. Live shape:
+`SEC_ALLOW_PLAINTEXT_MASTER_PASS` gates both paths (store refused unless `=1`,
+read only if `=1`), the file is `~/.cache/bitwarden/master_pass` at mode 0600,
+and bin/sec-migrator stages the infisical import in a `mktemp` file chmod'd to
+the documented mode and `rm -f`'d in BOTH branches (the doc understated one).
+Sentinel section 39 derives all of it (case [63], three probes + control proven
+red first). Sentinel 60 -> 63 cases / 736 -> 792 assertions.
+Tracker holds #51, #67, #92.
+Separately: test_dispatch.sh case `[11] op set` failed once in four full runs and
+would not reproduce; the pipeline's stderr is discarded so the cause is
+unrecoverable. Filed as #162 with the four-run evidence table rather than
+attributed to load.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
