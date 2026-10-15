@@ -118,7 +118,10 @@ cmd="${1:-status}"
 
 case "$cmd" in
     status)
-        local_status="$(bw status 2>/dev/null | jq -r '.status // "unknown"')"
+        if ! local_status="$(bw status 2>/dev/null | jq -r '.status // "unknown"' 2>/dev/null)"; then
+            echo "[ERROR] bitwarden 'bw status' failed; cannot report keeper status." >&2
+            exit 1
+        fi
         echo "[INFO] Bitwarden Session Keeper Status ($OS_TYPE${IS_WSL:+ / WSL 2})"
         echo "  [Vault Status] : $local_status"
         if validate_session; then

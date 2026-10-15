@@ -19,6 +19,14 @@ DEFAULT_ITEMS='[{"id":"item-1","name":"MY_API_KEY","notes":null,"login":{"passwo
 ITEMS="${SEC_TEST_BW_ITEMS:-$DEFAULT_ITEMS}"
 case "${1:-}" in
     status)
+        if [ -n "${SEC_TEST_BW_STATUS_RC:-}" ]; then
+            echo "Error: vault is locked." >&2
+            exit "${SEC_TEST_BW_STATUS_RC}"
+        fi
+        if [ -n "${SEC_TEST_BW_STATUS_GARBAGE:-}" ]; then
+            echo 'GARBAGE{{{not-json'
+            exit 0
+        fi
         echo '{"status":"unlocked"}'
         ;;
     sync)
@@ -184,6 +192,10 @@ case "${1:-} ${2:-}" in
         echo "bws-pw-${3:-}"
         ;;
     "project list")
+        if [ -n "${SEC_TEST_BWS_PROJ_RC:-}" ]; then
+            echo "Error: BWS_ACCESS_TOKEN missing." >&2
+            exit "${SEC_TEST_BWS_PROJ_RC}"
+        fi
         if [ "${SEC_TEST_BWS_NOPROJ:-0}" != "0" ]; then
             echo '[]'
             exit 0
@@ -919,6 +931,71 @@ if grep -q '^\[ERROR\] apply failed: could not create folder "brand-new-folder"'
 if grep -q "TOKEN-abc123" <<<"$OUT"; then fail "apply leaked the child's raw stderr token: $OUT"; else pass "no raw child stderr token on failing folder create"; fi
 if grep -q "Successfully Applied" <<<"$OUT"; then fail "reported success for a failed apply"; else pass "no success banner on failed apply"; fi
 if [[ -f "$H2I/.cache/bitwarden/housekeep_plan.json" ]]; then pass "plan kept after failed apply"; else fail "plan DELETED after failed apply"; fi
+
+echo "[14i] failure-honesty: a failing 'bw status' in the auth preamble exits 1 tagged, never a silent death (issue #166)"
+H2J="$(new_home "$WORK/h14i")"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2J" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_STATUS_RC=1" \
+    "$REPO_ROOT/bin/sec" bw get MY_API_KEY 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] bitwarden 'bw status' failed" <<<"$OUT"; then pass "failing bw status -> exit 1 + tagged error"; else fail "failing bw status rc=$RC out=[$OUT]"; fi
+if [[ -n "$OUT" ]]; then pass "failing bw status is loud, not a silent death"; else fail "failing bw status died silent (empty output, rc=$RC)"; fi
+if [[ $RC -eq 4 ]]; then fail "failing bw status leaked jq's exit 4"; else pass "no jq exit-code leak on failing bw status"; fi
+if grep -q "parse error" <<<"$OUT"; then fail "failing bw status leaked a raw jq parse error: $OUT"; else pass "no raw jq parse error on failing bw status"; fi
+if grep -q "pw-MY_API_KEY" <<<"$OUT"; then fail "failing bw status still printed a secret: $OUT"; else pass "no secret printed on failing bw status"; fi
+
+echo "[14j] failure-honesty: garbage 'bw status' output exits 1 tagged, never jq's raw exit 4 (issue #166)"
+H2K="$(new_home "$WORK/h14j")"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2K" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_STATUS_GARBAGE=1" \
+    "$REPO_ROOT/bin/sec" bw get MY_API_KEY 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] bitwarden 'bw status' failed" <<<"$OUT"; then pass "garbage bw status -> exit 1 + tagged error"; else fail "garbage bw status rc=$RC out=[$OUT]"; fi
+if [[ $RC -eq 4 ]]; then fail "garbage bw status leaked jq's exit 4"; else pass "no jq exit-code leak on garbage bw status"; fi
+if grep -q "parse error" <<<"$OUT"; then fail "garbage bw status leaked a raw jq parse error: $OUT"; else pass "no raw jq parse error on garbage bw status"; fi
+if grep -q "pw-MY_API_KEY" <<<"$OUT"; then fail "garbage bw status still printed a secret: $OUT"; else pass "no secret printed on garbage bw status"; fi
+
+echo "[14k] failure-honesty: 'sec get --scope' fails closed on a garbage folders listing, never jq's exit 4 (issue #166)"
+H2L="$(new_home "$WORK/h14k")"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2L" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_FOLDERS=GARBAGE{{{not-json" \
+    "$REPO_ROOT/bin/sec" bw get --scope work MY_API_KEY 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] corrupt or unreadable folder listing from backend 'bw'" <<<"$OUT"; then pass "garbage scope folders -> exit 1 + tagged error"; else fail "garbage scope folders rc=$RC out=[$OUT]"; fi
+if [[ $RC -eq 4 ]]; then fail "garbage scope folders leaked jq's exit 4"; else pass "no jq exit-code leak on garbage scope folders"; fi
+if grep -q "parse error" <<<"$OUT"; then fail "garbage scope folders leaked a raw jq parse error: $OUT"; else pass "no raw jq parse error on garbage scope folders"; fi
+if grep -q "pw-MY_API_KEY" <<<"$OUT"; then fail "garbage scope folders still printed a secret: $OUT"; else pass "no secret printed on garbage scope folders"; fi
+
+echo "[14l] failure-honesty: 'sec bws set' names the failed project-list stage, never dies silent (issue #166)"
+H2M="$(new_home "$WORK/h14l")"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2M" \
+    "SEC_TEST_BWS_LOG=$BWSLOG" "SEC_TEST_BWS_PROJ_RC=1" \
+    "$REPO_ROOT/bin/sec" bws set MY_KEY myval 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] failed to store secret 'MY_KEY' in tenant 'bws' (stage: bws project list failed)" <<<"$OUT"; then pass "failing bws project list -> exit 1 + tagged stage error"; else fail "failing bws project list rc=$RC out=[$OUT]"; fi
+if [[ -n "$OUT" ]]; then pass "failing bws project list is loud, not a silent death"; else fail "failing bws project list died silent (empty output, rc=$RC)"; fi
+if grep -q "BWS_ACCESS_TOKEN" <<<"$OUT"; then fail "failing bws project list leaked the backend's raw stderr: $OUT"; else pass "no raw backend stderr on failing bws project list"; fi
+if grep -q "parse error" <<<"$OUT"; then fail "failing bws project list leaked a raw jq parse error: $OUT"; else pass "no raw jq parse error on failing bws project list"; fi
+
+echo "[14m] failure-honesty: keeper status without a bw CLI exits 1 tagged, never a silent 127 (issue #166)"
+H2N="$(new_home "$WORK/h14m")"
+set +e
+OUT="$(env -i "PATH=/usr/bin:/bin" "HOME=$H2N" \
+    "$REPO_ROOT/bin/bw-session-keeper" status 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] bitwarden 'bw status' failed" <<<"$OUT"; then pass "keeper status without bw -> exit 1 + tagged error"; else fail "keeper status without bw rc=$RC out=[$OUT]"; fi
+if [[ -n "$OUT" ]]; then pass "keeper status without bw is loud, not a silent death"; else fail "keeper status without bw died silent (empty output, rc=$RC)"; fi
+if [[ $RC -eq 127 ]]; then fail "keeper status without bw leaked the child's exit 127"; else pass "no child exit-code leak on keeper status without bw"; fi
+if grep -q "parse error" <<<"$OUT"; then fail "keeper status without bw leaked a raw jq parse error: $OUT"; else pass "no raw jq parse error on keeper status without bw"; fi
 
 echo "[15] migrate plan executes the migrator"
 set +e

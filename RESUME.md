@@ -1,5 +1,24 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (43rd run): shipped **#166** -- four silent-death
+`$(backend 2>/dev/null | jq ...)` reads under `set -euo pipefail` (bin/sec
+bw-status preamble: fail -> silent exit 1, garbage -> raw jq exit 4, every
+bw-tenant command affected; scope folder jq: garbage -> exit 4; bws
+project-list: fail -> silent exit 1; keeper status: bw absent -> exit 127).
+Guarded with the repo's own if-not idiom (tagged [ERROR] + exit 1); cases
+[14i-m] (22 assertions, 13 FAILs red-first, then green). Dispatch 99 -> 104;
+tagged census sec 26 -> 29, keeper 17 -> 18; nine bin/sec citation anchors
+re-pinned after the +6 shift; HISTORY.md at 8192/8192. Full battery green
+(dispatch/install/sync_guard/write_honesty, sentinel 63, pytest 58, coverage
++ citations RC=0).
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#166 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-15 (42nd run): shipped **#165** -- the #162/#164
 failure-honesty hole in three `bin/sec-organizer` write paths (dead revert-read
 guard leaking exit 77 with a silent half-revert; unvalidated `folders_json`
@@ -1259,7 +1278,7 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 99, install 9, sentinel 63, sync_guard 16,
+mirrors in sync): dispatch 104, install 9, sentinel 63, sync_guard 16,
 write_honesty 15. Sentinel = 63 cases / 792 assertions. HISTORY.md is at
 8192/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (compacted the 2026-10-11/12/13/14 blocks and the

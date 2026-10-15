@@ -107,7 +107,10 @@ ensure_tenant_auth() {
             fi
 
             local status_val
-            status_val="$(BW_SESSION="${BW_SESSION:-}" bw status 2>/dev/null | jq -r '.status // "unauthenticated"')"
+            if ! status_val="$(BW_SESSION="${BW_SESSION:-}" bw status 2>/dev/null | jq -r '.status // "unauthenticated"' 2>/dev/null)"; then
+                echo "[ERROR] bitwarden 'bw status' failed; cannot verify vault state." >&2
+                exit 1
+            fi
 
             if [[ "$status_val" != "unlocked" ]]; then
                 if [[ "$auto_rotate" == "true" ]] && [[ -x "$SCRIPT_DIR/bw-session-keeper" ]]; then
@@ -119,7 +122,10 @@ ensure_tenant_auth() {
                 fi
             fi
 
-            status_val="$(BW_SESSION="${BW_SESSION:-}" bw status 2>/dev/null | jq -r '.status // "unauthenticated"')"
+            if ! status_val="$(BW_SESSION="${BW_SESSION:-}" bw status 2>/dev/null | jq -r '.status // "unauthenticated"' 2>/dev/null)"; then
+                echo "[ERROR] bitwarden 'bw status' failed; cannot verify vault state." >&2
+                exit 1
+            fi
             if [[ "$status_val" != "unlocked" ]]; then
                 if [[ "${SEC_NONINTERACTIVE:-0}" == "1" ]]; then
                     return 1
@@ -476,7 +482,10 @@ EOF
                 exit 1
             fi
             folders_json="$(BW_SESSION="${BW_SESSION:-}" bw list folders 2>/dev/null || echo '[]')"
-            SCOPE_FOLDER_ID="$(jq -r --arg t "$SCOPE_NAME" '.[] | select(.name == $t).id // empty' <<<"$folders_json")"
+            if ! SCOPE_FOLDER_ID="$(jq -r --arg t "$SCOPE_NAME" '.[] | select(.name == $t).id // empty' <<<"$folders_json" 2>/dev/null)"; then
+                echo "[ERROR] corrupt or unreadable folder listing from backend 'bw'; cannot resolve scope '$SCOPE_NAME'." >&2
+                exit 1
+            fi
             if [[ -z "$SCOPE_FOLDER_ID" ]]; then
                 echo "[ERROR] scope folder not found: '$SCOPE_NAME'" >&2
                 exit 1
@@ -743,8 +752,12 @@ EOF
                 fi
                 ;;
             bws)
-                proj_id="$(bws project list 2>/dev/null | jq -r '.[0].id // empty')"
-                if [[ -n "$proj_id" ]]; then
+                proj_id=""
+                if ! proj_list="$(bws project list 2>/dev/null)"; then
+                    set_stage="bws project list failed"
+                elif ! proj_id="$(jq -r '.[0].id // empty' <<<"$proj_list" 2>/dev/null)"; then
+                    set_stage="bws project list returned an unreadable listing"
+                elif [[ -n "$proj_id" ]]; then
                     if bws secret create "$key" "$value" "$proj_id" >/dev/null 2>&1; then
                         echo "[ OK ] Secret '$key' saved to Bitwarden Secrets Manager."
                         exit 0
