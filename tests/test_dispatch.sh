@@ -371,6 +371,18 @@ set -e
 if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] Destination backend 'bogus' not supported" <<<"$OUT"; then pass "migrate --to bogus --apply -> exit 1 + tagged error"; else fail "migrate --to bogus --apply rc=$RC out=[$OUT]"; fi
 if grep -q "Migration Successfully Completed" <<<"$OUT"; then fail "migrate --to bogus --apply still reported success: $OUT"; else pass "migrate --to bogus --apply reported no false success"; fi
 
+echo "[2d4] sec migrate rejects destination-only backends as --from up front (issue #168)"
+set +e
+OUT="$(run_sec "$H" migrate --from infisical --to bw --plan 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] Source backend 'infisical' not supported" <<<"$OUT"; then pass "migrate --from infisical --plan -> exit 1 + tagged error"; else fail "migrate --from infisical --plan rc=$RC out=[$OUT]"; fi
+if grep -q "Ready to migrate" <<<"$OUT"; then fail "migrate --from infisical still printed a migration plan: $OUT"; else pass "migrate --from infisical printed no plan"; fi
+set +e
+OUT="$(run_sec "$H" migrate --from vault --to bw --plan 2>&1)"; RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] Source backend 'vault' not supported" <<<"$OUT"; then pass "migrate --from vault --plan -> exit 1 + tagged error"; else fail "migrate --from vault --plan rc=$RC out=[$OUT]"; fi
+if grep -q "Ready to migrate" <<<"$OUT"; then fail "migrate --from vault still printed a migration plan: $OUT"; else pass "migrate --from vault printed no plan"; fi
+
 echo "[2d3] sec migrate undo/revert/--undo reject trailing operands before any rollback (issue #110)"
 assert_usage_error "sec migrate undo EXTRA" migrate undo EXTRA
 assert_usage_error "sec migrate --undo EXTRA" migrate --undo EXTRA

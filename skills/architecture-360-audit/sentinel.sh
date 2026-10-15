@@ -1573,6 +1573,26 @@ if _mig_src_set is not None and _mig_dst_set is not None:
                     f"{_name} destination list is {sorted(_s | _add)}, migrator destination allow-list is {sorted(_mig_dst_set)}"
                 )
 
+# --- 19b. README.md's 'sec migrate' bullet must scope destination-only backends
+#         as targets: naming a live destination that is not a live source
+#         without a sources-vs-targets distinction re-creates the #168 overclaim
+#         (issue #168) ----------------------------------------------------------
+if _mig_src_set is not None and _mig_dst_set is not None and _readme_mig_m is not None:
+    _dst_only = _mig_dst_set - _mig_src_set
+    _bullet_low = _readme_mig_m.group(0).lower()
+    _named_dst_only = sorted(_b for _b in _dst_only if _b in _bullet_low)
+    if _named_dst_only:
+        _scoped = ("source" in _bullet_low) and (
+            "target" in _bullet_low or "destination" in _bullet_low
+        )
+        _bidir = ("↔" in _readme_mig_m.group(0)) or ("<->" in _readme_mig_m.group(0))
+        if _bidir or not _scoped:
+            readme_mismatches.append(
+                "README.md's 'sec migrate' bullet names destination-only backend(s): "
+                + ", ".join(_named_dst_only)
+                + " without scoping them as targets (name the live sources vs destinations)"
+            )
+
 # --- 18b. README.md's front-page backend universe + sync targets must match the
 #         live migrator allow-lists and the sync controller's `Targets:` header
 #         (issue #122) ----------------------------------------------------------

@@ -1,5 +1,25 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (46th run): shipped **#168** -- README.md:19's migrate
+bullet presented all five backends as bidirectional (`<->` chain) while the
+migrator implements only three sources (infisical/vault are destination-only;
+probed live, both exit 1 tagged). Coverage check 18 only ever asserted the
+subset, never directionality -- check 19b closes it (destination-only backend
+named => bullet must scope sources vs targets, no bidirectional glyph).
+Dispatch [2d4] behavior pin + sentinel [23] WORK_Z4 corruption case (red
+proven: coverage RC=0 pre-fix, fires post-fix). Mirrors: dispatch 104 -> 105
+(ADAPTERS.md:55/:264, profile.md:22, baseline below), sentinel assertions
+792 -> 796 (baseline below). Full battery green (4 bash suites, sentinel 63,
+pytest 58, coverage + citations RC=0). HISTORY.md held at 8192/8192;
+narrative appended to history/2026-10-15.md.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope
+approval; must NOT be started autonomously) and
+**#92** + **#51** (hub-side, not this repo). Standing next autonomous move:
+sweep for the next unguarded current-state claim (the #129-#168 class); if
+none surfaces, the fresh 360 audit (#67) only after human approval.
+
 Session 2026-10-15 (45th run): clean sweep, no issue filed. Enumerated twelve
 candidates in the #129-#167 class and ruled all out: sec.ps1 ConvertFrom-Json
 reads (loud-fail or null-guarded; no pwsh to probe), install.sh (loud set -e
@@ -1320,8 +1340,8 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 104, install 9, sentinel 63, sync_guard 16,
-write_honesty 16. Sentinel = 63 cases / 792 assertions. HISTORY.md is at
+mirrors in sync): dispatch 105, install 9, sentinel 63, sync_guard 16,
+write_honesty 16. Sentinel = 63 cases / 796 assertions. HISTORY.md is at
 8192/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (compacted the 2026-10-11/12/13/14 blocks and the
 2026-10-15 #162/#165 clauses; each appended to `history/2026-10-15.md`).

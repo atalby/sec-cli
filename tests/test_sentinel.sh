@@ -1380,8 +1380,9 @@ echo "[23] README.md's quoted CLI help + sec.conf sample + migrate backends must
 WORK_Z1="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_Z2="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_Z3="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_Z4="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_ZCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for W in "$WORK_Z1" "$WORK_Z2" "$WORK_Z3" "$WORK_ZCTRL"; do
+for W in "$WORK_Z1" "$WORK_Z2" "$WORK_Z3" "$WORK_Z4" "$WORK_ZCTRL"; do
     seed "$W"
 done
 python3 - "$WORK_Z1/README.md" <<'PY'
@@ -1461,6 +1462,33 @@ if grep -q "bullet omits live destination backend(s): bws, infisical" <<<"$OUT";
     ok "coverage names the backends missing from the README migrate bullet"
 else
     no "coverage did not name the backends missing from the README migrate bullet"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_Z4/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(
+    r"^- .*`sec migrate`.*$",
+    "- `sec migrate`: stream secrets between (`Bitwarden` `<->` `1Password` `<->` `bws` `<->` `Infisical` `<->` `Vault`).",
+    s, count=1, flags=re.M,
+)
+if n < 1:
+    sys.exit("README.md migrate bullet not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_Z4" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a README migrate bullet presenting destination-only backends as bidirectional sources"
+else
+    no "coverage accepted a README migrate bullet with unscoped destination-only backends"
+fi
+if grep -q "without scoping them as targets" <<<"$OUT"; then
+    ok "coverage names the unscoped destination-only backends in the README migrate bullet"
+else
+    no "coverage did not name the unscoped destination-only backends"
     printf '%s\n' "$OUT"
 fi
 OUT="$(cd "$WORK_ZCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"

@@ -16,7 +16,7 @@
   - Displays **ML Confidence Scores (%)** and **Matched Signal Triggers**.
   - **Intelligent Disambiguating Renamer**: Differentiates generic titles (e.g. 4 entries named `Gmail`) into distinct, readable names (e.g. `Gmail (anass.personal@gmail.com)`).
   - **Pre-Apply Backup Snapshots & Instant Rollback (`sec housekeep revert`)**: Saves mode `0600` metadata-only snapshots before every move/rename.
-- 🚀 **Zero-Plaintext Vault Migration (`sec migrate`)**: Streams secrets directly between vault providers in memory (`Bitwarden` `↔` `1Password` `↔` `Bitwarden Secrets Manager (bws)` `↔` `Infisical` `↔` `Vault`) with error trapping and single-command rollback (`sec migrate --undo`).
+- 🚀 **Zero-Plaintext Vault Migration (`sec migrate`)**: Streams secrets directly between vault providers in memory — sources `Bitwarden`, `1Password`, and `Bitwarden Secrets Manager (bws)`; targets add `Infisical` and `Vault` — with error trapping and single-command rollback (`sec migrate --undo`).
 - 🌍 **100% Cross-Platform**: Native execution on **macOS**, **Linux**, **Windows WSL 2**, and **Windows Native PowerShell** (`sec.ps1`).
 
 ---
