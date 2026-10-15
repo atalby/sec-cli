@@ -19,7 +19,10 @@ BW_ITEM_JSON="${SEC_TEST_BW_ITEM_JSON:-{\"id\":\"a\",\"name\":\"a\",\"folderId\"
 case "$*" in
     "sync --nostatus") exit 0 ;;
     "sync") exit "${SEC_TEST_BW_SYNC_RC:-0}" ;;
-    "list items") echo '[{"name":"k","notes":"'"${SEC_TEST_BW_NOTES-v}"'"}]' ;;
+    "list items")
+        if [ "${SEC_TEST_BW_LIST_RC:-0}" -ne 0 ]; then echo "bw list items: vault is locked" >&2; exit "${SEC_TEST_BW_LIST_RC}"; fi
+        if [ "${SEC_TEST_BW_LIST_EMPTY:-0}" -ne 0 ]; then echo '[]'; exit 0; fi
+        echo '[{"name":"k","notes":"'"${SEC_TEST_BW_NOTES-v}"'"}]' ;;
     "list folders") echo "${SEC_TEST_BW_FOLDERS:-[]}" ;;
     get\ item*) echo "$BW_ITEM_JSON" ;;
     edit\ item*) exit "${SEC_TEST_BW_EDIT_RC:-0}" ;;
@@ -41,6 +44,11 @@ if [ "${1:-}" = "project" ] && [ "${2:-}" = "list" ]; then
     if [ -n "${SEC_TEST_BWS_PROJ_GARBAGE:-}" ]; then echo "NOT-JSON-AT-ALL"; exit 0; fi
     if [ "${SEC_TEST_BWS_PROJ_RC:-0}" -ne 0 ]; then echo "bws boom" >&2; exit 1; fi
     echo '[{"id":"p1","name":"default"}]'
+    exit 0
+fi
+if [ "${1:-}" = "secret" ] && [ "${2:-}" = "list" ]; then
+    if [ "${SEC_TEST_BWS_LIST_RC:-0}" -ne 0 ]; then echo "bws secret list: boom" >&2; exit "${SEC_TEST_BWS_LIST_RC}"; fi
+    echo '[{"id":"s1","key":"k1"}]'
     exit 0
 fi
 if [ "${1:-}" = "secret" ] && [ "${2:-}" = "create" ]; then
@@ -343,6 +351,48 @@ RC15d=$?
 set -e
 if [[ $RC15d -eq 0 ]]; then pass "working bws backends exit 0"; else fail "working bws migrate exited $RC15d: $OUT15d"; fi
 if grep -q "^\[ OK \] Vault Migration Successfully Completed (1 items migrated)" <<<"$OUT15d"; then pass "tagged success banner on real bws success"; else fail "no success banner on working bws migrate: $OUT15d"; fi
+
+echo "[16] migrate fails closed on a failing SOURCE listing, never 'Zero items found' (issue #170)"
+H16="$WORK/h16"
+mkdir -p "$H16/.cache/bitwarden"
+set +e
+OUT16a="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H16" "SEC_TEST_BW_LIST_RC=1" "$REPO_ROOT/bin/sec-migrator" --from bitwarden --to infisical --plan 2>&1)"
+RC16a=$?
+set -e
+if [[ $RC16a -eq 1 ]]; then pass "failing bw source listing exits 1"; else fail "failing bw source listing exited $RC16a, expected 1: $OUT16a"; fi
+if grep -q "^\[ERROR\] corrupt or unreadable listing from source backend 'bitwarden'" <<<"$OUT16a"; then pass "tagged unreadable-listing notice on bw failure"; else fail "no tagged unreadable-listing notice: $OUT16a"; fi
+if grep -q "Zero items found" <<<"$OUT16a"; then fail "failing bw source still reported 'Zero items found' (false success): $OUT16a"; else pass "no false zero-items success on bw failure"; fi
+if grep -q "vault is locked" <<<"$OUT16a"; then fail "raw backend diagnostic leaked: $OUT16a"; else pass "no raw backend diagnostic leaked"; fi
+
+H16b="$WORK/h16b"
+mkdir -p "$H16b/.cache/bitwarden"
+set +e
+OUT16b="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H16b" "SEC_TEST_OP_CANARY=$WORK/op16b.log" "SEC_TEST_OP_RC=1" "$REPO_ROOT/bin/sec-migrator" --from op --to infisical --plan 2>&1)"
+RC16b=$?
+set -e
+if [[ $RC16b -eq 1 ]]; then pass "failing op source listing exits 1"; else fail "failing op source listing exited $RC16b, expected 1: $OUT16b"; fi
+if grep -q "^\[ERROR\] corrupt or unreadable listing from source backend 'op'" <<<"$OUT16b"; then pass "tagged unreadable-listing notice on op failure"; else fail "no tagged unreadable-listing notice: $OUT16b"; fi
+if grep -q "Zero items found" <<<"$OUT16b"; then fail "failing op source still reported 'Zero items found' (false success): $OUT16b"; else pass "no false zero-items success on op failure"; fi
+
+H16c="$WORK/h16c"
+mkdir -p "$H16c/.cache/bitwarden"
+set +e
+OUT16c="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H16c" "SEC_TEST_BWS_LIST_RC=1" "$REPO_ROOT/bin/sec-migrator" --from bws --to infisical --plan 2>&1)"
+RC16c=$?
+set -e
+if [[ $RC16c -eq 1 ]]; then pass "failing bws source listing exits 1"; else fail "failing bws source listing exited $RC16c, expected 1: $OUT16c"; fi
+if grep -q "^\[ERROR\] corrupt or unreadable listing from source backend 'bws'" <<<"$OUT16c"; then pass "tagged unreadable-listing notice on bws failure"; else fail "no tagged unreadable-listing notice: $OUT16c"; fi
+if grep -q "Zero items found" <<<"$OUT16c"; then fail "failing bws source still reported 'Zero items found' (false success): $OUT16c"; else pass "no false zero-items success on bws failure"; fi
+if grep -q "bws secret list: boom" <<<"$OUT16c"; then fail "raw bws diagnostic leaked: $OUT16c"; else pass "no raw bws diagnostic leaked"; fi
+
+H16d="$WORK/h16d"
+mkdir -p "$H16d/.cache/bitwarden"
+set +e
+OUT16d="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H16d" "SEC_TEST_BW_LIST_EMPTY=1" "$REPO_ROOT/bin/sec-migrator" --from bitwarden --to infisical --plan 2>&1)"
+RC16d=$?
+set -e
+if [[ $RC16d -eq 0 ]]; then pass "genuinely empty source listing still exits 0"; else fail "genuinely empty source listing exited $RC16d, expected 0: $OUT16d"; fi
+if grep -q "^\[INFO\] Zero items found in source backend 'bitwarden'" <<<"$OUT16d"; then pass "valid empty listing reports zero items (guard does not over-reject)"; else fail "valid empty listing did not report zero items: $OUT16d"; fi
 
 echo
 if [[ $FAILS -eq 0 ]]; then

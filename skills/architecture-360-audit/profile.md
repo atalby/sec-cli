@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (63 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (107 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (17 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (63 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (107 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#51`, `#67`, `#92`) |
@@ -637,7 +637,7 @@ module-level public, leading underscore private.
 
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:255`
 
-Nine install sections, sixteen guard sections, sixteen write-honesty
+Nine install sections, sixteen guard sections, seventeen write-honesty
 sections, and the audit instrument's own sixty-three sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes all five bash suites — the former dispatch opt-in was removed in
@@ -666,9 +666,9 @@ every advertised subcommand (`subcmds` list at `bin/sec:306`) exist in the
 dispatch, does every dispatched command appear in usage, do the completions
 agree? AGENTS §8 mandates one `[ TAG ]` line per event for machine-parsed
 stdout — measured 2026-10-12 (`grep -cE '\[ ?(OK|INFO|WARN|ERROR) ?\]'`; re-measured
-after #41/#42/#44/#45/#48/#77 added tagged lines, re-measured after #166 added four guards, re-measured after #167 added three guards): 7 of the 8 tracked `bin/` entries emit tagged
+after #41/#42/#44/#45/#48/#77 added tagged lines, re-measured after #166 added four guards, re-measured after #167 added three guards, re-measured after #170 added one source-listing guard): 7 of the 8 tracked `bin/` entries emit tagged
 output (`sec` 29, `sec-organizer` 46, `sec-sync-controller.py` 30,
-`sec-migrator` 29, `bw-session-keeper` 18, `sec.ps1` 12, `hyer-mcp.sh` 4
+`sec-migrator` 30, `bw-session-keeper` 18, `sec.ps1` 12, `hyer-mcp.sh` 4
 lines); the sole zero is `bin/sec-classify.py`, and `install.sh` (outside
 `bin/`) also emits none. Harness entry points
 (`SKILL.md`, `CLAUDE.md`, `.gemini/`, `skills/REGISTRY.md`) are part of the

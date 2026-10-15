@@ -115,13 +115,13 @@ fetch_source_items() {
                 echo "[ERROR] Bitwarden vault is locked. Run 'sec unlock' first." >&2
                 exit 1
             fi
-            bw list items 2>/dev/null || echo "[]"
+            bw list items 2>/dev/null || true
             ;;
         1password|1pass|op)
-            op item list --format=json 2>/dev/null || echo "[]"
+            op item list --format=json 2>/dev/null || true
             ;;
         bws)
-            bws secret list 2>/dev/null || echo "[]"
+            bws secret list 2>/dev/null || true
             ;;
         *)
             echo "[ERROR] Source backend '$SRC' not supported for bulk migration." >&2
@@ -131,6 +131,10 @@ fetch_source_items() {
 }
 
 items_json="$(fetch_source_items)"
+if [[ -z "${items_json//[[:space:]]/}" ]]; then
+    echo "[ERROR] corrupt or unreadable listing from source backend '$SRC'. Migration is blocked; verify the backend output." >&2
+    exit 1
+fi
 if ! count="$(printf '%s' "$items_json" | jq '. | length' 2>/dev/null)"; then
     echo "[ERROR] corrupt or unreadable listing from source backend '$SRC'. Migration is blocked; verify the backend output." >&2
     exit 1

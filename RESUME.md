@@ -1,5 +1,30 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (48th run): shipped **#170** -- the sec-migrator twin filed
+by run 47. `bin/sec-migrator`'s `fetch_source_items` masked a failing bw/op/bws
+source listing as a valid empty array (`2>/dev/null || echo "[]"`), and its
+`:134` count guard could not catch it (`jq '. | length'` on `[]` exits 0 with
+`0`), so a broken source backend printed `[INFO] Zero items found` and exited 0
+-- a fail-open false success in a credential migration. A `|| true` swap alone
+(the #169 fix) is insufficient here: jq on an empty payload also exits 0 with
+empty output, still 0. Fix: the masks are `|| true` plus an explicit
+empty/whitespace-payload guard that rejects the read before the jq count,
+tagged `[ERROR]` + exit 1. New write-honesty section [16] drives a failing
+bw/op/bws source listing plus a genuinely-empty listing (the latter still exits
+0), write-honesty 16 -> 17; migrator tagged census 29 -> 30. Mirrors:
+ADAPTERS.md:32 "Last updated", ADAPTERS.md:55/:264 (write-honesty 17),
+profile.md:22/:640/:671 (migrator 30), baseline below. Full battery green
+(dispatch/install/sync_guard/write_honesty/sentinel ALL PASSED, pytest 58,
+coverage + citations RC=0). HISTORY.md held at 8054/8192; narrative appended to
+history/2026-10-15.md.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope
+approval; must NOT be started autonomously), and **#92** + **#51** (hub-side,
+not this repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#170 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-15 (47th run): shipped **#169** -- `bin/sec-organizer`'s three
 `bw list folders` reads (`:100` cmd_plan, `:223`/`:256` cmd_apply) masked a
 failing read as a valid empty array (`2>/dev/null || echo "[]"`), making the
@@ -1366,9 +1391,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 107, install 9, sentinel 63, sync_guard 16,
-write_honesty 16. Sentinel = 63 cases / 796 assertions. HISTORY.md is at
-7914/8192 bytes - headroom of 278 bytes before its budget (the 2026-10-15 block
-was compacted this run to fold in #166-#169; the full narratives live in
+write_honesty 17. Sentinel = 63 cases / 796 assertions. HISTORY.md is at
+8054/8192 bytes - headroom of 138 bytes before its budget (the 2026-10-15 block
+was compacted this run to fold in #166-#170; the full narratives live in
 `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each

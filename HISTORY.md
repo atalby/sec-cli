@@ -20,8 +20,7 @@ Narrative: `history/2026-10-14.md`.
 closed by a sentinel section deriving the live value from code. (1) docs/ARCHITECTURE.md's
 `install.sh` bullet had no guard (the `bin/*` wording was imprecise, `bin/hyer-mcp.sh`
 is never installed) -- section 37, case [61], five probes + control red first. Its
-commit cites "issue #160" but no such issue existed: the tracker sat at 159 until
-this run's own finding took #160, so that citation is a dead reference.
+commit cites a then-nonexistent issue #160 -- a dead reference.
 (2) docs/MULTI_TENANCY.md's `auto_rotate` rule claimed two branches "for each
 tenant section"; live bin/sec reads the key once and consults it only in the
 `bitwarden|bw)` arm, `op` and `vault` prompt unconditionally, `bws`/`infisical`/
@@ -61,22 +60,25 @@ the bw stub's `get template item` as proof the substitution happened. Dispatch
 pwsh extract.
 Fifth, the bitwarden attachment-read path had a dead guard (#164): line 535 piped
 `bw_list_items`'s literal `ERR` sentinel straight into jq, so its ERR test could
-never fire and a failed lookup leaked a raw `parse error` + exit 4. Now
+never fire and a failed lookup leaked a raw `parse error` + exit 4 -- now
 capture-then-guard, as its three siblings did. Case [4d], dispatch 94 -> 95.
-Sixth, the same failure-honesty hole lived in three `sec-organizer` write paths
-(#165): a dead-guard `bw get item` read (silent half-revert), the unvalidated
-`folders_json` mask (garbage-RC0 -> raw jq exit 4), and unguarded apply/revert
-pipelines (raw `TOKEN-abc123` as exit 66, `bw encode` as 141). Fixed with the
-file's own idioms; cases [14e-h], dispatch 95 -> 99; a `${VAR:-default}` stub bug
-was caught in verification. Seventh, #166-#169 closed the class's remaining
-reads: four silent-death backend reads in bin/sec + keeper (#166, cases [14i-m]);
-the sec-migrator `bws project list` twin + three create-response jqs (#167,
-write-honesty [15]); the README migrate bullet that presented destination-only
-backends as bidirectional sources (#168, sentinel 19b); and #169 un-hollowed
-sec-organizer's three `bw list folders` reads, whose `|| echo "[]"` mask made the
-adjacent `require_json_array` guard unreachable -- a failing read yielded a false
-plan and a false apply success (cases [14n]/[14o], dispatch 105 -> 107); #170
-tracks the sec-migrator source-listing twin.
+Sixth, that hole lived in three `sec-organizer` write paths (#165): a dead-guard
+`bw get item` read (silent half-revert), the unvalidated `folders_json` mask
+(garbage-RC0 -> raw jq exit 4), and unguarded apply/revert pipelines (raw
+`TOKEN-abc123` as exit 66, `bw encode` as 141). Cases [14e-h], dispatch 95 -> 99.
+Seventh, #166-#169 closed the class's remaining reads: four silent-death backend
+reads in bin/sec + keeper (#166, [14i-m]); the sec-migrator `bws project list`
+twin + three create-response jqs (#167, write-honesty [15]); the README migrate
+bullet that read destination-only backends as sources (#168, sentinel 19b); and
+#169's sec-organizer `bw list folders` mask, whose `|| echo "[]"` made the
+`require_json_array` guard unreachable -- a false plan and a false apply success
+([14n]/[14o], dispatch 105 -> 107). Eighth, #170 closed the last twin:
+sec-migrator's `fetch_source_items` masked a failing bw/op/bws source listing as
+`[]`, and its jq count guard missed it (jq on `[]` exits 0 with `0`), so a broken
+source printed `[INFO] Zero items found` + exit 0; `|| true` alone was
+insufficient (jq on an empty payload also exits 0 with no output), so an explicit
+empty/whitespace guard now rejects the read before the count. Write-honesty [16],
+16 -> 17; migrator tagged census 29 -> 30.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
