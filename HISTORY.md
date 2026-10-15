@@ -54,7 +54,9 @@ explicit empty-payload guard now rejects the read before the count. Write-honest
 16 -> 17; migrator tagged census 29 -> 30. Ninth, #171 corrected README's Smart Session
 bullet (false "any locked tenant") and made section 38 guard it, [62]. Tenth, #172 made
 section 14 also fail if the CI workflow's suite run-list stops running every live suite,
-[18].
+[18]. Eleventh, #173 made section 40 guard docs/ARCHITECTURE.md's bin/hyer-mcp.sh component
+bullet (HYER_HOME default, secret, GITLAB_TOKEN, no `sh -c`, gitignored `.mcp.json` /
+tracked `.mcp.json.example`) against the live launcher, [64]; sentinel 63 -> 64 cases.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected

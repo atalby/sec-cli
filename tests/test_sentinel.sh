@@ -5152,6 +5152,74 @@ else
     printf '%s\n' "$OUT"
 fi
 echo
+echo "[64] docs/ARCHITECTURE.md's bin/hyer-mcp.sh component bullet must match the live launcher (issue #173)"
+WORK_T40A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T40B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T40CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for _w in "$WORK_T40A" "$WORK_T40B" "$WORK_T40CTRL"; do
+    seed "$_w"
+done
+python3 - "$WORK_T40A/docs/ARCHITECTURE.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`~/sandbox/hyer`"
+if s.count(old) != 1:
+    sys.exit("docs/ARCHITECTURE.md no longer states the HYER_HOME default in the guarded form")
+open(p, "w", encoding="utf-8").write(s.replace(old, "`~/elsewhere/hyer`", 1))
+PY
+OUT="$(cd "$WORK_T40A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the hyer-mcp bullet's HYER_HOME default drifts from the launcher"
+else
+    no "coverage accepted a hyer-mcp HYER_HOME default the live launcher contradicts"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "does not name the live HYER_HOME default" <<<"$OUT"; then
+    ok "coverage names the drifted HYER_HOME default in the hyer-mcp bullet"
+else
+    no "coverage did not name the drifted HYER_HOME default in the hyer-mcp bullet"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T40B/docs/ARCHITECTURE.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`hyer-gitlab-pat`"
+if s.count(old) != 1:
+    sys.exit("docs/ARCHITECTURE.md no longer names the hyer-mcp secret in the guarded form")
+open(p, "w", encoding="utf-8").write(s.replace(old, "`some-stale-token-name`", 1))
+PY
+OUT="$(cd "$WORK_T40B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the hyer-mcp bullet names a secret the launcher does not read"
+else
+    no "coverage accepted a hyer-mcp secret the live launcher does not read"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "does not name the live secret" <<<"$OUT"; then
+    ok "coverage names the drifted secret in the hyer-mcp bullet"
+else
+    no "coverage did not name the drifted secret in the hyer-mcp bullet"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T40CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (hyer-mcp bullet agrees with the launcher) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] hyer-mcp claims:" <<<"$OUT"; then
+    ok "the control copy's OK line names the hyer-mcp check"
+else
+    no "the control copy's OK line did not name the hyer-mcp check"
+    printf '%s\n' "$OUT"
+fi
+echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
     exit 0

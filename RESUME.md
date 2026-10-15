@@ -1,5 +1,28 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (51st run): shipped **#173** -- docs/ARCHITECTURE.md's
+`bin/hyer-mcp.sh` component bullet carried several precise claims about the live
+launcher (HYER_HOME default `~/sandbox/hyer`, the `sec get hyer-gitlab-pat`
+secret, the exported `GITLAB_TOKEN`, "execs node directly -- no `sh -c` string",
+and the gitignored `.mcp.json` / tracked `.mcp.json.example` pair) that NOTHING
+guarded (a sentinel grep for those tokens returned zero hits, so the bullet could
+silently drift). Fix: sentinel section 40 derives each live fact from
+bin/hyer-mcp.sh + .gitignore + the tracked set and requires the bullet to name
+every one. Probe case [64] gained WORK_T40A (HYER_HOME default drift) and
+WORK_T40B (secret drift), each asserting coverage exits nonzero and names the
+drift, plus a green control. Mirrors: ADAPTERS.md:32 "Last updated", RESUME.md
+baseline below (63 -> 64 cases, 808 -> 820 assertions); HISTORY.md 6546 -> 6805
+bytes. Full battery green (dispatch/install/sync_guard/write_honesty/sentinel ALL
+PASSED, pytest 58, coverage + citations RC=0); narrative appended to
+history/2026-10-15.md.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously), and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#173 class); if none surfaces, the fresh 360 audit
+(#67) only after human approval.
+
 Session 2026-10-15 (50th run): shipped **#172** -- the CI workflow's suite
 run-list was unguarded. `.github/workflows/test.yml` hardcoded the suites it
 runs in a `for t in test_install ... test_dispatch; do` loop, so a sixth
@@ -1443,10 +1466,10 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 107, install 9, sentinel 63, sync_guard 16,
-write_honesty 17. Sentinel = 63 cases / 808 assertions. HISTORY.md is at
-6546/8192 bytes - headroom of 1646 bytes before its budget (the 2026-10-15 block
-was compacted to fold in #166-#172; the full narratives live in
+mirrors in sync): dispatch 107, install 9, sentinel 64, sync_guard 16,
+write_honesty 17. Sentinel = 64 cases / 820 assertions. HISTORY.md is at
+6805/8192 bytes - headroom of 1387 bytes before its budget (the 2026-10-15 block
+was compacted to fold in #166-#173; the full narratives live in
 `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each

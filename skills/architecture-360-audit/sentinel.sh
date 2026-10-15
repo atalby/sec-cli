@@ -659,7 +659,7 @@ _NUM_WORDS = {
     "fifty-six": 56,
     "fifty-seven": 57,
     "fifty-eight": 58, "fifty-nine": 59, "sixty": 60, "sixty-one": 61,
-    "sixty-two": 62, "sixty-three": 63,
+    "sixty-two": 62, "sixty-three": 63, "sixty-four": 64,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2970,6 +2970,90 @@ else:
                     "remove it on both the success and failure branches"
                 )
 
+# --- 40. docs/ARCHITECTURE.md's bin/hyer-mcp.sh component bullet (the HYER_HOME
+#         default, the secret + token env var, the direct-node-exec / no `sh -c`
+#         contract, and the gitignored `.mcp.json` + tracked `.mcp.json.example`
+#         pair) must match the live launcher (issue #173) ---------------------
+hyer_mcp_mismatches = []
+_hm_text = _nl_read("bin/hyer-mcp.sh")
+_hm_arch = _nl_read("docs/ARCHITECTURE.md")
+_hm_gitignore = _nl_read(".gitignore")
+_hm_bullet_m = re.search(r"^- `bin/hyer-mcp\.sh`: (.*)$", _hm_arch, re.M)
+_hm_home_m = re.search(r'HYER_HOME="\$\{HYER_HOME:-\$HOME([^}"]*)\}"', _hm_text)
+_hm_secret_m = re.search(r'GITLAB_TOKEN="\$\(sec get ([a-z0-9-]+)\)"', _hm_text)
+_hm_env_m = re.search(r"^export ([A-Z_][A-Z0-9_]*)$", _hm_text, re.M)
+_hm_home = "~" + _hm_home_m.group(1) if _hm_home_m else ""
+_hm_secret = _hm_secret_m.group(1) if _hm_secret_m else ""
+_hm_env = _hm_env_m.group(1) if _hm_env_m else ""
+
+if _hm_bullet_m is None:
+    hyer_mcp_mismatches.append(
+        "docs/ARCHITECTURE.md carries no `- `bin/hyer-mcp.sh`:` component bullet to compare "
+        "against the live launcher (issue #173)"
+    )
+else:
+    _hm_line = _hm_bullet_m.group(1)
+    if not _hm_home:
+        hyer_mcp_mismatches.append(
+            "bin/hyer-mcp.sh carries no parseable HYER_HOME default to compare "
+            "docs/ARCHITECTURE.md's claim against"
+        )
+    elif f"`{_hm_home}`" not in _hm_line:
+        hyer_mcp_mismatches.append(
+            f"docs/ARCHITECTURE.md's bin/hyer-mcp.sh bullet does not name the live "
+            f"HYER_HOME default `{_hm_home}`"
+        )
+    if not _hm_secret:
+        hyer_mcp_mismatches.append(
+            "bin/hyer-mcp.sh carries no parseable `sec get` secret to compare "
+            "docs/ARCHITECTURE.md's claim against"
+        )
+    elif f"`{_hm_secret}`" not in _hm_line:
+        hyer_mcp_mismatches.append(
+            f"docs/ARCHITECTURE.md's bin/hyer-mcp.sh bullet does not name the live "
+            f"secret `{_hm_secret}`"
+        )
+    if not _hm_env:
+        hyer_mcp_mismatches.append(
+            "bin/hyer-mcp.sh carries no parseable exported token var to compare "
+            "docs/ARCHITECTURE.md's claim against"
+        )
+    elif f"`{_hm_env}`" not in _hm_line:
+        hyer_mcp_mismatches.append(
+            f"docs/ARCHITECTURE.md's bin/hyer-mcp.sh bullet does not name the live "
+            f"token env var `{_hm_env}`"
+        )
+    if "sh -c" in _hm_text:
+        hyer_mcp_mismatches.append(
+            "docs/ARCHITECTURE.md claims bin/hyer-mcp.sh execs node with no `sh -c` string, "
+            "but the launcher now contains `sh -c`"
+        )
+    if "exec node" not in _hm_text:
+        hyer_mcp_mismatches.append(
+            "docs/ARCHITECTURE.md claims bin/hyer-mcp.sh execs node directly, "
+            "but the launcher carries no `exec node`"
+        )
+    if "`.mcp.json`" not in _hm_line or "gitignored" not in _hm_line:
+        hyer_mcp_mismatches.append(
+            "docs/ARCHITECTURE.md's bin/hyer-mcp.sh bullet does not name the gitignored "
+            "host-local `.mcp.json`"
+        )
+    elif not any(_ln.strip() == ".mcp.json" for _ln in _hm_gitignore.splitlines()):
+        hyer_mcp_mismatches.append(
+            "docs/ARCHITECTURE.md claims bin/hyer-mcp.sh's `.mcp.json` is gitignored, "
+            "but .gitignore does not list it"
+        )
+    if "`.mcp.json.example`" not in _hm_line:
+        hyer_mcp_mismatches.append(
+            "docs/ARCHITECTURE.md's bin/hyer-mcp.sh bullet does not name the tracked "
+            "template `.mcp.json.example`"
+        )
+    elif ".mcp.json.example" not in tracked:
+        hyer_mcp_mismatches.append(
+            "docs/ARCHITECTURE.md claims `.mcp.json.example` is the tracked template, "
+            "but git ls-files does not list it"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -3197,6 +3281,13 @@ if mp_mismatches:
     )
     for _m in mp_mismatches:
         print(f"{ERROR} plaintext-fallback contract: {_m}")
+if hyer_mcp_mismatches:
+    failures.append(
+        f"{len(hyer_mcp_mismatches)} docs/ARCHITECTURE.md bin/hyer-mcp.sh claim drift(s) vs "
+        f"the live launcher"
+    )
+    for _m in hyer_mcp_mismatches:
+        print(f"{ERROR} hyer-mcp claim: {_m}")
 
 if failures:
     for f in failures:
@@ -3239,6 +3330,8 @@ print(f"{OK} sync exit codes: docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md + s
 print(f"{OK} security process table: docs/SECURITY.md's argv/stdin mitigations still exist in the live bin/ code")
 print(f"{OK} security snapshot fields: docs/SECURITY.md's snapshot field set matches bin/sec-organizer's live schema ({len(_live_snap_fields)} field(s))")
 print(f"{OK} install-path claims: docs/ARCHITECTURE.md's bootstrap clone, install destination, installable helper set, piped-mode fallback, LICENSE copy name, and missing-git diagnosis match install.sh")
+if not hyer_mcp_mismatches:
+    print(f"{OK} hyer-mcp claims: docs/ARCHITECTURE.md's bin/hyer-mcp.sh bullet names the live HYER_HOME default (`{_hm_home}`), secret (`{_hm_secret}`), token env var (`{_hm_env}`), direct-node exec with no `sh -c`, and the gitignored `.mcp.json` / tracked `.mcp.json.example` pair")
 if not auto_rotate_mismatches:
     print(f"{OK} auto_rotate claims: README.md + docs/MULTI_TENANCY.md's per-backend table match bin/sec's live ensure_tenant_auth arms (auto_rotate consulted: {sorted(_mt_auto) or 'none'}; prompting: {sorted(_mt_prompt) or 'none'}; no auth arm: {sorted(_mt_canon - _mt_arms) or 'none'})")
 if not mp_mismatches:
