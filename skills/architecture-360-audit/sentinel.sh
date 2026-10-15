@@ -1618,17 +1618,35 @@ if _mig_src_set is not None and _mig_dst_set is not None and _readme_mig_m is no
                 + " without scoping them as targets (name the live sources vs destinations)"
             )
 
-# --- 18b. README.md's front-page backend universe + sync targets must match the
-#         live migrator allow-lists and the sync controller's `Targets:` header
-#         (issue #122) ----------------------------------------------------------
-_readme_front_m = re.search(r"unifies secret management across[^\n]+", _readme_text)
-if _readme_front_m is None:
-    readme_mismatches.append("README.md carries no 'unifies secret management across' front sentence")
-else:
-    _front_lower = _readme_front_m.group(0).lower()
+# --- 18b. README.md's and docs/ARCHITECTURE.md's front-page backend universe +
+#         sync targets must match the live migrator allow-lists and the sync
+#         controller's `Targets:` header (issue #122, extended by #174) ---------
+try:
+    with open(os.path.join(repo, "bin", "sec-sync-controller.py"), encoding="utf-8") as _fh:
+        _ctrl_text = _fh.read()
+except OSError:
+    _ctrl_text = ""
+_targets_m = re.search(r"^Targets: (.+)$", _ctrl_text, re.M)
+try:
+    with open(os.path.join(repo, "docs", "ARCHITECTURE.md"), encoding="utf-8") as _fh:
+        _front_arch_text = _fh.read()
+except OSError:
+    _front_arch_text = ""
+_front_docs = [
+    ("README.md", _readme_text),
+    ("docs/ARCHITECTURE.md", _front_arch_text),
+]
+for _front_doc, _front_doc_text in _front_docs:
+    _front_m = re.search(r"unifies secret management across[^\n]+", _front_doc_text)
+    if _front_m is None:
+        readme_mismatches.append(
+            f"{_front_doc} carries no 'unifies secret management across' front sentence"
+        )
+        continue
+    _front_lower = _front_m.group(0).lower()
     if _mig_src_set is None or _mig_dst_set is None:
         readme_mismatches.append(
-            "bin/sec-migrator backend allow-lists unavailable to compare README.md's front universe against"
+            f"bin/sec-migrator backend allow-lists unavailable to compare {_front_doc}'s front universe against"
         )
     else:
         _universe = _mig_src_set | _mig_dst_set
@@ -1636,14 +1654,8 @@ else:
         _missing = sorted(_universe - _claimed)
         if _missing:
             readme_mismatches.append(
-                "README.md's front sentence omits live backend(s): " + ", ".join(_missing)
+                f"{_front_doc}'s front sentence omits live backend(s): " + ", ".join(_missing)
             )
-    try:
-        with open(os.path.join(repo, "bin", "sec-sync-controller.py"), encoding="utf-8") as _fh:
-            _ctrl_text = _fh.read()
-    except OSError:
-        _ctrl_text = ""
-    _targets_m = re.search(r"^Targets: (.+)$", _ctrl_text, re.M)
     if _targets_m is None:
         readme_mismatches.append("bin/sec-sync-controller.py carries no 'Targets:' header")
     else:
@@ -1651,7 +1663,7 @@ else:
             _tgt = _tgt.strip().lower()
             if _tgt and _tgt not in _front_lower:
                 readme_mismatches.append(
-                    "README.md's front sentence omits live sync target: %s" % _tgt
+                    f"{_front_doc}'s front sentence omits live sync target: {_tgt}"
                 )
 
 # --- 20. OPERATOR_MANUAL.md's documented `-v/--version` output must match the
@@ -3164,7 +3176,7 @@ if count_claim_mismatches:
     for _m in count_claim_mismatches:
         print(f"{ERROR} count claim: {_m}")
 if readme_mismatches:
-    failures.append(f"{len(readme_mismatches)} README.md drift(s) vs the live CLI")
+    failures.append(f"{len(readme_mismatches)} README.md / docs/ARCHITECTURE.md front-matter drift(s) vs the live CLI")
     for _m in readme_mismatches:
         print(f"{ERROR} README: {_m}")
 if migrate_mismatches:
@@ -3310,7 +3322,7 @@ print(f"{OK} structural prose: MULTI_TENANCY.md tenant aliases + profile.md CI c
 print(f"{OK} skill structure: SKILL.md steps + personas + scopes + severity set match the live skill files")
 print(f"{OK} skill forge: 360-audit-skill-forge's declared steps/headings/personas/scopes/severity match the live SKILL.md")
 print(f"{OK} count claims: profile.md §3 count-words + ADAPTERS.md/SKILL.md pytest-mirror count + RESUME.md suite counts match the live suites")
-print(f"{OK} README: quoted `sec --help` + sec.conf sample + migrate backend list match the live CLI")
+print(f"{OK} README + docs/ARCHITECTURE.md: quoted `sec --help` + sec.conf sample + migrate backend list match the live CLI, and both front sentences name the live backend universe + sync targets")
 print(f"{OK} migrate surfaces: source/destination backend sets agree across migrator, 4 shells + OPERATOR_MANUAL")
 print(f"{OK} version claim: OPERATOR_MANUAL.md's documented `--version` output matches live 'bin/sec version'")
 print(f"{OK} tenant help line: bin/sec's `Configured Tenants:` lists exactly the routable aliases")

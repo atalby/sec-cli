@@ -57,6 +57,9 @@ section 14 also fail if the CI workflow's suite run-list stops running every liv
 [18]. Eleventh, #173 made section 40 guard docs/ARCHITECTURE.md's bin/hyer-mcp.sh component
 bullet (HYER_HOME default, secret, GITLAB_TOKEN, no `sh -c`, gitignored `.mcp.json` /
 tracked `.mcp.json.example`) against the live launcher, [64]; sentinel 63 -> 64 cases.
+Twelfth, #174 made section 18b also read docs/ARCHITECTURE.md's Overview sentence (the
+same universe + sync-target claim as README's) so both front sentences must name the live
+migrator universe and every controller target, [31]; assertions 820 -> 828.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected

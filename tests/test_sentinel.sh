@@ -1898,11 +1898,13 @@ else
     printf '%s\n' "$OUT"
 fi
 
-echo "[31] README.md's front-page backend universe + sync targets must match the live tree (issue #122)"
+echo "[31] README.md + docs/ARCHITECTURE.md front backend universe + sync targets must match the live tree (issue #122, extended by #174)"
 WORK_B1="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_B2="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_B3="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_B4="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_BCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for W in "$WORK_B1" "$WORK_B2" "$WORK_BCTRL"; do
+for W in "$WORK_B1" "$WORK_B2" "$WORK_B3" "$WORK_B4" "$WORK_BCTRL"; do
     seed "$W"
 done
 python3 - "$WORK_B1/README.md" <<'PY'
@@ -1945,6 +1947,52 @@ if grep -qF "README.md's front sentence omits live sync target: gitlab group var
     ok "coverage names the omitted sync target"
 else
     no "coverage did not name the omitted sync target"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_B3/docs/ARCHITECTURE.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "1Password (`op`), Infisical, and HashiCorp Vault"
+new = "1Password (`op`) and HashiCorp Vault"
+if old not in s:
+    sys.exit("docs/ARCHITECTURE.md front sentence has no Infisical backend to remove")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_B3" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when docs/ARCHITECTURE.md's front sentence omits a live backend"
+else
+    no "coverage accepted a docs/ARCHITECTURE.md front sentence missing a live backend"
+fi
+if grep -qF "docs/ARCHITECTURE.md's front sentence omits live backend(s): infisical" <<<"$OUT"; then
+    ok "coverage names the omitted backend in docs/ARCHITECTURE.md"
+else
+    no "coverage did not name the omitted backend in docs/ARCHITECTURE.md"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_B4/docs/ARCHITECTURE.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "GCP Secret Manager and GitLab group variables"
+new = "GCP Secret Manager"
+if old not in s:
+    sys.exit("docs/ARCHITECTURE.md front sentence has no GitLab sync target to remove")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_B4" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when docs/ARCHITECTURE.md's front sentence omits a live sync target"
+else
+    no "coverage accepted a docs/ARCHITECTURE.md front sentence missing a live sync target"
+fi
+if grep -qF "docs/ARCHITECTURE.md's front sentence omits live sync target: gitlab group variables" <<<"$OUT"; then
+    ok "coverage names the omitted sync target in docs/ARCHITECTURE.md"
+else
+    no "coverage did not name the omitted sync target in docs/ARCHITECTURE.md"
     printf '%s\n' "$OUT"
 fi
 OUT="$(cd "$WORK_BCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"

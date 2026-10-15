@@ -1,5 +1,27 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (52nd run): shipped **#174** -- docs/ARCHITECTURE.md's Overview
+carried the same class of front-page claim as README.md's (the backend universe and
+the `sec sync` targets), but sentinel section 18b only ever read README.md, so a
+backend added to or removed from the migrator allow-list, or a sync target added to
+the controller, would drift ARCHITECTURE.md silently while the pipeline stayed green.
+Fix: section 18b now reads BOTH docs' `unifies secret management across` sentence and
+requires each to name the live migrator universe (the source + destination allow-lists
+union) and every controller `Targets:` entry. Probe case [31] gained two
+docs/ARCHITECTURE.md probes (a dropped live backend, a dropped sync target), each
+asserting coverage exits nonzero and names the drift. Mirrors: ADAPTERS.md:32 "Last
+updated", RESUME.md baseline below (820 -> 828 assertions; the case count stays 64, so
+no count-word table change), HISTORY.md 6805 -> 7058 bytes. Full battery green
+(dispatch/install/sync_guard/write_honesty/sentinel ALL PASSED, pytest 58, coverage +
+citations RC=0); narrative appended to history/2026-10-15.md.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously), and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#174 class); if none surfaces, the fresh 360 audit
+(#67) only after human approval.
+
 Session 2026-10-15 (51st run): shipped **#173** -- docs/ARCHITECTURE.md's
 `bin/hyer-mcp.sh` component bullet carried several precise claims about the live
 launcher (HYER_HOME default `~/sandbox/hyer`, the `sec get hyer-gitlab-pat`
@@ -1467,9 +1489,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 107, install 9, sentinel 64, sync_guard 16,
-write_honesty 17. Sentinel = 64 cases / 820 assertions. HISTORY.md is at
-6805/8192 bytes - headroom of 1387 bytes before its budget (the 2026-10-15 block
-was compacted to fold in #166-#173; the full narratives live in
+write_honesty 17. Sentinel = 64 cases / 828 assertions. HISTORY.md is at
+7058/8192 bytes - headroom of 1134 bytes before its budget (the 2026-10-15 block
+was compacted to fold in #166-#174; the full narratives live in
 `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each
