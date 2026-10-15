@@ -68,7 +68,10 @@ docs/SECURITY.md's Disk Storage Leak row (the fourth doc restating the same
 backend set), [51], assertions 836 -> 840. Fifteenth, #177 extended the
 ps1-surface guard to README.md's Multi-OS matrix PowerShell cell, which restated
 the bin/sec.ps1 native subset that only ARCHITECTURE.md was checked against,
-[54], assertions 840 -> 844.
+[54], assertions 840 -> 844. Sixteenth, #178 made section 18b's sync-target
+check also read docs/OPERATOR_MANUAL.md:92 and docs/ARCHITECTURE.md's
+sync-controller bullet (both state the live `Targets:` list, a word-level match
+since the bullet says `CI/CD variables`), [31], assertions 844 -> 852.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected

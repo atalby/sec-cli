@@ -1,5 +1,29 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (56th run): shipped **#178** -- sentinel 18b derived the live
+sync `Targets:` header and required README.md's and docs/ARCHITECTURE.md's FRONT
+sentences to name every target, but docs/OPERATOR_MANUAL.md:92 and
+docs/ARCHITECTURE.md's own sync-controller bullet (line 15) both restate the same
+list unguarded, so adding or removing a target would red-flag the two front
+sentences while those two stayed stale and green. Fix: 18b now also reads both
+claims, anchored on the unique `is not read) to <targets>.` form and matching
+every word of each live target (the bullet says "GitLab group CI/CD variables", so
+a plain substring match against the live "GitLab Group Variables" would falsely
+fail). Probe case [31] gained WORK_B5 (OPERATOR_MANUAL target drop) and WORK_B6
+(ARCHITECTURE bullet target drop), each asserting coverage exits nonzero and names
+the omitted target, plus the green control. Mirrors: ADAPTERS.md:32 "Last updated",
+RESUME.md baseline below (844 -> 852 assertions; case count stays 64), HISTORY.md
+7728 -> 7996 bytes. Full battery green (dispatch/install/sync_guard/
+write_honesty/sentinel ALL PASSED, pytest 58, coverage + citations RC=0);
+narrative appended to history/2026-10-15.md.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously), and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#178 class); if none surfaces, the fresh 360 audit
+(#67) only after human approval.
+
 Session 2026-10-15 (55th run): shipped **#177** -- README.md's Multi-OS Support
 Matrix (the Windows Native row) restates the bin/sec.ps1 native subcommand subset
 in a table cell "Native PowerShell (core: `get`/`set`/`run`; full surface via Git
@@ -1558,9 +1582,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 107, install 9, sentinel 64, sync_guard 16,
-write_honesty 17. Sentinel = 64 cases / 844 assertions. HISTORY.md is at
-7728/8192 bytes - headroom of 464 bytes before its budget (the 2026-10-15 block
-was compacted to fold in #166-#177; the full narratives live in
+write_honesty 17. Sentinel = 64 cases / 852 assertions. HISTORY.md is at
+7996/8192 bytes - headroom of 196 bytes before its budget (the 2026-10-15 block
+was compacted to fold in #166-#178; the full narratives live in
 `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each

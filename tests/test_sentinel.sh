@@ -1898,13 +1898,15 @@ else
     printf '%s\n' "$OUT"
 fi
 
-echo "[31] README.md + docs/ARCHITECTURE.md front backend universe + sync targets must match the live tree (issue #122, extended by #174)"
+echo "[31] README.md + docs/ARCHITECTURE.md front backend universe + sync targets, plus docs/OPERATOR_MANUAL.md's and ARCHITECTURE's sync-controller-bullet sync-target claims, must match the live tree (issue #122, extended by #174/#178)"
 WORK_B1="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_B2="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_B3="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_B4="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_B5="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_B6="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_BCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for W in "$WORK_B1" "$WORK_B2" "$WORK_B3" "$WORK_B4" "$WORK_BCTRL"; do
+for W in "$WORK_B1" "$WORK_B2" "$WORK_B3" "$WORK_B4" "$WORK_B5" "$WORK_B6" "$WORK_BCTRL"; do
     seed "$W"
 done
 python3 - "$WORK_B1/README.md" <<'PY'
@@ -1993,6 +1995,54 @@ if grep -qF "docs/ARCHITECTURE.md's front sentence omits live sync target: gitla
     ok "coverage names the omitted sync target in docs/ARCHITECTURE.md"
 else
     no "coverage did not name the omitted sync target in docs/ARCHITECTURE.md"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_B5/docs/OPERATOR_MANUAL.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "is not read) to GCP Secret Manager and GitLab group variables."
+new = "is not read) to GitLab group variables."
+if old not in s:
+    sys.exit("docs/OPERATOR_MANUAL.md carries no sync-target claim to corrupt")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_B5" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when docs/OPERATOR_MANUAL.md's sync-target claim omits a live target"
+else
+    no "coverage accepted a docs/OPERATOR_MANUAL.md sync-target claim missing a live target"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/OPERATOR_MANUAL.md's sync-target claim omits live sync target: gcp secret manager" <<<"$OUT"; then
+    ok "coverage names the omitted sync target in docs/OPERATOR_MANUAL.md"
+else
+    no "coverage did not name the omitted sync target in docs/OPERATOR_MANUAL.md"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_B6/docs/ARCHITECTURE.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "is not read) to GCP Secret Manager and GitLab group CI/CD variables."
+new = "is not read) to GitLab group CI/CD variables."
+if old not in s:
+    sys.exit("docs/ARCHITECTURE.md sync-controller bullet carries no sync-target claim to corrupt")
+open(p, "w", encoding="utf-8").write(s.replace(old, new, 1))
+PY
+OUT="$(cd "$WORK_B6" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when docs/ARCHITECTURE.md's sync-controller bullet omits a live sync target"
+else
+    no "coverage accepted a docs/ARCHITECTURE.md sync-controller bullet missing a live sync target"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/ARCHITECTURE.md's sync-target claim omits live sync target: gcp secret manager" <<<"$OUT"; then
+    ok "coverage names the omitted sync target in the docs/ARCHITECTURE.md sync-controller bullet"
+else
+    no "coverage did not name the omitted sync target in the docs/ARCHITECTURE.md sync-controller bullet"
     printf '%s\n' "$OUT"
 fi
 OUT="$(cd "$WORK_BCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"

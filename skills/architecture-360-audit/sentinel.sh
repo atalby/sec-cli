@@ -1666,6 +1666,34 @@ for _front_doc, _front_doc_text in _front_docs:
                     f"{_front_doc}'s front sentence omits live sync target: {_tgt}"
                 )
 
+try:
+    with open(os.path.join(repo, "docs", "OPERATOR_MANUAL.md"), encoding="utf-8") as _fh:
+        _sync_target_opman_text = _fh.read()
+except OSError:
+    _sync_target_opman_text = ""
+_sync_target_claims = (
+    ("docs/OPERATOR_MANUAL.md", _sync_target_opman_text),
+    ("docs/ARCHITECTURE.md", _front_arch_text),
+)
+for _tc_doc, _tc_text in _sync_target_claims:
+    _tc_m = re.search(r"is not read\) to ([^.]+)\.", _tc_text)
+    if _tc_m is None:
+        readme_mismatches.append(
+            f"{_tc_doc} carries no sync-target claim in the guarded "
+            "'...is not read) to <targets>.' form"
+        )
+        continue
+    _tc_list = _tc_m.group(1).lower()
+    if _targets_m is None:
+        readme_mismatches.append("bin/sec-sync-controller.py carries no 'Targets:' header")
+    else:
+        for _tgt in _targets_m.group(1).split(","):
+            _tgt = _tgt.strip().lower()
+            if _tgt and any(_w not in _tc_list for _w in _tgt.split()):
+                readme_mismatches.append(
+                    f"{_tc_doc}'s sync-target claim omits live sync target: {_tgt}"
+                )
+
 # --- 20. OPERATOR_MANUAL.md's documented `-v/--version` output must match the
 #         live `sec version` (issue #114) --------------------------------
 version_mismatches = []
@@ -3362,7 +3390,7 @@ print(f"{OK} structural prose: MULTI_TENANCY.md tenant aliases + profile.md CI c
 print(f"{OK} skill structure: SKILL.md steps + personas + scopes + severity set match the live skill files")
 print(f"{OK} skill forge: 360-audit-skill-forge's declared steps/headings/personas/scopes/severity match the live SKILL.md")
 print(f"{OK} count claims: profile.md §3 count-words + ADAPTERS.md/SKILL.md pytest-mirror count + RESUME.md suite counts match the live suites")
-print(f"{OK} README + docs/ARCHITECTURE.md: quoted `sec --help` + sec.conf sample + migrate backend list match the live CLI, and both front sentences name the live backend universe + sync targets")
+print(f"{OK} README + docs/ARCHITECTURE.md: quoted `sec --help` + sec.conf sample + migrate backend list match the live CLI, and both front sentences name the live backend universe + sync targets; docs/OPERATOR_MANUAL.md + the docs/ARCHITECTURE.md sync-controller bullet also name every live sync target")
 print(f"{OK} migrate surfaces: source/destination backend sets agree across migrator, 4 shells + OPERATOR_MANUAL")
 print(f"{OK} version claim: OPERATOR_MANUAL.md's documented `--version` output matches live 'bin/sec version'")
 print(f"{OK} tenant help line: bin/sec's `Configured Tenants:` lists exactly the routable aliases")
