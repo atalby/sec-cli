@@ -12,14 +12,14 @@ moves.
 Ecosystems present: Bash (`bin/sec` and seven sibling dispatchers, `install.sh`,
 five suites under `tests/`), Python 3 (6 files: `bin/sec-sync-controller.py`,
 `bin/sec-classify.py`, and four under `scripts/tests/`), PowerShell (`bin/sec.ps1`),
-zsh completion (`completions/_sec`), Markdown (73 files), JSON/YAML/TOML
+zsh completion (`completions/_sec`), Markdown (74 files), JSON/YAML/TOML
 configuration (12 files).
 
 Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (15 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (60 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (92 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (15 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (61 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (92 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#51`, `#67`, `#92`) |
@@ -432,7 +432,7 @@ instrument rather than the product but runs the same way:
 **Tracked file count** (the manifest denominator):
 
     $ git ls-files | wc -l
-    110
+    111
 
 **Dependency manifest census** (the persona 8 denominator):
 
@@ -638,7 +638,7 @@ module-level public, leading underscore private.
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:255`
 
 Nine install sections, sixteen guard sections, fifteen write-honesty
-sections, and the audit instrument's own sixty sentinel cases pass today
+sections, and the audit instrument's own sixty-one sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes all five bash suites — the former dispatch opt-in was removed in
 0284d39, issue #65); establish what they do not cover. Structural
@@ -800,8 +800,10 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **110 tracked files** (`git ls-files | wc -l`, re-measured
-2026-10-14 after issue #144 added the `history/2026-10-14.md` narrative;
+Denominator: **111 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-15 after issue #160 added the `history/2026-10-15.md` narrative;
+previously 2026-10-14 after issue #144 added the `history/2026-10-14.md`
+narrative;
 previously 2026-10-12 after issue #71 added the `history/2026-10-12.md`;
 before that 2026-10-11 after issue #63 removed the dead `scripts/pre-commit-test-suites.sh`
 (no tracked caller; its only would-be caller, the untracked local hook,

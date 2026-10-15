@@ -658,7 +658,7 @@ _NUM_WORDS = {
     "fifty-five": 55,
     "fifty-six": 56,
     "fifty-seven": 57,
-    "fifty-eight": 58, "fifty-nine": 59, "sixty": 60,
+    "fifty-eight": 58, "fifty-nine": 59, "sixty": 60, "sixty-one": 61,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -2540,12 +2540,125 @@ elif _live_snap_fields:
         )
 if not re.search(
     r"Passwords and secret values are \*\*not\*\* present in snapshot files",
-    _sec_snap_text,
+     _sec_snap_text,
 ):
     snap_fields_mismatches.append(
         "docs/SECURITY.md no longer states that passwords and secret values are "
         "absent from snapshot files"
     )
+
+# --- 37. docs/ARCHITECTURE.md's install-path claims (bootstrap clone dir,
+#         install destination, installable helper set, piped-mode fallback,
+#         LICENSE copy name, missing-git diagnosis) must match install.sh's
+#         live behavior (issue #160) ------------------------------------------
+install_claim_mismatches = []
+_arch_install_bullets = [
+    _ln for _ln in _nl_read("docs/ARCHITECTURE.md").splitlines()
+    if _ln.lstrip().startswith("- `install.sh`:")
+]
+
+
+def _inst_default(_var):
+    _m = re.search(r'\b' + _var + r'="\$\{[A-Z_]+:-\$HOME([^"}]+)\}"', _install_src)
+    return "~" + _m.group(1) if _m else ""
+
+
+_inst_install_dir = _inst_default("INSTALL_DIR")
+_inst_bootstrap_dir = _inst_default("BOOTSTRAP_DIR")
+_inst_copied = set(re.findall(r'cp "\$SCRIPT_DIR/(bin/[A-Za-z0-9._-]+)"', _install_src))
+_inst_lic_m = re.search(
+    r'cp "\$SCRIPT_DIR/LICENSE" "\$INSTALL_DIR/([A-Za-z0-9._-]+)"', _install_src
+)
+_inst_lic = _inst_lic_m.group(1) if _inst_lic_m else ""
+_inst_git_idx = _install_src.find("command -v git")
+_inst_clone_idx = _install_src.find("git clone")
+_inst_piped_guard = re.search(
+    r'-z "\$SCRIPT_DIR" \|\| ! -f "\$SCRIPT_DIR/bin/sec"', _install_src
+)
+_tracked_bin = {
+    f for f in tracked if f.startswith("bin/") and f.count("/") == 1
+}
+
+if len(_arch_install_bullets) != 1:
+    install_claim_mismatches.append(
+        f"docs/ARCHITECTURE.md carries {len(_arch_install_bullets)} install.sh bullet(s), expected exactly 1"
+    )
+else:
+    _ib = _arch_install_bullets[0]
+    _ib_boot_m = re.search(r"bootstrap clone into `([^`]+)`", _ib)
+    if not _ib_boot_m:
+        install_claim_mismatches.append(
+            "docs/ARCHITECTURE.md no longer names the bootstrap clone directory in the guarded form"
+        )
+    elif not _inst_bootstrap_dir:
+        install_claim_mismatches.append(
+            "install.sh binds no BOOTSTRAP_DIR default for the doc's bootstrap clone to match"
+        )
+    elif _ib_boot_m.group(1) != _inst_bootstrap_dir:
+        install_claim_mismatches.append(
+            f"docs/ARCHITECTURE.md names the bootstrap clone into {_ib_boot_m.group(1)}, "
+            f"but install.sh's BOOTSTRAP_DIR defaults to {_inst_bootstrap_dir}"
+        )
+    _ib_dir_m = re.search(r"to `([^`]+)`, `sec\.conf` created mode", _ib)
+    if not _ib_dir_m:
+        install_claim_mismatches.append(
+            "docs/ARCHITECTURE.md no longer names the install destination in the guarded form"
+        )
+    elif not _inst_install_dir:
+        install_claim_mismatches.append(
+            "install.sh binds no INSTALL_DIR default for the doc's install destination to match"
+        )
+    elif _ib_dir_m.group(1) != _inst_install_dir:
+        install_claim_mismatches.append(
+            f"docs/ARCHITECTURE.md names the install destination {_ib_dir_m.group(1)}, "
+            f"but install.sh's INSTALL_DIR defaults to {_inst_install_dir}"
+        )
+    _ib_exc_m = re.search(r"minus the host-local `(bin/[^`]+)`", _ib)
+    _ib_exc = {_ib_exc_m.group(1)} if _ib_exc_m else set()
+    if not _ib_exc:
+        install_claim_mismatches.append(
+            "docs/ARCHITECTURE.md no longer names the bin/ helper install.sh skips in the guarded form"
+        )
+    else:
+        _ib_uncopied = _tracked_bin - _inst_copied
+        if _ib_exc != _ib_uncopied:
+            install_claim_mismatches.append(
+                f"docs/ARCHITECTURE.md says install.sh skips {', '.join(sorted(_ib_exc))}, "
+                f"but install.sh leaves {len(_ib_uncopied)} tracked bin/ helper(s) uncopied "
+                f"({', '.join(sorted(_ib_uncopied)) or 'none'}) of {len(_tracked_bin)} tracked"
+            )
+    if "an empty script dir always falls through to the bootstrap clone" not in _ib:
+        install_claim_mismatches.append(
+            "docs/ARCHITECTURE.md no longer states the piped-mode empty-script-dir fallback"
+        )
+    elif not _inst_piped_guard:
+        install_claim_mismatches.append(
+            "install.sh no longer carries the empty-script-dir fallback "
+            '-z "$SCRIPT_DIR" || ! -f "$SCRIPT_DIR/bin/sec" the piped-mode claim describes'
+        )
+    _ib_lic_m = re.search(r"as `([^`]+)`", _ib)
+    if not _ib_lic_m:
+        install_claim_mismatches.append(
+            "docs/ARCHITECTURE.md no longer names the installed LICENSE copy in the guarded form"
+        )
+    elif not _inst_lic:
+        install_claim_mismatches.append(
+            "install.sh no longer copies LICENSE under a renamed file"
+        )
+    elif _ib_lic_m.group(1) != _inst_lic:
+        install_claim_mismatches.append(
+            f"docs/ARCHITECTURE.md names the LICENSE copy {_ib_lic_m.group(1)}, "
+            f"but install.sh writes the LICENSE copy as {_inst_lic}"
+        )
+    if "diagnoses a missing `git` before attempting the bootstrap clone" not in _ib:
+        install_claim_mismatches.append(
+            "docs/ARCHITECTURE.md no longer states that the installer diagnoses a missing git first"
+        )
+    elif _inst_git_idx < 0 or _inst_clone_idx < 0 or _inst_git_idx > _inst_clone_idx:
+        install_claim_mismatches.append(
+            "install.sh no longer diagnoses a missing git before the bootstrap clone "
+            "(the `command -v git` check must precede `git clone`)"
+        )
 
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
@@ -2754,6 +2867,12 @@ if snap_fields_mismatches:
     )
     for _m in snap_fields_mismatches:
         print(f"{ERROR} security snapshot fields: {_m}")
+if install_claim_mismatches:
+    failures.append(
+        f"{len(install_claim_mismatches)} install-path claim drift(s) vs install.sh"
+    )
+    for _m in install_claim_mismatches:
+        print(f"{ERROR} install-path claim: {_m}")
 
 if failures:
     for f in failures:
@@ -2795,6 +2914,7 @@ print(f"{OK} security executables: docs/SECURITY.md's executable list matches th
 print(f"{OK} sync exit codes: docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md + skills/architecture-360-audit/SKILL.md enumerate exactly bin/sec-sync-controller.py's returned codes ({', '.join(str(c) for c in sorted(_live_sync_codes))})")
 print(f"{OK} security process table: docs/SECURITY.md's argv/stdin mitigations still exist in the live bin/ code")
 print(f"{OK} security snapshot fields: docs/SECURITY.md's snapshot field set matches bin/sec-organizer's live schema ({len(_live_snap_fields)} field(s))")
+print(f"{OK} install-path claims: docs/ARCHITECTURE.md's bootstrap clone, install destination, installable helper set, piped-mode fallback, LICENSE copy name, and missing-git diagnosis match install.sh")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")
 print(f"{OK} personas: all {_live_personas} reachable from the manifest")
 sys.exit(0)

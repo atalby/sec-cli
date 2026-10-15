@@ -4711,10 +4711,155 @@ else
     no "control copy exited $RC, expected 0"
     printf '%s\n' "$OUT"
 fi
-if grep -qE "\[ OK \] security snapshot fields:" <<<"$OUT"; then
-    ok "the control copy's OK line names the snapshot-fields check"
+ if grep -qE "\[ OK \] security snapshot fields:" <<<"$OUT"; then
+     ok "the control copy's OK line names the snapshot-fields check"
+ else
+     no "the control copy's OK line did not name the snapshot-fields check"
+     printf '%s\n' "$OUT"
+ fi
+echo "[61] docs/ARCHITECTURE.md's install-path claims must match install.sh's live behavior (issue #160)"
+WORK_T37A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T37B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T37C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T37D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T37E="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T37CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for _w in "$WORK_T37A" "$WORK_T37B" "$WORK_T37C" "$WORK_T37D" "$WORK_T37E" "$WORK_T37CTRL"; do
+    seed "$_w"
+done
+python3 - "$WORK_T37A/docs/ARCHITECTURE.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "to `~/.local/bin`, `sec.conf` created mode"
+if s.count(old) != 1:
+    sys.exit("docs/ARCHITECTURE.md's install.sh bullet no longer names the install destination")
+open(p, "w", encoding="utf-8").write(s.replace(old, "to `~/.local/sbin`, `sec.conf` created mode", 1))
+PY
+OUT="$(cd "$WORK_T37A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the doc's install destination drifts"
 else
-    no "the control copy's OK line did not name the snapshot-fields check"
+    no "coverage accepted an install-destination drift in the doc"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "but install.sh's INSTALL_DIR defaults to" <<<"$OUT"; then
+    ok "coverage names the live INSTALL_DIR on an install-destination drift"
+else
+    no "coverage did not name the live INSTALL_DIR"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T37B/install.sh" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = 'BOOTSTRAP_DIR="${SEC_BOOTSTRAP_DIR:-$HOME/.sec-cli}"'
+if s.count(old) != 1:
+    sys.exit("install.sh no longer binds BOOTSTRAP_DIR to the documented default")
+open(p, "w", encoding="utf-8").write(s.replace(old, 'BOOTSTRAP_DIR="${SEC_BOOTSTRAP_DIR:-$HOME/.sec-bootstrap}"', 1))
+PY
+OUT="$(cd "$WORK_T37B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the live bootstrap dir drifts from the doc"
+else
+    no "coverage accepted a live bootstrap-dir drift from the doc"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "but install.sh's BOOTSTRAP_DIR defaults to" <<<"$OUT"; then
+    ok "coverage names the live BOOTSTRAP_DIR on a bootstrap-dir drift"
+else
+    no "coverage did not name the live BOOTSTRAP_DIR"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T37C/install.sh" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = '    cp "$SCRIPT_DIR/bin/sec.ps1" "$INSTALL_DIR/sec.ps1"\n'
+if s.count(old) != 1:
+    sys.exit("install.sh no longer copies bin/sec.ps1")
+open(p, "w", encoding="utf-8").write(s.replace(old, "", 1))
+PY
+OUT="$(cd "$WORK_T37C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when install.sh stops copying a tracked bin/ helper"
+else
+    no "coverage accepted a copied-set drift in install.sh"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "uncopied" <<<"$OUT"; then
+    ok "coverage names the uncopied bin/ helper on a copied-set drift"
+else
+    no "coverage did not name the uncopied bin/ helper"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T37D/install.sh" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = 'if [[ -f "$SCRIPT_DIR/LICENSE" ]]; then\n    cp "$SCRIPT_DIR/LICENSE" "$INSTALL_DIR/sec-cli-LICENSE"\nfi\n'
+if s.count(old) != 1:
+    sys.exit("install.sh no longer copies LICENSE under the documented name")
+open(p, "w", encoding="utf-8").write(
+    s.replace(old, 'if [[ -f "$SCRIPT_DIR/LICENSE" ]]; then\n    cp "$SCRIPT_DIR/LICENSE" "$INSTALL_DIR/LICENSE"\nfi\n', 1)
+)
+PY
+OUT="$(cd "$WORK_T37D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the live LICENSE copy name drifts"
+else
+    no "coverage accepted a LICENSE copy-name drift in install.sh"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "but install.sh writes the LICENSE copy as" <<<"$OUT"; then
+    ok "coverage names the live LICENSE copy name"
+else
+    no "coverage did not name the live LICENSE copy name"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T37E/install.sh" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = """        if ! command -v git >/dev/null 2>&1; then
+            echo "=== ERROR: git is required for a piped install (clones $REPO_URL) but was not found on PATH. Install git, or run the tracked install.sh from a checkout. ==="
+            exit 1
+        fi
+"""
+if s.count(old) != 1:
+    sys.exit("install.sh no longer carries the missing-git diagnosis block")
+open(p, "w", encoding="utf-8").write(s.replace(old, "", 1))
+PY
+OUT="$(cd "$WORK_T37E" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the missing-git diagnosis disappears"
+else
+    no "coverage accepted a missing-git diagnosis removal"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "no longer diagnoses a missing git before the bootstrap clone" <<<"$OUT"; then
+    ok "coverage names the lost missing-git diagnosis"
+else
+    no "coverage did not name the lost missing-git diagnosis"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T37CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (install-path claims agree) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] install-path claims:" <<<"$OUT"; then
+    ok "the control copy's OK line names the install-path check"
+else
+    no "the control copy's OK line did not name the install-path check"
     printf '%s\n' "$OUT"
 fi
 echo

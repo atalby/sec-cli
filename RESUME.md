@@ -1,5 +1,37 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (40th run): shipped **#160** -- the resume point's standing
+sweep ("next unguarded current-state claim, the #129-#159 class") landed on
+docs/ARCHITECTURE.md:18's `install.sh` bullet, whose claims no sentinel section
+read: the bootstrap clone dir (`~/.sec-cli`), the install destination
+(`~/.local/bin`), the piped-mode empty-script-dir fallback, the `LICENSE` copy
+name (`sec-cli-LICENSE`), and the missing-git diagnosis. One claim was also
+imprecise -- "copy of `bin/*`" implies all eight tracked `bin/` files, but
+install.sh never installs the host-local `bin/hyer-mcp.sh` (it is gated on
+`HYER_HOME`), so the bullet now names that exception explicitly and becomes
+checkable. Sentinel section 37 derives each live value from install.sh
+(`INSTALL_DIR`/`BOOTSTRAP_DIR` defaults, the `cp "$SCRIPT_DIR/bin/..."` set vs
+the tracked `bin/` set, the renamed LICENSE destination, the
+`-z "$SCRIPT_DIR" || ! -f "$SCRIPT_DIR/bin/sec"` disjunct -- real, since a
+piped install leaves `BASH_SOURCE[0]` empty, verified -- and the
+`command -v git` before `git clone` ordering) and requires the doc bullet to
+match. Case [61], five probes + control, all proven red first: the doc's
+install destination, the live BOOTSTRAP_DIR default, a removed
+`cp "$SCRIPT_DIR/bin/sec.ps1"`, a renamed LICENSE copy, and a deleted
+missing-git block each made coverage fail RC=1. Sentinel 60 -> 61 cases /
+736 -> 760 assertions, with `"sixty-one": 61` added to the count-word table. Mirrors bumped at
+`profile.md:22`, `profile.md:641` (sixty-one), `ADAPTERS.md:56`,
+`ADAPTERS.md:262`, this file's mirrors-in-sync + `Sentinel =` lines;
+HISTORY.md compacted (#144-#154 clauses) to fit the 8192-byte budget with the
+new 2026-10-15 entry and `history/2026-10-15.md` appended.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#160 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-15 (39th run): shipped **#159** -- docs/SECURITY.md:14's
 Snapshot Exposure row claimed a backup snapshot stores "only item UUIDs,
 original titles, and folder IDs", which is stale (the live snapshot, a
@@ -1170,12 +1202,12 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 92, install 9, sentinel 60, sync_guard 16,
-write_honesty 15. Sentinel = 60 cases / 736 assertions. HISTORY.md is at
-8121/8192 bytes - the next narrative addition must still compact first if it
-would cross the budget (#146/#147/#148's entries extended the 2026-10-14 paragraph
-and appended to `history/2026-10-14.md`).
-110 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
+mirrors in sync): dispatch 92, install 9, sentinel 61, sync_guard 16,
+write_honesty 15. Sentinel = 61 cases / 760 assertions. HISTORY.md is at
+7940/8192 bytes - the next narrative addition must still compact first if it
+would cross the budget (#160 compacted the #144-#154 clauses to fit the
+2026-10-15 entry and appended to `history/2026-10-15.md`).
+111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each
 guard case re-runs full coverage a few times); the pytest mirror adds ~3.5 min.
 Run both when a sentinel section changes.
