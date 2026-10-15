@@ -35,6 +35,23 @@ exit 0
 EOF
 chmod +x "$FAKEBIN/infisical"
 
+cat >"$FAKEBIN/bws" <<'EOF'
+#!/usr/bin/env bash
+if [ "${1:-}" = "project" ] && [ "${2:-}" = "list" ]; then
+    if [ -n "${SEC_TEST_BWS_PROJ_GARBAGE:-}" ]; then echo "NOT-JSON-AT-ALL"; exit 0; fi
+    if [ "${SEC_TEST_BWS_PROJ_RC:-0}" -ne 0 ]; then echo "bws boom" >&2; exit 1; fi
+    echo '[{"id":"p1","name":"default"}]'
+    exit 0
+fi
+if [ "${1:-}" = "secret" ] && [ "${2:-}" = "create" ]; then
+    if [ -n "${SEC_TEST_BWS_CREATE_GARBAGE:-}" ]; then echo "NOT-JSON-AT-ALL"; exit 0; fi
+    echo '{"id":"s1","name":"created"}'
+    exit 0
+fi
+exit 0
+EOF
+chmod +x "$FAKEBIN/bws"
+
 cat >"$FAKEBIN/secret-tool" <<'EOF'
 #!/usr/bin/env bash
 exit 1
@@ -285,6 +302,47 @@ if [[ $RC14 -eq 1 ]]; then pass "corrupt snapshot revert exits 1"; else fail "co
 if grep -q "^\[ERROR\] corrupt or unreadable housekeeping snapshot" <<<"$OUT14"; then pass "tagged corrupt-snapshot notice"; else fail "no tagged corrupt-snapshot notice: $OUT14"; fi
 if grep -q "Revert Successfully Completed" <<<"$OUT14"; then fail "reported success for a corrupt snapshot"; else pass "no success banner on a corrupt snapshot"; fi
 if [[ -f "$SNAP14" ]]; then pass "corrupt snapshot file kept for diagnosis"; else fail "corrupt snapshot file deleted"; fi
+
+echo "[15] migrate --to bws: a failed/unreadable project listing fails loudly, never silent or raw (#167)"
+H15="$WORK/h15"
+mkdir -p "$H15/.cache/bitwarden"
+set +e
+OUT15a="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H15" "SEC_TEST_BWS_PROJ_RC=1" "$REPO_ROOT/bin/sec-migrator" --from bitwarden --to bws --apply 2>&1)"
+RC15a=$?
+set -e
+if [[ $RC15a -eq 1 ]]; then pass "failed project list exits 1 (not silent)"; else fail "failed project list exited $RC15a, expected 1: $OUT15a"; fi
+if grep -q "^\[ERROR\] 'bws project list' failed" <<<"$OUT15a"; then pass "tagged project-list failure notice"; else fail "no tagged project-list failure notice: $OUT15a"; fi
+if grep -q "^\[ERROR\] Migration failed while transferring" <<<"$OUT15a"; then pass "trap_error notice runs on project-list failure"; else fail "trap_error never ran: $OUT15a"; fi
+if [[ -f "$H15/.cache/bitwarden/migration_transaction.json" ]]; then pass "transaction log saved on project-list failure"; else fail "no transaction log on project-list failure"; fi
+
+H15b="$WORK/h15b"
+mkdir -p "$H15b/.cache/bitwarden"
+set +e
+OUT15b="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H15b" "SEC_TEST_BWS_PROJ_GARBAGE=1" "$REPO_ROOT/bin/sec-migrator" --from bitwarden --to bws --apply 2>&1)"
+RC15b=$?
+set -e
+if [[ $RC15b -eq 1 ]]; then pass "garbage project listing exits 1 (not raw jq 4)"; else fail "garbage project listing exited $RC15b, expected 1: $OUT15b"; fi
+if grep -q "^\[ERROR\] 'bws project list' returned an unreadable listing" <<<"$OUT15b"; then pass "tagged unreadable-listing notice"; else fail "no tagged unreadable-listing notice: $OUT15b"; fi
+if grep -q "parse error" <<<"$OUT15b"; then fail "raw jq parse error leaked: $OUT15b"; else pass "no raw jq parse error on garbage listing"; fi
+
+H15c="$WORK/h15c"
+mkdir -p "$H15c/.cache/bitwarden"
+set +e
+OUT15c="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H15c" "SEC_TEST_BWS_CREATE_GARBAGE=1" "$REPO_ROOT/bin/sec-migrator" --from bitwarden --to bws --apply 2>&1)"
+RC15c=$?
+set -e
+if [[ $RC15c -eq 1 ]]; then pass "garbage create response exits 1 (not raw jq 4)"; else fail "garbage create response exited $RC15c, expected 1: $OUT15c"; fi
+if grep -q "^\[ERROR\] Migration failed while transferring" <<<"$OUT15c"; then pass "trap_error notice runs on garbage create response"; else fail "trap_error never ran: $OUT15c"; fi
+if grep -q "parse error" <<<"$OUT15c"; then fail "raw jq parse error leaked: $OUT15c"; else pass "no raw jq parse error on garbage create response"; fi
+
+H15d="$WORK/h15d"
+mkdir -p "$H15d/.cache/bitwarden"
+set +e
+OUT15d="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H15d" "$REPO_ROOT/bin/sec-migrator" --from bitwarden --to bws --apply 2>&1)"
+RC15d=$?
+set -e
+if [[ $RC15d -eq 0 ]]; then pass "working bws backends exit 0"; else fail "working bws migrate exited $RC15d: $OUT15d"; fi
+if grep -q "^\[ OK \] Vault Migration Successfully Completed (1 items migrated)" <<<"$OUT15d"; then pass "tagged success banner on real bws success"; else fail "no success banner on working bws migrate: $OUT15d"; fi
 
 echo
 if [[ $FAILS -eq 0 ]]; then

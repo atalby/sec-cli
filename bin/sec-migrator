@@ -203,22 +203,31 @@ while read -r item; do
             1password|1pass|op)
                 op_template="$(SECVAL="$val" jq -n --arg title "$name" '{title: $title, category: "PASSWORD", fields: [{id: "password", type: "CONCEALED", purpose: "PASSWORD", label: "password", password_details: {strength: ""}, value: env.SECVAL}]}')"
                 res="$(printf '%s' "$op_template" | op item create - --format=json 2>/dev/null || true)"
-                created_id="$(echo "$res" | jq -r '.id // empty')"
+                created_id="$(echo "$res" | jq -r '.id // empty' 2>/dev/null || true)"
                 if [[ -z "$created_id" ]]; then trap_error "$name"; fi
                 ;;
             bitwarden|bw)
                 encoded="$(bw get template item 2>/dev/null | SECVAL="$val" jq --arg name "$name" '.name=$name | .type=1 | .login.password=env.SECVAL' | bw encode 2>/dev/null || true)"
                 if [[ -n "$encoded" ]]; then
                     res="$(printf '%s' "$encoded" | bw create item 2>/dev/null || true)"
-                    created_id="$(echo "$res" | jq -r '.id // empty')"
+                    created_id="$(echo "$res" | jq -r '.id // empty' 2>/dev/null || true)"
                 fi
                 if [[ -z "$created_id" ]]; then trap_error "$name"; fi
                 ;;
             bws)
-                proj_id="$(bws project list 2>/dev/null | jq -r '.[0].id // empty')"
+                if ! proj_list="$(bws project list 2>/dev/null)"; then
+                    echo "[ERROR] 'bws project list' failed; cannot resolve a target project for \"$name\"." >&2
+                    trap_error "$name"
+                elif ! proj_id="$(jq -r '.[0].id // empty' <<<"$proj_list" 2>/dev/null)"; then
+                    echo "[ERROR] 'bws project list' returned an unreadable listing; cannot resolve a target project for \"$name\"." >&2
+                    trap_error "$name"
+                elif [[ -z "$proj_id" ]]; then
+                    echo "[ERROR] 'bws project list' returned no project id; cannot migrate \"$name\"." >&2
+                    trap_error "$name"
+                fi
                 if [[ -n "$proj_id" && -n "$val" ]]; then
                     res="$(bws secret create "$name" "$val" "$proj_id" 2>/dev/null || true)"
-                    created_id="$(echo "$res" | jq -r '.id // empty')"
+                    created_id="$(echo "$res" | jq -r '.id // empty' 2>/dev/null || true)"
                 fi
                 if [[ -z "$created_id" ]]; then trap_error "$name"; fi
                 ;;

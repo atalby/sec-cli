@@ -1,5 +1,26 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (44th run): shipped **#167** -- the unguarded twin of
+#166's bws project-list read, in `bin/sec-migrator:218` (`--to bws` apply
+path): failing backend died silent RC=1 (no trap_error, no TX log), garbage
+at RC 0 leaked raw jq RC=4. Split into if-not guards (tagged [ERROR] +
+trap_error, the bin/sec:756-769 idiom); also hardened the three adjacent
+create-response jqs with `2>/dev/null || true`. New fakebin `bws` stub;
+write-honesty case [15] (12 assertions, 9 FAILs red-first, then green).
+Write-honesty 15 -> 16, migrator tagged census 26 -> 29 (mirrors:
+ADAPTERS.md:55/:261, profile.md:22/:640/:671, RESUME.md baseline);
+HISTORY.md held at 8192/8192. Full battery green (4 bash suites, sentinel
+63, pytest 58, coverage + citations RC=0). Ruled out without issue:
+organizer:112 (require_json_array input), organizer:138-142 (classifier
+always emits the full shape), bin/sec:506-557 (ERR sentinel + count gate).
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope
+approval; must NOT be started autonomously) and
+**#92** + **#51** (hub-side, not this repo). Standing next autonomous move:
+sweep for the next unguarded current-state claim (the #129-#167 class); if
+none surfaces, the fresh 360 audit (#67) only after human approval.
+
 Session 2026-10-15 (43rd run): shipped **#166** -- four silent-death
 `$(backend 2>/dev/null | jq ...)` reads under `set -euo pipefail` (bin/sec
 bw-status preamble: fail -> silent exit 1, garbage -> raw jq exit 4, every
@@ -1279,7 +1300,7 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 104, install 9, sentinel 63, sync_guard 16,
-write_honesty 15. Sentinel = 63 cases / 792 assertions. HISTORY.md is at
+write_honesty 16. Sentinel = 63 cases / 792 assertions. HISTORY.md is at
 8192/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (compacted the 2026-10-11/12/13/14 blocks and the
 2026-10-15 #162/#165 clauses; each appended to `history/2026-10-15.md`).
