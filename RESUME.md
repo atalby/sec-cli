@@ -1,5 +1,26 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (45th run): clean sweep, no issue filed. Enumerated twelve
+candidates in the #129-#167 class and ruled all out: sec.ps1 ConvertFrom-Json
+reads (loud-fail or null-guarded; no pwsh to probe), install.sh (loud set -e
+deaths + WARNs), sec-classify.py (try/except envelope), sync-controller
+no-token skip (WARN + sync_guard [4] pinned), bin/sec:506-557 (all three
+bw_list_items sites ERR-guarded), keeper sole read (:121, #166), static
+completions/_sec, CI workflow matches the five-suites+pytest claim,
+hyer-mcp.sh preconditions, VERSION 1.0.0 consistent, sentinel duality
+(instrument vs harness) by design, OPERATOR_MANUAL sync exit codes live-match
++ sentinel [58] pinned. Full battery green, zero code changes (dispatch,
+install, sync_guard, write_honesty, sentinel ALL PASSED). Mirrors unchanged
+(dispatch 104, install 9, sentinel 63, sync_guard 16, write_honesty 16);
+HISTORY.md held at 8192 bytes; narrative appended to history/2026-10-15.md.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope
+approval; must NOT be started autonomously) and
+**#92** + **#51** (hub-side, not this repo). Standing next autonomous move:
+sweep for the next unguarded current-state claim (the #129-#167 class); if
+none surfaces, the fresh 360 audit (#67) only after human approval.
+
 Session 2026-10-15 (44th run): shipped **#167** -- the unguarded twin of
 #166's bws project-list read, in `bin/sec-migrator:218` (`--to bws` apply
 path): failing backend died silent RC=1 (no trap_error, no TX log), garbage
