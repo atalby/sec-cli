@@ -69,6 +69,9 @@ case "${1:-}" in
         esac
         ;;
     encode)
+        if [ "${SEC_TEST_BW_ENCODE_EMPTY:-0}" != "0" ]; then
+            exit 0
+        fi
         cat
         ;;
     create)
@@ -129,7 +132,12 @@ case "${1:-}" in
     item)
         case "${2:-}" in
             list) echo '[{"id":"op-1","title":"OP Item","tags":[]}]' ;;
-            create) echo '{"id":"op-created"}' ;;
+            create)
+                if [ "${SEC_TEST_OP_ITEM_CREATE_RC:-0}" != "0" ]; then
+                    echo "Error: could not create item." >&2
+                    exit "${SEC_TEST_OP_ITEM_CREATE_RC}"
+                fi
+                echo '{"id":"op-created"}' ;;
         esac
         ;;
     run)
@@ -153,6 +161,10 @@ case "${1:-} ${2:-}" in
         echo "bws-pw-${3:-}"
         ;;
     "project list")
+        if [ "${SEC_TEST_BWS_NOPROJ:-0}" != "0" ]; then
+            echo '[]'
+            exit 0
+        fi
         echo '[{"id":"proj-1","name":"p"}]'
         ;;
     "secret create")
@@ -593,6 +605,54 @@ RC=$?
 set -e
 if [[ $RC -eq 0 ]] && grep -q "saved to Bitwarden Secrets Manager" <<<"$OUT"; then pass "bws set reports saved-to-BWS"; else fail "bws set rc=$RC out=$OUT"; fi
 if grep -q "secret create BWS_KEY bwsval proj-1" "$BWSLOG"; then pass "bws secret create called with key/value/proj"; else fail "unexpected bws create call: $(tr '\n' ';' <"$BWSLOG")"; fi
+
+echo "[11d] set failures name the failing stage, never the secret value (#162)"
+set +e
+OUTD1="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H" "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_CREATE_RC=1" "$REPO_ROOT/bin/sec" set NEW_BW_KEY bw-stage-val </dev/null 2>&1)"
+RC=$?
+set -e
+if [[ $RC -ne 0 ]]; then pass "bw create failure exits nonzero"; else fail "bw create failure rc=$RC out=$OUTD1"; fi
+if grep -q "(stage: bw create item)" <<<"$OUTD1"; then pass "bw failure names the bw create item stage"; else fail "bw failure does not name its stage: $OUTD1"; fi
+
+set +e
+OUTD2="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_OP_ITEM_CREATE_RC=1" "$REPO_ROOT/bin/sec" op set NEW_OP_KEY op-stage-val </dev/null 2>&1)"
+RC=$?
+set -e
+if [[ $RC -ne 0 ]]; then pass "op item create failure exits nonzero"; else fail "op item create failure rc=$RC out=$OUTD2"; fi
+if grep -q "(stage: op item create)" <<<"$OUTD2"; then pass "op failure names the op item create stage"; else fail "op failure does not name its stage: $OUTD2"; fi
+
+set +e
+OUTD3="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H" "SEC_TEST_BWS_LOG=$BWSLOG" "SEC_TEST_BWS_NOPROJ=1" "$REPO_ROOT/bin/sec" bws set NEW_BWS_KEY bws-stage-val </dev/null 2>&1)"
+RC=$?
+set -e
+if [[ $RC -ne 0 ]]; then pass "bws no-project failure exits nonzero"; else fail "bws no-project failure rc=$RC out=$OUTD3"; fi
+if grep -q "(stage: bws project list returned no project id)" <<<"$OUTD3"; then pass "bws failure names the missing-project-id stage"; else fail "bws no-project failure does not name its stage: $OUTD3"; fi
+
+set +e
+OUTD4="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H" "SEC_TEST_BWS_LOG=$BWSLOG" "SEC_TEST_BWS_CREATE_RC=1" "$REPO_ROOT/bin/sec" bws set NEW_BWS_KEY bws-stage-val </dev/null 2>&1)"
+RC=$?
+set -e
+if [[ $RC -ne 0 ]]; then pass "bws secret create failure exits nonzero"; else fail "bws secret create failure rc=$RC out=$OUTD4"; fi
+if grep -q "(stage: bws secret create)" <<<"$OUTD4"; then pass "bws failure names the bws secret create stage"; else fail "bws create failure does not name its stage: $OUTD4"; fi
+
+set +e
+OUTD5="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H" "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_ENCODE_EMPTY=1" "$REPO_ROOT/bin/sec" set NEW_ENC_KEY enc-stage-val </dev/null 2>&1)"
+RC=$?
+set -e
+if [[ $RC -ne 0 ]]; then pass "bw empty-payload failure exits nonzero"; else fail "bw empty-payload failure rc=$RC out=$OUTD5"; fi
+if grep -q "(stage: payload build (bw get template item | jq | bw encode) produced no output)" <<<"$OUTD5"; then pass "bw empty payload names the payload-build stage, not the create"; else fail "bw empty payload misnames its stage: $OUTD5"; fi
+if grep -q "enc-stage-val" <<<"$OUTD5"; then fail "bw empty-payload message leaked the secret value: $OUTD5"; else pass "bw empty-payload message omits the secret value"; fi
+
+for LBL in bw op bws-noproj bws-create; do
+    case "$LBL" in
+        bw) D_OUT="$OUTD1" ;;
+        op) D_OUT="$OUTD2" ;;
+        bws-noproj) D_OUT="$OUTD3" ;;
+        bws-create) D_OUT="$OUTD4" ;;
+    esac
+    if grep -q "bws-stage-val\|op-stage-val" <<<"$D_OUT"; then fail "$LBL failure message leaked the secret value: $D_OUT"; else pass "$LBL failure message omits the secret value"; fi
+    if grep -q "failed to store secret" <<<"$D_OUT"; then pass "$LBL failure still emits the tagged ERROR line"; else fail "$LBL failure lost the tagged ERROR line: $D_OUT"; fi
+done
 
 echo "[11c] vault/infisical set refuse honestly (unsupported tenant)"
 set +e

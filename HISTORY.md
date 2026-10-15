@@ -7,17 +7,15 @@ record is archived per period under `history/` (append-only, nothing
 deleted, every file searchable). A new session reads this summary by
 default, not the whole history.
 
-**2026-10-14**: the unguarded-current-state-claim sweep ran #144-#159, one
+**2026-10-14**: the unguarded-current-state-claim sweep ran #144-#159 -- one
 project-owned doc claim per issue, each closed by a sentinel section that derives
-the live value from the code and requires the doc to match: HIAE banner (#144),
-SECURITY.md path->mode pairs (#145), the two docs quoting the config mode
-(#146), the section-9 suite extractor (#147), RESUME.md's count mirrors (#148),
-natural-language mode prose (#149), runtime deps + SEC_* vars (#150), `sec run`
-injection backends (#151), classifier categories (#152), the completion surface
-(#153), the bin/sec.ps1 surface (#154), SECURITY.md's executable census (#155),
-`sec sync` exit codes (#156, extended to SKILL.md in #157), SECURITY.md's argv
-mitigations (#158) and snapshot-contents field set (#159, which had gone stale).
-Sentinel 49 -> 60 cases / 532 -> 736 assertions. Tracker holds #51, #67, #92.
+the live value from code and requires the doc to match: HIAE banner, SECURITY.md
+path->mode pairs, the two config-mode docs, the suite extractor, RESUME.md's count
+mirrors, mode prose, runtime deps, `sec run` injection backends, classifier
+categories, completion, bin/sec.ps1, SECURITY.md's executable census, `sec sync`
+exit codes (+SKILL.md), SECURITY.md's argv mitigations, and the snapshot-contents
+field set (that last one had gone stale). Sentinel 49 -> 60 cases / 532 -> 736
+assertions. Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
 **2026-10-15**: three more passes of the same sweep. First, docs/ARCHITECTURE.md's
@@ -47,9 +45,20 @@ Sentinel section 39 derives all of it (case [63], three probes + control proven
 red first). Sentinel 60 -> 63 cases / 736 -> 792 assertions.
 Tracker holds #51, #67, #92.
 Separately: test_dispatch.sh case `[11] op set` failed once in four full runs and
-would not reproduce; the pipeline's stderr is discarded so the cause is
-unrecoverable. Filed as #162 with the four-run evidence table rather than
-attributed to load.
+would not reproduce. Filed as #162 with the four-run evidence table rather than
+attributed to load -- chasing it found a real defect instead of a flake: all seven
+`sec set` fall-through points in bin/sec discarded stderr and collapsed into one
+`[ERROR] failed to store secret ... in tenant '<t>'`, naming the tenant but never
+the step. It now names the stage. Stderr stays discarded on purpose -- `bws secret
+create` carries the value in argv, so a child's stderr could echo it; stage names
+only, never child output. Test case [11d], red-first 274/5 then green 279/0, plus
+three default-off stub knobs. Diff review then caught a flaw in the fix itself:
+the update path ANDed the payload check with the pipeline, so a short-circuited
+empty payload was misreported as a `bw edit` refusal -- the exact misdiagnosis the
+change removes -- now split. Dispatch 92 -> 93 sections. Checking the PowerShell
+sibling for parity found a separate silent fall-through (no `else` on the
+`$projId` guard, so bws-with-no-projects blames the wrong backend) -- filed as
+#163 rather than widening this fix.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
@@ -61,45 +70,28 @@ claims guarded (#94-#98); the last silent-drop arms closed (#99/#100,
 controller's write path and the naming branch covered (pytest 29 -> 43);
 #64 closed as a duplicate of #51's payload. Detail: `history/2026-10-12.md`.
 
-**2026-10-13**: the guard-hardening lane closed more guard classes plus one
-real product bug. #119-#136 swept and guarded stale current-state claims:
-audit profile line anchors, README's backend universe, RESUME's own size
-claim, two F041 dead config keys, bin/sec's tenant help line, ADAPTERS.md's
-pack/persona census, profile.md's code-prose counts and tracked-file
-transcript, sentinel section 7's shadowable first-match, and the
-360-audit-skill-forge spec (42 cases / 434 assertions). #137 was the lane's
-first product bug: `bin/sec` ran `set -u` and expanded the possibly-empty
-`SCOPE_ARGS` bare, a fatal `unbound variable` on bash < 4.4, so `sec get` died
-on stock macOS while Linux CI stayed green; four sites fixed plus a source
-scanner (case [32]). #120's half closed the observability
-gap behind its un-diagnosable flake: the pytest mirror reported a failing
-suite as only its last 2000 chars; it now names every `  FAIL:` line with its
-section (53 -> 58 tests). The sweep also derived every remaining live
-count and numeral word in `tests/test_sentinel.sh` (a `_NUM_WORDS`-keyed check
-ignores a digit, so only a word swap fails); its first pass
-missed six (dump every corruption heredoc, not grep prefixes). #138 found the class one layer out: `citations` walked only the
-audit skill's two docs, leaving RESUME.md's and HISTORY.md's 58 anchors
-unverified, and two bare line-451 citations of the audit `SKILL.md`
-silently resolved to the 50-line root `SKILL.md`. Both are qualified; repo docs now get an anchor pass (path,
-EOF, range) with a drift control. #139: profile.md's bin
-decomposition names a controller count with no drift control, so it could rot
-silently. #140 closed the same first-match class at the audit slot: the migrate
-and alias guards took the first regex hit, so a duplicate above the canonical
-one fed them a set they then agreed with; both now select the canonical
-block/gate line and flag duplicates (case [39], 452 assertions); #141 anchored
-the migrator source guard too (case [40]). #126 closed a real parser
-silent-drop: `bin/sec`'s `get_cfg_val` skipped any `sec.conf` line with no `=`,
-so a typo like `default_backend bitwarden` was ignored with no signal; it now
-emits a tagged `[WARN]` naming the line (in-place, no line shift; dispatch
-[18d]). #142 closed the F015-class residual: `sec-migrator` masked `jq`
-parse failures in two reads (a malformed source listing reported "Zero
-items found" + exit 0; a corrupt apply-mode transaction log was ignored),
-both now tagged `[ERROR]` + exit 1 (dispatch 88 -> 90). #143 swept the F015
-class one file over: `sec-organizer`'s plan read normalized a bw/op/bws
-listing failure to `[]`, so a broken backend produced a false "0 secrets"
-plan + exit 0; a `require_json_array` guard now rejects an empty or non-array
-listing with a tagged `[ERROR]` + exit 1 (dispatch 90 -> 92). Tracker holds #51,
-#67, #92.
+**2026-10-13**: the guard-hardening lane closed more guard classes plus three real
+product bugs. #119-#136 swept and guarded stale current-state claims (audit profile
+line anchors, README's backend universe, RESUME's own size claim, two F041 dead
+config keys, bin/sec's tenant help line, ADAPTERS.md's pack/persona census,
+profile.md's code-prose counts and tracked-file transcript, sentinel section 7's
+shadowable first-match, the 360-audit-skill-forge spec -- 42 cases / 434
+assertions). The first product bug was #137: `bin/sec` ran `set -u` and expanded
+the possibly-empty `SCOPE_ARGS` bare, a fatal `unbound variable` on bash < 4.4, so
+`sec get` died on stock macOS while Linux CI stayed green -- four sites fixed plus
+a source scanner (case [32]). The others were silent drops in credential-adjacent
+parsers: #126 (`get_cfg_val` ignored a `sec.conf` line with no `=`, now a tagged
+`[WARN]` naming the line), #142 and #143 (`sec-migrator` masked `jq` parse
+failures as "Zero items found" + exit 0; `sec-organizer` normalized a failed
+listing to `[]` and printed a false "0 secrets" plan -- both now tagged `[ERROR]`
++ exit 1, dispatch 88 -> 92). #120 closed the observability gap behind its own
+un-diagnosable flake: the pytest mirror reported a failing suite as only its last
+2000 chars; it now names every `  FAIL:` line with its section (53 -> 58 tests).
+#138-#141 anchored `citations` over RESUME.md/HISTORY.md and closed the
+first-match class in the migrate, alias, and migrator guards. The sweep also
+derived every remaining live count and numeral word in `tests/test_sentinel.sh`
+(a `_NUM_WORDS`-keyed check ignores a digit, so only a word swap fails). Tracker
+holds #51, #67, #92.
 Full narrative: `history/2026-10-13.md`.
 
 **2026-10-11**: issue #47 executed the narrative rotation policy declared

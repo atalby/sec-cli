@@ -654,6 +654,8 @@ EOF
             echo ""
         fi
 
+        set_stage="unspecified storer failure"
+
         case "$TARGET_TENANT" in
             bitwarden|bw)
                 target_item_name="$key"
@@ -697,10 +699,16 @@ EOF
                             encoded="$(echo "$existing_item" | SECVAL="$value" jq '.notes=env.SECVAL | .login.password=env.SECVAL' | bw encode 2>/dev/null || true)"
                         fi
 
-                        if [[ -n "$encoded" ]] && printf '%s' "$encoded" | BW_SESSION="${BW_SESSION:-}" bw edit item "$existing_id" >/dev/null 2>&1; then
+                        if [[ -z "$encoded" ]]; then
+                            set_stage="payload build (existing item '${existing_id}') produced no output"
+                        elif printf '%s' "$encoded" | BW_SESSION="${BW_SESSION:-}" bw edit item "$existing_id" >/dev/null 2>&1; then
                             echo "[ OK ] Secret '$key' updated in Bitwarden Vault."
                             exit 0
+                        else
+                            set_stage="bw edit item '${existing_id}'"
                         fi
+                    else
+                        set_stage="bw get item '${existing_id}' returned no data"
                     fi
                 fi
 
@@ -717,7 +725,11 @@ EOF
                     if printf '%s' "$encoded" | BW_SESSION="${BW_SESSION:-}" bw create item >/dev/null 2>&1; then
                         echo "[ OK ] Secret '$key' saved to Bitwarden Vault."
                         exit 0
+                    else
+                        set_stage="bw create item"
                     fi
+                else
+                    set_stage="payload build (bw get template item | jq | bw encode) produced no output"
                 fi
                 ;;
             1pass|op)
@@ -725,6 +737,8 @@ EOF
                 if printf '%s' "$op_template" | op item create - >/dev/null 2>&1; then
                     echo "[ OK ] Secret '$key' saved to 1Password."
                     exit 0
+                else
+                    set_stage="op item create"
                 fi
                 ;;
             bws)
@@ -733,7 +747,11 @@ EOF
                     if bws secret create "$key" "$value" "$proj_id" >/dev/null 2>&1; then
                         echo "[ OK ] Secret '$key' saved to Bitwarden Secrets Manager."
                         exit 0
+                    else
+                        set_stage="bws secret create"
                     fi
+                else
+                    set_stage="bws project list returned no project id"
                 fi
                 ;;
             *)
@@ -741,7 +759,7 @@ EOF
                 exit 1
                 ;;
         esac
-        echo "[ERROR] failed to store secret '$key' in tenant '$TARGET_TENANT'." >&2
+        echo "[ERROR] failed to store secret '$key' in tenant '$TARGET_TENANT' (stage: $set_stage)." >&2
         exit 1
         ;;
 
