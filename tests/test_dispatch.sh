@@ -69,6 +69,10 @@ case "${1:-}" in
                 fi
                 ;;
             folders)
+                if [ "${SEC_TEST_BW_FOLDERS_RC:-0}" != "0" ]; then
+                    echo "Error: vault is locked." >&2
+                    exit "${SEC_TEST_BW_FOLDERS_RC}"
+                fi
                 if [ -n "${SEC_TEST_BW_FOLDERS:-}" ]; then
                     echo "${SEC_TEST_BW_FOLDERS}"
                 else
@@ -1008,6 +1012,35 @@ if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] bitwarden 'bw status' failed" <<<"$OUT
 if [[ -n "$OUT" ]]; then pass "keeper status without bw is loud, not a silent death"; else fail "keeper status without bw died silent (empty output, rc=$RC)"; fi
 if [[ $RC -eq 127 ]]; then fail "keeper status without bw leaked the child's exit 127"; else pass "no child exit-code leak on keeper status without bw"; fi
 if grep -q "parse error" <<<"$OUT"; then fail "keeper status without bw leaked a raw jq parse error: $OUT"; else pass "no raw jq parse error on keeper status without bw"; fi
+
+echo "[14n] failure-honesty: housekeep plan fails closed on a failing folders read, never masks it as an empty vault (issue #169)"
+H2O="$(new_home "$WORK/h14n")"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2O" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_FOLDERS_RC=1" \
+    "$REPO_ROOT/bin/sec" housekeep plan 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] corrupt or unreadable listing from backend 'bw'" <<<"$OUT"; then pass "failing folders read -> exit 1 + tagged error"; else fail "failing folders read rc=$RC out=[$OUT]"; fi
+if grep -q "Plan saved" <<<"$OUT"; then fail "failing folders read still saved a false plan: $OUT"; else pass "failing folders read did not save a false plan"; fi
+if grep -q "vault is locked" <<<"$OUT"; then fail "failing folders read leaked the child's raw stderr: $OUT"; else pass "no raw child stderr on failing folders read"; fi
+
+echo "[14o] failure-honesty: housekeep apply fails closed on a failing folders read, keeps the plan (issue #169)"
+H2P="$(new_home "$WORK/h14o")"
+mkdir -p "$H2P/.cache/bitwarden"
+cat >"$H2P/.cache/bitwarden/housekeep_plan.json" <<'EOF'
+{"backend":"bw","timestamp":"2026-10-15T00:00:00Z","actions":[{"id":"item-1","originalName":"MY_API_KEY","newName":"MY_API_KEY","targetFolder":"work","currentFolder":"","currentFolderId":"","confidence":"90"}]}
+EOF
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2P" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_FOLDERS_RC=1" \
+    "$REPO_ROOT/bin/sec-organizer" apply 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] corrupt or unreadable listing from backend 'bw'" <<<"$OUT"; then pass "apply with failing folders read -> exit 1 + tagged error"; else fail "apply failing folders read rc=$RC out=[$OUT]"; fi
+if grep -q "Successfully Applied" <<<"$OUT"; then fail "reported success for a failed apply with unreadable folders"; else pass "no success banner on failing folders read"; fi
+if grep -q "Creating folder" <<<"$OUT"; then fail "attempted a folder create from an unverified listing: $OUT"; else pass "did not act on an unverified folders listing"; fi
+if [[ -f "$H2P/.cache/bitwarden/housekeep_plan.json" ]]; then pass "plan kept after failing folders read"; else fail "plan DELETED after failing folders read"; fi
 
 echo "[15] migrate plan executes the migrator"
 set +e

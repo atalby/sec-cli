@@ -97,7 +97,7 @@ cmd_plan() {
             echo "[ERROR] Bitwarden vault is locked or session expired. Run 'sec unlock' first." >&2
             exit 1
         fi
-        folders_json="$(bw list folders 2>/dev/null || echo "[]")"
+        folders_json="$(bw list folders 2>/dev/null || true)"
         require_json_array bw "$folders_json"
         items_json="$(bw list items 2>/dev/null || true)"
         require_json_array bw "$items_json"
@@ -220,7 +220,7 @@ cmd_apply() {
     echo "[ OK ] Pre-apply backup snapshot created: $snapshot_file (Mode 0600)"
 
     if [[ "$backend" == "bw" ]]; then
-        folders_json="$(bw list folders 2>/dev/null || echo "[]")"
+        folders_json="$(bw list folders 2>/dev/null || true)"
         require_json_array bw "$folders_json"
 
         while read -r action; do
@@ -253,7 +253,7 @@ cmd_apply() {
                     continue
                 fi
                 folder_id="$(echo "$new_folder" | jq -r '.id')"
-                folders_json="$(bw list folders 2>/dev/null || echo "[]")"
+                folders_json="$(bw list folders 2>/dev/null || true)"
                 require_json_array bw "$folders_json"
             fi
 
