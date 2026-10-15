@@ -20,6 +20,7 @@ case "$*" in
     "sync --nostatus") exit 0 ;;
     "sync") exit "${SEC_TEST_BW_SYNC_RC:-0}" ;;
     "list items") echo '[{"name":"k","notes":"'"${SEC_TEST_BW_NOTES-v}"'"}]' ;;
+    "list folders") echo "${SEC_TEST_BW_FOLDERS:-[]}" ;;
     get\ item*) echo "$BW_ITEM_JSON" ;;
     edit\ item*) exit "${SEC_TEST_BW_EDIT_RC:-0}" ;;
     encode) cat ;;

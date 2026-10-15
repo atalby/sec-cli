@@ -1,5 +1,23 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (42nd run): shipped **#165** -- the #162/#164
+failure-honesty hole in three `bin/sec-organizer` write paths (dead revert-read
+guard leaking exit 77 with a silent half-revert; unvalidated `folders_json`
+leaking jq's exit 4; unguarded write pipelines leaking exit 66 + a raw
+`TOKEN-abc123` diagnostic and uninterpretable 141). Fixed with the file's own
+idioms; cases [14e-h] (24 assertions, 15 FAILs red-first, then green).
+Dispatch 95 -> 99; organizer tagged census 42 -> 46; two profile.md anchors
+re-pinned (:310 -> :322, :215 -> :216); HISTORY.md at 8192/8192. Verification
+also caught a stub bug: `${VAR:-default}` truncates at the first inner `}`, so
+the folders default is now a single-quoted literal.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously) and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#165 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-15 (41st run): shipped **#160** -- the resume point's standing
 sweep ("next unguarded current-state claim, the #129-#160 class") landed on
 docs/MULTI_TENANCY.md:59-62, whose `auto_rotate` contract claimed a two-branch
@@ -1241,11 +1259,11 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 95, install 9, sentinel 63, sync_guard 16,
+mirrors in sync): dispatch 99, install 9, sentinel 63, sync_guard 16,
 write_honesty 15. Sentinel = 63 cases / 792 assertions. HISTORY.md is at
-8173/8192 bytes - the next narrative addition must still compact first if it
+8192/8192 bytes - the next narrative addition must still compact first if it
 would cross the budget (compacted the 2026-10-11/12/13/14 blocks and the
-2026-10-15 #162 clause; each appended to `history/2026-10-15.md`).
+2026-10-15 #162/#165 clauses; each appended to `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each
 guard case re-runs full coverage a few times); the pytest mirror adds ~3.5 min.

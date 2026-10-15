@@ -61,18 +61,37 @@ case "${1:-}" in
                 fi
                 ;;
             folders)
-                echo '[{"id":"f-aaa","name":"work"},{"id":"f-bbb","name":"home"}]'
+                if [ -n "${SEC_TEST_BW_FOLDERS:-}" ]; then
+                    echo "${SEC_TEST_BW_FOLDERS}"
+                else
+                    echo '[{"id":"f-aaa","name":"work"},{"id":"f-bbb","name":"home"}]'
+                fi
                 ;;
         esac
         ;;
     get)
         case "${2:-}" in
-            template) echo '{"id":"","name":"","type":1,"login":{},"notes":""}' ;;
-            item) echo '{"id":"item-1","name":"MY_API_KEY","login":{"password":"pw-MY_API_KEY","username":"me@example.com"},"notes":null,"fields":[]}' ;;
+            template)
+                if [ -n "${SEC_TEST_BW_TEMPLATE_RC:-}" ]; then
+                    echo "bw: raw backend diagnostic TOKEN-abc123" >&2
+                    exit "${SEC_TEST_BW_TEMPLATE_RC}"
+                fi
+                echo '{"id":"","name":"","type":1,"login":{},"notes":""}' ;;
+            item)
+                if [ -n "${SEC_TEST_BW_GET_ITEM_RC:-}" ]; then
+                    echo "Error: item not readable." >&2
+                    exit "${SEC_TEST_BW_GET_ITEM_RC}"
+                fi
+                echo '{"id":"item-1","name":"MY_API_KEY","login":{"password":"pw-MY_API_KEY","username":"me@example.com"},"notes":null,"fields":[]}'
+                ;;
             attachment) echo "attachment-content" ;;
         esac
         ;;
     encode)
+        if [ -n "${SEC_TEST_BW_ENCODE_RC:-}" ]; then
+            echo "Error: encode failed." >&2
+            exit "${SEC_TEST_BW_ENCODE_RC}"
+        fi
         if [ "${SEC_TEST_BW_ENCODE_EMPTY:-0}" != "0" ]; then
             exit 0
         fi
@@ -826,6 +845,80 @@ set -e
 if grep -q "Backend: bws" <<<"$OUT"; then pass "bws plan selects the bws backend"; else fail "bws plan backend is not bws: $OUT"; fi
 if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] corrupt or unreadable listing from backend 'bws'" <<<"$OUT"; then pass "failing bws listing -> exit 1 + tagged error"; else fail "failing bws listing rc=$RC out=[$OUT]"; fi
 if grep -q "Plan saved" <<<"$OUT"; then fail "failing bws listing still saved a false plan: $OUT"; else pass "failing bws listing did not save a false plan"; fi
+
+echo "[14e] failure-honesty: housekeep plan fails closed on garbage folders listing, never jq's exit 4 (issue #165)"
+H2F="$(new_home "$WORK/h14e")"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2F" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_OP_LOG=$OPLOG" "SEC_TEST_BWS_LOG=$BWSLOG" \
+    "SEC_TEST_VAULT_LOG=$VAULTLOG" "SEC_TEST_INF_LOG=$INFLOG" \
+    "SEC_TEST_BW_FOLDERS=bw: server error (not json)" \
+    "$REPO_ROOT/bin/sec" housekeep plan 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] corrupt or unreadable listing from backend 'bw'" <<<"$OUT"; then pass "garbage folders listing -> exit 1 + tagged error"; else fail "garbage folders listing rc=$RC out=[$OUT]"; fi
+if [[ $RC -eq 4 ]]; then fail "garbage folders listing leaked jq's exit 4"; else pass "no jq exit-code leak on garbage folders listing"; fi
+if grep -q "parse error" <<<"$OUT"; then fail "garbage folders listing leaked a raw jq parse error: $OUT"; else pass "no raw jq parse error on garbage folders listing"; fi
+if grep -q "Plan saved" <<<"$OUT"; then fail "garbage folders listing still saved a false plan: $OUT"; else pass "garbage folders listing did not save a false plan"; fi
+
+echo "[14f] failure-honesty: housekeep revert survives a failing item read, attempts every action, exits 1 not the child code (issue #165)"
+H2G="$(new_home "$WORK/h14f")"
+mkdir -p "$H2G/.cache/bitwarden"
+cat >"$H2G/.cache/bitwarden/snapshot_latest.json" <<'EOF'
+{"backend":"bw","timestamp":"2026-10-15T00:00:00Z","actions":[{"id":"i1","originalName":"alpha","newName":"alpha","targetFolder":"work","currentFolder":"Old","currentFolderId":"f-old","confidence":"90"},{"id":"i2","originalName":"beta","newName":"beta","targetFolder":"home","currentFolder":"Old","currentFolderId":"f-old","confidence":"90"}]}
+EOF
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2G" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_GET_ITEM_RC=77" \
+    "$REPO_ROOT/bin/sec-organizer" revert 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]]; then pass "revert with failing reads exits 1"; else fail "revert with failing reads exited $RC, expected 1: $OUT"; fi
+if [[ $RC -eq 77 ]]; then fail "revert leaked the child's exit 77"; else pass "no child exit-code leak on failing revert reads"; fi
+if [[ "$(grep -c "^\[ERROR\] revert failed: could not read item" <<<"$OUT")" -eq 2 ]]; then pass "both actions attempted, both tagged"; else fail "expected 2 tagged revert-failed lines, got: $OUT"; fi
+if grep -q "^\[ERROR\] Revert incomplete" <<<"$OUT"; then pass "tagged Revert incomplete summary"; else fail "no tagged Revert incomplete summary: $OUT"; fi
+if grep -q "Revert Successfully Completed" <<<"$OUT"; then fail "reported success for a failed revert"; else pass "no success banner on failed revert"; fi
+if grep -q "item not readable" <<<"$OUT"; then fail "revert leaked the child's raw stderr: $OUT"; else pass "no raw child stderr on failing revert reads"; fi
+if [[ -f "$H2G/.cache/bitwarden/snapshot_latest.json" ]]; then pass "snapshot kept after failed revert"; else fail "snapshot DELETED after failed revert"; fi
+
+echo "[14g] failure-honesty: housekeep apply survives a failing encode, exits 1 not 141, keeps the plan (issue #165)"
+H2H="$(new_home "$WORK/h14g")"
+mkdir -p "$H2H/.cache/bitwarden"
+cat >"$H2H/.cache/bitwarden/housekeep_plan.json" <<'EOF'
+{"backend":"bw","timestamp":"2026-10-15T00:00:00Z","actions":[{"id":"item-1","originalName":"MY_API_KEY","newName":"MY_API_KEY","targetFolder":"work","currentFolder":"","currentFolderId":"","confidence":"90"}]}
+EOF
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2H" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_ENCODE_RC=77" \
+    "$REPO_ROOT/bin/sec-organizer" apply 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]]; then pass "apply with failing encode exits 1"; else fail "apply with failing encode exited $RC, expected 1: $OUT"; fi
+if [[ $RC -eq 77 || $RC -eq 141 ]]; then fail "apply leaked the child's exit code ($RC)"; else pass "no child exit-code leak on failing apply encode"; fi
+if grep -q '^\[ERROR\] apply failed: could not encode updated item "MY_API_KEY"' <<<"$OUT"; then pass "tagged encode-stage error names the item, not the child stderr"; else fail "no tagged encode-stage error: $OUT"; fi
+if grep -q "^\[ERROR\] Apply incomplete" <<<"$OUT"; then pass "tagged Apply incomplete summary"; else fail "no tagged Apply incomplete summary: $OUT"; fi
+if grep -q "Successfully Applied" <<<"$OUT"; then fail "reported success for a failed apply"; else pass "no success banner on failed apply"; fi
+if grep -q "encode failed" <<<"$OUT"; then fail "apply leaked the child's raw stderr: $OUT"; else pass "no raw child stderr on failing apply encode"; fi
+if [[ -f "$H2H/.cache/bitwarden/housekeep_plan.json" ]]; then pass "plan kept after failed apply"; else fail "plan DELETED after failed apply"; fi
+
+echo "[14h] failure-honesty: housekeep apply survives a failing folder create, never leaks child stderr (issue #165)"
+H2I="$(new_home "$WORK/h14h")"
+mkdir -p "$H2I/.cache/bitwarden"
+cat >"$H2I/.cache/bitwarden/housekeep_plan.json" <<'EOF'
+{"backend":"bw","timestamp":"2026-10-15T00:00:00Z","actions":[{"id":"item-1","originalName":"MY_API_KEY","newName":"MY_API_KEY","targetFolder":"brand-new-folder","currentFolder":"","currentFolderId":"","confidence":"90"}]}
+EOF
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2I" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_TEMPLATE_RC=66" \
+    "$REPO_ROOT/bin/sec-organizer" apply 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]]; then pass "apply with failing folder create exits 1"; else fail "apply with failing folder create exited $RC, expected 1: $OUT"; fi
+if [[ $RC -eq 66 ]]; then fail "apply leaked the child's exit 66"; else pass "no child exit-code leak on failing folder create"; fi
+if grep -q '^\[ERROR\] apply failed: could not create folder "brand-new-folder"' <<<"$OUT"; then pass "tagged create-stage error names the folder, not the child stderr"; else fail "no tagged create-stage error: $OUT"; fi
+if grep -q "TOKEN-abc123" <<<"$OUT"; then fail "apply leaked the child's raw stderr token: $OUT"; else pass "no raw child stderr token on failing folder create"; fi
+if grep -q "Successfully Applied" <<<"$OUT"; then fail "reported success for a failed apply"; else pass "no success banner on failed apply"; fi
+if [[ -f "$H2I/.cache/bitwarden/housekeep_plan.json" ]]; then pass "plan kept after failed apply"; else fail "plan DELETED after failed apply"; fi
 
 echo "[15] migrate plan executes the migrator"
 set +e

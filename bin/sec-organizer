@@ -98,6 +98,7 @@ cmd_plan() {
             exit 1
         fi
         folders_json="$(bw list folders 2>/dev/null || echo "[]")"
+        require_json_array bw "$folders_json"
         items_json="$(bw list items 2>/dev/null || true)"
         require_json_array bw "$items_json"
     elif [[ "$backend" == "op" ]]; then
@@ -220,6 +221,7 @@ cmd_apply() {
 
     if [[ "$backend" == "bw" ]]; then
         folders_json="$(bw list folders 2>/dev/null || echo "[]")"
+        require_json_array bw "$folders_json"
 
         while read -r action; do
             if [[ -z "$action" ]]; then continue; fi
@@ -245,13 +247,22 @@ cmd_apply() {
 
             if [[ -z "$folder_id" ]]; then
                 echo "[INFO] Creating folder: \"$target\"..."
-                new_folder="$(bw get template folder | jq --arg t "$target" '.name = $t' | bw encode | bw create folder 2>/dev/null)"
+                if ! new_folder="$(bw get template folder 2>/dev/null | jq --arg t "$target" '.name = $t' 2>/dev/null | bw encode 2>/dev/null | bw create folder 2>/dev/null)"; then
+                    echo "[ERROR] apply failed: could not create folder \"$target\"; item left unchanged." >&2
+                    apply_rc=1
+                    continue
+                fi
                 folder_id="$(echo "$new_folder" | jq -r '.id')"
                 folders_json="$(bw list folders 2>/dev/null || echo "[]")"
+                require_json_array bw "$folders_json"
             fi
 
             echo "[INFO] Updating \"$orig_name\" -> Name: \"$new_name\", Folder: \"$target\"..."
-            updated_item="$(echo "$item_json" | jq --arg fid "$folder_id" --arg n "$new_name" '.folderId = $fid | .name = $n' | bw encode)"
+            if ! updated_item="$(echo "$item_json" | jq --arg fid "$folder_id" --arg n "$new_name" '.folderId = $fid | .name = $n' 2>/dev/null | bw encode 2>/dev/null)"; then
+                echo "[ERROR] apply failed: could not encode updated item \"$orig_name\" (id: $id); item left unchanged." >&2
+                apply_rc=1
+                continue
+            fi
             if ! bw edit item "$id" "$updated_item" >/dev/null 2>&1; then
                 echo "[ERROR] apply failed for \"$orig_name\" (id: $id); item left unchanged." >&2
                 apply_rc=1
@@ -344,16 +355,24 @@ cmd_revert() {
             orig_folder_name="$(echo "$action" | jq -r '.currentFolder // "root"')"
 
             echo "[INFO] Reverting \"$id\" -> Original Name: \"$orig_name\", Original Folder: \"${orig_folder_name:-root}\"..."
-            item_json="$(bw get item "$id" 2>/dev/null)"
+            item_json="$(bw get item "$id" 2>/dev/null || true)"
             if [[ -z "$item_json" || "$item_json" == "null" ]]; then
                 echo "[ERROR] revert failed: could not read item '$id' from vault" >&2
                 rc=1
                 continue
             fi
             if [[ "$orig_fid" == "null" || -z "$orig_fid" ]]; then
-                updated_item="$(echo "$item_json" | jq --arg n "$orig_name" '.folderId = null | .name = $n' | bw encode)"
+                if ! updated_item="$(echo "$item_json" | jq --arg n "$orig_name" '.folderId = null | .name = $n' 2>/dev/null | bw encode 2>/dev/null)"; then
+                    echo "[ERROR] revert failed: could not encode restored item '$id' (name: \"$orig_name\"); item left unchanged." >&2
+                    rc=1
+                    continue
+                fi
             else
-                updated_item="$(echo "$item_json" | jq --arg fid "$orig_fid" --arg n "$orig_name" '.folderId = $fid | .name = $n' | bw encode)"
+                if ! updated_item="$(echo "$item_json" | jq --arg fid "$orig_fid" --arg n "$orig_name" '.folderId = $fid | .name = $n' 2>/dev/null | bw encode 2>/dev/null)"; then
+                    echo "[ERROR] revert failed: could not encode restored item '$id' (name: \"$orig_name\"); item left unchanged." >&2
+                    rc=1
+                    continue
+                fi
             fi
             if ! bw edit item "$id" "$updated_item" >/dev/null 2>&1; then
                 echo "[ERROR] revert failed: could not restore item '$id' (name: \"$orig_name\")" >&2

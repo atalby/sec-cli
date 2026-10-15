@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (15 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (63 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (95 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (15 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (63 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (99 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#51`, `#67`, `#92`) |
@@ -667,7 +667,7 @@ dispatch, does every dispatched command appear in usage, do the completions
 agree? AGENTS §8 mandates one `[ TAG ]` line per event for machine-parsed
 stdout — measured 2026-10-12 (`grep -cE '\[ ?(OK|INFO|WARN|ERROR) ?\]'`; re-measured
 after #41/#42/#44/#45/#48/#77 added tagged lines): 7 of the 8 tracked `bin/` entries emit tagged
-output (`sec` 26, `sec-organizer` 42, `sec-sync-controller.py` 30,
+output (`sec` 26, `sec-organizer` 46, `sec-sync-controller.py` 30,
 `sec-migrator` 26, `bw-session-keeper` 17, `sec.ps1` 12, `hyer-mcp.sh` 4
 lines); the sole zero is `bin/sec-classify.py`, and `install.sh` (outside
 `bin/`) also emits none. Harness entry points
@@ -714,7 +714,7 @@ revert depend on it), are formats deterministic between writer and reader,
 what happens on a torn snapshot, and does any state file ever carry a
 plaintext secret (zero-plaintext invariant applied to the state layer).
 Read-back verified 2026-10-12: `LATEST_SNAPSHOT` is read at
-`bin/sec-organizer:310` (revert refuses when absent) and the migration
+`bin/sec-organizer:322` (revert refuses when absent) and the migration
 transaction log is re-read and corruption-checked at `bin/sec-migrator:39-49`.
 
 ### 8. Supply chain, licensing, and compliance -- `LICENSE:1`, `install.sh:24`, `README.md:29`, `packs/compliance-baseline/PACK.md:1`, `.gitignore:8`
@@ -756,7 +756,7 @@ The dimension this repository exists to own: does the tool do correct secret
 management? Lenses: classification correctness (`classify_item` at
 `bin/sec-classify.py:186` — on what inputs does it mis-bin, and does a wrong
 classification propagate to an apply?), housekeeping safety (pre-apply
-`snapshot_file` at `bin/sec-organizer:215` — can `revert` lose data if interrupted,
+`snapshot_file` at `bin/sec-organizer:216` — can `revert` lose data if interrupted,
 and does plan/apply use identical classification?), migration atomicity
 (transaction state at `bin/sec-migrator:151` — is a mid-migration crash
 recoverable, is a secret ever written to both backends in an inconsistent
