@@ -1,5 +1,31 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (49th run): shipped **#171** -- README.md:13's "Smart
+Session Auto-Rotation" key-feature bullet said "any locked tenant falls back
+to an interactive prompt", which is false: `ensure_tenant_auth` (bin/sec:83-159)
+has auth arms only for `bitwarden|bw` (the sole `auto_rotate` consumer, with a
+`bw-session-keeper unlock` fallback), `1pass|op` (`op signin`), and `vault`
+(`vault login`); `bws`, `infisical`, and `keychain` have no auth arm, so they
+do no session handling and never prompt. The bullet was also UNGUARDED --
+sentinel section 38 derived the live sets but validated only
+docs/MULTI_TENANCY.md's table. Fix: the bullet now names the live set, and
+section 38 additionally derives and guards it (the bullet must name every
+prompting backend and every no-auth-arm backend, and must not contain the
+over-broad phrase "any locked tenant"). Case [62] gained two README probes
+(T38D drops a no-auth-arm backend, T38E re-introduces "any locked tenant"),
+red-first. Mirrors: ADAPTERS.md:32 "Last updated", RESUME.md baseline below
+(sentinel 796 -> 804 assertions; cases stayed 63). Full battery green
+(dispatch/install/sync_guard/write_honesty/sentinel ALL PASSED, pytest 58,
+coverage + citations RC=0); HISTORY.md held at 8054/8192; narrative appended
+to history/2026-10-15.md.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope
+approval; must NOT be started autonomously), and **#92** + **#51** (hub-side,
+not this repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#171 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-15 (48th run): shipped **#170** -- the sec-migrator twin filed
 by run 47. `bin/sec-migrator`'s `fetch_source_items` masked a failing bw/op/bws
 source listing as a valid empty array (`2>/dev/null || echo "[]"`), and its
@@ -1391,9 +1417,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 107, install 9, sentinel 63, sync_guard 16,
-write_honesty 17. Sentinel = 63 cases / 796 assertions. HISTORY.md is at
-8054/8192 bytes - headroom of 138 bytes before its budget (the 2026-10-15 block
-was compacted this run to fold in #166-#170; the full narratives live in
+write_honesty 17. Sentinel = 63 cases / 804 assertions. HISTORY.md is at
+8170/8192 bytes - headroom of 22 bytes before its budget (the 2026-10-15 block
+was compacted to fold in #166-#171; the full narratives live in
 `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each

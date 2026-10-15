@@ -4895,8 +4895,10 @@ echo "[62] docs/MULTI_TENANCY.md's auto_rotate table must match bin/sec's live e
 WORK_T38A="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T38B="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T38C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T38D="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T38E="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T38CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for _w in "$WORK_T38A" "$WORK_T38B" "$WORK_T38C" "$WORK_T38CTRL"; do
+for _w in "$WORK_T38A" "$WORK_T38B" "$WORK_T38C" "$WORK_T38D" "$WORK_T38E" "$WORK_T38CTRL"; do
     seed "$_w"
 done
 python3 - "$WORK_T38A/docs/MULTI_TENANCY.md" <<'PY'
@@ -4968,6 +4970,52 @@ if grep -qF "no longer states that the interactive prompt is a fallback" <<<"$OU
     ok "coverage names the lost prompt-fallback anchor"
 else
     no "coverage did not name the lost prompt-fallback anchor"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T38D/README.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`bws`, `infisical`, and `keychain` carry no auth arm"
+if s.count(old) != 1:
+    sys.exit("README.md no longer enumerates the no-auth-arm backends in the guarded form")
+open(p, "w", encoding="utf-8").write(s.replace(old, "`bws` and `infisical` carry no auth arm", 1))
+PY
+OUT="$(cd "$WORK_T38D" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the README auto_rotate bullet drops a live no-auth-arm backend"
+else
+    no "coverage accepted a README auto_rotate bullet missing a live no-auth-arm backend"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "README.md's Smart Session Auto-Rotation bullet does not name the live backend \`keychain\`" <<<"$OUT"; then
+    ok "coverage names the backend the README auto_rotate bullet dropped"
+else
+    no "coverage did not name the backend the README auto_rotate bullet dropped"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T38E/README.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = ", so `ensure_tenant_auth` performs no session handling for them."
+if s.count(old) != 1:
+    sys.exit("README.md no longer states the no-auth-arm backends get no session handling")
+open(p, "w", encoding="utf-8").write(s.replace(old, ", and any locked tenant falls back to a prompt.", 1))
+PY
+OUT="$(cd "$WORK_T38E" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the README auto_rotate bullet re-introduces the 'any locked tenant' overclaim"
+else
+    no "coverage accepted the README auto_rotate bullet's 'any locked tenant' overclaim"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "README.md's Smart Session Auto-Rotation bullet overclaims 'any locked tenant'" <<<"$OUT"; then
+    ok "coverage names the README auto_rotate bullet's over-broad prompt claim"
+else
+    no "coverage did not name the README auto_rotate bullet's over-broad prompt claim"
     printf '%s\n' "$OUT"
 fi
 OUT="$(cd "$WORK_T38CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"

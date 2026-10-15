@@ -2755,6 +2755,28 @@ if _mt_cli_blocks and _mt_auth_arms:
             "docs/MULTI_TENANCY.md no longer states that the interactive prompt is a "
             "fallback rather than an `auto_rotate = false` branch"
         )
+    _mt_readme_line = ""
+    for _ln in _nl_readme.splitlines():
+        if re.match(r"^- .*Smart Session Auto-Rotation", _ln):
+            _mt_readme_line = _ln
+            break
+    if not _mt_readme_line:
+        auto_rotate_mismatches.append(
+            "README.md carries no 'Smart Session Auto-Rotation' key-feature bullet"
+        )
+    else:
+        for _b in sorted(_mt_prompt | (_mt_canon - _mt_arms)):
+            if f"`{_b}`" not in _mt_readme_line:
+                auto_rotate_mismatches.append(
+                    f"README.md's Smart Session Auto-Rotation bullet does not name the "
+                    f"live backend `{_b}` (prompting: {sorted(_mt_prompt)}; "
+                    f"no auth arm: {sorted(_mt_canon - _mt_arms)})"
+                )
+        if "any locked tenant" in _mt_readme_line:
+            auto_rotate_mismatches.append(
+                "README.md's Smart Session Auto-Rotation bullet overclaims 'any locked "
+                "tenant' -- only the tenants with an ensure_tenant_auth arm prompt"
+            )
 else:
     auto_rotate_mismatches.append(
         "bin/sec carries no parseable ensure_tenant_auth tenant arms to compare "
@@ -3193,7 +3215,7 @@ print(f"{OK} security process table: docs/SECURITY.md's argv/stdin mitigations s
 print(f"{OK} security snapshot fields: docs/SECURITY.md's snapshot field set matches bin/sec-organizer's live schema ({len(_live_snap_fields)} field(s))")
 print(f"{OK} install-path claims: docs/ARCHITECTURE.md's bootstrap clone, install destination, installable helper set, piped-mode fallback, LICENSE copy name, and missing-git diagnosis match install.sh")
 if not auto_rotate_mismatches:
-    print(f"{OK} auto_rotate claims: docs/MULTI_TENANCY.md's per-backend table matches bin/sec's live ensure_tenant_auth arms (auto_rotate consulted: {sorted(_mt_auto) or 'none'}; prompting: {sorted(_mt_prompt) or 'none'}; no auth arm: {sorted(_mt_canon - _mt_arms) or 'none'})")
+    print(f"{OK} auto_rotate claims: README.md + docs/MULTI_TENANCY.md's per-backend table match bin/sec's live ensure_tenant_auth arms (auto_rotate consulted: {sorted(_mt_auto) or 'none'}; prompting: {sorted(_mt_prompt) or 'none'}; no auth arm: {sorted(_mt_canon - _mt_arms) or 'none'})")
 if not mp_mismatches:
     print(f"{OK} plaintext-fallback contract: docs/SECURITY.md's master-pass opt-in/refusal/path/mode and on-disk exception census match bin/bw-session-keeper ({_mp_optin[0] if len(_mp_optin) == 1 else 'n/a'}, {_mp_path or 'n/a'}, mode-{_mp_mode if _mp_chmod_m else 'n/a'}) + bin/sec-migrator's infisical staging file (mode {_dsl_mode if _dsl_clause_m else 'n/a'})")
 print(f"{OK} gitignored surfaces: {len(present_surfaces)} present, all claimed in profile.md")

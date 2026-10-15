@@ -78,7 +78,8 @@ sec-migrator's `fetch_source_items` masked a failing bw/op/bws source listing as
 source printed `[INFO] Zero items found` + exit 0; `|| true` alone was
 insufficient (jq on an empty payload also exits 0 with no output), so an explicit
 empty/whitespace guard now rejects the read before the count. Write-honesty [16],
-16 -> 17; migrator tagged census 29 -> 30.
+16 -> 17; migrator tagged census 29 -> 30. Ninth, #171 corrected README's Smart
+Session bullet (false "any locked tenant") and made section 38 guard it, [62].
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
