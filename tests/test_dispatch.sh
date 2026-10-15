@@ -1184,6 +1184,33 @@ else
     echo "[INFO] pwsh not present on this host; sec.ps1 #73 functional assertions run in CI"
 fi
 
+echo "[23f] #163: sec.ps1 set refuses to fall through to bw when bws is installed but has no project id (no silent store substitution)"
+if grep -q 'bws project list returned no project id' "$REPO_ROOT/bin/sec.ps1"; then pass "sec.ps1 names the missing-project-id stage"; else fail "sec.ps1 does not report the bws project-list failure stage (#163)"; fi
+if grep -q 'Bitwarden Secrets Manager (bws project list returned no project id)' "$REPO_ROOT/bin/sec.ps1"; then pass "sec.ps1's bws arm is terminal on a missing project id (#163)"; else fail "sec.ps1's bws arm still falls through to bw when no project id (#163)"; fi
+BASH_STAGE_23F="$(grep -o 'bws project list returned no project id' "$REPO_ROOT/bin/sec" | head -1)"
+if [[ -n "$BASH_STAGE_23F" ]] && grep -q "$BASH_STAGE_23F" "$REPO_ROOT/bin/sec.ps1"; then pass "bin/sec and bin/sec.ps1 name the same missing-project-id stage"; else fail "bin/sec and bin/sec.ps1 disagree on the missing-project-id stage (#163)"; fi
+if command -v pwsh >/dev/null 2>&1; then
+    H163PS="$(new_home "$WORK/h163ps")"
+    FB163="$WORK/fb163"
+    mkdir -p "$FB163"
+    BWLOG163="$WORK/bw163.log"
+    BWSLOG163="$WORK/bws163.log"
+    printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >>"${SEC_TEST_BW_LOG:?}"\nprintf "%%s\\n" "[]"\n' >"$FB163/bw"
+    printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >>"${SEC_TEST_BWS_LOG:?}"\nprintf "%%s\\n" "[]"\n' >"$FB163/bws"
+    chmod +x "$FB163/bw" "$FB163/bws"
+    PWSH163="$(command -v pwsh)"
+    set +e
+    OUT163="$(env -i "PATH=$FB163:/usr/bin:/bin" "HOME=$H163PS" "SEC_TEST_BW_LOG=$BWLOG163" "SEC_TEST_BWS_LOG=$BWSLOG163" "$PWSH163" -NoProfile -File "$REPO_ROOT/bin/sec.ps1" set mykey myval 2>&1)"
+    RC163=$?
+    set -e
+    if [[ $RC163 -ne 0 ]]; then pass "sec.ps1 set refuses when bws has no project id (rc=$RC163)"; else fail "sec.ps1 set silently succeeded via bw despite an unusable bws (rc=0): $OUT163"; fi
+    if grep -q 'bws project list returned no project id' <<<"$OUT163"; then pass "sec.ps1 names the bws project-list failure stage"; else fail "sec.ps1 did not name the stage: $OUT163"; fi
+    if [[ ! -f "$BWLOG163" ]] || ! grep -q 'create' "$BWLOG163" 2>/dev/null; then pass "no secret written to the Bitwarden Vault (no silent store substitution)"; else fail "sec.ps1 fell through to bw and wrote the secret to the vault: $(cat "$BWLOG163")"; fi
+    rm -rf "$H163PS" "$FB163" "$BWLOG163" "$BWSLOG163"
+else
+    echo "[INFO] pwsh not present on this host; sec.ps1 #163 functional assertions run in CI"
+fi
+
 echo "[24] F039: hyer MCP wiring is env-resolved, PAT via env only, no sh -c"
 HMW="$WORK/hmw"
 mkdir -p "$HMW/hyer-mcp/dist"

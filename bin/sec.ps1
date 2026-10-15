@@ -137,6 +137,10 @@ switch ($Command) {
                     exit 1
                 }
             }
+            else {
+                Write-Error "[ERROR] failed to store secret '$Key' in Bitwarden Secrets Manager (bws project list returned no project id)."
+                exit 1
+            }
         }
         if (Get-Command bw -ErrorAction SilentlyContinue) {
             $tmpl = bw get template item | ConvertFrom-Json

@@ -9,13 +9,13 @@ default, not the whole history.
 
 **2026-10-14**: the unguarded-current-state-claim sweep ran #144-#159 -- one
 project-owned doc claim per issue, each closed by a sentinel section that derives
-the live value from code and requires the doc to match: HIAE banner, SECURITY.md
-path->mode pairs, the two config-mode docs, the suite extractor, RESUME.md's count
-mirrors, mode prose, runtime deps, `sec run` injection backends, classifier
-categories, completion, bin/sec.ps1, SECURITY.md's executable census, `sec sync`
-exit codes (+SKILL.md), SECURITY.md's argv mitigations, and the snapshot-contents
-field set (that last one had gone stale). Sentinel 49 -> 60 cases / 532 -> 736
-assertions. Tracker holds #51, #67, #92.
+the live value from code and requires the doc to match: the HIAE banner,
+SECURITY.md path->mode pairs, the config-mode docs, the suite extractor,
+RESUME.md's count mirrors, mode prose, runtime deps, `sec run` injection
+backends, classifier categories, completion, bin/sec.ps1, SECURITY.md's
+executable census, `sec sync` exit codes, SECURITY.md's argv mitigations, and
+the snapshot-contents field set (that last one had gone stale). Sentinel
+49 -> 60 cases / 532 -> 736 assertions. Tracker holds #51, #67, #92.
 Full narrative: `history/2026-10-14.md`.
 
 **2026-10-15**: three more passes of the same sweep. First, docs/ARCHITECTURE.md's
@@ -45,20 +45,30 @@ Sentinel section 39 derives all of it (case [63], three probes + control proven
 red first). Sentinel 60 -> 63 cases / 736 -> 792 assertions.
 Tracker holds #51, #67, #92.
 Separately: test_dispatch.sh case `[11] op set` failed once in four full runs and
-would not reproduce. Filed as #162 with the four-run evidence table rather than
-attributed to load -- chasing it found a real defect instead of a flake: all seven
+would not reproduce. Filed as #162 with the evidence table rather than
+attributed to load; chasing it found a real defect, not a flake: all seven
 `sec set` fall-through points in bin/sec discarded stderr and collapsed into one
 `[ERROR] failed to store secret ... in tenant '<t>'`, naming the tenant but never
 the step. It now names the stage. Stderr stays discarded on purpose -- `bws secret
-create` carries the value in argv, so a child's stderr could echo it; stage names
-only, never child output. Test case [11d], red-first 274/5 then green 279/0, plus
-three default-off stub knobs. Diff review then caught a flaw in the fix itself:
-the update path ANDed the payload check with the pipeline, so a short-circuited
-empty payload was misreported as a `bw edit` refusal -- the exact misdiagnosis the
-change removes -- now split. Dispatch 92 -> 93 sections. Checking the PowerShell
-sibling for parity found a separate silent fall-through (no `else` on the
-`$projId` guard, so bws-with-no-projects blames the wrong backend) -- filed as
-#163 rather than widening this fix.
+create` carries the value in argv, so a child's stderr could echo it. Test case
+[11d], red-first 274/5 then green 279/0, plus three default-off stub knobs. Diff
+review then caught a flaw in the fix itself: the update path ANDed the payload
+check with the pipeline, so a short-circuited empty payload was misreported as a
+`bw edit` refusal -- the exact misdiagnosis the change removes -- now split.
+Dispatch 92 -> 93 sections. The PowerShell
+sibling's matching fall-through was filed separately as #163 rather than
+widening this fix.
+
+That one was worse than filed: with bws installed but no projects, the missing
+`else` fell through to bw, writing the secret to the Bitwarden Vault instead,
+printing raw untagged PowerShell errors, and exiting 0 -- a failed write
+reported as success. The `else` is now terminal and names the same stage
+bin/sec does. Guarded by dispatch [23f]: three static parity assertions plus
+three pwsh functional ones, 6/6 red first against the stashed fix, the red run
+logging the bw stub's `get template item` as proof the substitution happened.
+Dispatch 93 -> 94; bin/sec.ps1 tagged-line census 11 -> 12. The functional half
+runs in CI because ubuntu-latest ships pwsh -- from the run log, not assumed --
+and here against a portable pwsh 7.6.7 arm64 extract, this host being aarch64.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
