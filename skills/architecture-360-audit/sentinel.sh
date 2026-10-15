@@ -998,6 +998,31 @@ else:
             f"live tree has {_live_suite_count}"
         )
 
+try:
+    with open(os.path.join(repo, ".github", "workflows", "test.yml"), encoding="utf-8") as _fh:
+        _wf_suite_text = _fh.read()
+except OSError:
+    _wf_suite_text = None
+    suite_census_mismatches.append(
+        "could not read .github/workflows/test.yml to compare the CI run-list against the live suites"
+    )
+else:
+    _live_suite_basenames = {os.path.splitext(os.path.basename(_s))[0] for _s in _live_suites}
+    _wf_loop_m = re.search(r"for \w+ in ([a-z0-9_ ]+); do", _wf_suite_text)
+    if not _wf_loop_m:
+        suite_census_mismatches.append(
+            "the CI workflow carries no 'for ... in <suites>; do' loop to compare against the live suite set"
+        )
+    else:
+        _wf_suites = set(_wf_loop_m.group(1).split())
+        _wf_missing = sorted(_live_suite_basenames - _wf_suites)
+        _wf_extra = sorted(_wf_suites - _live_suite_basenames)
+        if _wf_missing or _wf_extra:
+            suite_census_mismatches.append(
+                "the CI workflow's run-list is not the live suite set: "
+                f"live-but-not-run {_wf_missing or 'none'}, run-but-not-live {_wf_extra or 'none'}"
+            )
+
 # --- 15. structural prose claims (tenant aliases, CI checkout pin, principle count) must match (#94) --
 struct_mismatches = []
 
@@ -3189,7 +3214,7 @@ print(f"{OK} pack prose: profile.md's + ADAPTERS.md's cited pack versions + pers
 print(f"{OK} producer census: docs/ARCHITECTURE.md's producer count + list match the live bin/ emitters")
 print(f"{OK} skills registry: ADAPTERS.md's census matches {len(_live_skill_dirs)} live skill dir(s) + {len(_registry_rows)} REGISTRY.md row(s)")
 print(f"{OK} bin/ helper census: profile.md + ADAPTERS.md match {_live_bin_helpers} tracked sibling helper(s), all referenced by tests/test_dispatch.sh")
-print(f"{OK} suite census: profile.md + ARCHITECTURE.md + SKILL.md match {_live_suite_count} tracked bash suite(s), ARCHITECTURE.md's suite list matches the tracked names")
+print(f"{OK} suite census: profile.md + ARCHITECTURE.md + SKILL.md match {_live_suite_count} tracked bash suite(s), ARCHITECTURE.md's suite list matches the tracked names, and the CI workflow runs every one")
 print(f"{OK} structural prose: MULTI_TENANCY.md tenant aliases + profile.md CI checkout pin + OPERATOR_MANUAL.md principle count match the live tree")
 print(f"{OK} skill structure: SKILL.md steps + personas + scopes + severity set match the live skill files")
 print(f"{OK} skill forge: 360-audit-skill-forge's declared steps/headings/personas/scopes/severity match the live SKILL.md")

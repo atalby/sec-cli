@@ -16,70 +16,45 @@ mitigations, and the snapshot-contents field set (that last one had gone stale).
 Sentinel 49 -> 60 cases / 532 -> 736 assertions.
 Narrative: `history/2026-10-14.md`.
 
-**2026-10-15**: three more passes of the unguarded-current-state-claim sweep, each
-closed by a sentinel section deriving the live value from code. (1) docs/ARCHITECTURE.md's
+**2026-10-15**: three passes of the unguarded-current-state-claim sweep, each closed
+by a sentinel section deriving the live value from code. (1) docs/ARCHITECTURE.md's
 `install.sh` bullet had no guard (the `bin/*` wording was imprecise, `bin/hyer-mcp.sh`
-is never installed) -- section 37, case [61], five probes + control red first. Its
-commit cites a then-nonexistent issue #160 -- a dead reference.
-(2) docs/MULTI_TENANCY.md's `auto_rotate` rule claimed two branches "for each
-tenant section"; live bin/sec reads the key once and consults it only in the
-`bitwarden|bw)` arm, `op` and `vault` prompt unconditionally, `bws`/`infisical`/
-`keychain` have no auth arm, and the prompt is a fallback reached under
-`auto_rotate = true` too -- not a false-branch. Per-backend table + section 38,
-case [62]. (3) docs/SECURITY.md's master-password row and Disk Storage Leak census
-were unguarded, and their claims are currently TRUE -- highest blast radius in the
-class, since a silent regression writes a Bitwarden master password to disk in
-cleartext. `SEC_ALLOW_PLAINTEXT_MASTER_PASS` gates both paths (store refused
-unless `=1`, read only if `=1`), the file is `~/.cache/bitwarden/master_pass`
-at mode 0600, and bin/sec-migrator stages the infisical import in a `mktemp` file
-chmod'd to the documented mode and `rm -f`'d in BOTH branches (the doc understated
-one). Section 39, case [63]. Sentinel 60 -> 63 cases / 736 -> 792 assertions.
-Tracker holds #51, #67, #92.
-separately, test_dispatch.sh case `[11] op set` failed once in four full runs and
-would not reproduce. Filed as #162 with the evidence table rather than
-attributed to load; chasing it found a real defect, not a flake: all seven
-`sec set` fall-through points in bin/sec discarded stderr and collapsed into one
-`[ERROR] failed to store secret ... in tenant '<t>'`, naming the tenant but never
-the step. It now names the stage. Stderr stays discarded on purpose -- `bws secret
-create` carries the value in argv, so a child's stderr could echo it. Case [11d],
-red-first 274/5 then green 279/0, three default-off stub knobs. Diff review then
-caught a flaw in the fix itself: the update path ANDed the payload check with the
-pipeline, so an empty payload was misreported as a `bw edit`
-refusal -- the exact misdiagnosis the change removes -- now split.
-Dispatch 92 -> 93 sections. The PowerShell sibling's matching fall-through was
-filed separately as #163 rather than widening this fix, and it was worse than
-filed: with no tenant dispatch the ps1 probes PATH in order, so an unusable bws
-fell through to bw, really wrote the secret to the Bitwarden Vault, printed raw
-untagged PowerShell errors, and exited 0 -- a failed write reported as success.
-Its bws arm is now terminal and names the same stage bin/sec does. Fall-through is
-safe for reads, unsafe for writes. Guarded by dispatch [23f]: three static parity
-assertions plus three pwsh functional ones, 6/6 red first, the red run logging
-the bw stub's `get template item` as proof the substitution happened. Dispatch
-93 -> 94; bin/sec.ps1 tagged-line census 11 -> 12. The functional half runs in CI
-(ubuntu-latest ships pwsh, from the run log) and here against a portable arm64
-pwsh extract.
-Fifth, the bitwarden attachment-read path had a dead guard (#164): line 535 piped
-`bw_list_items`'s literal `ERR` sentinel straight into jq, so its ERR test could
-never fire and a failed lookup leaked a raw `parse error` + exit 4 -- now
-capture-then-guard, as its three siblings did. Case [4d], dispatch 94 -> 95.
-Sixth, that hole lived in three `sec-organizer` write paths (#165): a dead-guard
-`bw get item` read (silent half-revert), the unvalidated `folders_json` mask
-(garbage-RC0 -> raw jq exit 4), and unguarded apply/revert pipelines (raw
-`TOKEN-abc123` as exit 66, `bw encode` as 141). Cases [14e-h], dispatch 95 -> 99.
-Seventh, #166-#169 closed the class's remaining reads: four silent-death backend
-reads in bin/sec + keeper (#166, [14i-m]); the sec-migrator `bws project list`
-twin + three create-response jqs (#167, write-honesty [15]); the README migrate
-bullet that read destination-only backends as sources (#168, sentinel 19b); and
-#169's sec-organizer `bw list folders` mask, whose `|| echo "[]"` made the
-`require_json_array` guard unreachable -- a false plan and a false apply success
-([14n]/[14o], dispatch 105 -> 107). Eighth, #170 closed the last twin:
-sec-migrator's `fetch_source_items` masked a failing bw/op/bws source listing as
-`[]`, and its jq count guard missed it (jq on `[]` exits 0 with `0`), so a broken
-source printed `[INFO] Zero items found` + exit 0; `|| true` alone was
-insufficient (jq on an empty payload also exits 0 with no output), so an explicit
-empty/whitespace guard now rejects the read before the count. Write-honesty [16],
-16 -> 17; migrator tagged census 29 -> 30. Ninth, #171 corrected README's Smart
-Session bullet (false "any locked tenant") and made section 38 guard it, [62].
+is never installed) -- section 37, case [61]. (2) docs/MULTI_TENANCY.md's `auto_rotate`
+rule claimed two branches "for each tenant section"; live bin/sec reads the key once,
+in the `bitwarden|bw)` arm only -- `op`/`vault` prompt unconditionally, `bws`/`infisical`/
+`keychain` have no auth arm, and the prompt is a fallback reached under `auto_rotate = true`
+too. Per-backend table + section 38, case [62]. (3) docs/SECURITY.md's master-password
+row and Disk Storage Leak census were unguarded and currently TRUE -- highest blast
+radius in the class: a silent regression writes a Bitwarden master password to disk in
+cleartext. `SEC_ALLOW_PLAINTEXT_MASTER_PASS` gates both paths, the file is
+`~/.cache/bitwarden/master_pass` at mode 0600, and bin/sec-migrator stages the infisical
+import in a `mktemp` file chmod'd to that mode and `rm -f`'d in both branches. Section 39,
+case [63]. Sentinel 60 -> 63 cases / 736 -> 792 assertions. Tracker: #51, #67, #92.
+Then a read-path honesty sweep. test_dispatch.sh case `[11] op set` failed once in four
+runs and would not reproduce; filed as #162, chasing it found a real defect: all seven
+`sec set` fall-through points discarded stderr and collapsed into one `[ERROR] failed to
+store secret ... in tenant '<t>'`, naming the tenant but never the step -- it now names
+the stage (stderr stays discarded: `bws secret create` carries the value in argv). Case
+[11d], 274/5 red -> 279/0. Dispatch 92 -> 93. #163 filed for the PowerShell sibling, which
+was worse: with no tenant dispatch the ps1 probes PATH, so an unusable bws fell through to
+bw, really wrote to the Vault, and exited 0. Its bws arm is now terminal. Dispatch [23f],
+dispatch 93 -> 94; ps1 tagged-line census 11 -> 12. Fifth, #164: the bitwarden
+attachment-read path piped `bw_list_items`'s literal `ERR` sentinel into jq, so its guard
+could never fire -- now capture-then-guard; [4d], dispatch 94 -> 95. Sixth, #165 closed
+three `sec-organizer` write-path holes (dead-guard reader, unvalidated `folders_json`
+mask, unguarded apply/revert pipelines); [14e-h], dispatch 95 -> 99. Seventh, #166-#169
+closed the class's remaining reads: four silent-death backend reads in bin/sec + keeper
+([14i-m]); the sec-migrator `bws project list` twin + three create-response jqs
+(write-honesty [15]); the README migrate bullet that read destination-only backends as
+sources (sentinel 19b); and the `bw list folders` mask whose `|| echo "[]"` made the
+guard unreachable ([14n]/[14o], dispatch 105 -> 107). Eighth, #170 closed the last twin:
+sec-migrator's `fetch_source_items` masked a failing source listing as `[]`, and jq on
+`[]` exits 0 with `0`, so a broken source printed `[INFO] Zero items found` + exit 0; an
+explicit empty-payload guard now rejects the read before the count. Write-honesty [16],
+16 -> 17; migrator tagged census 29 -> 30. Ninth, #171 corrected README's Smart Session
+bullet (false "any locked tenant") and made section 38 guard it, [62]. Tenth, #172 made
+section 14 also fail if the CI workflow's suite run-list stops running every live suite,
+[18].
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected

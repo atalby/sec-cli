@@ -1,5 +1,32 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (50th run): shipped **#172** -- the CI workflow's suite
+run-list was unguarded. `.github/workflows/test.yml` hardcoded the suites it
+runs in a `for t in test_install ... test_dispatch; do` loop, so a sixth
+`tests/*.sh` suite added to the tree would be silently skipped by CI: the
+pipeline stays green while a whole suite never runs. Sentinel section 14
+(issue #91) guarded the suite COUNT in prose and ARCHITECTURE.md's cited NAMES,
+and section 15 (issue #94) guarded only the actions/checkout PIN -- nothing
+compared the workflow's run-list to the live suite set. Fix: section 14 now
+reads `.github/workflows/test.yml`, extracts the `for ... in <suites>; do`
+list, and requires its `test_<name>` set to equal the live tracked
+`tests/test_*.sh` basenames, failing closed if the construct is absent (a CI
+restructure must update the guard). Probe case [18] gained a WORK_T5 workdir
+that drops `test_sentinel` from the loop (red-first), asserting coverage exits
+nonzero and names `live-but-not-run ['test_sentinel']`. Mirrors: ADAPTERS.md:32
+"Last updated", RESUME.md baseline below (sentinel 804 -> 808 assertions;
+cases stayed 63). HISTORY.md's 2026-10-15 block was compacted to fold in
+#166-#172 (8192-byte budget), now 6546/8192. Full battery green
+(dispatch/install/sync_guard/write_honesty/sentinel ALL PASSED, pytest 58,
+coverage + citations RC=0); narrative appended to history/2026-10-15.md.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope
+approval; must NOT be started autonomously), and **#92** + **#51** (hub-side,
+not this repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#172 class); if none surfaces, the fresh 360
+audit (#67) only after human approval.
+
 Session 2026-10-15 (49th run): shipped **#171** -- README.md:13's "Smart
 Session Auto-Rotation" key-feature bullet said "any locked tenant falls back
 to an interactive prompt", which is false: `ensure_tenant_auth` (bin/sec:83-159)
@@ -1417,9 +1444,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 107, install 9, sentinel 63, sync_guard 16,
-write_honesty 17. Sentinel = 63 cases / 804 assertions. HISTORY.md is at
-8170/8192 bytes - headroom of 22 bytes before its budget (the 2026-10-15 block
-was compacted to fold in #166-#171; the full narratives live in
+write_honesty 17. Sentinel = 63 cases / 808 assertions. HISTORY.md is at
+6546/8192 bytes - headroom of 1646 bytes before its budget (the 2026-10-15 block
+was compacted to fold in #166-#172; the full narratives live in
 `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each

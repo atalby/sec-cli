@@ -819,8 +819,9 @@ WORK_T1="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T2="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T3="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T4="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T5="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_TCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for W in "$WORK_T1" "$WORK_T2" "$WORK_T3" "$WORK_T4" "$WORK_TCTRL"; do
+for W in "$WORK_T1" "$WORK_T2" "$WORK_T3" "$WORK_T4" "$WORK_T5" "$WORK_TCTRL"; do
     seed "$W"
 done
 python3 - "$WORK_T1/skills/architecture-360-audit/profile.md" "$WRONG_CENSUS" <<'PY'
@@ -924,6 +925,28 @@ if grep -q "ARCHITECTURE.md lists suites that are not the live tracked suites" <
     ok "coverage names the ARCHITECTURE.md suite absent from the live tree"
 else
     no "coverage did not name the ARCHITECTURE.md suite absent from the live tree"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T5/.github/workflows/test.yml" <<'PY'
+import sys
+p = sys.argv[1]
+with open(p, encoding="utf-8") as fh:
+    body = fh.read()
+body = body.replace("test_write_honesty test_sentinel", "test_write_honesty")
+with open(p, "w", encoding="utf-8") as fh:
+    fh.write(body)
+PY
+OUT="$(cd "$WORK_T5" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the CI workflow's run-list drops a live suite"
+else
+    no "coverage accepted a CI workflow that does not run every live suite"
+fi
+if grep -qF "the CI workflow's run-list is not the live suite set: live-but-not-run ['test_sentinel']" <<<"$OUT"; then
+    ok "coverage names the live suite the CI workflow stopped running"
+else
+    no "coverage did not name the suite missing from the CI workflow run-list"
     printf '%s\n' "$OUT"
 fi
 OUT="$(cd "$WORK_TCTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
