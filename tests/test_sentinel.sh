@@ -3949,8 +3949,9 @@ WORK_T23C="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23D="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23E="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23F="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T23G="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for W in "$WORK_T23A" "$WORK_T23B" "$WORK_T23C" "$WORK_T23D" "$WORK_T23E" "$WORK_T23F" "$WORK_T23CTRL"; do
+for W in "$WORK_T23A" "$WORK_T23B" "$WORK_T23C" "$WORK_T23D" "$WORK_T23E" "$WORK_T23F" "$WORK_T23G" "$WORK_T23CTRL"; do
     seed "$W"
 done
 python3 - "$WORK_T23A/README.md" <<'PY'
@@ -4095,6 +4096,30 @@ if grep -q "docs/OPERATOR_MANUAL.md names run-injection backends bws, op, vault,
     ok "coverage names the OPERATOR_MANUAL.md run-injection sentence drift"
 else
     no "coverage did not name the OPERATOR_MANUAL.md run-injection sentence drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T23G/docs/SECURITY.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"Vendor run-wrappers \(`bws`/`op`/`infisical`\) inject secrets", "Vendor run-wrappers (`bws`/`op`/`vault`) inject secrets", s, count=1)
+if n != 1:
+    sys.exit("docs/SECURITY.md carries no 'Vendor run-wrappers (`bws`/`op`/`infisical`) inject secrets' clause to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T23G" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SECURITY.md's run-injection backend set drifts"
+else
+    no "coverage accepted a SECURITY.md run-injection backend drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "docs/SECURITY.md names run-injection backends bws, op, vault, but bin/sec injects via bws, infisical, op" <<<"$OUT"; then
+    ok "coverage names the SECURITY.md run-injection backend drift"
+else
+    no "coverage did not name the SECURITY.md run-injection backend drift"
     printf '%s\n' "$OUT"
 fi
 OUT="$(cd "$WORK_T23CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"

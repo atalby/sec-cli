@@ -2215,6 +2215,11 @@ else:
                 r"Environment injection happens only when the tenant is",
                 r"only when the tenant is ([`a-z0-9]+), ([`a-z0-9]+) or ([`a-z0-9]+)",
             ),
+            (
+                "docs/SECURITY.md",
+                r"Vendor run-wrappers (",
+                r"Vendor run-wrappers \(([`a-z0-9/]+)\) inject secrets",
+            ),
         )
         for _ri_rel, _ri_marker, _ri_pat in _run_doc_sites:
             _ri_text = _nl_read(_ri_rel)
@@ -2242,10 +2247,10 @@ else:
                 )
         if not all(
             _nl_read(_pe_rel).count("plain exec") >= 1
-            for _pe_rel in ("README.md", "docs/ARCHITECTURE.md", "docs/OPERATOR_MANUAL.md")
+            for _pe_rel in ("README.md", "docs/ARCHITECTURE.md", "docs/OPERATOR_MANUAL.md", "docs/SECURITY.md")
         ):
             run_inject_mismatches.append(
-                "README.md / docs/ARCHITECTURE.md / docs/OPERATOR_MANUAL.md no longer state that `bitwarden` is a plain exec"
+                "README.md / docs/ARCHITECTURE.md / docs/OPERATOR_MANUAL.md / docs/SECURITY.md no longer state that `bitwarden` is a plain exec"
             )
 
 classify_mismatches = []
@@ -3343,7 +3348,7 @@ print(f"{OK} security perms: docs/SECURITY.md's file-mode claims match the live 
 print(f"{OK} sec.conf mode prose: README.md + docs/MULTI_TENANCY.md match the live bin/sec chmod ({_live_sec_conf_mode})")
 print(f"{OK} natural-language mode claims: README.md + docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md match the live chmod/umask calls")
 print(f"{OK} runtime-dependency + env-var claims: README.md + docs/ARCHITECTURE.md dep lists and the documented SEC_* vars match install.sh + bin/")
-print(f"{OK} run-injection claims: README.md + docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md name exactly the backends bin/sec injects via ({', '.join(sorted(_run_live))})")
+print(f"{OK} run-injection claims: README.md + docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md + docs/SECURITY.md name exactly the backends bin/sec injects via ({', '.join(sorted(_run_live))})")
 print(f"{OK} classifier categories: README.md + docs/ARCHITECTURE.md name only live CATEGORY_WEIGHTS keys ({', '.join(sorted(_live_cats))}) + the `general` fallback")
 print(f"{OK} completion surfaces: OPERATOR_MANUAL.md's shell set + alias and completions/_sec match the live bin/sec completion dispatch")
 print(f"{OK} ps1 surface: docs/ARCHITECTURE.md's bin/sec.ps1 native subset + bin/sec-only 'full surface' match the live dispatch")

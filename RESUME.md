@@ -1,5 +1,26 @@
 # Resume point - sec-cli
 
+Session 2026-10-15 (54th run): shipped **#176** -- docs/SECURITY.md's Disk Storage
+Leak row (line 11) is a *fourth* doc restating the `sec run` injection-backend set
+("Vendor run-wrappers (`bws`/`op`/`infisical`) inject secrets into process memory"),
+the same gap #175 closed for OPERATOR_MANUAL; section 29's `_run_doc_sites` read
+README + ARCHITECTURE + OPERATOR_MANUAL but not SECURITY.md. Fix: section 29 gained
+the SECURITY.md site (marker "Vendor run-wrappers (", capturing the backticked
+slash-delimited set) and SECURITY.md joined the `plain exec` site list; the OK line
+names all four docs. Probe case [51] gained WORK_T23G (backend-set drift), asserting
+coverage exits nonzero and names the SECURITY.md drift, plus the green control.
+Mirrors: ADAPTERS.md:32 "Last updated", RESUME.md baseline below (836 -> 840
+assertions; case count stays 64), HISTORY.md 7350 -> 7512 bytes. Full battery green
+(dispatch/install/sync_guard/write_honesty/sentinel ALL PASSED, pytest 58,
+coverage + citations RC=0); narrative appended to history/2026-10-15.md.
+
+Resume here next run: no non-gated tracker item remains. The tracker holds
+**#67** (fresh 360 audit -- its Step-1 gate needs explicit human scope approval;
+must NOT be started autonomously), and **#92** + **#51** (hub-side, not this
+repo). Standing next autonomous move: sweep for the next unguarded
+current-state claim (the #129-#176 class); if none surfaces, the fresh 360 audit
+(#67) only after human approval.
+
 Session 2026-10-15 (53rd run): shipped **#175** -- docs/OPERATOR_MANUAL.md restates
 the `sec run` injection-backend set in two places (line 11's "credentials into RAM
 only for `bws`/`op`/`infisical`" list and line 61's "only when the tenant is
@@ -1514,8 +1535,8 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 107, install 9, sentinel 64, sync_guard 16,
-write_honesty 17. Sentinel = 64 cases / 836 assertions. HISTORY.md is at
-7350/8192 bytes - headroom of 842 bytes before its budget (the 2026-10-15 block
+write_honesty 17. Sentinel = 64 cases / 840 assertions. HISTORY.md is at
+7512/8192 bytes - headroom of 680 bytes before its budget (the 2026-10-15 block
 was compacted to fold in #166-#174; the full narratives live in
 `history/2026-10-15.md`).
 111 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

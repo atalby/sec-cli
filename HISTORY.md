@@ -63,7 +63,9 @@ migrator universe and every controller target, [31]; assertions 820 -> 828.
 Thirteenth, #175 made section 29 also read docs/OPERATOR_MANUAL.md, which restates the
 `sec run` injection backends twice (its RAM-only list and its "only when the tenant is"
 sentence) plus a `plain exec` claim, while the guard read only README + ARCHITECTURE --
-[51], assertions 828 -> 836.
+[51], assertions 828 -> 836. Fourteenth, #176 made section 29 also read
+docs/SECURITY.md's Disk Storage Leak row (the fourth doc restating the same
+backend set), [51], assertions 836 -> 840.
 Full narrative: `history/2026-10-15.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
