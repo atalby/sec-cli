@@ -49,6 +49,16 @@ Choosing a language/tool should be a deliberate decision, not a default:
   tests.** A script that can't practically be unit-tested is a script
   that can't practically satisfy §7 — that's the concrete signal to
   rewrite it, not a style preference.
+- **Shell orchestration hazards.** In zsh a whole class of parameters is
+  bound to shell behaviour, so binding one as a loop variable or temporary
+  silently changes it: `read -r path` resets `PATH` to that one value, and
+  every external command after it becomes unreachable while builtins keep
+  working — a batch that fails identically across several unrelated binaries
+  is this, not a refused fetch. Never bind `path`, `status`, `argv`,
+  `cdpath`, `fpath`, `mailpath`, `manpath`, `module_path`, `prompt`,
+  `psvar`, `signals`, `options`, `commands`, `functions`, `dirstack`, or
+  `watch` (use `f`, `line`, `item`, `p`); where a script must not depend on
+  `PATH` at all, invoke the binary by absolute path (`/usr/bin/curl`).
 - **This is a principle to apply going forward and when a script is next
   touched, not a mandate to mass-rewrite existing scripts today** — per
   §1.2's Laser Task Focus, don't open unrelated refactors as a side
@@ -79,3 +89,41 @@ terminal is prose, never a parse target; the convention binds the
 producer only where a machine re-parses the bytes. Tabular or prose
 blocks are reserved for documents rendered for a person to read,
 never a parse target.
+
+## The "never comment code" rule and where it is enforced
+
+> Detail for the `AGENTS.md` §8 rule "Never comment code, docstrings
+> included." Stated here because the rule is enforced mechanically and
+> the enforcement has a language-dependent edge.
+
+`scripts/check_no_comments.py`, run as Step 16 of
+`scripts/pre-commit-hiae.sh`, is where the rule is enforced. Its coverage
+is complete for Python: comments are found through the tokenizer and
+docstrings through the syntax tree, so both an inline comment and a
+docstring count. For every other language in its code-suffix set
+(`.sh .ts .tsx .js .jsx .go .rs .java .c .cpp .tf`) the checker catches
+**whole-line comments only** — a line whose first non-whitespace
+characters are the language's comment marker (`#`, `//`, `/*`). An inline
+comment after code on the same line is a known gap in those languages
+(issue #265), stated here explicitly so the rule is not silently weaker
+than a reader of `AGENTS.md` §8 assumes. Closing the gap means adding a
+parser for that language, not loosening the rule.
+
+## A commit runs the repo's own test suite, so budget the command timeout
+
+> Detail for the `AGENTS.md` §3 step 7 (Commit) rule, for any agent that
+> invokes `git commit` under a per-command timeout.
+
+`scripts/pre-commit-hiae.sh` runs its unit-test step (Step 5) inside the
+hook, against whatever suite the repo declares — for a hub-shaped repo
+that is the full `pytest` run (minutes), and for any adopter it is that
+repo's own suite, which can be longer. The commit therefore blocks for
+the suite's duration, not for a fast local write, and the hook gives no
+early signal before the test step starts. A command timeout shorter than
+the suite turns a real commit into an ssh/agent-side timeout that looks
+like a hang and leaves the invoking shell unsure whether the commit
+landed. Budget at least the repo's full suite duration with headroom, and
+remember the hook re-runs on every commit attempt, so a retried commit
+pays the same cost again. When the timeout cannot be raised, run the gate
+by hand once (`bash scripts/pre-commit-hiae.sh` after `git add`) and then
+commit with the result already known.

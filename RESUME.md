@@ -1586,7 +1586,7 @@ write_honesty 17. Sentinel = 64 cases / 852 assertions. HISTORY.md is at
 7996/8192 bytes - headroom of 196 bytes before its budget (the 2026-10-15 block
 was compacted to fold in #166-#178; the full narratives live in
 `history/2026-10-15.md`).
-113 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
+117 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each
 guard case re-runs full coverage a few times); the pytest mirror adds ~3.5 min.
 Run both when a sentinel section changes.

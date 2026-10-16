@@ -494,6 +494,20 @@ have is not one of them: it breaks the one invariant the fixed count
 exists to serve, and it means slot 7 of this skill and slot 7 of the
 next one are not answering the same question.
 
+A binding states WHAT WOULD SATISFY OR VIOLATE THE DIMENSION, not only
+where to look. "Read scripts/auth.py" is a pointer; "read scripts/auth.py:
+40-90, where every handler either checks the caller's tenant or does not,
+and a handler that does not is what dimension 1 is looking for" is a
+binding, because a reader can tell whether the file answered the question
+or merely exists. A binding that only names a file is decorative: it
+satisfies the instruction while telling the next run nothing, and a
+dimension bound decoratively to a plausible-looking path reports on the
+path rather than on the repository.
+
+If a dimension has more than one place it could be answered, cite all of
+them and say which is load-bearing. A dimension bound to one file when the
+repository answers it in three is a narrower audit than it reads as.
+
 Rank personas so a scoped run can drop the lowest-value ones first, and
 record the drop explicitly in any scoped run's header. A scoped run must
 never present itself as a full one.
@@ -509,11 +523,25 @@ surprise.
 
 A run without durations is incomplete.
 
-Write each run to `docs/360/runs/<YYYY-MM-DD-HHMMSS>/` in the audited
-repository so consecutive runs accumulate a history and a later run can
-diff against an earlier one. One directory per run, never a flat file per
-run: two runs on the same day must not collide. Do not add the directory
-to .gitignore unless asked.
+Write each run to `docs/360/runs/<repository>/<YYYY-MM-DD-HHMMSS>/` in the
+HUB, not in the audited repository. One directory per run, never a flat file
+per run: two runs on the same day must not collide.
+
+The report describes the repository, so putting it inside the repository
+changes the thing being described. The next run then audits a repository
+whose file count, coverage, and core size include the previous run's own
+output, and a comparison between two runs has to hold that difference
+constant to mean anything. It also means an audit verdict about one
+repository's security posture sits inside that repository, where a
+commit gate may surface it to someone who did not ask for it.
+
+Hub-side is also the only placement that makes a finding comparable across
+repositories, which is the entire reason the twelve lenses are fixed rather
+than chosen per run. Reports stranded one-per-repository cannot be diffed
+against each other at all.
+
+State the run's path in the reply so the reader can find it. Do not add the
+run directory to .gitignore in the hub unless asked.
 
 ## STEP 6: CROSS-VALIDATION BY DISPROOF
 
@@ -547,6 +575,18 @@ Then, for each candidate finding, try to break it:
 - Search for a guard elsewhere: a caller that validates, a constant that
   makes the case impossible, a configuration default that makes the case
   impossible, a constraint you missed.
+
+PRIOR ART IS PROPORTIONAL TO SEVERITY. For every high and critical
+finding, and for those alone, check whether the problem you are reporting
+already has a known solution -- a documented weakness class, a published
+remediation, a scanner rule, a framework's own answer -- and record what
+you found next to the finding. This is where it pays: a high-severity
+finding with a standard fix is a finding the reader can act on in an
+hour, and a finding you did not know has a known fix is the one that
+costs a team a day reinventing something. Below high severity, skip it,
+and say that you skipped it. A low-severity finding is rarely a class
+anyone has written down, and searching for one costs the run time it
+cannot spare. Report which findings got the check and which did not.
 
 Record the verdict per finding as CONFIRMED, REJECTED, or MODIFIED, with
 the reason. Rejections are part of the deliverable, not failures; they
@@ -616,9 +656,12 @@ Write the instrument as exactly three files in `skills/<skill-name>/`:
   build. It must fail, not warn: a warning that does not stop anything
   is a comment.
 
-  Give it exactly two subcommands, named, because Step 11 checks for them
-  by name and a check for an interface the procedure never specified is a
-  check nothing can pass.
+  Give it named subcommands, one per surface it must cover, because Step 11
+  checks each by name and a check for an interface the procedure never
+  specified is a check nothing can pass. The set is open, not capped: a
+  fixed count propagates that count's blind spot into every sentinel the
+  forge builds, so every subcommand must state the surface it covers and
+  why it earns a place no other subcommand covers.
 
   `sentinel.sh coverage` enumerates the repository's tracked files and the
   gitignored dependency surfaces listed below, compares both sets against
@@ -629,6 +672,21 @@ Write the instrument as exactly three files in `skills/<skill-name>/`:
   cites and EXITS NON-ZERO naming each one that no longer resolves to the
   symbol it names. A moved anchor is a defect in the skill, not a stale
   note in a report.
+
+  `sentinel.sh anchors` re-verifies every file:line anchor in every tracked
+  markdown file, not only the anchors the skill itself holds. It resolves
+  external-package paths by prefix, so a citation of another project's
+  identically named file cannot silently resolve to a local one; it
+  bounds-checks every line, rejects a reversed range, and, where an anchor
+  sits beside a named symbol, asserts the symbol still appears inside the
+  cited span. Approximate (`~`) and explicitly historical (`old`) anchors
+  are exempt by construction. It earns its place because the skill's own
+  two files hold only a subset of the repository's anchors: one real
+  repository carried four inside the skill's files against several hundred
+  across its other tracked markdown, and every one of those went unchecked
+  until this sweep existed. `citations` is the curated-anchor mode of this
+  sweep; a repository may keep it as a separate subcommand or fold it into
+  `anchors`, and either way both surfaces stay covered.
 
   Invoked with no subcommand it runs `coverage`, so the common case needs
   no flag and the default is the strict one.
@@ -706,6 +764,16 @@ needs no bridge at all. Never describe a bridge as the mechanism that
 makes the skill reachable, and never write per-harness COPIES of SKILL.md;
 a copy is a second procedure that will drift.
 
+The symlink is not sufficient on its own either. A harness whose skill
+directory it does not scan, and an agent that has just read AGENTS.md
+without any skill discovery at all, both need the other half: one line in
+the repository's AGENTS.md saying the skills are in `skills/` and that they
+are read by path when no harness offers them by name. Emit both. The
+symlink covers the harnesses that scan the shared directory; the AGENTS.md
+line covers everything else, including the agent reading its instructions
+in a text editor with no tool behind it. Reachability that depends on
+which harness the reader happens to be running in is not reachability.
+
 The command name is a lookup, not a decision. Read the grounding step
 above and adopt the name an existing implementation already uses. If you
 must invent one, derive it from the skill's subject and mode
@@ -743,22 +811,6 @@ them is not handed six inert files and told the work is done.
 
 A bridge you did not verify is a bridge you guessed. Say which harnesses you
 emitted, and which you could not reach.
-
-The command name is a lookup, not a decision. Read the grounding step
-above and adopt the name an existing implementation already uses. If you
-must invent one, derive it from the skill's subject and mode
-(`<subject>[-update]`), never from the repository, product, or
-organisation name: a bridge named per-project is worthless as a shared
-convention, because the same skill then cannot be invoked the same way in
-two repositories, and a convention that is not shared is not a
-convention. The same rule applies to the skill directory name, for the
-same reason: `skills/<subject>-360-audit`, never `skills/<repo>-360-audit`.
-
-Where this prompt writes an example name, the example is NORMATIVE for
-shape and SUFFIXES, and ILLUSTRATIVE for the subject word. That is: a
-suffix written here is required, and the stem may be replaced only by
-the lookup rule above. It never mandates a persona name, a dimension
-name, or a repository name.
 
 Do not add settings files, node_modules, or package manifests as part of
 this. The bridges are the whole of the harness-facing change.
@@ -799,9 +851,14 @@ Bridge body, identical in intent across every format:
 The bridge is a pointer, not a summary. Its length is evidence of a bug.
 
 Registry: if the repository has a project skill registry, add exactly one
-row, pointing at `skills/<skill-name>/SKILL.md`. Add no row for a symlink
-or a bridge path; a registry of this kind accepts only the canonical skill
-path and rejects anything under a harness directory as a permanent failure.
+row, pointing at `skills/<skill-name>/SKILL.md`, with the Distribution value
+`project-specific`. The forged skill is this repository's own, never part of
+the hub payload, and `project-specific` is excluded from every hub-drift
+comparison, so your own rows never read as divergence from `stable`; the
+other accepted value, `adopter`, claims hub ownership and is what makes a
+forged row read as drift. Add no row for a symlink or a bridge path; a
+registry of this kind accepts only the canonical skill path and rejects
+anything under a harness directory as a permanent failure.
 
 Harness-local state: if a bridged harness writes local state (worktrees,
 settings.local.json, lock or resume files), add it to .gitignore following
@@ -851,14 +908,20 @@ available, the verdict is a reading, not a scan.
 Do not deliver until all of these hold:
 
 - Every cited file:line resolves to the symbol the skill names. Verify
-  each one by reading it, not by assuming, and by running sentinel.sh.
+  each one by reading it and by running `sentinel.sh citations`; where
+  anchors live outside the skill's own files, `sentinel.sh anchors`
+  covers them.
 - Every dimension in Step 3 is either bound to a real hotspot or
   explicitly N/A with a reason. There are twelve of them, numbered 1
   through 12, in order.
 - No persona is portable to an unrelated repository.
-- The coverage sentinel runs, exits zero, and its coverage subcommand
-  covers both tracked files and gitignored dependency surfaces. Run it. A
-  sentinel that has never been run is an unverified claim about a checker.
+- The coverage sentinel runs, exits zero, and each named subcommand covers
+  its surface: `coverage` covers both tracked files and gitignored
+  dependency surfaces, `citations` covers the anchors the skill holds, and
+  `anchors` covers the anchors held elsewhere in the tree. Run every one. A
+  sentinel that has never been run is an unverified claim about a checker,
+  and a subcommand the contract names but the sweep never exercises is that
+  same unverified claim.
 - Every baseline number in profile.md is the output of a command you ran,
   quoted. No number is carried over from a previous generation, and no
   command is recorded that you did not execute.
@@ -895,7 +958,8 @@ Do not deliver until all of these hold:
   `## Regenerating this skill` section, which exists. State both command
   names.
 - The registry, if the repository has one, has exactly one row at
-  `skills/<skill-name>/SKILL.md`, and it passes the registry's own checker.
+  `skills/<skill-name>/SKILL.md`, with Distribution `project-specific`, and
+  it passes the registry's own checker.
 - The repository itself was not modified other than by adding the skill,
   the bridges, the registry row, and any gitignore line. Report anything
   else you touched and why.
@@ -959,6 +1023,13 @@ Produce, unconditionally:
 
 - the canonical skill at `skills/<skill-name>/SKILL.md`, plus
   `profile.md` and `sentinel.sh` beside it;
+- YAML frontmatter on that SKILL.md, carrying `name` and `description`, with
+  `name` matching the directory name it sits in. A skill file without
+  frontmatter will not load by name in any harness that discovers skills from
+  a directory, and it fails silently: the file is on disk, the bridges point
+  at it, and nothing says the one thing that would make it work is missing.
+  This is the difference between a skill that is reachable and a skill that
+  is merely present;
 - one bridge per discovered harness, in that harness's own format, plus the
   `.agents/skills` symlink;
 - a `<command-name>-update` bridge for each of those harnesses, delegating to

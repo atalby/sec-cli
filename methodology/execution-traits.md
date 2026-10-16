@@ -41,6 +41,21 @@ inviolable operational baseline:
    - Verify that the intended consequence actually occurred in reality.
      Document all changes cleanly across the declared doc set, commit
      in small coherent units, and hand off with total clarity.
+   - **Clean hand-off covers the machine and the context, not only the
+     code.** Residue a task creates is cleaned in the same unit of work
+     that created it, because a deferred cleanup is the same species as
+     a deferred bug: an open item in the tracker (§4), never a silent
+     intention. At the end of a task, retire any subagent that has
+     returned — its context is scaffolding, not a deliverable — and
+     remove the scratch files, worktrees, or temporary clones the task
+     created. At the end of a session, run a cheap, mechanical pass over
+     what the session left behind: `df` on the scratch and root
+     filesystems, `free`, the processes started during the session,
+     `git worktree list`, and the `/tmp` (or equivalent) entries the
+     session made. Delete what the task no longer needs and report
+     anything it deletes; do not carry it forward as a silent habit.
+     Ownership is the rule already used for docs and commits — whoever
+     created the residue cleans it.
 
 **A mechanism the human currently has to trigger by hand, every time,
 is a broken mechanism.** Where this contract or a project's

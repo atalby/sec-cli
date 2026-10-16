@@ -154,6 +154,18 @@ actual runner):
       }
     }
 
+When the runner is Node's built-in test runner (`node --test`), two
+coverage behaviours differ from the packaged runners and are easy to
+miss. `--test-coverage-include` takes a glob, not a directory:
+`--test-coverage-include='src/'` matches no files and produces a
+vacuous `all files | 100.00` report that passes at any threshold, so
+write `'src/**'` instead. And threshold enforcement is Node-version
+dependent -- `--test-coverage-lines` / `--test-coverage-branches` were
+silent no-ops on Node 22.x and are enforced on Node 26.x -- so a run
+that must fail closed should assert on the report's `all files` row
+rather than trust the flag alone. Re-verify both after a Node
+major/minor bump.
+
 ### Step 8: Write the TDD Evidence Report
 
 After green and coverage are validated, write a short, factual evidence

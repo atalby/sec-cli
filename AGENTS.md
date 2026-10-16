@@ -15,10 +15,10 @@ that needs one points here, never at a file path of its own.
 | Your task involves… | Load |
 |---|---|
 | Onboarding a repo, a version bump, the `stable` tag, or what belongs in this file vs. a project's own docs | `methodology/adoption.md` (§0) |
-| Repo tier, cost circuit-breakers, RBAC/zero-trust, zero-file communication, cross-repo ownership, worktree lifecycle | `methodology/tiers.md` (§1.0) |
+| Repo tier, cost/risk circuit-breakers, RBAC/zero-trust, zero-file communication, cross-repo ownership, worktree lifecycle | `methodology/tiers.md` (§1.0) |
 | The 4 core execution traits (laser focus, 100%-done, empirical verification, clean hand-off) | `methodology/execution-traits.md` (§1.2) |
 | Starting a new session — **read this before anything else, every session** | `methodology/boot-sequence.md` (§2) |
-| Full step-by-step reasoning for Ground/Research/Plan/Implement/Verify/Document/Commit, the Auto-Moderation Protocol, or proactive next-action / bounded-autonomy timeout behavior | `methodology/core-loop-detail.md` (§3), `methodology/proactive-next-action.md` (§3) |
+| Full step-by-step reasoning for Ground/Research/Plan/Implement/Verify/Document/Commit, the Auto-Moderation Protocol, proactive next-action / bounded-autonomy timeout behavior, or the agent context lifecycle (proactive handoff+restart, the context-budget circuit-breaker, orchestrator worker restarts) | `methodology/core-loop-detail.md` (§3), `methodology/proactive-next-action.md` (§3), `methodology/context-lifecycle.md` (§3) |
 | Narrative-history mechanics, the declared doc set rule, or an external documentation-mirror hub | `methodology/documentation-structure.md` (§5) |
 | Secrets, deployments, cloud IAM, TLS, or any credential-touching work | `methodology/credentials.md` (§6) |
 | Subagent delegation, prompt caching, token efficiency, or shell-vs-real-language tool choice | `methodology/tooling.md` (§8, §1.3) |
@@ -35,7 +35,7 @@ project that adopts it, and that works only because this repo owns
 
 This project defines **Hyer**, the working name for the Human-Driven,
 Intra-Agent Software Engineering Methodology
-(HIAE Protocol v5.39.1) — a general-purpose process contract for how an
+(HIAE Protocol v5.41.0) — a general-purpose process contract for how an
 agent, or a human following the same discipline, works on any project
 that adopts it.
 
@@ -75,7 +75,7 @@ one instance of a pattern, check with one targeted search before calling
 it done). **Empirical Test Verification** (never assume code works
 because it "looks right"). **End-to-End Ownership & Clean Hand-Off**
 (verify the intended consequence actually occurred, document cleanly,
-commit in small units).
+commit in small units, and clean up the residue the work created).
 
 ## 1.3 Right Tool for the Right Job
 

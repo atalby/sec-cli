@@ -148,10 +148,7 @@ no signal, and no error. An agent that keeps answering from its
 in-context copy will cite rules that no longer exist and will look
 exactly as confident as one reading the current file.
 
-This was observed, not theorised (issue #81). During a mid-session
-restructure a subagent reported carrying the pre-restructure section 0
-text while the on-disk file no longer had it, and caught the divergence
-only because it independently read the file.
+This was observed, not theorised (issue #81).
 
 So the honest rule, replacing an earlier claim that agents "instantly
 adopt updated rules":

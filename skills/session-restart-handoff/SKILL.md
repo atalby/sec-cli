@@ -23,6 +23,17 @@ or the next step has moved into a different session's or repo's actual
 domain (e.g. an infra change that belongs to the repo owning that
 infra, not the one that happened to notice the need for it).
 
+Act on those signals **before** the harness ceiling, never at it: the
+point of a trigger is that it fires while there is still room to persist
+state cleanly, so a forced emergency compression at the ceiling is the
+failure this skill exists to avoid, not an acceptable fallback. Treat the
+context budget like any other resource with a circuit-breaker — act at
+the soft threshold, not the hard ceiling (`methodology/context-lifecycle.md`
+has the full doctrine). An agent that owns other agents (a master or
+orchestrator) applies the same trigger to its workers: it restarts them
+on a bounded loop so each fresh context stays small, rather than waiting
+for any one of them to hit its ceiling.
+
 ## 2. Persist everything not-yet-durable, before clearing anything
 
 The one rule that makes the rest of this safe: nothing that matters

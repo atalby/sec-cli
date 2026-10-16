@@ -26,4 +26,4 @@
 # prohibition exists to stop this hub's release commit from drifting out
 # of agreement with itself, and an adopter editing its own docs cannot
 # cause that.
-version: "5.39.1"
+version: "5.41.0"

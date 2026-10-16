@@ -189,37 +189,38 @@ cloning Hyer directly.
   contract's sanctioned clone byte path (`git show <peeled-sha>:<path>`
   in a clone that already exists), never to an unauthenticated request
   or a guessed project id.
-- **Current payload state**: adopted HIAE Protocol **v5.39.1** on
-  2026-10-08 via `/adopt-hyer`. Provenance: immutable tag `stable`
-  peeled to commit `736000ddcbc9d5e0d4f373e242ba1ed5e6bdb1a8` (verify
-  with `git ls-remote git@gitlab.com:at-tech-io/infrastructure/hyer.git
-  'refs/tags/stable^{}'` — the SHA beside the tag is a check value, not
-  the provenance claim; the tag is). All 39 payload files (AGENTS.md,
-  methodology/**, skills/**) placed via the already-present-clone byte
-  path (`git show <sha>:<path>` in `~/sandbox/hyer`, which predates the
-  adoption) and proven byte-for-byte: `git hash-object <dest>` equals
-  the blob id in commit `736000d` for every file, including the merged
-  `skills/REGISTRY.md`. The `hyer` MCP server was unusable during this
-  adoption (`fetch is not defined` from every method — server-side bug,
-  see Known fragility); the contract's sanctioned clone path was used
-  instead, with no hub-address reconstruction and no token fallback.
-  Per the hub's own `moving-stable-tag` skill: a manual copy is a
-  point-in-time snapshot regardless of which ref fetched it, not an
-  expectation of staying perpetually current without a future re-sync.
+- **Current payload state**: adopted HIAE Protocol **v5.41.0** on
+  2026-10-16 (fleet-wide adoption, no-limit#20). Provenance: immutable
+  tag `stable` peeled to commit
+  `0ee8f94d7e7460cff78a45e7107bf6804d4ed263` (verify with `git ls-remote
+  git@gitlab.com:at-tech-io/infrastructure/hyer.git 'refs/tags/stable^{}'`
+  — the SHA beside the tag is a check value, not the provenance claim;
+  the tag is). All 43 payload files (AGENTS.md, methodology/**,
+  skills/**) placed via the already-present-clone byte path (`git show
+  <sha>:<path>` in `~/sandbox/hyer`, which predates the adoption) and
+  proven byte-for-byte against that SHA with `cmp`: 42 of 43 are
+  byte-identical, and `skills/REGISTRY.md` is the deliberate superset
+  (every hub row plus this repo's own project-specific row, per the
+  hub's merge rule). The `hyer` MCP server was not used; the contract's
+  sanctioned already-present-clone path was, with no hub-address
+  reconstruction and no token fallback. Per the hub's own
+  `moving-stable-tag` skill: a manual copy is a point-in-time snapshot
+  regardless of which ref fetched it, not an expectation of staying
+  perpetually current without a future re-sync.
 
 ## Skills registry
 
 - **Registry file**: `skills/REGISTRY.md`
-- **Contents**: 23 skill dirs under `skills/` — 22 adopter-distributable
-  from the 2026-10-08 v5.39.1 adoption plus 1 project-specific
-  (`architecture-360-audit`, built in-repo that same day) — plus 12
-  `.hyer/skills/` hub-internal rows: 35 skill rows, one per skill dir.
+- **Contents**: 26 skill dirs under `skills/` — 25 adopter-distributable
+  from the 2026-10-16 v5.41.0 adoption plus 1 project-specific
+  (`architecture-360-audit`, built in-repo on 2026-10-08) — plus 12
+  `.hyer/skills/` hub-internal rows: 38 skill rows, one per skill dir.
   History: first populated in the
   2026-08-27 fleet sync (10 skills, no `skills/` before that);
   hub-internal rows repointed `.claude/skills/` → `.hyer/skills/` on
-  2026-10-08 (commit 06f129a); full merge to the v5.39.1 incoming
-  registry the same day (zero adopter-owned rows to preserve — every
-  local skill is hub payload).
+  2026-10-08 (commit 06f129a); full merge to the v5.41.0 incoming
+  registry on 2026-10-16 (one project-specific row preserved —
+  `architecture-360-audit`; the other 25 `skills/` rows are hub payload).
 
 ## Local pre-commit hook
 

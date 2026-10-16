@@ -12,7 +12,7 @@ moves.
 Ecosystems present: Bash (`bin/sec` and seven sibling dispatchers, `install.sh`,
 five suites under `tests/`), Python 3 (6 files: `bin/sec-sync-controller.py`,
 `bin/sec-classify.py`, and four under `scripts/tests/`), PowerShell (`bin/sec.ps1`),
-zsh completion (`completions/_sec`), Markdown (74 files), JSON/YAML/TOML
+zsh completion (`completions/_sec`), Markdown (78 files), JSON/YAML/TOML
 configuration (13 files).
 
 Measured against the tier definition:
@@ -50,7 +50,7 @@ The two partials are themselves findings, not tier annotations:
    PATH.** The hook's test step recognizes `scripts/tests/`+uv,
    `pytest.ini`/`pyproject`, and `package.json` — not `tests/*.sh`
    directly — so this repo's mirror at `scripts/tests/` is what runs all
-   five bash suites at commit time (`ADAPTERS.md:307`; issue #2 closed).
+   five bash suites at commit time (`ADAPTERS.md:308`; issue #2 closed).
    With `uv` absent, Step 5 warns that no suite applies and enforces
    nothing (issue #64). Since 2026-10-09 GitHub Actions runs the five
    bash suites and the pytest mirror on push and PR to main
@@ -67,7 +67,7 @@ CI configuration, and contributor documentation before recording an absence.
 **Test suite** (four-source discovery: manifest — absent; `Makefile` —
 absent; CI — `.github/workflows/test.yml` since 2026-10-09 (issue #8), runs
 the five bash suites below and nothing else; contributor documentation —
-`ADAPTERS.md:257` "Running this project's test suite", which also names the
+`ADAPTERS.md:258` "Running this project's test suite", which also names the
 pytest mirror at `scripts/tests/`). All quotes below current as of the
 2026-10-11 profile pass. `tests/test_sentinel.sh` belongs to the audit
 instrument rather than the product but runs the same way:
@@ -432,7 +432,7 @@ instrument rather than the product but runs the same way:
 **Tracked file count** (the manifest denominator):
 
     $ git ls-files | wc -l
-    113
+    117
 
 **Dependency manifest census** (the persona 8 denominator):
 
@@ -801,7 +801,11 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **113 tracked files** (`git ls-files | wc -l`, re-measured
+Denominator: **117 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-16 after the v5.41.0 Hyer payload adoption (no-limit#20) added
+`methodology/context-lifecycle.md` plus the `fleet-leader-election`,
+`one-decision-at-a-time` and `self-learning-skill-synthesis` skills;
+previously re-measured
 2026-10-16 after the macOS-portability fix (#179) and the sentinel claim-lint
 fix (#180) added `pyproject.toml` and `uv.lock`, making the repo a uv project
 so the hub's pre-commit Step 5 runs `scripts/tests/`; previously re-measured

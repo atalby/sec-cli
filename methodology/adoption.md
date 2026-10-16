@@ -95,6 +95,25 @@ clone's `stable` may be any release it last saw — but it must not
 thing the new-release rule below forbids, so a clone is admissible only
 as something already present, never as a step this adoption adds.
 
+**A local tag is not evidence that a fetch kept you current.** `git fetch
+--tags`, a bare `git fetch`, and `git fetch origin` all add tags that are
+absent and update nothing already present, so an existing local `stable`
+stays on whatever release that clone last saw and "I fetched" is not
+evidence the ref moved. Before trusting a clone's local tag, resolve the
+authoritative ref and compare the two: `git ls-remote <git-remote>
+'refs/tags/stable^{}'` (or the methodology MCP's version list) names the
+commit `stable` peels to now, and `git rev-parse 'stable^{}'` names the one
+the clone holds. If they differ the local tag is stale — re-point it
+(`git tag -f stable <that-commit>`) or, better, place at the resolved SHA
+and never consult the local tag at all. Do not assume a forced fetch can
+recover it: both `git fetch origin '+refs/tags/stable:refs/tags/stable'`
+and `git fetch origin tag stable --force` failed with `couldn't find remote
+ref refs/tags/stable` against this hub's mirror during the v5.35.0 sync,
+which may be a mirror or permission artifact rather than Git behaviour —
+which is the point: "re-fetch and check" is only sound if re-fetching can
+work, so the comparison above, never the fetch itself, is the verification
+step.
+
 **The credential is the one the MCP already required.** This hub is
 private, so the byte path needs read access to it. It is the same
 GitLab read token the adopter has already supplied to the methodology
@@ -109,6 +128,18 @@ resulting 401 or 403 as a reason to accept a copy assembled any other
 way. That fallback is exactly the silent substitution §6 forbids, and
 a partial adoption is worse than none: a repo stamped to a version whose
 payload it does not hold asserts a contract it cannot satisfy.
+
+**Tell a refusal apart from a local fault before reporting one.** A fetch
+that returns nothing is not yet a refusal, and the three failure modes must
+not be collapsed into one report. A batch that fails identically across
+several unrelated binaries is a local environment fault — the fetch loop is
+broken, not the hub — so fix the command and re-run; neither the payload nor
+the credential is in question. Only per-URL failures consistent with an HTTP
+status from the API are remote (401/403: stop and escalate the credential;
+404: a file absent at that SHA). Before diagnosing a batch, run
+`command -v <tool>` and print `$PATH`: a tool that resolved nothing means no
+HTTP status exists to inspect, so any status-code reading is evidence never
+collected. Never report a mode you cannot evidence.
 
 **Prove each file without a clone, and pin what you proved.** `stable`
 is a floating tag, so a per-file proof has to name something that cannot
@@ -128,6 +159,14 @@ this reference did not resolve to a commit: **stop and report it**, and
 place nothing. Reading through the tag instead is the failure this step
 exists to prevent, and a payload stamped with a provenance id that names
 no commit asserts a provenance that cannot be checked.
+
+Naming an explicit version through the methodology MCP is ref-proof in the
+same way: `list_payload({version: "vX.Y.Z"})` and `get_methodology({path,
+version: "vX.Y.Z"})` resolve that version server-side, so no local tag is
+involved and a stale clone cannot serve the previous release. The explicit
+version is what makes the MCP immune; `version: "stable"` still works but
+re-derives the floating ref on every call, so name the released version
+whenever one exists to name.
 
 The same peel over git, from the git remote `locate_hub` returned, needs
 no clone and no checkout:
@@ -162,6 +201,29 @@ SHA beside it is the value to check that tag against.
   which tier each is, a central rollup like a Confluence mirror) live in
   this hub's own `WIKI.md` — project-*aware*, but still a separate file
   from the project-*agnostic* `AGENTS.md`.
+
+## The declared stack (`ADAPTERS.md`)
+
+A repo declares the languages and toolchains it actually builds and ships
+with one `stack:` line in the required `## Declared stack` section of its
+`ADAPTERS.md` (the template ships the section; `check_adapters_completeness`
+blocks a hub whose file omits it, issue #265). One line, comma-separated.
+The gate reads three capabilities from the declared tokens and their
+synonyms:
+
+- `python` (python, python3, py): the Python format check (Step 19).
+- `node` (node, nodejs, typescript, ts, javascript, js, npm, deno, bun):
+  the hyer-mcp type check (Step 20) and the container-image build gate.
+- `oci` (oci, container, docker, podman, buildah): the container-image
+  pin assertions in the CI arch-sensitive test.
+
+A toolchain-coupled check whose capability the declared stack does not
+include exits NOT APPLICABLE and is skipped; that outcome is honest and
+informational, never a WARNING, and never blocks. **Absent a `stack:`
+line the checks fall back to probing the tree** (the pre-#265 behaviour),
+so an adopting repo that has not yet declared a stack behaves as before.
+A repo may declare stacks beyond these three; only the three above are
+read by the hub's own gate.
 
 ## Versioning and the `stable` tag
 

@@ -56,6 +56,25 @@ a tier from memory.
   the project's designated approver (see `ADAPTERS.md` / an opted-in
   governance pack for who that is) rather than continuing.
 
+**Irreversible-Action & Destroy Gate Mandate**:
+- **A destroy is not a config edit.** Before approving any change whose
+  apply plan reports a resource to destroy, or whose diff touches an
+  input the provider replaces rather than updates (`ForceNew` inputs:
+  boot-time configuration, machine image, instance metadata, placement --
+  anything the provider documents as recreate-on-change), the approval
+  text MUST say, in words: what will be destroyed, the expected downtime,
+  what durable state exists only on that resource, and how that state is
+  restored afterwards. Silence is not approval.
+- **Durable-state inventory.** Anything that must survive a rebuild MUST
+  NOT exist only on a resource the plan can destroy. If it does, that is
+  a defect to file BEFORE the first replace, never discovered during one:
+  a replace that succeeds can still silently revoke state created
+  imperatively after the original apply, and no plan line will mention it.
+- **A limit you cannot read, you must test.** When a quota or capacity
+  ceiling cannot be read directly, a claim about it may rest only on an
+  empirical test, never on arithmetic from partial data -- partial data
+  plus inference produces a confident wrong answer.
+
 **Mandatory RBAC & Zero-Trust Mandate** (worked examples:
 `METHODOLOGY.md#worked-examples-rbac-capability-bounds-and-high-risk-ops`):
 - All tool execution gateways, API endpoints, and background workers

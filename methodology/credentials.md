@@ -28,6 +28,36 @@
       envelope encryption and IAM RBAC.
     - **IaC & GitOps Bootstrap**: Envelope-encrypted secret manifests
       for git-diff auditability.
+- **Vault Field Discipline** (where a password manager is the Tier 1
+  store): *what kind of field* a credential lives in is part of the
+  credential's contract, not a formatting preference.
+  - **A token, key, or password never goes in a free-text notes
+    field.** It goes in a dedicated custom field. Notes are
+    unstructured prose: they are outside the vault's secret-field
+    model, they are the field people paste into tickets and chat, and
+    they cannot be rotated, scoped, or expired on their own. A custom
+    field is a value the vault can validate, mask, and revoke.
+  - **One credential, one field, one source of truth.** Two fields on
+    the same item holding two different values for the same credential
+    is the predictable end state of the rule above, and it fails
+    silently: the reader that picks the wrong field gets an
+    authentication failure that looks like a bad credential rather
+    than a bad lookup. Anything that writes a credential into a vault
+    names the field in its own code, so the two cannot drift.
+  - **SSH private keys go in the password manager's SSH key store,
+    not in a login item.** The SSH store is what enforces the
+    passphrase, file mode, and agent integration that a login item's
+    generic fields bypass.
+- **Unlocking a locked vault is not a human-only step.** A read that
+  fails because the vault is locked is an ordinary recoverable error,
+  not a blocker to escalate: run the tool's own unlock / keep-alive
+  command, which — where a keeper is configured (OS keychain or
+  equivalent) — supplies the master password itself and saves a
+  session. **Never ask the human to paste a master password into a
+  session, and never accept one there**; a transcript that has seen it
+  has leaked it, and it must be rotated. The unlock-then-read path
+  keeps the value out of context entirely, which is also what lets an
+  agent read the credential it needs for a legitimate purpose.
 - **Group vs Project Variable Governance**: Shared API tokens should be
   managed centrally at the organization level or synced via secrets
   automation to prevent per-repository duplication.
@@ -86,7 +116,12 @@
 - If a blocker would require a broader scope, a higher-risk action, or a
   bigger blast radius than what was actually approved, **stop and ask.**
   Never silently substitute something riskier to route around an
-  obstacle, even if it would technically work.
+  obstacle, even if it would technically work. This is not a claim that
+  any fetch failure is a credential problem: distinguish a remote refusal
+  (an HTTP status from the API) from a local environment fault (the tool
+  never ran, so no status exists), per `methodology/adoption.md`, before
+  concluding a fallback is even on the table — a broken command is fixed
+  and re-run, never escalated as a token defect.
 - If this project has real compliance obligations (SOC2, GDPR, HIPAA,
   or similar), see an opted-in compliance pack (e.g.
   `packs/compliance-baseline`) for a starting engineering-process
