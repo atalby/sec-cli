@@ -508,6 +508,9 @@ transcript_count = int(transcript_match.group(1)) if transcript_match else None
 # current-state summary; the full narrative lives in per-period archives under
 # history/. Fail if a dated entry has crept back in, if the summary bloats past
 # budget, or if an archive file is orphaned (not linked from HISTORY.md).
+# An archive counts as linked only via an `## Archive` index row of the form
+# `- [date](history/file.md)`; a bare `Full narrative:` mention of the path is
+# not an index entry, and accepting it let 2026-10-15 go unlinked (issue #181).
 HISTORY_BUDGET = 8192
 history_path = os.path.join(repo, "HISTORY.md")
 history_text = open(history_path, encoding="utf-8").read() if os.path.exists(history_path) else ""
@@ -515,7 +518,11 @@ dated_entries = [ln for ln in history_text.splitlines() if ln.startswith("### ")
 history_bytes = len(history_text.encode("utf-8"))
 history_dir = os.path.join(repo, "history")
 archived = sorted(f for f in os.listdir(history_dir) if f.endswith(".md")) if os.path.isdir(history_dir) else []
-orphaned = [f for f in archived if f"history/{f}" not in history_text]
+indexed = {
+    _f
+    for _d, _f in re.findall(r"^- \[([^\]]+)\]\(history/([^)]+)\)\s*$", history_text, re.M)
+}
+orphaned = [f for f in archived if f not in indexed]
 
 # --- 7. cited suite section counts must match the live suites -----------------
 suite_counts = {}
@@ -663,6 +670,7 @@ _NUM_WORDS = {
     "fifty-seven": 57,
     "fifty-eight": 58, "fifty-nine": 59, "sixty": 60, "sixty-one": 61,
     "sixty-two": 62, "sixty-three": 63, "sixty-four": 64,
+    "sixty-five": 65,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -3137,6 +3145,70 @@ else:
             "but git ls-files does not list it"
         )
 
+# --- 41. Project-owned doc set: every slash-qualified backticked path citation
+#         must resolve on disk (issue #181) ------------------------------------
+# The claim class is a doc pointing at a file that never existed, or that was
+# removed without the doc following. Scope, deliberately declared partial:
+# README.md, CLAUDE.md, every docs/*.md (globbed, so a new one is covered), and
+# skills/architecture-360-audit/SKILL.md. NOT covered: ADAPTERS.md and
+# profile.md, whose slash-qualified citations are mostly hub-side paths or
+# deliberately-narrative "this used to live here" prose; absence of a finding
+# there is not approval. A candidate is skipped when the payload itself
+# (AGENTS.md or methodology/*.md) cites the same token, since that makes it
+# hub-relative rather than a local defect.
+cite_mismatches = []
+_cite_docs = ["README.md", "CLAUDE.md", "skills/architecture-360-audit/SKILL.md"]
+_cite_docs_dir = os.path.join(repo, "docs")
+if os.path.isdir(_cite_docs_dir):
+    _cite_docs += [
+        f"docs/{_f}" for _f in sorted(os.listdir(_cite_docs_dir)) if _f.endswith(".md")
+    ]
+_cite_top = {_p.split("/")[0] for _p in tracked}
+_cite_norm = re.compile(r":\d+(?:[-,]\d+)*$")
+
+
+def _cite_token(_raw):
+    _p = _cite_norm.sub("", _raw)
+    if not _p or "/" not in _p or re.search(r"\s", _p):
+        return ""
+    if any(_c in _p for _c in ":*?<>@") or not re.match(r"^[A-Za-z0-9._-]", _p):
+        return ""
+    return _p if _p.split("/")[0] in _cite_top else ""
+
+
+_cite_payload_dir = os.path.join(repo, "methodology")
+_cite_payload_docs = ["AGENTS.md"] + (
+    [
+        f"methodology/{_f}"
+        for _f in sorted(os.listdir(_cite_payload_dir))
+        if _f.endswith(".md")
+    ]
+    if os.path.isdir(_cite_payload_dir)
+    else []
+)
+_cite_payload = set()
+for _pd in _cite_payload_docs:
+    for _raw in re.findall(r"`([^`\n]+)`", _nl_read(_pd)):
+        _tok = _cite_token(_raw)
+        if _tok:
+            _cite_payload.add(_tok)
+_cite_seen = set()
+_cite_checked = 0
+for _cd in _cite_docs:
+    for _raw in re.findall(r"`([^`\n]+)`", _nl_read(_cd)):
+        _tok = _cite_token(_raw)
+        if not _tok or _tok in _cite_seen:
+            continue
+        _cite_seen.add(_tok)
+        _cite_checked += 1
+        if _tok in _cite_payload:
+            continue
+        if os.path.exists(os.path.join(repo, *_tok.split("/"))):
+            continue
+        cite_mismatches.append(
+            f"{_cd} cites `{_tok}`, which resolves to no tracked file"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -3193,7 +3265,7 @@ if dated_entries:
 if history_bytes > HISTORY_BUDGET:
     failures.append(f"HISTORY.md is {history_bytes} bytes, over the {HISTORY_BUDGET}-byte summary budget; archive the narrative")
 if orphaned:
-    failures.append(f"history/ archive(s) not linked from HISTORY.md: {orphaned}")
+    failures.append(f"history/ archive(s) with no `- [date](history/file.md)` row in HISTORY.md's Archive index: {orphaned}")
 if suite_mismatches:
     failures.append(f"{len(suite_mismatches)} cited suite section count(s) drifted from the live suites")
     for _m in suite_mismatches:
@@ -3371,6 +3443,12 @@ if hyer_mcp_mismatches:
     )
     for _m in hyer_mcp_mismatches:
         print(f"{ERROR} hyer-mcp claim: {_m}")
+if cite_mismatches:
+    failures.append(
+        f"{len(cite_mismatches)} project-owned doc path citation(s) resolve to no tracked file"
+    )
+    for _m in cite_mismatches:
+        print(f"{ERROR} doc path citation: {_m}")
 
 if failures:
     for f in failures:
@@ -3413,6 +3491,8 @@ print(f"{OK} sync exit codes: docs/OPERATOR_MANUAL.md + docs/ARCHITECTURE.md + s
 print(f"{OK} security process table: docs/SECURITY.md's argv/stdin mitigations still exist in the live bin/ code")
 print(f"{OK} security snapshot fields: docs/SECURITY.md's snapshot field set matches bin/sec-organizer's live schema ({len(_live_snap_fields)} field(s))")
 print(f"{OK} install-path claims: docs/ARCHITECTURE.md's bootstrap clone, install destination, installable helper set, piped-mode fallback, LICENSE copy name, and missing-git diagnosis match install.sh")
+if not cite_mismatches:
+    print(f"{OK} doc path citations: all {_cite_checked} slash-qualified citation(s) across {len(_cite_docs)} project-owned doc(s) resolve on disk")
 if not hyer_mcp_mismatches:
     print(f"{OK} hyer-mcp claims: docs/ARCHITECTURE.md's bin/hyer-mcp.sh bullet names the live HYER_HOME default (`{_hm_home}`), secret (`{_hm_secret}`), token env var (`{_hm_env}`), direct-node exec with no `sh -c`, and the gitignored `.mcp.json` / tracked `.mcp.json.example` pair")
 if not auto_rotate_mismatches:

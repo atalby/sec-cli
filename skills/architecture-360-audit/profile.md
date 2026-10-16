@@ -12,14 +12,14 @@ moves.
 Ecosystems present: Bash (`bin/sec` and seven sibling dispatchers, `install.sh`,
 five suites under `tests/`), Python 3 (6 files: `bin/sec-sync-controller.py`,
 `bin/sec-classify.py`, and four under `scripts/tests/`), PowerShell (`bin/sec.ps1`),
-zsh completion (`completions/_sec`), Markdown (78 files), JSON/YAML/TOML
+zsh completion (`completions/_sec`), Markdown (79 files), JSON/YAML/TOML
 configuration (13 files).
 
 Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (17 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (64 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (107 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (17 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (65 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (107 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#51`, `#67`, `#92`) |
@@ -432,7 +432,7 @@ instrument rather than the product but runs the same way:
 **Tracked file count** (the manifest denominator):
 
     $ git ls-files | wc -l
-    117
+    118
 
 **Dependency manifest census** (the persona 8 denominator):
 
@@ -639,7 +639,7 @@ module-level public, leading underscore private.
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:255`
 
 Nine install sections, sixteen guard sections, seventeen write-honesty
-sections, and the audit instrument's own sixty-four sentinel cases pass today
+sections, and the audit instrument's own sixty-five sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes all five bash suites — the former dispatch opt-in was removed in
 0284d39, issue #65); establish what they do not cover. Structural
@@ -801,7 +801,9 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **117 tracked files** (`git ls-files | wc -l`, re-measured
+Denominator: **118 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-16 after the citation guard (#181) added the `history/2026-10-16.md`
+narrative; previously re-measured
 2026-10-16 after the v5.41.0 Hyer payload adoption (no-limit#20) added
 `methodology/context-lifecycle.md` plus the `fleet-leader-election`,
 `one-decision-at-a-time` and `self-learning-skill-synthesis` skills;
@@ -818,7 +820,7 @@ before that 2026-10-11 after issue #63 removed the dead `scripts/pre-commit-test
 resolved to a nonexistent `.git/scripts/...` path), after issue #47 split the
 narrative into `history/` and issue #61 added the GitLab sync-controller pytest
 mirror; the issue #2 pytest suite (`scripts/tests/`), the `RESUME.md` resume
-marker, and the nine `history/*.md` archives are all counted). First matching
+marker, and the `history/*.md` archives are all counted). First matching
 row wins, so
 specific rows precede general rows.
 `sentinel.sh` fails on any tracked file matched by no row, and on any row

@@ -30,49 +30,43 @@ cleartext. `SEC_ALLOW_PLAINTEXT_MASTER_PASS` gates both paths, the file is
 `~/.cache/bitwarden/master_pass` at mode 0600, and bin/sec-migrator stages the infisical
 import in a `mktemp` file chmod'd to that mode and `rm -f`'d in both branches. Section 39,
 case [63]. Sentinel 60 -> 63 cases / 736 -> 792 assertions. Tracker: #51, #67, #92.
-Then a read-path honesty sweep. test_dispatch.sh case `[11] op set` failed once in four
-runs and would not reproduce; filed as #162, chasing it found a real defect: all seven
-`sec set` fall-through points discarded stderr and collapsed into one `[ERROR] failed to
-store secret ... in tenant '<t>'`, naming the tenant but never the step -- it now names
-the stage (stderr stays discarded: `bws secret create` carries the value in argv). Case
-[11d], 274/5 red -> 279/0. Dispatch 92 -> 93. #163 filed for the PowerShell sibling, which
-was worse: with no tenant dispatch the ps1 probes PATH, so an unusable bws fell through to
-bw, really wrote to the Vault, and exited 0. Its bws arm is now terminal. Dispatch [23f],
-dispatch 93 -> 94; ps1 tagged-line census 11 -> 12. Fifth, #164: the bitwarden
-attachment-read path piped `bw_list_items`'s literal `ERR` sentinel into jq, so its guard
-could never fire -- now capture-then-guard; [4d], dispatch 94 -> 95. Sixth, #165 closed
-three `sec-organizer` write-path holes (dead-guard reader, unvalidated `folders_json`
-mask, unguarded apply/revert pipelines); [14e-h], dispatch 95 -> 99. Seventh, #166-#169
-closed the class's remaining reads: four silent-death backend reads in bin/sec + keeper
-([14i-m]); the sec-migrator `bws project list` twin + three create-response jqs
-(write-honesty [15]); the README migrate bullet that read destination-only backends as
-sources (sentinel 19b); and the `bw list folders` mask whose `|| echo "[]"` made the
-guard unreachable ([14n]/[14o], dispatch 105 -> 107). Eighth, #170 closed the last twin:
-sec-migrator's `fetch_source_items` masked a failing source listing as `[]`, and jq on
-`[]` exits 0 with `0`, so a broken source printed `[INFO] Zero items found` + exit 0; an
-explicit empty-payload guard now rejects the read before the count. Write-honesty [16],
-16 -> 17; migrator tagged census 29 -> 30. Ninth, #171 corrected README's Smart Session
-bullet (false "any locked tenant") and made section 38 guard it, [62]. Tenth, #172 made
-section 14 also fail if the CI workflow's suite run-list stops running every live suite,
-[18]. Eleventh, #173 made section 40 guard docs/ARCHITECTURE.md's bin/hyer-mcp.sh component
-bullet (HYER_HOME default, secret, GITLAB_TOKEN, no `sh -c`, gitignored `.mcp.json` /
-tracked `.mcp.json.example`) against the live launcher, [64]; sentinel 63 -> 64 cases.
-Twelfth, #174 made section 18b also read docs/ARCHITECTURE.md's Overview sentence (the
-same universe + sync-target claim as README's) so both front sentences must name the live
-migrator universe and every controller target, [31]; assertions 820 -> 828.
-Thirteenth, #175 made section 29 also read docs/OPERATOR_MANUAL.md, which restates the
-`sec run` injection backends twice (its RAM-only list and its "only when the tenant is"
-sentence) plus a `plain exec` claim, while the guard read only README + ARCHITECTURE --
-[51], assertions 828 -> 836. Fourteenth, #176 made section 29 also read
-docs/SECURITY.md's Disk Storage Leak row (the fourth doc restating the same
-backend set), [51], assertions 836 -> 840. Fifteenth, #177 extended the
-ps1-surface guard to README.md's Multi-OS matrix PowerShell cell, which restated
-the bin/sec.ps1 native subset that only ARCHITECTURE.md was checked against,
-[54], assertions 840 -> 844. Sixteenth, #178 made section 18b's sync-target
-check also read docs/OPERATOR_MANUAL.md:92 and docs/ARCHITECTURE.md's
-sync-controller bullet (both state the live `Targets:` list, a word-level match
-since the bullet says `CI/CD variables`), [31], assertions 844 -> 852.
+Then a read-path honesty sweep (#162-#170). All seven `sec set` fall-through points
+discarded stderr and collapsed into one `[ERROR]` naming the tenant but never the step; the
+PowerShell sibling was worse -- with no tenant dispatch it probes PATH, so an unusable bws
+fell through to bw, really wrote to the Vault, and exited 0 (its bws arm is now terminal);
+the bitwarden attachment-read path piped a literal `ERR` sentinel into jq, so its guard could
+never fire; three `sec-organizer` write-path holes (dead-guard reader, unvalidated
+`folders_json` mask, unguarded apply/revert pipelines); four silent-death backend reads in
+bin/sec + keeper; the sec-migrator `bws project list` twin plus three create-response jqs; the
+README migrate bullet reading destination-only backends as sources; the `bw list folders` mask
+whose `|| echo "[]"` made its guard unreachable; and `fetch_source_items` masking a failing
+source listing as `[]`, where jq exits 0 on `[]` and a broken source printed
+`[INFO] Zero items found` + exit 0. Dispatch 92 -> 107 cases, write-honesty 16 -> 17,
+migrator tagged census 29 -> 30. Then five guard-widening units (#171-#178), each making an
+existing section also read a doc restating a claim it already guarded: #171 README's Smart
+Session bullet ([62]); #172 the CI workflow's suite run-list ([18]); #173 the hyer-mcp
+component bullet, sentinel 63 -> 64 cases ([64]); #174 ARCHITECTURE.md's Overview sentence
+([31]); #175/#176 docs/OPERATOR_MANUAL.md and docs/SECURITY.md as `sec run` injection-backend
+restatements ([51]); #177 README's Multi-OS matrix PowerShell cell ([54]); #178
+OPERATOR_MANUAL.md:92 and the sync-controller bullet on sync targets ([31]). Assertions
+736 -> 852.
 Full narrative: `history/2026-10-15.md`.
+
+**2026-10-16**: #181 closed the citation class and the Archive-index hole it
+exposed. CLAUDE.md's claim that Claude Code "does not yet auto-discover
+`AGENTS.md`" was false (Claude Code reads `AGENTS.md` natively; the built-in
+`agents-md` mod even skips it when a `CLAUDE.md` exists), and its pointer to
+`docs/wiki` named a path this repo has never had -- two empty `git log --all`
+probes, zero sentinel coverage, in a file every Claude Code session loads.
+Section 41 + case [65] now require every slash-qualified backticked citation in
+README.md, CLAUDE.md, `docs/*.md`, and the 360-audit SKILL.md to resolve on disk,
+skipping only tokens the payload itself cites (hub-relative), and declare what
+they do not cover: ADAPTERS.md and profile.md, whose slash-qualified citations
+are mostly hub-side or deliberately narrative. The same issue found section 6
+accepting any `history/<file>.md` substring as a link, which is why
+`history/2026-10-15.md` shipped with no `## Archive` row; it now requires the
+`- [date](history/file.md)` form. Sentinel 64 -> 65 cases.
+Full narrative: `history/2026-10-16.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
 unknown flags and dropped operands with tagged `[ERROR]` + exit 2; completion
@@ -97,6 +91,8 @@ All five bash suites and the pytest mirror (58 tests) pass. Narrative:
 
 ## Archive
 
+- [2026-10-16](history/2026-10-16.md)
+- [2026-10-15](history/2026-10-15.md)
 - [2026-10-14](history/2026-10-14.md)
 - [2026-10-13](history/2026-10-13.md)
 - [2026-10-12](history/2026-10-12.md)

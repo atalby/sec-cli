@@ -5417,6 +5417,82 @@ else
     no "the control copy's OK line did not name the hyer-mcp check"
     printf '%s\n' "$OUT"
 fi
+echo "[65] project-owned doc path citations must resolve on disk, and every history/ archive needs an Archive-index row (issue #181)"
+WORK_T41A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T41B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T41CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for _w in "$WORK_T41A" "$WORK_T41B" "$WORK_T41CTRL"; do
+    seed "$_w"
+done
+python3 - "$WORK_T41A/docs/ARCHITECTURE.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`bin/sec-migrator`"
+if s.count(old) != 1:
+    sys.exit("docs/ARCHITECTURE.md no longer cites bin/sec-migrator in the guarded form")
+open(p, "w", encoding="utf-8").write(s.replace(old, "`bin/sec-migrator-retired`", 1))
+PY
+OUT="$(cd "$WORK_T41A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a project-owned doc cites a path that resolves to nothing"
+else
+    no "coverage accepted a project-owned doc citation of a path that resolves to nothing"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF 'docs/ARCHITECTURE.md cites `bin/sec-migrator-retired`' <<<"$OUT"; then
+    ok "coverage names the unresolvable citation and the doc that made it"
+else
+    no "coverage did not name the unresolvable citation and the doc that made it"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T41B/HISTORY.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "- [2026-10-14](history/2026-10-14.md)\n"
+if s.count(old) != 1:
+    sys.exit("HISTORY.md no longer carries the 2026-10-14 Archive-index row in the guarded form")
+out = s.replace(old, "", 1)
+if "`history/2026-10-14.md`" not in out:
+    sys.exit("HISTORY.md no longer mentions history/2026-10-14.md in backticks; the probe would stop testing the index-row distinction")
+open(p, "w", encoding="utf-8").write(out)
+PY
+OUT="$(cd "$WORK_T41B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when an archive has only a backticked mention and no Archive-index row"
+else
+    no "coverage accepted an archive whose only HISTORY.md mention is a backticked narrative pointer"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "2026-10-14.md" <<<"$OUT" && grep -qF "Archive index" <<<"$OUT"; then
+    ok "coverage names the archive that lost its Archive-index row"
+else
+    no "coverage did not name the archive that lost its Archive-index row"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T41CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (every doc citation resolves, every archive indexed) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] doc path citations:" <<<"$OUT"; then
+    ok "the control copy's OK line names the doc-path-citation check"
+else
+    no "the control copy's OK line did not name the doc-path-citation check"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] narrative history:" <<<"$OUT"; then
+    ok "the control copy's OK line names the narrative-history check"
+else
+    no "the control copy's OK line did not name the narrative-history check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

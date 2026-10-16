@@ -1,5 +1,42 @@
 # Resume point - sec-cli
 
+Session 2026-10-16 (57th run): shipped **#181** -- CLAUDE.md (the Claude Code bridge,
+auto-loaded every session, and the one agent-facing doc the sentinel never read) said
+"This file exists only because Claude Code does not yet auto-discover `AGENTS.md`" and
+pointed at `docs/wiki` for "the current state of that". Both halves are false: Claude Code
+has read AGENTS.md natively since 2.1.281 (docs/en/memory has an `AGENTS.md` section and a
+"Remove an earlier AGENTS.md workaround" heading; the built-in `agents-md` mod's default
+`claude-md-or-agents-md` deliberately SKIPS AGENTS.md when a CLAUDE.md exists, which is the
+real reason this bridge earns its keep), and `git log --all -- docs/wiki` is empty, so the
+cited page never existed in this repo. The same sweep found a second hole: HISTORY.md's
+`## Archive` index had no 2026-10-15 row, and section 6 did not notice because it tested for
+the substring `history/<file>` anywhere in the file -- which the narrative's "Full narrative:"
+line satisfied -- while profile.md still said "the nine history/*.md archives" against 10 on
+disk. Fix: CLAUDE.md rewritten in place to state the real behaviour and the real reason for
+the import, with the dead pointer gone; HISTORY.md gained both missing rows and its
+2026-10-15 entry was compacted ~4000 -> ~1400 bytes. Guard: new sentinel section 41 builds
+the live top-level entries from `git ls-files`, then requires every slash-qualified path
+citation in README.md, CLAUDE.md, docs/*.md (globbed, so a new docs file is covered
+automatically) and the audit SKILL.md to resolve to a tracked file -- excluding tokens the
+payload itself cites (AGENTS.md + methodology/*.md), which are hub-relative rather than
+locally broken, and declaring ADAPTERS.md and profile.md out of scope because their own prose
+quotes dead legacy paths on purpose. The rule funnel was 148 naive candidates -> 8 after
+line-ref/URL/placeholder/top-level-entry filtering -> 1 true positive. Section 6 now matches
+an explicit `- [date](history/<file>)` row. Probes: case [65] WORK_T41A (retire a real
+citation in docs/ARCHITECTURE.md) and WORK_T41B (delete an Archive row while leaving the
+backticked mention intact, so the probe keeps testing substring-vs-row), plus WORK_T41CTRL
+green. Mirrors: ADAPTERS.md:32 "Last updated", RESUME.md baseline below (852 -> 866
+assertions; sentinel 64 -> 65 cases; tracked files 117 -> 118), HISTORY.md 7996 -> 7322
+bytes, profile.md transcript and denominator, narrative in history/2026-10-16.md. Full
+battery green (dispatch/install/sync_guard/write_honesty/sentinel ALL PASSED, pytest 58,
+coverage + citations RC=0).
+
+Resume here next run: no non-gated tracker item remains. The tracker holds **#67**
+(fresh 360 audit -- its Step-1 gate needs explicit human scope approval; must NOT be
+started autonomously), and **#92** + **#51** (hub-side, not this repo). Standing next
+autonomous move: sweep for the next unguarded current-state claim (the #129-#181 class);
+if none surfaces, the fresh 360 audit (#67) only after human approval.
+
 Session 2026-10-15 (56th run): shipped **#178** -- sentinel 18b derived the live
 sync `Targets:` header and required README.md's and docs/ARCHITECTURE.md's FRONT
 sentences to name every target, but docs/OPERATOR_MANUAL.md:92 and
@@ -1581,12 +1618,12 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 107, install 9, sentinel 64, sync_guard 16,
-write_honesty 17. Sentinel = 64 cases / 852 assertions. HISTORY.md is at
-7996/8192 bytes - headroom of 196 bytes before its budget (the 2026-10-15 block
-was compacted to fold in #166-#178; the full narratives live in
-`history/2026-10-15.md`).
-117 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
+mirrors in sync): dispatch 107, install 9, sentinel 65, sync_guard 16,
+write_honesty 17. Sentinel = 65 cases / 866 assertions. HISTORY.md is at
+7322/8192 bytes - headroom of 870 bytes before its budget (the 2026-10-15 block
+was compacted again for #181; the full narratives live in
+`history/2026-10-15.md` and `history/2026-10-16.md`).
+118 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each
 guard case re-runs full coverage a few times); the pytest mirror adds ~3.5 min.
 Run both when a sentinel section changes.

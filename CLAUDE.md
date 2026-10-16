@@ -2,12 +2,12 @@
 
 ## Claude Code specifics
 
-This file exists only because Claude Code does not yet auto-discover
-`AGENTS.md` the way Gemini CLI, Cursor, and several other tools do (see
-`docs/wiki` — "Tool Bridges" — for the current state of that). The
-`@AGENTS.md` line above imports that file's full content into this
-session exactly as if it were written here directly. Everything in
-`AGENTS.md` applies; nothing below overrides it.
+Claude Code now reads `AGENTS.md` natively, so the import on line 1 is a
+compatibility belt-and-braces for versions configured to load only
+`CLAUDE.md` (the built-in `agents-md` behaviour skips `AGENTS.md` when a
+`CLAUDE.md` exists). The `@AGENTS.md` line above imports that file's full
+content into this session exactly as if it were written here directly.
+Everything in `AGENTS.md` applies; nothing below overrides it.
 
 - **Plan Mode is this project's mechanism for step 3 of the core
   development loop** ("Plan" — write a design, get explicit approval
