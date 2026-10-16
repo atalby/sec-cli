@@ -170,7 +170,10 @@ def symbolish(span):
     return "_" in span or re.search(r"[a-z][A-Z]", span)
 
 
-claim_sources = {os.path.relpath(s, repo) for s in (skill, profile)}
+claim_sources = {
+    os.path.relpath(os.path.realpath(s), os.path.realpath(repo))
+    for s in (skill, profile)
+}
 contents = []
 for f in tracked:
     if f in claim_sources:
@@ -476,10 +479,10 @@ for root, dirs, files in os.walk(repo):
         if name in MANIFEST_NAMES:
             found_manifests.append(os.path.relpath(os.path.join(root, name), repo))
 
-unclaimed_manifests = [m for m in found_manifests if not any(fnmatch.fnmatch(m, g) for g, _ in git_rows)]
+unclaimed_manifests = [m for m in found_manifests if not any(fnmatch.fnmatch(m, g) for g, _ in cov_rows)]
 for m in found_manifests:
     base = os.path.basename(m)
-    if base in HARD_REQUIRED_IF_PRESENT and not any(fnmatch.fnmatch(m, g) for g, _ in git_rows):
+    if base in HARD_REQUIRED_IF_PRESENT and not any(fnmatch.fnmatch(m, g) for g, _ in cov_rows):
         new_ecosystems.append(m)
 
 # --- 4. personas must all be reachable ----------------------------------------

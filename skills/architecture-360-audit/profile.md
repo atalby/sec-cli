@@ -13,7 +13,7 @@ Ecosystems present: Bash (`bin/sec` and seven sibling dispatchers, `install.sh`,
 five suites under `tests/`), Python 3 (6 files: `bin/sec-sync-controller.py`,
 `bin/sec-classify.py`, and four under `scripts/tests/`), PowerShell (`bin/sec.ps1`),
 zsh completion (`completions/_sec`), Markdown (74 files), JSON/YAML/TOML
-configuration (12 files).
+configuration (13 files).
 
 Measured against the tier definition:
 
@@ -432,18 +432,19 @@ instrument rather than the product but runs the same way:
 **Tracked file count** (the manifest denominator):
 
     $ git ls-files | wc -l
-    111
+    113
 
 **Dependency manifest census** (the persona 8 denominator):
 
     $ find . -path ./.git -prune -o -type f \( -name 'package.json' -o -name 'package-lock.json' -o -name 'go.mod' -o -name 'Cargo.toml' -o -name 'Cargo.lock' -o -name 'pyproject.toml' -o -name 'requirements.txt' -o -name 'Makefile' -o -name 'uv.lock' -o -name 'Pipfile' -o -name 'Gemfile' -o -name 'composer.json' -o -name 'mix.exs' -o -name 'pom.xml' -o -name 'build.gradle' \) -print | wc -l
-    44
+    46
 
     $ find . -path ./.git -prune -o -type f \( -name 'package.json' -o -name 'package-lock.json' -o -name 'go.mod' -o -name 'Cargo.toml' -o -name 'Cargo.lock' -o -name 'pyproject.toml' -o -name 'requirements.txt' -o -name 'Makefile' -o -name 'uv.lock' -o -name 'Pipfile' -o -name 'Gemfile' -o -name 'composer.json' -o -name 'mix.exs' -o -name 'pom.xml' -o -name 'build.gradle' \) -print | grep -vc '^./\.opencode/'
     0
 
-    44 hits, every one under `.opencode/` (2 root files plus 42 below
-    `.opencode/node_modules/`), zero anywhere else in the tree. First seen
+    46 hits: 44 under `.opencode/` (2 root files plus 42 below
+    `.opencode/node_modules/`) and 2 at the repository root (`pyproject.toml`
+    and `uv.lock`, added 2026-10-16 with issue #179). First seen
     2026-10-10, when opencode bootstrapped its plugin dependency there;
     the pre-bootstrap census was `(no output)`.
 
@@ -800,7 +801,10 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **111 tracked files** (`git ls-files | wc -l`, re-measured
+Denominator: **113 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-16 after the macOS-portability fix (#179) and the sentinel claim-lint
+fix (#180) added `pyproject.toml` and `uv.lock`, making the repo a uv project
+so the hub's pre-commit Step 5 runs `scripts/tests/`; previously re-measured
 2026-10-15 after issue #160 added the `history/2026-10-15.md` narrative;
 previously 2026-10-14 after issue #144 added the `history/2026-10-14.md`
 narrative;
@@ -836,6 +840,8 @@ archive unlinked.
 | `LICENSE` | 8 |
 | `README.md` | 4, 5 |
 | `SKILL.md` | 4 |
+| `pyproject.toml` | 8 |
+| `uv.lock` | 8 |
 | `bin/bw-session-keeper` | 1, 9 |
 | `bin/hyer-mcp.sh` | 1, 4 |
 | `bin/sec` | 4, 12, 1 |
