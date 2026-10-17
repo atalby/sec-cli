@@ -29,7 +29,7 @@ legacy artifact; leave it" is read as a citation-scoping rule (do not delete/ren
 cite any SKILL.md by bare basename) -- the artifact's identity is preserved; only lines 17 and
 29 change.
 
-ISSUE **#183** (filed, then closed by this run's ship commit):
+ISSUE **#183** (filed, shipped in `3e775e1`, closed):
 https://github.com/atalby/sec-cli/issues/183 -- body at /tmp/opencode/issue-body.md.
 
 Shipped (one unit):
@@ -1785,8 +1785,15 @@ Run both when a sentinel section changes.
    checks plain-text + TDD + granularity. It cannot see commit ordering inside one
    commit, so stage a test file with any impl change. Advisory WARNING when staged
    changes span 2 categories is recurring and benign; it also emits a
-   "Step 23 (doc path refs)" advisory (issue #179) that does not block. The mirror
-   now uses `SEC_TEST_SUITE_TIMEOUT` (default 300s) - see #104/#105.
+   "Step 23 (doc path refs)" advisory (issue #179) that does not block. As of
+   the 60th run it reports 7 dangling backticked path refs: the 2 project-owned
+   ones (`history/2026-10-11.md:58`, `profile.md:818`) name
+   `scripts/pre-commit-test-suites.sh`, deliberately removed by issue #63, so
+   they are benign narrative; the other 5 are hub-owned
+   (`methodology/adoption.md:9`, `packs/solo-founder-governance/PACK.md:170` +
+   `:215`, `skills/adopt-persona/SKILL.md:33`, `skills/adr-capture/SKILL.md:139`)
+   -> hub-side, not an adopter fix. The mirror now uses
+   `SEC_TEST_SUITE_TIMEOUT` (default 300s) - see #104/#105.
 5. **`gh issue close --comment` with a long heredoc can hang.** Write the body to
    a file: `gh issue close N --comment "$(cat f)"` (worked this session) or
    comment then close separately; verify state after.
