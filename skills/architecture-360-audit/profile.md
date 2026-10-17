@@ -7,7 +7,7 @@ moves.
 
 ## Maturity tier
 
-**TIER B, established: tests plus CI, no project dependency manifest.**
+**TIER A, established: project manifest + lockfile, test runner, CI, and documentation.**
 
 Ecosystems present: Bash (`bin/sec` and seven sibling dispatchers, `install.sh`,
 five suites under `tests/`), Python 3 (6 files: `bin/sec-sync-controller.py`,
@@ -23,29 +23,33 @@ Measured against the tier definition:
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#51`, `#67`, `#92`) |
-| Lockfile | **ABSENT (project)** | no project lockfile of any ecosystem; the only lockfile on disk is the harness-managed `.opencode/package-lock.json` (2026-10-10, self-gitignored by `.opencode/.gitignore`) |
-| Dependency manifest | **ABSENT (project)** | no `package.json`, `pyproject.toml`, `requirements.txt`, `Makefile`, or equivalent anywhere in the tracked tree; the only manifests on disk are `.opencode/package.json` + `.opencode/package-lock.json`, opencode's own plugin bootstrap (`@opencode-ai/plugin` 1.18.35, installed 2026-10-10) |
+| Lockfile | **PRESENT** (2026-10-16, issue #179) | `uv.lock` at the repository root (79 lines, `version = 1`, `revision = 3`), pinning the pytest dev group with hashes (pytest, colorama 0.4.6, iniconfig 2.3.1, packaging, pluggy, pygments); the harness-managed `.opencode/package-lock.json` (2026-10-10, self-gitignored by `.opencode/.gitignore`) is separate tooling state |
+| Dependency manifest | **PRESENT** (2026-10-16, issue #179) | `pyproject.toml` at the repository root: `name = "sec-cli"`, `version = "1.0.0"`, `requires-python = ">=3.11"`, `dependencies = []`, `[dependency-groups] dev = ["pytest"]`, `[tool.uv] package = false`, `[tool.pytest.ini_options] testpaths = ["scripts/tests"]`; `.opencode/package.json` + `.opencode/package-lock.json` remain opencode's own plugin bootstrap (`@opencode-ai/plugin` 1.18.35, installed 2026-10-10) |
 
 Tier reasoning (ladder: A = manifest + lockfile + runner + CI + docs;
 B = established, most present with partials; C = thin, no CI; D = no CI,
 unautomated tests; E = undocumented): CI arrived 2026-10-09 with five green
-suites and extensive docs, so D and C are cleared; the absence of any
-project dependency manifest and lockfile keeps it at B rather than A — the
-`.opencode/` pair is harness tooling state, not a build input, so it does
-not promote the tier.
+suites, extensive docs, and a green test runner, and the project manifest
+and lockfile arrived 2026-10-16 with issue #179, so every row of the ladder's
+A definition is now satisfied — the verdict is TIER A. The promotion follows
+the ladder's letter rather than a jump in supply-chain risk: the manifest
+declares an empty runtime dependency set (`dependencies = []`, `[tool.uv]
+package = false`), so its only pinned surface is the pytest dev group; the
+`.opencode/` pair is harness tooling state and still does not count.
 
 The two partials are themselves findings, not tier annotations:
 
-1. **No project dependency manifest at all, so no supply-chain scanner has
-   a target.** The zero-dependency claim in `README.md` is trivially true —
-   there is nothing to pin because nothing is declared — while the runtime pulls in
-   `bw`, `bws`, `op`, `jq`, `gcloud`, `git`, `curl`, and `python3` from the
-   operator's machine, none version-checked. There is no `pip-audit` target
-   and no project `npm audit` target; the only npm manifest on disk is the
-   harness's own `.opencode/package.json` (opencode plugin state, ignored by
-   `.opencode/.gitignore`), which is tooling, not this project's supply
-   chain. Per prior art C that absence is the persona 8 finding, not an
-   excuse to skip the dimension.
+1. **The manifest pins the dev group only, so the runtime dependency
+   surface still has no scanner target.** `pyproject.toml` (2026-10-16,
+   issue #179) declares `dependencies = []` and `[tool.uv] package = false`,
+   so `uv lock`/`pip-audit` now has a target in the pytest dev group and
+   `uv.lock` pins it — but the *runtime* still pulls `bw`, `bws`, `op`,
+   `jq`, `gcloud`, `git`, `curl`, and `python3` from the operator's machine,
+   none version-checked, and none of those are covered by the manifest. The
+   zero-dependency claim in `README.md` stays literally true for the
+   runtime, which is exactly why the runtime toolchain is the persona 8
+   finding rather than an absence of a manifest. Per prior art C that gap is
+   the finding, not an excuse to skip the dimension.
 2. **The local pre-commit gate runs the suites only while `uv` is on
    PATH.** The hook's test step recognizes `scripts/tests/`+uv,
    `pytest.ini`/`pyproject`, and `package.json` — not `tests/*.sh`
@@ -64,8 +68,9 @@ carried over from a previous generation. On refresh, re-run them all and
 replace the output; if one stops existing, search the manifest, `Makefile`,
 CI configuration, and contributor documentation before recording an absence.
 
-**Test suite** (four-source discovery: manifest — absent; `Makefile` —
-absent; CI — `.github/workflows/test.yml` since 2026-10-09 (issue #8), runs
+**Test suite** (four-source discovery: manifest — `pyproject.toml`, whose
+`testpaths = ["scripts/tests"]` scopes the pytest mirror (2026-10-16, issue
+#179); `Makefile` — absent; CI — `.github/workflows/test.yml` since 2026-10-09 (issue #8), runs
 the five bash suites below and nothing else; contributor documentation —
 `ADAPTERS.md:258` "Running this project's test suite", which also names the
 pytest mirror at `scripts/tests/`). All quotes below current as of the
@@ -434,19 +439,21 @@ instrument rather than the product but runs the same way:
     $ git ls-files | wc -l
     119
 
-**Dependency manifest census** (the persona 8 denominator):
+**Dependency manifest census** (the persona 8 denominator). A project
+surface is what `git ls-files` tracks, so the count below is reproducible; a
+bare `find` over a working tree is not, because it also catches opencode's
+own harness install under `.opencode/`:
 
-    $ find . -path ./.git -prune -o -type f \( -name 'package.json' -o -name 'package-lock.json' -o -name 'go.mod' -o -name 'Cargo.toml' -o -name 'Cargo.lock' -o -name 'pyproject.toml' -o -name 'requirements.txt' -o -name 'Makefile' -o -name 'uv.lock' -o -name 'Pipfile' -o -name 'Gemfile' -o -name 'composer.json' -o -name 'mix.exs' -o -name 'pom.xml' -o -name 'build.gradle' \) -print | wc -l
-    46
+    $ git ls-files | grep -Ec '(^|/)(package\.json|package-lock\.json|go\.mod|go\.sum|Cargo\.toml|Cargo\.lock|pom\.xml|build\.gradle|Gemfile|composer\.json|pyproject\.toml|requirements\.txt|mix\.exs|Makefile|uv\.lock|Pipfile)$'
+    2
 
-    $ find . -path ./.git -prune -o -type f \( -name 'package.json' -o -name 'package-lock.json' -o -name 'go.mod' -o -name 'Cargo.toml' -o -name 'Cargo.lock' -o -name 'pyproject.toml' -o -name 'requirements.txt' -o -name 'Makefile' -o -name 'uv.lock' -o -name 'Pipfile' -o -name 'Gemfile' -o -name 'composer.json' -o -name 'mix.exs' -o -name 'pom.xml' -o -name 'build.gradle' \) -print | grep -vc '^./\.opencode/'
-    0
-
-    46 hits: 44 under `.opencode/` (2 root files plus 42 below
-    `.opencode/node_modules/`) and 2 at the repository root (`pyproject.toml`
-    and `uv.lock`, added 2026-10-16 with issue #179). First seen
-    2026-10-10, when opencode bootstrapped its plugin dependency there;
-    the pre-bootstrap census was `(no output)`.
+**2 project-owned dependency manifests are tracked** — `pyproject.toml` and
+`uv.lock`, both at the repository root, added 2026-10-16 with issue #179 (the
+count before that date was 0). A `find` over a developer machine's working
+tree also catches opencode's own harness install under `.opencode/` (46 hits
+on 2026-10-17, 42 of them below `.opencode/node_modules/`); that is tooling
+state, not a build input, and is not pinned here because it depends on what a
+given machine has installed.
 
 **Tracker, live** (point-in-time capture, 2026-10-10 at commit `78120f6` — the
 issue list moves on every close/open/comment (a comment refreshes the
@@ -528,11 +535,15 @@ dimension.
 
 ## Dependency manifests and lockfiles
 
-**None as a project surface.** No manifest, no lockfile, no `Makefile`
-belonging to this project in the tree or on disk — the only on-disk census
+**Present, and project-owned since 2026-10-16 (issue #179).** `pyproject.toml`
+declares the project (`name = "sec-cli"`, `version = "1.0.0"`,
+`requires-python = ">=3.11"`), an empty runtime dependency set
+(`dependencies = []`, `[tool.uv] package = false`), a `dev` group of
+`["pytest"]`, and the pytest scope `testpaths = ["scripts/tests"]`; `uv.lock`
+(next to it) pins that dev group with hashes. The remaining on-disk census
 hits are opencode's own harness install under `.opencode/` (see the census
-above), which is tooling state, not a build input. Re-verified in the
-2026-10-10 profile pass.
+above), which is tooling state, not a build input. No `Makefile` belongs to
+the project. Re-verified 2026-10-17.
 
 **Unpinned and floating, by mechanism:**
 
