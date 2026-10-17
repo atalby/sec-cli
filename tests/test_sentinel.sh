@@ -3992,7 +3992,7 @@ else
     no "the control copy's OK line did not name the runtime-dependency/env-var check"
     printf '%s\n' "$OUT"
 fi
-echo "[51] README.md / ARCHITECTURE.md run-injection backend claims must match the live bin/sec run arm (issue #151)"
+echo "[51] SKILL.md / README.md / ARCHITECTURE.md run-injection backend claims must match the live bin/sec run arm (issue #151 + #183)"
 WORK_T23A="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23B="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23C="$(mktemp -d "$WORK_ROOT/XXXX")"
@@ -4000,8 +4000,10 @@ WORK_T23D="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23E="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23F="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23G="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T23H="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T23I="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_T23CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
-for W in "$WORK_T23A" "$WORK_T23B" "$WORK_T23C" "$WORK_T23D" "$WORK_T23E" "$WORK_T23F" "$WORK_T23G" "$WORK_T23CTRL"; do
+for W in "$WORK_T23A" "$WORK_T23B" "$WORK_T23C" "$WORK_T23D" "$WORK_T23E" "$WORK_T23F" "$WORK_T23G" "$WORK_T23H" "$WORK_T23I" "$WORK_T23CTRL"; do
     seed "$W"
 done
 python3 - "$WORK_T23A/README.md" <<'PY'
@@ -4170,6 +4172,54 @@ if grep -q "docs/SECURITY.md names run-injection backends bws, op, vault, but bi
     ok "coverage names the SECURITY.md run-injection backend drift"
 else
     no "coverage did not name the SECURITY.md run-injection backend drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T23H/SKILL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"env injection only for bws/op/infisical \(", "env injection only for bws/op/vault (", s, count=1)
+if n != 1:
+    sys.exit("SKILL.md carries no 'env injection only for bws/op/infisical (' claim to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T23H" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SKILL.md's run-injection backend list drifts"
+else
+    no "coverage accepted a SKILL.md run-injection backend drift"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "SKILL.md names run-injection backends bws, op, vault, but bin/sec injects via bws, infisical, op" <<<"$OUT"; then
+    ok "coverage names the SKILL.md run-injection backend drift"
+else
+    no "coverage did not name the SKILL.md run-injection backend drift"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T23I/SKILL.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"env injection only for bws/op/infisical", "secrets injected", s)
+if n != 2:
+    sys.exit("SKILL.md carries %d 'env injection only for bws/op/infisical' claims, expected 2" % n)
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_T23I" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when SKILL.md drops the guarded run-injection claim"
+else
+    no "coverage accepted SKILL.md dropping the run-injection claim"
+    printf '%s\n' "$OUT"
+fi
+if grep -q "SKILL.md no longer states the run-injection backend set in the guarded form" <<<"$OUT"; then
+    ok "coverage names the dropped SKILL.md run-injection claim"
+else
+    no "coverage did not name the dropped SKILL.md run-injection claim"
     printf '%s\n' "$OUT"
 fi
 OUT="$(cd "$WORK_T23CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"

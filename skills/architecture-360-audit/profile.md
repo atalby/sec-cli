@@ -12,7 +12,7 @@ moves.
 Ecosystems present: Bash (`bin/sec` and seven sibling dispatchers, `install.sh`,
 five suites under `tests/`), Python 3 (6 files: `bin/sec-sync-controller.py`,
 `bin/sec-classify.py`, and four under `scripts/tests/`), PowerShell (`bin/sec.ps1`),
-zsh completion (`completions/_sec`), Markdown (79 files), JSON/YAML/TOML
+zsh completion (`completions/_sec`), Markdown (80 files), JSON/YAML/TOML
 configuration (13 files).
 
 Measured against the tier definition:
@@ -432,7 +432,7 @@ instrument rather than the product but runs the same way:
 **Tracked file count** (the manifest denominator):
 
     $ git ls-files | wc -l
-    118
+    119
 
 **Dependency manifest census** (the persona 8 denominator):
 
@@ -799,7 +799,9 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **118 tracked files** (`git ls-files | wc -l`, re-measured
+Denominator: **119 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-17 after issue #183 truth-upped the repo-root `SKILL.md` and added the
+`history/2026-10-17.md` narrative; previously re-measured
 2026-10-16 after the citation guard (#181) added the `history/2026-10-16.md`
 narrative; previously re-measured
 2026-10-16 after the v5.41.0 Hyer payload adoption (no-limit#20) added

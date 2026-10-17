@@ -1,5 +1,82 @@
 # Resume point - sec-cli
 
+## Session 2026-10-17 (60th run) -- #183: repo-root SKILL.md F001 truth-up + sentinel section 29 extension (shipped)
+
+Baseline verified green before the change (tree clean at `ee9a69b`): the five
+`tests/test_*.sh` suites all ALL TESTS PASSED, `.venv/bin/python -m pytest -q` 58 passed in
+265s, `sentinel.sh coverage` RC=0, `sentinel.sh citations` RC=0. No route file was present;
+variant was set to `high`.
+
+Finding (CONFIRMED, the #129-#182 class): the repo-root `SKILL.md` (the v1.0.0 initial-release
+artifact, 50 lines, only commit `89c67d2`) still asserts UNCONDITIONAL in-memory injection for
+`sec run` at `SKILL.md:17` ("`**In-Memory Injection**: Use runtime CLI launchers (sec run --
+<cmd> ...) to inject credentials directly into process memory at execution time`") and
+`SKILL.md:29` ("`sec run -- terraform plan       # Run command with secrets injected into
+memory`"). Both are FALSE for the default `bitwarden` tenant, which is a plain exec
+(`bin/sec:185` usage: "env injection only for bws/op/infisical (bitwarden: plain exec)"; the
+honest phrase also lives at `bin/sec:239` zsh and `bin/sec:361` fish). This is the same F001
+phantom-injection class already truth-upped at #43/#151/#175/#176; the root SKILL.md is the
+last surface. It is UNGUARDED (no sentinel section reads the repo-root SKILL.md; the only
+SKILL.md reads are the audit skill at `sentinel.sh:989` and the forge spec at `:1188`), yet
+`profile.md:673` persona 4 declares it product surface ("Harness entry points (`SKILL.md`,
+`CLAUDE.md`, `.gemini/`, `skills/REGISTRY.md`) are part of the product surface: a broken bridge
+is a broken feature") and the coverage manifest has a `SKILL.md | 4` row at `profile.md:846`.
+`git log --oneline -- SKILL.md` is still only `89c67d2`.
+
+Decision (flagged non-silently, directive 16): truth-up the two lines AND guard them, rather
+than preserve a known-false agent-facing claim. The 59th-run note "the root `SKILL.md` is a
+legacy artifact; leave it" is read as a citation-scoping rule (do not delete/rename it; never
+cite any SKILL.md by bare basename) -- the artifact's identity is preserved; only lines 17 and
+29 change.
+
+ISSUE **#183** (filed, then closed by this run's ship commit):
+https://github.com/atalby/sec-cli/issues/183 -- body at /tmp/opencode/issue-body.md.
+
+Shipped (one unit):
+1. `SKILL.md:17`: directive #2 now ends "...with env injection only for
+   bws/op/infisical (bitwarden is a plain exec, so the default tenant does not inject)".
+2. `SKILL.md:29`: `# Run command; env injection only for bws/op/infisical (bitwarden: plain exec)`.
+3. `skills/architecture-360-audit/sentinel.sh:2232` (`_run_doc_sites`): gained `SKILL.md` as its
+   first tuple (`env injection only for` marker + `env injection only for ([a-z0-9/]+) \(`);
+   the existing loop slash-splits the capture with `op`/`1pass` normalisation and compares to
+   `_run_live` = {bws, infisical, op}.
+4. `sentinel.sh:2290` + `:2293`: `SKILL.md` joined the `plain exec` site tuple and its message.
+5. `sentinel.sh:3558`: the OK line now names `SKILL.md` first (the test's `grep -qE
+   "\[ OK \] run-injection claims:"` is a prefix match, unaffected).
+6. `tests/test_sentinel.sh` case [51]: banner now names SKILL.md; added `WORK_T23H` (corrupted
+   backend list -> "SKILL.md names run-injection backends bws, op, vault, but bin/sec injects
+   via bws, infisical, op") and `WORK_T23I` (claim dropped -> "SKILL.md no longer states the
+   run-injection backend set in the guarded form"). Sentinel stays at **66 cases** (no mirror
+   bumps at profile.md:22 / ADAPTERS.md:55 / ADAPTERS.md:264); assertions **878 -> 886** (the
+   guard counts every `ok`/`no` line -- do not guess this number, read it off the guard).
+7. Narrative/docs: `history/2026-10-17.md` created (covers the 58th-run #182, the 59th-run
+   /adopt-hyer verification and this #183); a `**2026-10-17**` Current-state entry added to
+   `HISTORY.md` plus the `- [2026-10-17](history/2026-10-17.md)` Archive row -- this back-fills
+   #182, whose ship commit never touched HISTORY.md (a same-day doc gap, folded in here).
+   HISTORY.md 7322 -> 8054/8192 bytes. `ADAPTERS.md:32` "Last updated" prepended. RESUME.md
+   baseline block updated (886 assertions; 8054/8192 bytes).
+
+CRITICAL constraint learned this run: hub pre-commit Step 16 runs
+`check_no_comments.py --strict` on staged `.sh`/`.py` (`.md` exempt) and BLOCKS added whole-line
+`#` comments. Do NOT add a `#` comment line to `sentinel.sh` or `tests/test_sentinel.sh` for
+this change; the `# --- 29.` banner at `sentinel.sh:2212`-`:2213` therefore stays as-is (it
+already omits OPERATOR_MANUAL.md/SECURITY.md from #175/#176 -- banner drift is the norm).
+
+Candidates checked and REJECTED (do not re-open): `ADAPTERS.md:96-104` "Local tooling
+discovery" subcommand enumeration is ACCURATE for the live subcommand surface (usage echoes
+exactly get/set/run/housekeep/migrate/sync/unlock/rotate/setup-keychain/completion; `create`/
+`organize`/`keep` are aliases) -- unguarded but correct; `docs/OPERATOR_MANUAL.md:14` snapshot
+path `~/.cache/bitwarden/snapshot_latest.json` is ACCURATE (`bin/sec-organizer:8`);
+the four harness bridges' "twelve-dimension" phrasing is accurate-but-unguarded (checked only
+by refresh-mode step 8); `CLAUDE.md` and `.github/ISSUE_TEMPLATE/*` carry no live behavior
+claims.
+
+Resume here next run: the standing autonomous move is the next unguarded-current-state-claim
+sweep (the #129-#182 class). Re-run the full battery first (five `tests/test_*.sh` suites,
+`sentinel.sh coverage` + `citations`, pytest 58 tests -- ~5 min, use a large timeout). If no
+claim surfaces, the fresh 360 audit (**#67**) waits on explicit human scope approval; **#92**
+and **#51** are hub-side, not this repo.
+
 ## Session 2026-10-17 (59th run) -- /adopt-hyer: adoption verified complete + current; one citation repaired
 
 **/adopt-hyer** was invoked (the global command, `agent: build`). Both halves were verified
@@ -1680,11 +1757,11 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
 mirrors in sync): dispatch 107, install 9, sentinel 66, sync_guard 16,
-write_honesty 17. Sentinel = 66 cases / 878 assertions. HISTORY.md is at
-7322/8192 bytes - headroom of 870 bytes before its budget (the 2026-10-15 block
-was compacted again for #181; the full narratives live in
-`history/2026-10-15.md` and `history/2026-10-16.md`).
-118 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
+write_honesty 17. Sentinel = 66 cases / 886 assertions. HISTORY.md is at
+8054/8192 bytes - headroom of 138 bytes before its budget (the full narratives
+live in `history/2026-10-15.md`, `history/2026-10-16.md` and
+`history/2026-10-17.md`).
+119 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each
 guard case re-runs full coverage a few times); the pytest mirror adds ~3.5 min.
 Run both when a sentinel section changes.

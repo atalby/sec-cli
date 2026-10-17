@@ -14,7 +14,7 @@ This skill enforces zero-plaintext secret handling across developers and AI agen
 ## 🔒 Core Directives
 
 1. **Zero-Plaintext Storage**: NEVER write raw API keys, passwords, database URLs, or private tokens into committed files (`.env`, `config.json`, or `.yml`).
-2. **In-Memory Injection**: Use runtime CLI launchers (`sec run -- <cmd>` or `sec 1pass run -- <cmd>`) to inject credentials directly into process memory at execution time.
+2. **In-Memory Injection**: Use runtime CLI launchers (`sec run -- <cmd>` or `sec 1pass run -- <cmd>`) so credentials reach the child process environment at execution time, with env injection only for bws/op/infisical (bitwarden is a plain exec, so the default tenant does not inject).
 3. **Multi-Tenant Routing**: Specify the tenant name before the command if using non-default vaults (e.g. `sec 1pass get KEY` or `sec bitwarden get KEY`).
 
 ---
@@ -26,7 +26,7 @@ This skill enforces zero-plaintext secret handling across developers and AI agen
 sec get <key>                    # Retrieve secret value from default vault
 sec 1pass get <key>             # Retrieve secret value from 1Password
 sec get "item_name/password"    # Retrieve specific field from a named item
-sec run -- terraform plan       # Run command with secrets injected into memory
+sec run -- terraform plan       # Run command; env injection only for bws/op/infisical (bitwarden: plain exec)
 ```
 
 ### 2. Secret Storage
