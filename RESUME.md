@@ -1,5 +1,34 @@
 # Resume point - sec-cli
 
+Session 2026-10-17 (58th run): shipped **#182** -- the Vercel/AWS "phantom backend"
+truth-up (360-audit report section 8; #33 and #49) had reached README.md:5,
+docs/ARCHITECTURE.md:6/:14 and `sec sync --help`, but three project-owned artifacts
+still asserted the removed backends. ADAPTERS.md's `## Secrets` section claimed a
+`bw`/`bws`/`op`/Infisical/Vault/AWS Secrets Manager/GCP Secret Manager/`pass`/OS-keychain
+universe and falsely attributed it to README.md (README names neither AWS Secrets Manager
+nor `pass`); rewritten net-zero to the real universe (`bw`/`bws`/`op`/Infisical/Vault plus
+the OS keychain, syncing to GCP Secret Manager and GitLab). The audit SKILL.md:210
+standing example still listed `Vercel projects` as a live sync target; dropped. profile.md's
+External-integrations census still carried an AWS Secrets Manager row and a Vercel row,
+both citing the now-corrected ARCHITECTURE.md lines; both removed. Guard: new sentinel
+section 42 ("Phantom-backend truth-up") derives the live universe from the migrator
+destination allow-list (`_mig_dst_set`) and the live sync targets (`_targets_m`) and fails
+if any of ADAPTERS.md's multi-backend-design set, the SKILL's target-list example, or
+profile.md's External-integrations rows name a backend outside them or the removed phrases.
+Probes: case [66] WORK_T42A (re-add AWS Secrets Manager to ADAPTERS.md) and WORK_T42B
+(re-add Vercel to the SKILL example), plus WORK_T42CTRL green. Mirrors: ADAPTERS.md:32
+"Last updated", ADAPTERS.md:56 (sentinel 66), ADAPTERS.md:264 (66 cases), profile.md:22,
+profile.md section 3 ("sixty-six"), RESUME.md baseline (sentinel 65 -> 66 cases; 866 ->
+878 assertions). No new tracked file, so the 118-file denominator is unchanged. Full
+battery green (dispatch/install/sync_guard/write_honesty/sentinel ALL PASSED, pytest 58,
+coverage + citations RC=0).
+
+Resume here next run: no non-gated tracker item remains. The tracker holds **#67**
+(fresh 360 audit -- its Step-1 gate needs explicit human scope approval; must NOT be
+started autonomously), and **#92** + **#51** (hub-side, not this repo). Standing next
+autonomous move: sweep for the next unguarded current-state claim (the #129-#182 class);
+if none surfaces, the fresh 360 audit (#67) only after human approval.
+
 Session 2026-10-16 (57th run): shipped **#181** -- CLAUDE.md (the Claude Code bridge,
 auto-loaded every session, and the one agent-facing doc the sentinel never read) said
 "This file exists only because Claude Code does not yet auto-discover `AGENTS.md`" and
