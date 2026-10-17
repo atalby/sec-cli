@@ -1,6 +1,7 @@
 ---
 description: Refresh the twelve-dimension audit skill against the current tree (does not run the audit)
 argument-hint: "[none: refresh takes no arguments]"
+agent: build
 ---
 
 Load the `architecture-360-audit` skill via the `skill` tool in **refresh

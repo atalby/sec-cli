@@ -3,7 +3,8 @@ description: Exhaustive twelve-dimension forensic audit of the sec-cli repositor
 argument-hint: "[optional extra focus]"
 ---
 
-Load the `architecture-360-audit` skill and follow it end to end. Its canonical
+Load the `architecture-360-audit` skill through the `skill` tool and follow it
+end to end. Its canonical
 file is `skills/architecture-360-audit/SKILL.md`; the copy at
 `.agents/skills/architecture-360-audit` is a symlink to it, so read whichever
 path resolves.

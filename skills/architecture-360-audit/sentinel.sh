@@ -672,6 +672,7 @@ _NUM_WORDS = {
     "sixty-two": 62, "sixty-three": 63, "sixty-four": 64,
     "sixty-five": 65,
     "sixty-six": 66,
+    "sixty-seven": 67,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -3282,6 +3283,96 @@ for _row in _int_rows:
                 f"{_row.strip()}"
             )
 
+# --- 43. Harness-bridge conformance: every harness command bridge must stay a
+#         pointer into the canonical skill, and every section a bridge names
+#         must exist in SKILL.md (issue #184) ------------------------------
+# The harness directories are DISCOVERED from the tracked tree, so a harness
+# added later is validated too; the layouts below are checked per file
+# extension, and the shared-directory copy must still be a symlink.
+bridge_mismatches = []
+
+_CANON_SKILL = "skills/architecture-360-audit/SKILL.md"
+_AGENTS_LINK = ".agents/skills/architecture-360-audit"
+_BRIDGE_RE = re.compile(r"^(\.[^/]+)/(?:commands|workflows|steering)/([^/]+)\.(?:md|toml)$")
+_bridge_files = sorted(f for f in tracked if _BRIDGE_RE.match(f))
+_harness_names = {}
+for _b in _bridge_files:
+    _harness_names.setdefault(_BRIDGE_RE.match(_b).group(1), set()).add(
+        _BRIDGE_RE.match(_b).group(2)
+    )
+for _hd in sorted(_harness_names):
+    for _cmd in ("360-check", "360-check-update"):
+        if _cmd not in _harness_names[_hd]:
+            bridge_mismatches.append(
+                f"{_hd} carries no '{_cmd}' bridge (found {sorted(_harness_names[_hd])})"
+            )
+
+for _b in _bridge_files:
+    _text = _nl_read(_b)
+    _flat = re.sub(r"\s+", " ", _text)
+    _low = _flat.lower()
+    _stem, _ext = os.path.basename(_b).rsplit(".", 1)
+    _refresh = _stem.endswith("-update")
+    if _CANON_SKILL not in _text:
+        bridge_mismatches.append(f"{_b} does not name the canonical skill file {_CANON_SKILL}")
+    if _AGENTS_LINK not in _text:
+        bridge_mismatches.append(f"{_b} does not name the {_AGENTS_LINK} symlink copy")
+    if "symlink" not in _low:
+        bridge_mismatches.append(f"{_b} does not say the .agents copy is a symlink")
+    if "skill tool" not in _low and "skill` tool" not in _text:
+        bridge_mismatches.append(
+            f"{_b} does not tell the reader to load the skill through the harness skill tool"
+        )
+    if "end to end" not in _low:
+        bridge_mismatches.append(f"{_b} does not say to follow the skill end to end")
+    if "Do not paraphrase, summarise, or re-derive" not in _flat:
+        bridge_mismatches.append(
+            f"{_b} does not carry the 'Do not paraphrase, summarise, or re-derive' sentence"
+        )
+    if "The skill is the procedure" not in _flat:
+        bridge_mismatches.append(f"{_b} does not carry the 'The skill is the procedure' sentence")
+    if "in plain language" not in _low:
+        bridge_mismatches.append(f"{_b} lists no plain-language trigger phrases")
+    if _ext == "toml":
+        if not re.search(r"^prompt\s*=", _text, re.M):
+            bridge_mismatches.append(f"{_b} has no required 'prompt' key")
+        if "{{args}}" not in _text:
+            bridge_mismatches.append(f"{_b} passes no {{args}} argument token")
+    else:
+        if "description:" not in _text:
+            bridge_mismatches.append(f"{_b} has no YAML frontmatter 'description'")
+        if "$ARGUMENTS" not in _text:
+            bridge_mismatches.append(f"{_b} passes no $ARGUMENTS argument token")
+    if _b.startswith(".opencode/") and not re.search(r"^agent:\s*build\s*$", _text, re.M):
+        bridge_mismatches.append(
+            f"{_b} is missing the opencode frontmatter 'agent: build' (HARNESS-BRIDGES.md)"
+        )
+    if _refresh:
+        if "## Regenerating this skill" not in _text:
+            bridge_mismatches.append(f"{_b} does not name the '## Regenerating this skill' section")
+        if "do not run the audit" not in _low:
+            bridge_mismatches.append(f"{_b} does not tell the reader not to run the audit")
+    elif "confirm" not in _low:
+        bridge_mismatches.append(f"{_b} does not note the confirmation gate")
+    for _heading in re.findall(r"`(##[^`]+)`", _text):
+        if _heading.strip() not in _skill_text:
+            bridge_mismatches.append(
+                f"{_b} names the section '{_heading.strip()}', which is not a heading in {_CANON_SKILL}"
+            )
+
+if _bridge_files:
+    _link_path = os.path.join(repo, *_AGENTS_LINK.split("/"))
+    if not os.path.islink(_link_path):
+        bridge_mismatches.append(
+            f"{_AGENTS_LINK} is not a symlink (the shared-directory copy must point at the canonical skill)"
+        )
+    elif os.path.realpath(_link_path) != os.path.realpath(
+        os.path.join(repo, "skills", "architecture-360-audit")
+    ):
+        bridge_mismatches.append(
+            f"{_AGENTS_LINK} -> {os.readlink(_link_path)} does not resolve to skills/architecture-360-audit"
+        )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -3526,6 +3617,12 @@ if cite_mismatches:
     )
     for _m in cite_mismatches:
         print(f"{ERROR} doc path citation: {_m}")
+if bridge_mismatches:
+    failures.append(
+        f"{len(bridge_mismatches)} harness-bridge drift(s) across the tracked command bridges"
+    )
+    for _m in bridge_mismatches:
+        print(f"{ERROR} harness bridge: {_m}")
 
 if failures:
     for f in failures:
@@ -3571,6 +3668,8 @@ print(f"{OK} security snapshot fields: docs/SECURITY.md's snapshot field set mat
 print(f"{OK} install-path claims: docs/ARCHITECTURE.md's bootstrap clone, install destination, installable helper set, piped-mode fallback, LICENSE copy name, and missing-git diagnosis match install.sh")
 if not cite_mismatches:
     print(f"{OK} doc path citations: all {_cite_checked} slash-qualified citation(s) across {len(_cite_docs)} project-owned doc(s) resolve on disk")
+if not bridge_mismatches:
+    print(f"{OK} harness bridges: {len(_bridge_files)} bridge(s) in {len(_harness_names)} harness dir(s) ({', '.join(sorted(_harness_names))}) each name {_CANON_SKILL} + the {_AGENTS_LINK} symlink, refuse to paraphrase, and name only live SKILL.md sections")
 if not hyer_mcp_mismatches:
     print(f"{OK} hyer-mcp claims: docs/ARCHITECTURE.md's bin/hyer-mcp.sh bullet names the live HYER_HOME default (`{_hm_home}`), secret (`{_hm_secret}`), token env var (`{_hm_env}`), direct-node exec with no `sh -c`, and the gitignored `.mcp.json` / tracked `.mcp.json.example` pair")
 if not auto_rotate_mismatches:

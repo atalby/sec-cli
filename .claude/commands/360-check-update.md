@@ -3,7 +3,8 @@ description: Refresh the twelve-dimension audit skill against the current tree (
 argument-hint: "[none: refresh takes no arguments]"
 ---
 
-Load the `architecture-360-audit` skill in **refresh mode** and follow its
+Load the `architecture-360-audit` skill through the `skill` tool in **refresh
+mode** and follow its
 `## Regenerating this skill` section end to end. Do not run the audit.
 
 Its canonical file is `skills/architecture-360-audit/SKILL.md`; the copy at

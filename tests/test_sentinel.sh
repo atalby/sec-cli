@@ -5610,6 +5610,93 @@ else
     no "the control copy's OK line did not name the phantom-backend check"
     printf '%s\n' "$OUT"
 fi
+echo "[67] harness bridges must stay pointers into the canonical skill (issue #184)"
+WORK_T43A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T43B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T43C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T43CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for _w in "$WORK_T43A" "$WORK_T43B" "$WORK_T43C" "$WORK_T43CTRL"; do
+    seed "$_w"
+done
+python3 - "$WORK_T43A/.opencode/commands/360-check.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "Do not paraphrase, summarise, or re-derive the audit procedure. The skill is\n"
+if s.count(old) != 1:
+    sys.exit("the opencode audit bridge no longer carries the no-paraphrase sentence in the guarded form")
+open(p, "w", encoding="utf-8").write(s.replace(old, "Just run the audit steps.\n", 1))
+PY
+OUT="$(cd "$WORK_T43A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a bridge drops the no-paraphrase sentence"
+else
+    no "coverage accepted a bridge that dropped the no-paraphrase sentence"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "does not carry the 'Do not paraphrase" <<<"$OUT"; then
+    ok "coverage names the bridge that stopped refusing to paraphrase"
+else
+    no "coverage did not name the bridge that dropped the no-paraphrase sentence"
+    printf '%s\n' "$OUT"
+fi
+rm -f "$WORK_T43B/.agents/skills/architecture-360-audit"
+ln -s ../../skills/not-a-skill "$WORK_T43B/.agents/skills/architecture-360-audit"
+OUT="$(cd "$WORK_T43B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the .agents copy stops resolving to the canonical skill"
+else
+    no "coverage accepted a .agents symlink retargeted away from the canonical skill"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "does not resolve to skills/architecture-360-audit" <<<"$OUT"; then
+    ok "coverage names the retargeted .agents symlink"
+else
+    no "coverage did not name the retargeted .agents symlink"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T43C/skills/architecture-360-audit/SKILL.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "`## Regenerating this skill`"
+old2 = "## Regenerating this skill\n"
+if s.count(old) != 1 or s.count(old2) != 1:
+    sys.exit("SKILL.md no longer carries the '## Regenerating this skill' heading in the guarded form")
+s = s.replace(old, "`## Regenerating the skill now`", 1)
+s = s.replace(old2, "## Regenerating the skill now\n", 1)
+open(p, "w", encoding="utf-8").write(s)
+PY
+OUT="$(cd "$WORK_T43C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when a bridge names a section SKILL.md no longer carries"
+else
+    no "coverage accepted a bridge naming '## Regenerating this skill' after SKILL.md renamed it"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "names the section '## Regenerating this skill', which is not a heading" <<<"$OUT"; then
+    ok "coverage names the section a refresh bridge points at that SKILL.md no longer carries"
+else
+    no "coverage did not name the renamed SKILL.md section a bridge still points at"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T43CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (intact bridges + symlink) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] harness bridges:" <<<"$OUT"; then
+    ok "the control copy's OK line names the harness-bridge check"
+else
+    no "the control copy's OK line did not name the harness-bridge check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

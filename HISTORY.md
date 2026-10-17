@@ -69,14 +69,15 @@ accepting any `history/<file>.md` substring as a link, which is why
 Full narrative: `history/2026-10-16.md`.
 
 **2026-10-17**: #182 dropped the phantom backends (Vercel, AWS Secrets Manager,
-`pass`) that ADAPTERS.md still attributed "per `README.md`" and that profile.md's
-census and the audit SKILL's standing example still named; sentinel section 42
-(sentinel 65 -> 66 cases). #183 then truth-upped the repo-root `SKILL.md` -- a v1.0.0
-artifact no sentinel section read -- whose directive #2 and command reference still
-claimed `sec run` injects into process memory unconditionally (false for the default
-`bitwarden` tenant, a plain exec), and extended section 29 to read SKILL.md alongside
-README/ARCHITECTURE/OPERATOR_MANUAL/SECURITY (assertions 878 -> 886). Full narrative:
-`history/2026-10-17.md`.
+`pass`) from ADAPTERS.md/profile.md/SKILL.md (section 42). #183 truth-upped the
+repo-root `SKILL.md` (a v1.0.0 artifact no sentinel section read) and extended
+section 29 to read it. #184 closed the harness-bridge class: the six command bridges
+(`.opencode`/`.claude`/`.gemini`, audit + refresh each) are product surface, yet no
+sentinel section read any bridge file, so a dropped no-paraphrase sentence, a
+retargeted `.agents` symlink, or a stale-section refresh bridge all passed. Section
+43 discovers the bridges from `git ls-files`, asserts the pointer contract, and
+closed two live drifts (a missing `agent: build`; two bridges not naming the `skill`
+tool). Sentinel 67 cases / 902 assertions. Narrative: `history/2026-10-17.md`.
 
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
 unknown flags and dropped operands with tagged `[ERROR]` + exit 2; completion

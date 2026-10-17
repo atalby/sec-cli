@@ -1,5 +1,55 @@
 # Resume point - sec-cli
 
+## Session 2026-10-17 (61st run) -- #184: harness-bridge conformance sentinel section 43 (shipped)
+
+Baseline verified green before the change (tree clean at `90ee739`): the five
+`tests/test_*.sh` suites all ALL TESTS PASSED, `.venv/bin/python -m pytest -q` 58
+passed in 304s, `sentinel.sh coverage` RC=0, `sentinel.sh citations` RC=0. Route file
+written: `deepseek-v4.1-flash-free high` (normal build/sweep, not deep reasoning).
+
+Finding (CONFIRMED, the #129-#183 class): the six harness command bridges -- one audit
+and one refresh file each under `.opencode/commands/`, `.claude/commands/` and
+`.gemini/commands/` -- are the audit skill's whole harness-facing deliverable, and the
+forge calls a bridge naming a section that does not exist "a broken entry point that
+looks finished", but no sentinel section read any bridge file at all
+(`grep -c '360-check' sentinel.sh` was 0; section 3 tested only that `.claude/`,
+`.opencode/`, `.agents/` EXIST). So a dropped no-paraphrase sentence, a retargeted
+`.agents/skills/architecture-360-audit` symlink, a refresh bridge pointing at a renamed
+`## Regenerating this skill` heading, or a harness carrying only one of the two command
+names all left the pipeline green. Two drifts were already live:
+`.opencode/commands/360-check-update.md` missed the `agent: build` its sibling carries
+(HARNESS-BRIDGES.md's opencode row), and both `.claude` bridges loaded the skill
+without naming the harness skill tool.
+
+ISSUE **#184** (filed, shipped, closed): https://github.com/atalby/sec-cli/issues/184
+
+Shipped (one unit):
+1. `skills/architecture-360-audit/sentinel.sh` new section 43 "Harness-bridge
+   conformance": discovers the bridges from `git ls-files` (a seventh harness is
+   validated too), asserts the pointer contract (names `skills/architecture-360-audit/SKILL.md`,
+   names the `.agents` symlink + says "symlink", loads via the skill tool, "end to end",
+   the no-paraphrase and "The skill is the procedure" sentences, plain-language trigger
+   phrases, the audit bridge's confirmation gate, the refresh bridge's "Do not run the
+   audit"), checks each `.md` for YAML `description` + `$ARGUMENTS` and each `.toml` for a
+   `prompt` key + `{{args}}`, requires `agent: build` on `.opencode` bridges, resolves the
+   `.agents` symlink to the canonical dir, and fails when a bridge names a `##` heading
+   absent from SKILL.md. `_NUM_WORDS` gained `sixty-seven`. OK line:
+   `[ OK ] harness bridges: 6 bridge(s) in 3 harness dir(s) ...`.
+2. Drift fixes: both `.claude` bridges now load the skill through the `skill` tool, and
+   `.opencode/commands/360-check-update.md` gained `agent: build`.
+3. Probe case [67]: WORK_T43A (drop the no-paraphrase sentence), WORK_T43B (retarget the
+   `.agents` symlink), WORK_T43C (rename the SKILL.md section a refresh bridge names) each
+   exit nonzero and name the drift; WORK_T43CTRL green. Sentinel 66 -> 67 cases / 886 -> 902
+   assertions.
+4. Mirrors bumped: `profile.md:22` + `:637` (sixty-seven), `ADAPTERS.md:32`/`:56`/`:264`,
+   `RESUME.md` baseline (sentinel 67 / 902 assertions; HISTORY.md 8175/8192 bytes),
+   `HISTORY.md` 2026-10-17 entry, `history/2026-10-17.md` narrative.
+
+NEXT MOVE (resume point): the standing autonomous move remains the next
+unguarded-current-state-claim sweep (the #129-#184 class) -- re-run the full battery
+first. Do not re-open the rejected candidates under "Next autonomous work". Never
+escalate HISTORY.md past its 8192-byte budget (17 bytes of headroom remain).
+
 ## Session 2026-10-17 (60th run) -- #183: repo-root SKILL.md F001 truth-up + sentinel section 29 extension (shipped)
 
 Baseline verified green before the change (tree clean at `ee9a69b`): the five
@@ -1756,9 +1806,9 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 107, install 9, sentinel 66, sync_guard 16,
-write_honesty 17. Sentinel = 66 cases / 886 assertions. HISTORY.md is at
-8054/8192 bytes - headroom of 138 bytes before its budget (the full narratives
+mirrors in sync): dispatch 107, install 9, sentinel 67, sync_guard 16,
+write_honesty 17. Sentinel = 67 cases / 902 assertions. HISTORY.md is at
+8175/8192 bytes - headroom of 17 bytes before its budget (the full narratives
 live in `history/2026-10-15.md`, `history/2026-10-16.md` and
 `history/2026-10-17.md`).
 119 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
