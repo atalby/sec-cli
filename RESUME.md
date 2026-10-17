@@ -1,5 +1,37 @@
 # Resume point - sec-cli
 
+## Session 2026-10-17 (59th run) -- /adopt-hyer: adoption verified complete + current; one citation repaired
+
+**/adopt-hyer** was invoked (the global command, `agent: build`). Both halves were verified
+already complete for sec-cli; nothing needed placing.
+- Payload: `stable` peeled once to `0ee8f94d7e7460cff78a45e7107bf6804d4ed263` (= v5.41.0;
+  unchanged since the 2026-10-16 adoption). Enumerated the hub payload at that SHA
+  (`AGENTS.md` + `methodology/**` + `skills/**` = 43 files) from the already-present clone at
+  `~/sandbox/hyer` and `cmp`-compared each: 42 byte-identical, 0 missing, 1 diff --
+  `skills/REGISTRY.md`, the sanctioned merged superset (the single adopter-only row is
+  `architecture-360-audit`). `methodology/meta.yml` version is 5.41.0. The hyer MCP's tools
+  are not exposed to this session, so the contract's already-present-clone byte path
+  (`git ls-remote <remote> 'refs/tags/stable^{}'` to peel, then `git show <sha>:<path>`) was
+  used, exactly as ADAPTERS.md records for the prior adoption.
+- Forge: `skills/360-audit-skill-forge/` is payload and was loaded. Its output already exists
+  and conforms: the `architecture-360-audit` instrument (the mandated sixteen headings,
+  profile.md, sentinel.sh with 42 sections), the `.agents/skills/architecture-360-audit`
+  symlink, the opencode / Claude Code / Gemini `360-check` and `360-check-update` bridges, the
+  registry row, and the `.gitignore` lines. `sentinel.sh coverage` is RC=0 and prints both
+  `[ OK ] skill forge:` (its section 16) and `[ OK ] phantom backends:` (its section 42).
+- Repair: `sentinel.sh citations` had drifted to RC=1 -- the 58th-run narrative cited the audit
+  skill by bare basename with a line number, and `resolve()` matched that basename to the
+  legacy root `SKILL.md` (50 lines, from the v1.0.0 initial release) instead of the audit
+  skill. Reworded, in place, to the full path `skills/architecture-360-audit/SKILL.md:210`;
+  `citations` is RC=0 again. (The root `SKILL.md` is a legacy artifact; leave it, and never
+  cite any SKILL.md by bare basename.)
+
+Resume here next run: the standing autonomous move is to sweep for the next unguarded
+current-state claim (the #129-#182 class). Run the full battery first (the five `tests/test_*.sh`
+suites, `sentinel.sh coverage` and `citations`, and pytest -- 58 tests, roughly 4-5 minutes, use
+a large timeout). If no claim surfaces, the fresh 360 audit (**#67**) waits on explicit human
+scope approval; **#92** and **#51** are hub-side, not this repo.
+
 Session 2026-10-17 (58th run): shipped **#182** -- the Vercel/AWS "phantom backend"
 truth-up (360-audit report section 8; #33 and #49) had reached README.md:5,
 docs/ARCHITECTURE.md:6/:14 and `sec sync --help`, but three project-owned artifacts
@@ -7,7 +39,7 @@ still asserted the removed backends. ADAPTERS.md's `## Secrets` section claimed 
 `bw`/`bws`/`op`/Infisical/Vault/AWS Secrets Manager/GCP Secret Manager/`pass`/OS-keychain
 universe and falsely attributed it to README.md (README names neither AWS Secrets Manager
 nor `pass`); rewritten net-zero to the real universe (`bw`/`bws`/`op`/Infisical/Vault plus
-the OS keychain, syncing to GCP Secret Manager and GitLab). The audit SKILL.md:210
+the OS keychain, syncing to GCP Secret Manager and GitLab). The audit skill at skills/architecture-360-audit/SKILL.md:210
 standing example still listed `Vercel projects` as a live sync target; dropped. profile.md's
 External-integrations census still carried an AWS Secrets Manager row and a Vercel row,
 both citing the now-corrected ARCHITECTURE.md lines; both removed. Guard: new sentinel
