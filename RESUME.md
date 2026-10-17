@@ -1618,8 +1618,8 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 107, install 9, sentinel 65, sync_guard 16,
-write_honesty 17. Sentinel = 65 cases / 866 assertions. HISTORY.md is at
+mirrors in sync): dispatch 107, install 9, sentinel 66, sync_guard 16,
+write_honesty 17. Sentinel = 66 cases / 878 assertions. HISTORY.md is at
 7322/8192 bytes - headroom of 870 bytes before its budget (the 2026-10-15 block
 was compacted again for #181; the full narratives live in
 `history/2026-10-15.md` and `history/2026-10-16.md`).

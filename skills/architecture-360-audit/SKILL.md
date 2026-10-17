@@ -207,7 +207,7 @@ complete that are empty shells, missing their logic pipeline, or return
 static placeholders. For each claim in `README.md`, `docs/ARCHITECTURE.md`,
 `docs/SECURITY.md`, `docs/MULTI_TENANCY.md`, and `docs/OPERATOR_MANUAL.md`,
 find the code that implements it. The documented `sec sync` target list
-(GCP Secret Manager, GitLab group variables, Vercel projects) versus the
+(GCP Secret Manager, GitLab group variables) versus the
 controller's actual call sites is the standing example — verify it against
 the current tree, do not trust this sentence. A claim with no implementing
 code is a finding.

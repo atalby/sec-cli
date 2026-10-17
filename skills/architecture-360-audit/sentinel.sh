@@ -671,6 +671,7 @@ _NUM_WORDS = {
     "fifty-eight": 58, "fifty-nine": 59, "sixty": 60, "sixty-one": 61,
     "sixty-two": 62, "sixty-three": 63, "sixty-four": 64,
     "sixty-five": 65,
+    "sixty-six": 66,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -3209,6 +3210,73 @@ for _cd in _cite_docs:
             f"{_cd} cites `{_tok}`, which resolves to no tracked file"
         )
 
+# --- 42. Phantom-backend truth-up: the backends the audit report's §8 removed
+#         (Vercel, AWS Secrets Manager, `pass`) must not reappear in
+#         ADAPTERS.md's multi-backend design, the audit SKILL's standing
+#         target-list example, or profile.md's External-integrations table
+#         (issue #182) -----------------------------------------------------
+phantom_mismatches = []
+
+_adapters_claim_m = re.search(r"multi-backend design\s*\(([^)]*)\)", _adapters_text)
+if _adapters_claim_m is None:
+    phantom_mismatches.append(
+        "ADAPTERS.md carries no 'multi-backend design (...)' backend-universe claim"
+    )
+else:
+    _adapters_claim = _adapters_claim_m.group(1)
+    if _mig_dst_set is not None:
+        _adapters_backends = _mig_canon(_adapters_claim)
+        if _adapters_backends != _mig_dst_set:
+            phantom_mismatches.append(
+                "ADAPTERS.md's multi-backend design names "
+                f"{sorted(_adapters_backends)} but the live migrator destination set is "
+                f"{sorted(_mig_dst_set)}"
+            )
+    for _phantom in ("AWS Secrets Manager", "Unix Pass"):
+        if _phantom.lower() in _adapters_claim.lower():
+            phantom_mismatches.append(
+                f"ADAPTERS.md's multi-backend design still names the removed backend '{_phantom}'"
+            )
+    for _bt in re.findall(r"`([^`]+)`", _adapters_claim):
+        if _bt != "README.md" and _bt not in _ALIAS:
+            phantom_mismatches.append(
+                f"ADAPTERS.md's multi-backend design backticks `{_bt}`, which names no live backend"
+            )
+
+_skill_claim_m = re.search(r"target list\s*\(([^)]*)\)", _skill_text)
+if _skill_claim_m is None:
+    phantom_mismatches.append("SKILL.md carries no 'target list (...)' standing example")
+else:
+    _skill_claim = _skill_claim_m.group(1)
+    _skill_claim_low = _skill_claim.lower()
+    if "vercel" in _skill_claim_low:
+        phantom_mismatches.append(
+            "SKILL.md's standing 'target list' example still names the removed Vercel target"
+        )
+    if _targets_m is not None:
+        for _tgt in _targets_m.group(1).split(","):
+            _tgt = _tgt.strip().lower()
+            if _tgt and any(_w not in _skill_claim_low for _w in _tgt.split()):
+                phantom_mismatches.append(
+                    f"SKILL.md's standing 'target list' example omits live sync target: {_tgt}"
+                )
+
+_int_rows = []
+_int_in_table = False
+for _ln in _nl_read("skills/architecture-360-audit/profile.md").splitlines():
+    if _ln.startswith("## "):
+        _int_in_table = _ln.strip() == "## External integrations"
+        continue
+    if _int_in_table and _ln.startswith("| "):
+        _int_rows.append(_ln)
+for _row in _int_rows:
+    for _phantom in ("vercel", "aws secrets manager"):
+        if _phantom in _row.lower():
+            phantom_mismatches.append(
+                "profile.md's External-integrations table still lists the removed backend: "
+                f"{_row.strip()}"
+            )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -3326,6 +3394,10 @@ if migrate_mismatches:
     failures.append(f"{len(migrate_mismatches)} sec migrate source/destination drift(s) across surfaces")
     for _m in migrate_mismatches:
         print(f"{ERROR} migrate: {_m}")
+if phantom_mismatches:
+    failures.append(f"{len(phantom_mismatches)} phantom-backend drift(s) across ADAPTERS.md / SKILL.md / profile.md")
+    for _m in phantom_mismatches:
+        print(f"{ERROR} phantom: {_m}")
 if version_mismatches:
     failures.append(f"{len(version_mismatches)} OPERATOR_MANUAL.md --version drift(s) vs the live CLI")
     for _m in version_mismatches:
@@ -3473,6 +3545,7 @@ print(f"{OK} skill forge: 360-audit-skill-forge's declared steps/headings/person
 print(f"{OK} count claims: profile.md §3 count-words + ADAPTERS.md/SKILL.md pytest-mirror count + RESUME.md suite counts match the live suites")
 print(f"{OK} README + docs/ARCHITECTURE.md: quoted `sec --help` + sec.conf sample + migrate backend list match the live CLI, and both front sentences name the live backend universe + sync targets; docs/OPERATOR_MANUAL.md + the docs/ARCHITECTURE.md sync-controller bullet also name every live sync target")
 print(f"{OK} migrate surfaces: source/destination backend sets agree across migrator, 4 shells + OPERATOR_MANUAL")
+print(f"{OK} phantom backends: ADAPTERS.md's multi-backend design, the audit SKILL's standing target-list example, and profile.md's External-integrations table name only the live backend universe + sync targets")
 print(f"{OK} version claim: OPERATOR_MANUAL.md's documented `--version` output matches live 'bin/sec version'")
 print(f"{OK} tenant help line: bin/sec's `Configured Tenants:` lists exactly the routable aliases")
 print(f"{OK} code census: profile.md's SYNC_KEYS count + sync-controller timeout sites + install.sh/bin/sec zero-timeout claim match the live code")

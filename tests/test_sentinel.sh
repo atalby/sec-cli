@@ -5493,6 +5493,73 @@ else
     no "the control copy's OK line did not name the narrative-history check"
     printf '%s\n' "$OUT"
 fi
+echo "[66] phantom backends must not reappear in ADAPTERS.md / the audit SKILL / profile.md (issue #182)"
+WORK_T42A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T42B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T42CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for _w in "$WORK_T42A" "$WORK_T42B" "$WORK_T42CTRL"; do
+    seed "$_w"
+done
+python3 - "$WORK_T42A/ADAPTERS.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "Infisical/Vault plus\n"
+if s.count(old) != 1:
+    sys.exit("ADAPTERS.md no longer states the multi-backend design in the guarded form")
+open(p, "w", encoding="utf-8").write(s.replace(old, "Infisical/Vault/AWS Secrets Manager plus\n", 1))
+PY
+OUT="$(cd "$WORK_T42A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when ADAPTERS.md's multi-backend design names a removed backend"
+else
+    no "coverage accepted an ADAPTERS.md multi-backend design naming a removed backend"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "still names the removed backend 'AWS Secrets Manager'" <<<"$OUT"; then
+    ok "coverage names the removed ADAPTERS.md backend"
+else
+    no "coverage did not name the removed ADAPTERS.md backend"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T42B/skills/architecture-360-audit/SKILL.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "(GCP Secret Manager, GitLab group variables) versus the"
+if s.count(old) != 1:
+    sys.exit("SKILL.md no longer states the standing target-list example in the guarded form")
+open(p, "w", encoding="utf-8").write(s.replace(old, "(GCP Secret Manager, GitLab group variables, Vercel projects) versus the", 1))
+PY
+OUT="$(cd "$WORK_T42B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when the audit SKILL's standing example names the removed Vercel target"
+else
+    no "coverage accepted an audit SKILL standing example naming the removed Vercel target"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "still names the removed Vercel target" <<<"$OUT"; then
+    ok "coverage names the removed Vercel target in the SKILL standing example"
+else
+    no "coverage did not name the removed Vercel target in the SKILL standing example"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T42CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (no phantom backends) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] phantom backends:" <<<"$OUT"; then
+    ok "the control copy's OK line names the phantom-backend check"
+else
+    no "the control copy's OK line did not name the phantom-backend check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

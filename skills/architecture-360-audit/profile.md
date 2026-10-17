@@ -19,7 +19,7 @@ Measured against the tier definition:
 
 | Tier element | State | Evidence |
 |---|---|---|
-| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (17 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (65 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (107 sections) |
+| Test runner | present, green | `bash tests/test_install.sh` -> ALL TESTS PASSED (9 sections); `bash tests/test_sync_guard.sh` -> ALL TESTS PASSED (16 sections); `bash tests/test_write_honesty.sh` -> ALL TESTS PASSED (17 sections); `bash tests/test_sentinel.sh` -> ALL TESTS PASSED (66 cases, the audit instrument's own suite); `bash tests/test_dispatch.sh` -> ALL TESTS PASSED (107 sections) |
 | CI | **PRESENT** (2026-10-09, issue #8) | `.github/workflows/test.yml` on push/PR to main, `ubuntu-latest`, `actions/checkout` pinned to the full commit SHA of v4.2.2, runs all five suites; `.gitlab-ci.yml` removed in commit 402bbd5 along with `.gitlab/` |
 | Documentation | extensive | `README.md`, `docs/ARCHITECTURE.md`, `docs/MULTI_TENANCY.md`, `docs/OPERATOR_MANUAL.md`, `docs/SECURITY.md`, `HISTORY.md`, `ADAPTERS.md`, `AGENTS.md` |
 | Issue tracker | present, live | GitHub `atalby/sec-cli`, 3 open issues at the time of this profile (`#51`, `#67`, `#92`) |
@@ -560,10 +560,8 @@ How the code reaches each, not merely that it exists.
 | Bitwarden Secrets Manager (`bws`) | dispatcher tenant vocabulary | `bin/sec:73` |
 | 1Password (`op` CLI) | `op whoami` session check, `op signin`, `op read` | `bin/sec:137`, `bin/sec:145`, `bin/sec:429` |
 | Infisical / HashiCorp Vault / macOS Keychain | dispatcher tenant vocabulary | `bin/sec:73`, `bin/sec:192` |
-| AWS Secrets Manager | claimed in `docs/ARCHITECTURE.md:6` — verify whether any code path reaches it (candidate smoke finding) | `docs/ARCHITECTURE.md:6` |
 | GCP Secret Manager | `gcloud` shell-outs from the sync controller | `bin/sec-sync-controller.py:77`, `bin/sec-sync-controller.py:88` |
 | GitLab group CI/CD variables | HTTPS API `PUT` via `urllib.request` | `bin/sec-sync-controller.py:178`, `bin/sec-sync-controller.py:158` |
-| Vercel | claimed as a sync target in `docs/ARCHITECTURE.md:14` — no call site found in the controller this build (candidate smoke finding) | `docs/ARCHITECTURE.md:14` |
 | GitHub (install source) | `REPO_URL` default feeding `git clone`, piped `curl` install source | `install.sh:7`, `README.md:29` |
 | GitHub (tracker) | `gh` CLI for the live tracker read (`Issues`) | `ADAPTERS.md:138` |
 | jq | invoked for JSON parsing inside `bin/sec` | `bin/sec:110` |
@@ -639,7 +637,7 @@ module-level public, leading underscore private.
 ### 3. Test and evaluation sufficiency -- `tests/test_install.sh:63`, `tests/test_sync_guard.sh:47`, `tests/test_sentinel.sh:1`, `ADAPTERS.md:255`
 
 Nine install sections, sixteen guard sections, seventeen write-honesty
-sections, and the audit instrument's own sixty-five sentinel cases pass today
+sections, and the audit instrument's own sixty-six sentinel cases pass today
 (as does the pytest mirror at `scripts/tests/`, which since #31 itself
 executes all five bash suites — the former dispatch opt-in was removed in
 0284d39, issue #65); establish what they do not cover. Structural
