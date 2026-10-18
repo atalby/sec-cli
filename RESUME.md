@@ -1,6 +1,6 @@
 # Resume point - sec-cli
 
-## Session 2026-10-18 (63rd run) -- reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185)
+## Session 2026-10-18 (63rd run, then a 64th) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 left OPEN, baseline not re-verified (see NEXT MOVE)
 
 This run did three things, in order.
 
@@ -30,12 +30,24 @@ Baseline re-verified green this run (run serially, no self-contention): the five
 `tests/test_*.sh` suites ALL TESTS PASSED; `.venv/bin/python -m pytest -q` 58
 passed; `sentinel.sh coverage` RC=0; `sentinel.sh citations` RC=0.
 
-NEXT MOVE (resume point): no open autonomous lane item. #185 and #186 are now
-shipped; #67 (fresh 360 audit) stays gated on explicit human scope approval; #92
-and #51 are hub-side with no in-repo remedy. Cheapest concrete candidates remain
-the sentinel count-grab sweep listed in "Next autonomous work" below. Tracker is
-GitHub `atalby/sec-cli` (`gh`); the standing order names GitLab, but no `sec-cli`
-project exists under `at-tech-io` and the remote is `git@github.com:atalby/sec-cli.git`.
+NEXT MOVE (resume point): the 64th run (commit da794d8, already committed and
+pushed; local `main` == `origin/main`) shipped the #187 version-surface guards -
+README.md's `sec-cli vX.Y.Z` transcript, `pyproject.toml`'s manifest version and
+profile.md's manifest version are now bound to bin/sec's live `VERSION`, with
+probe case [26b] added - but left **#187 OPEN** and did NOT re-run the full
+baseline after the change. Resume by, in order:
+1. `cd /home/opc/sandbox/sec-cli && bash tests/test_sentinel.sh` - confirm case
+   [26b] and the whole suite are green. (Its last red was spurious: `/tmp` had
+   filled with 3662 leaked `/tmp/tmp.*` directories, cleared during this handoff
+   run - re-check `df -h /` first if it fails again.)
+2. `bash tests/test_dispatch.sh` - the other suite not re-run this handoff.
+3. `gh issue close 187 --repo atalby/sec-cli --comment "<the suite evidence>"`.
+Then investigate whether `tests/test_sentinel.sh` leaks its `mktemp -d` WORK_*
+copies (the 3662-dir accumulation) and file it if confirmed. #67 stays gated on
+explicit human scope approval; #92/#51 are hub-side with no in-repo remedy.
+Tracker is GitHub `atalby/sec-cli` (`gh`); the standing order names GitLab, but no
+`sec-cli` project exists under `at-tech-io` and the remote is
+`git@github.com:atalby/sec-cli.git`.
 
 ## Next autonomous work
 
