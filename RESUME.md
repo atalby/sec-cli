@@ -26,11 +26,16 @@ standing order names GitLab, but no `sec-cli` project exists under `at-tech-io` 
 (45 projects enumerated this run) and the remote is `git@github.com:atalby/sec-cli.git`
 -- this re-confirms the Where-things-stand note below.
 
-NEXT MOVE (resume point): no open autonomous lane item. #185 (RESUME.md rotation, filed
-this run) is the next candidate but is a docs-rotation design call; #67 (fresh 360 audit)
-stays gated on explicit human scope approval; #92 and #51 are hub-side with no in-repo
-remedy. Cheapest concrete candidates remain the sentinel count-grab sweep listed in "Next
-autonomous work" below.
+SHIPPED (this run, after the revert above): #186 -- raised the pytest mirror's
+`SEC_TEST_SUITE_TIMEOUT` default 300s -> 900s in `scripts/tests/test_install.py`:
+a heavy-load `test_sentinel.sh` run takes ~263s, so 300s left only ~14% headroom
+(the same class of tight-budget flake as #104's 120 -> 300). See Gotcha 4.
+
+NEXT MOVE (resume point): no open autonomous lane item. #185 (RESUME.md rotation,
+filed this run) is the next candidate but is a docs-rotation design call; #67
+(fresh 360 audit) stays gated on explicit human scope approval; #92 and #51 are
+hub-side with no in-repo remedy. Cheapest concrete candidates remain the sentinel
+count-grab sweep listed in "Next autonomous work" below.
 
 ## Session 2026-10-17 (61st run) -- #184: harness-bridge conformance sentinel section 43 (shipped)
 
@@ -1875,7 +1880,8 @@ Run both when a sentinel section changes.
    (`methodology/adoption.md:9`, `packs/solo-founder-governance/PACK.md:170` +
    `:215`, `skills/adopt-persona/SKILL.md:33`, `skills/adr-capture/SKILL.md:139`)
    -> hub-side, not an adopter fix. The mirror now uses
-   `SEC_TEST_SUITE_TIMEOUT` (default 300s) - see #104/#105.
+   `SEC_TEST_SUITE_TIMEOUT` (default 900s, raised from 300 by #186 after a
+   loaded sentinel run took 263s) - see #104/#105.
 5. **`gh issue close --comment` with a long heredoc can hang.** Write the body to
    a file: `gh issue close N --comment "$(cat f)"` (worked this session) or
    comment then close separately; verify state after.

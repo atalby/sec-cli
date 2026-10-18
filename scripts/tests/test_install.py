@@ -19,7 +19,7 @@ _FAST_SUITES = [
     "test_sentinel.sh",
 ]
 
-_SUITE_TIMEOUT = int(os.environ.get("SEC_TEST_SUITE_TIMEOUT", "300"))
+_SUITE_TIMEOUT = int(os.environ.get("SEC_TEST_SUITE_TIMEOUT", "900"))
 
 
 def _run_suite(name):
