@@ -1,5 +1,37 @@
 # Resume point - sec-cli
 
+## Session 2026-10-18 (63rd run) -- reverted the 62nd run's unsanctioned RESUME.md compaction (it broke sentinel section 17); baseline re-verified green
+
+Entered on an UNCOMMITTED working-tree RESUME.md left by the 62nd run (2026-10-17): a
+10-line summary had replaced this file and dropped its Verified-baseline section and its
+tracked-files/personas/bash-suites line, so `sentinel.sh coverage` was RC=1 with four
+count-claim errors (no Verified-baseline section; no suite-counts "mirrors in sync" line;
+no Sentinel cases/assertions line; no tracked-files/personas/bash-suites line), and the
+pytest mirror's `test_install.py::test_bash_suite_passes[test_sentinel.sh]` failed on the
+same red suite. The compaction is rejected and the file restored to `7e5b04b`'s version
+(`git checkout -- RESUME.md`): its unique per-issue narratives are not all duplicated
+under `history/` (probe: `#105`'s RESUME.md entry is absent from `history/*.md`), so
+silently dropping them is worse than the file's size. Root cause filed as issue #185:
+RESUME.md needs a sanctioned rotation that keeps the guarded structural claims and
+migrates unique narratives into `history/` before trimming. A future RESUME.md rewrite
+MUST keep the Verified-baseline section (with its "mirrors in sync" suite counts, its
+Sentinel cases/assertions total and its `N/8192 bytes` HISTORY.md size) plus one
+tracked-files/personas/bash-suites line -- sentinel section 17 guards all three and goes
+RC=1 without them.
+
+Baseline re-verified green after the revert (this run): five `tests/test_*.sh` suites ALL
+TESTS PASSED, `.venv/bin/python -m pytest -q` 58 passed, `sentinel.sh coverage` RC=0,
+`sentinel.sh citations` RC=0. Tracker: GitHub `atalby/sec-cli` (`gh`); the operator
+standing order names GitLab, but no `sec-cli` project exists under `at-tech-io` on GitLab
+(45 projects enumerated this run) and the remote is `git@github.com:atalby/sec-cli.git`
+-- this re-confirms the Where-things-stand note below.
+
+NEXT MOVE (resume point): no open autonomous lane item. #185 (RESUME.md rotation, filed
+this run) is the next candidate but is a docs-rotation design call; #67 (fresh 360 audit)
+stays gated on explicit human scope approval; #92 and #51 are hub-side with no in-repo
+remedy. Cheapest concrete candidates remain the sentinel count-grab sweep listed in "Next
+autonomous work" below.
+
 ## Session 2026-10-17 (61st run) -- #184: harness-bridge conformance sentinel section 43 (shipped)
 
 Baseline verified green before the change (tree clean at `90ee739`): the five
