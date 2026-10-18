@@ -1,6 +1,6 @@
 # Resume point - sec-cli
 
-## Session 2026-10-18 (63rd run, then a 64th) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 left OPEN, baseline not re-verified (see NEXT MOVE)
+## Session 2026-10-18 (63rd, 64th, 65th runs) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 closed after baseline re-verify. 65th: shipped #188 (parent-owned work root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65 collected tests), baseline re-verified green.
 
 This run did three things, in order.
 
@@ -30,23 +30,16 @@ Baseline re-verified green this run (run serially, no self-contention): the five
 `tests/test_*.sh` suites ALL TESTS PASSED; `.venv/bin/python -m pytest -q` 58
 passed; `sentinel.sh coverage` RC=0; `sentinel.sh citations` RC=0.
 
-NEXT MOVE (resume point): the 64th run (commit da794d8, already committed and
-pushed; local `main` == `origin/main`) shipped the #187 version-surface guards -
-README.md's `sec-cli vX.Y.Z` transcript, `pyproject.toml`'s manifest version and
-profile.md's manifest version are now bound to bin/sec's live `VERSION`, with
-probe case [26b] added - but left **#187 OPEN** and did NOT re-run the full
-baseline after the change. Resume by, in order:
-1. `cd /home/opc/sandbox/sec-cli && bash tests/test_sentinel.sh` - confirm case
-   [26b] and the whole suite are green. (Its last red was spurious: `/tmp` had
-   filled with 3662 leaked `/tmp/tmp.*` directories, cleared during this handoff
-   run - re-check `df -h /` first if it fails again.)
-2. `bash tests/test_dispatch.sh` - the other suite not re-run this handoff.
-3. `gh issue close 187 --repo atalby/sec-cli --comment "<the suite evidence>"`.
-Then investigate whether `tests/test_sentinel.sh` leaks its `mktemp -d` WORK_*
-copies (the 3662-dir accumulation) and file it if confirmed. #67 stays gated on
-explicit human scope approval; #92/#51 are hub-side with no in-repo remedy.
-Tracker is GitHub `atalby/sec-cli` (`gh`); the standing order names GitLab, but no
-`sec-cli` project exists under `at-tech-io` and the remote is
+NEXT MOVE (resume point): #188 shipped and closed this run (parent-owned work
+root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65
+collected tests). Baseline re-verified green: all five bash suites ALL TESTS
+PASSED, pytest 65 passed, sentinel coverage + citations exit 0. Open issues
+remaining are gated/hub-side: #67 (fresh 360 audit, needs human scope approval),
+#92 (hub-owned unguarded counts), #51 (hub-side handoff). No autonomous
+actionable item remains; the next run should either re-verify the baseline or
+await explicit scope approval for #67. Do not start the 360 audit without that
+approval. Tracker is GitHub `atalby/sec-cli` (`gh`); the standing order names
+GitLab, but no `sec-cli` project exists under `at-tech-io` and the remote is
 `git@github.com:atalby/sec-cli.git`.
 
 ## Next autonomous work
@@ -172,7 +165,7 @@ their probe anchor above the Verified-baseline section.
 
 ```
 for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_$s.sh; done   # all ALL TESTS PASSED
-.venv/bin/python -m pytest -q                                                               # 58 passed
+.venv/bin/python -m pytest -q                                                               # 65 passed
 ./skills/architecture-360-audit/sentinel.sh coverage                                        # exit 0
 ./skills/architecture-360-audit/sentinel.sh citations                                       # exit 0
 ```

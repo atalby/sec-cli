@@ -86,7 +86,7 @@ losslessly into per-date archives under `history/`, and `sentinel.sh coverage`
 gained a guard so the file cannot silently re-bloat. The day then swept
 dispatcher/completion/argv/doc-honesty residuals (#40–#66), notably moving secrets
 off child argv (#58/#59) and a baseline-red ungitignored local `.venv/` (#68).
-All five bash suites and the pytest mirror (58 tests) pass. Narrative:
+All five bash suites and the pytest mirror (65 tests) pass. Narrative:
 `history/2026-10-11.md` / `history/2026-10-12.md`.
 
 ## Archive

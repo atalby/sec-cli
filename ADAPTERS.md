@@ -303,7 +303,7 @@ per AGENTS.md §5's replace-don't-append rule.
   pytest, verified by injection). The heavy `tests/test_dispatch.sh`
   (~14s, stub backends) runs in that mirror unconditionally: commit
   0284d39 removed the former `SEC_TEST_DISPATCH=1` opt-in (issue #65),
-  so plain `python3 -m pytest scripts/tests/ -q` is now 58 passed.
+  so plain `python3 -m pytest scripts/tests/ -q` is now 65 passed.
 - **Note**: the shared pre-commit's Step 5 does **not** glob `tests/*.sh`
   itself — it recognizes `scripts/tests/`+uv, `pytest.ini`/
   `pyproject.toml`, or `package.json` — which is why the `scripts/tests/`

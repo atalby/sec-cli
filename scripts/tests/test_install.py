@@ -2,7 +2,9 @@
 
 import os
 import re
+import shutil
 import subprocess
+import tempfile
 
 import pytest
 
@@ -22,14 +24,21 @@ _FAST_SUITES = [
 _SUITE_TIMEOUT = int(os.environ.get("SEC_TEST_SUITE_TIMEOUT", "900"))
 
 
-def _run_suite(name):
-    return subprocess.run(
-        ["bash", os.path.join(_REPO_ROOT, "tests", name)],
-        cwd=_REPO_ROOT,
-        capture_output=True,
-        text=True,
-        timeout=_SUITE_TIMEOUT,
-    )
+def _run_suite(name, timeout=None):
+    work_root = tempfile.mkdtemp(prefix="sec-suite-work-")
+    env = os.environ.copy()
+    env["SEC_TEST_WORK_ROOT"] = work_root
+    try:
+        return subprocess.run(
+            ["bash", os.path.join(_REPO_ROOT, "tests", name)],
+            cwd=_REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=_SUITE_TIMEOUT if timeout is None else timeout,
+            env=env,
+        )
+    finally:
+        shutil.rmtree(work_root, ignore_errors=True)
 
 
 # Every tests/*.sh suite reports through the identical shape --
@@ -214,3 +223,53 @@ def test_suite_runners_report_through_the_named_failure_detail():
     for body in runners:
         assert "_suite_failure_detail" in body, body.splitlines()[0]
         assert "result.stdout[" not in body, body.splitlines()[0]
+
+
+def test_run_suite_kills_and_reclaims_the_work_root_on_timeout(tmp_path):
+    capture = tmp_path / "root.txt"
+    fake = tmp_path / "slow_suite.sh"
+    fake.write_text(
+        "#!/usr/bin/env bash\n"
+        f'printf \'%s\' "$SEC_TEST_WORK_ROOT" >"{capture}"\n'
+        "exec sleep 120\n"
+    )
+    with pytest.raises(subprocess.TimeoutExpired):
+        _run_suite(str(fake), timeout=5)
+    root = capture.read_text().strip()
+    assert root, "the timed-out suite never saw a SEC_TEST_WORK_ROOT"
+    assert not os.path.exists(root), f"timed-out suite leaked its work root: {root}"
+
+
+def test_run_suite_reclaims_the_work_root_after_success(tmp_path):
+    capture = tmp_path / "root.txt"
+    fake = tmp_path / "quick_suite.sh"
+    fake.write_text(
+        "#!/usr/bin/env bash\n"
+        f'printf \'%s\' "$SEC_TEST_WORK_ROOT" >"{capture}"\n'
+        "exit 0\n"
+    )
+    result = _run_suite(str(fake))
+    assert result.returncode == 0, result.stderr
+    root = capture.read_text().strip()
+    assert root, "the suite never saw a SEC_TEST_WORK_ROOT"
+    assert not os.path.exists(root), f"finished suite leaked its work root: {root}"
+
+
+@pytest.mark.parametrize(
+    "suite_name",
+    [
+        "test_install.sh",
+        "test_sync_guard.sh",
+        "test_write_honesty.sh",
+        "test_sentinel.sh",
+        "test_dispatch.sh",
+    ],
+)
+def test_bash_suites_honor_the_parent_owned_work_root(suite_name):
+    path = os.path.join(_REPO_ROOT, "tests", suite_name)
+    with open(path, "r") as fh:
+        source = fh.read()
+    assert "SEC_TEST_WORK_ROOT:-$(mktemp -d)}" in source, (
+        f"{suite_name} no longer honors the mirror-provided SEC_TEST_WORK_ROOT "
+        f"fallback, so a SIGKILLed mirror run leaks its mktemp WORK dir (#188)"
+    )

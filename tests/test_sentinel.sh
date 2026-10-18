@@ -9,7 +9,7 @@ fail=0
 ok() { echo "  ok: $1"; pass=$((pass + 1)); }
 no() { echo "  fail: $1"; fail=$((fail + 1)); }
 
-WORK_ROOT="$(mktemp -d)"
+WORK_ROOT="${SEC_TEST_WORK_ROOT:-$(mktemp -d)}"
 SEED_TAR="$(mktemp "$WORK_ROOT/seed.XXXXXX")"
 (cd "$REPO_ROOT" && git ls-files -z | tar --null -T - -cf "$SEED_TAR")
 seed() { tar -C "$1" -xf "$SEED_TAR"; }
