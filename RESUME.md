@@ -1,6 +1,6 @@
 # Resume point - sec-cli
 
-## Session 2026-10-18 (63rd, 64th, 65th, 66th runs) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 closed after baseline re-verify. 65th: shipped #188 (parent-owned work root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65 collected tests), baseline re-verified green. 66th: shipped #189 (a sentinel section 44 deriving the `sec set` supported-tenant set from bin/sec's live store arms and requiring docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly it; OPERATOR_MANUAL's Complete CLI reference gained the missing restriction; sentinel cases 68 -> 69, assertions 916 -> 928); also cleared the stale #187 entry from this file's open-issue list.
+## Session 2026-10-18 (63rd, 64th, 65th, 66th, 67th runs) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 closed after baseline re-verify. 65th: shipped #188 (parent-owned work root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65 collected tests), baseline re-verified green. 66th: shipped #189 (a sentinel section 44 deriving the `sec set` supported-tenant set from bin/sec's live store arms and requiring docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly it; OPERATOR_MANUAL's Complete CLI reference gained the missing restriction; sentinel cases 68 -> 69, assertions 916 -> 928); also cleared the stale #187 entry from this file's open-issue list. 67th: shipped #190 (sentinel section 45 deriving `sec housekeep` apply/revert's supported-backend set from bin/sec-organizer's two arms, requiring the two arms to agree with each other and with docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md; both surfaces gained the missing restriction; sentinel cases 69 -> 70, assertions 928 -> 940).
 
 This run did three things, in order.
 
@@ -30,10 +30,11 @@ Baseline re-verified green this run (run serially, no self-contention): the five
 `tests/test_*.sh` suites ALL TESTS PASSED; `.venv/bin/python -m pytest -q` 65
 passed; `sentinel.sh coverage` RC=0; `sentinel.sh citations` RC=0.
 
-NEXT MOVE (resume point): #189 shipped and closed this run (sentinel section 44
-derives the `sec set` supported-tenant set from bin/sec's live store arms and
-requires docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly it;
-OPERATOR_MANUAL's Complete CLI reference gained the missing restriction).
+NEXT MOVE (resume point): #190 shipped and closed this run (sentinel section 45
+derives `sec housekeep` apply/revert's supported-backend set from
+bin/sec-organizer's two live arms, requires the arms to agree with each other,
+and requires docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly
+that set; both surfaces gained the missing restriction).
 Baseline re-verified green: all five bash suites ALL TESTS PASSED, pytest 65
 passed, sentinel coverage + citations exit 0. Open issues remaining are
 gated/hub-side: #67 (fresh 360 audit, needs human scope approval), #92
@@ -144,9 +145,11 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   for gitlab.com, which this repo is not on).
 - Open issues: **#67** (fresh 360 audit - human scope gate); **#92**
   (hub-side unguarded counts); **#51** (hub-side handoff, tracked upstream);
-  **#189** (`sec set` supported-tenant contract guarded on one surface only
+  **#190** (`sec housekeep` apply/revert supported-backend contract unguarded
   and missing from the OPERATOR_MANUAL's Complete CLI reference -- shipped and
-  closed in the 66th run). **#188** closed in the 65th run (parent-owned pytest
+  closed in the 67th run); **#189** (`sec set` supported-tenant contract
+  guarded on one surface only -- shipped and closed in the 66th run).
+  **#188** closed in the 65th run (parent-owned pytest
   work root); **#187** closed in the 64th run (version-surface guards);
   **#185** closed in the 64th run (RESUME.md rotation);
   **#126** closed in the 18th run (warn design call, dispatch [18d]); #120
@@ -175,8 +178,8 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 107, install 9, sentinel 69, sync_guard 16,
-write_honesty 17. Sentinel = 69 cases / 928 assertions. HISTORY.md is at
+mirrors in sync): dispatch 107, install 9, sentinel 70, sync_guard 16,
+write_honesty 17. Sentinel = 70 cases / 940 assertions. HISTORY.md is at
 6956/8192 bytes - headroom of 1236 bytes before its budget (the full narratives
 live in `history/2026-10-15.md` through `history/2026-10-18.md`).
 120 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

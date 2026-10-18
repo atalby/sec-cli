@@ -5850,6 +5850,73 @@ else
     no "the control copy's OK line did not name the sec set supported-tenant check"
     printf '%s\n' "$OUT"
 fi
+echo "[69] \`sec housekeep\`'s supported-backend contract must match bin/sec-organizer's live arms (issue #190)"
+WORK_T45A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T45B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T45CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for _w in "$WORK_T45A" "$WORK_T45B" "$WORK_T45CTRL"; do
+    seed "$_w"
+done
+python3 - "$WORK_T45A/docs/ARCHITECTURE.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "only bw and op are implemented"
+if s.count(old) != 1:
+    sys.exit("docs/ARCHITECTURE.md no longer states the sec housekeep supported-backend list in the guarded form")
+open(p, "w", encoding="utf-8").write(s.replace(old, "only bw and vault are implemented", 1))
+PY
+OUT="$(cd "$WORK_T45A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when docs/ARCHITECTURE.md's housekeep backends drift from the live arms"
+else
+    no "coverage accepted a docs/ARCHITECTURE.md housekeep backend list that drifts from the live arms"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/ARCHITECTURE.md's \`sec housekeep\` supported backend" <<<"$OUT"; then
+    ok "coverage names the drifted docs/ARCHITECTURE.md housekeep backend list"
+else
+    no "coverage did not name the drifted docs/ARCHITECTURE.md housekeep backend list"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T45B/bin/sec-organizer" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "bw|op) ;;"
+if s.count(old) != 2:
+    sys.exit("bin/sec-organizer no longer states the guarded backend arms in the expected form")
+open(p, "w", encoding="utf-8").write(s.replace(old, "bw|infisical) ;;", 1))
+PY
+OUT="$(cd "$WORK_T45B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when bin/sec-organizer's apply and revert arms disagree"
+else
+    no "coverage accepted disagreeing bin/sec-organizer apply/revert backend arms"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "backend arms disagree" <<<"$OUT"; then
+    ok "coverage names the disagreeing bin/sec-organizer backend arms"
+else
+    no "coverage did not name the disagreeing bin/sec-organizer backend arms"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T45CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (housekeep backends agree) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] housekeep backends:" <<<"$OUT"; then
+    ok "the control copy's OK line names the housekeep supported-backend check"
+else
+    no "the control copy's OK line did not name the housekeep supported-backend check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"

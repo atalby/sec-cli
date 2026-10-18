@@ -67,7 +67,7 @@ Executes `<command_and_args>` as a child process. Environment injection happens 
   ```
 
 #### 4. `sec housekeep {plan|apply|revert}`
-Executes the ML classification and disambiguating renamer engine across your vault.
+Executes the ML classification and disambiguating renamer engine across your vault. Only bw and op are implemented; any other backend keeps the plan/snapshot and exits 1 with a tagged `[ERROR]` naming the backend.
 
 - **Sub-actions**:
   - `sec housekeep plan`: Scans vault, calculates ML confidence scores (%), and displays proposed moves/renames.

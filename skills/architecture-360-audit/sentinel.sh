@@ -673,7 +673,7 @@ _NUM_WORDS = {
     "sixty-five": 65,
     "sixty-six": 66,
     "sixty-seven": 67,
-    "sixty-eight": 68, "sixty-nine": 69,
+    "sixty-eight": 68, "sixty-nine": 69, "seventy": 70,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -3472,6 +3472,49 @@ else:
                 f"differ from the live store arms {sorted(_set_supported)}"
             )
 
+# --- 45. `sec housekeep` apply/revert's supported-backend contract: the two
+#         live arms in bin/sec-organizer must agree with each other and with
+#         docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md (issue #190) ------
+# The live set is derived from bin/sec-organizer's two 'case "$backend" in'
+# arms, each paired with an 'apply not implemented for backend' /
+# 'revert not implemented for backend' refusal.
+housekeep_mismatches = []
+
+try:
+    with open(os.path.join(repo, "bin", "sec-organizer"), encoding="utf-8") as _fh:
+        _org_text = _fh.read()
+except OSError:
+    _org_text = ""
+_hk_arm_sets = [
+    (_hk_m.group(1), _mig_canon(_hk_m.group(1)))
+    for _hk_m in re.finditer(r'case "\$backend" in\n\s*([a-z0-9|]+)\)\s*;;', _org_text)
+]
+if len(_hk_arm_sets) != 2:
+    housekeep_mismatches.append(
+        f"bin/sec-organizer carries {len(_hk_arm_sets)} 'case \"$backend\" in' arm block(s), expected 2 (apply + revert)"
+    )
+else:
+    _hk_live = _hk_arm_sets[0][1]
+    if any(_s != _hk_live for _lbl, _s in _hk_arm_sets):
+        housekeep_mismatches.append(
+            "bin/sec-organizer's apply and revert backend arms disagree: "
+            + ", ".join(f"{_lbl} -> {sorted(_s)}" for _lbl, _s in _hk_arm_sets)
+        )
+    for _surface in ("docs/ARCHITECTURE.md", "docs/OPERATOR_MANUAL.md"):
+        _hk_claim_m = re.search(
+            r"[Oo]nly ([a-z0-9]+) and ([a-z0-9]+) are implemented", _nl_read(_surface)
+        )
+        if _hk_claim_m is None:
+            housekeep_mismatches.append(
+                f"{_surface} does not state which backends `sec housekeep` apply/revert implement"
+            )
+        elif _mig_canon(" ".join(_hk_claim_m.groups())) != _hk_live:
+            housekeep_mismatches.append(
+                f"{_surface}'s `sec housekeep` supported backend(s) "
+                f"{sorted(_mig_canon(' '.join(_hk_claim_m.groups())))} "
+                f"differ from the live apply/revert arms {sorted(_hk_live)}"
+            )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -3731,6 +3774,12 @@ if set_tenant_mismatches:
     )
     for _m in set_tenant_mismatches:
         print(f"{ERROR} set tenants: {_m}")
+if housekeep_mismatches:
+    failures.append(
+        f"{len(housekeep_mismatches)} `sec housekeep` supported-backend drift(s) vs bin/sec-organizer's live apply/revert arms"
+    )
+    for _m in housekeep_mismatches:
+        print(f"{ERROR} housekeep backends: {_m}")
 
 if failures:
     for f in failures:
@@ -3780,6 +3829,8 @@ if not bridge_mismatches:
     print(f"{OK} harness bridges: {len(_bridge_files)} bridge(s) in {len(_harness_names)} harness dir(s) ({', '.join(sorted(_harness_names))}) each name {_CANON_SKILL} + the {_AGENTS_LINK} symlink, refuse to paraphrase, and name only live SKILL.md sections")
 if not set_tenant_mismatches:
     print(f"{OK} set tenants: docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md name exactly the live `sec set` store tenants ({', '.join(sorted(_set_supported))})")
+if not housekeep_mismatches:
+    print(f"{OK} housekeep backends: docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md name exactly bin/sec-organizer's live apply/revert arms ({', '.join(sorted(_hk_live))})")
 if not hyer_mcp_mismatches:
     print(f"{OK} hyer-mcp claims: docs/ARCHITECTURE.md's bin/hyer-mcp.sh bullet names the live HYER_HOME default (`{_hm_home}`), secret (`{_hm_secret}`), token env var (`{_hm_env}`), direct-node exec with no `sh -c`, and the gitignored `.mcp.json` / tracked `.mcp.json.example` pair")
 if not auto_rotate_mismatches:
