@@ -16,41 +16,20 @@ mitigations, and the snapshot-contents field set (that last one had gone stale).
 Sentinel 49 -> 60 cases / 532 -> 736 assertions.
 Narrative: `history/2026-10-14.md`.
 
-**2026-10-15**: three passes of the unguarded-current-state-claim sweep, each closed
-by a sentinel section deriving the live value from code. (1) docs/ARCHITECTURE.md's
-`install.sh` bullet had no guard (the `bin/*` wording was imprecise, `bin/hyer-mcp.sh`
-is never installed) -- section 37, case [61]. (2) docs/MULTI_TENANCY.md's `auto_rotate`
-rule claimed two branches "for each tenant section"; live bin/sec reads the key once,
-in the `bitwarden|bw)` arm only -- `op`/`vault` prompt unconditionally, `bws`/`infisical`/
-`keychain` have no auth arm, and the prompt is a fallback reached under `auto_rotate = true`
-too. Per-backend table + section 38, case [62]. (3) docs/SECURITY.md's master-password
-row and Disk Storage Leak census were unguarded and currently TRUE -- highest blast
-radius in the class: a silent regression writes a Bitwarden master password to disk in
-cleartext. `SEC_ALLOW_PLAINTEXT_MASTER_PASS` gates both paths, the file is
-`~/.cache/bitwarden/master_pass` at mode 0600, and bin/sec-migrator stages the infisical
-import in a `mktemp` file chmod'd to that mode and `rm -f`'d in both branches. Section 39,
-case [63]. Sentinel 60 -> 63 cases / 736 -> 792 assertions. Tracker: #51, #67, #92.
-Then a read-path honesty sweep (#162-#170). All seven `sec set` fall-through points
-discarded stderr and collapsed into one `[ERROR]` naming the tenant but never the step; the
-PowerShell sibling was worse -- with no tenant dispatch it probes PATH, so an unusable bws
-fell through to bw, really wrote to the Vault, and exited 0 (its bws arm is now terminal);
-the bitwarden attachment-read path piped a literal `ERR` sentinel into jq, so its guard could
-never fire; three `sec-organizer` write-path holes (dead-guard reader, unvalidated
-`folders_json` mask, unguarded apply/revert pipelines); four silent-death backend reads in
-bin/sec + keeper; the sec-migrator `bws project list` twin plus three create-response jqs; the
-README migrate bullet reading destination-only backends as sources; the `bw list folders` mask
-whose `|| echo "[]"` made its guard unreachable; and `fetch_source_items` masking a failing
-source listing as `[]`, where jq exits 0 on `[]` and a broken source printed
-`[INFO] Zero items found` + exit 0. Dispatch 92 -> 107 cases, write-honesty 16 -> 17,
-migrator tagged census 29 -> 30. Then five guard-widening units (#171-#178), each making an
-existing section also read a doc restating a claim it already guarded: #171 README's Smart
-Session bullet ([62]); #172 the CI workflow's suite run-list ([18]); #173 the hyer-mcp
-component bullet, sentinel 63 -> 64 cases ([64]); #174 ARCHITECTURE.md's Overview sentence
-([31]); #175/#176 docs/OPERATOR_MANUAL.md and docs/SECURITY.md as `sec run` injection-backend
-restatements ([51]); #177 README's Multi-OS matrix PowerShell cell ([54]); #178
-OPERATOR_MANUAL.md:92 and the sync-controller bullet on sync targets ([31]). Assertions
-736 -> 852.
-Full narrative: `history/2026-10-15.md`.
+**2026-10-15**: three unguarded-current-state-claim passes, each closed by a
+sentinel section deriving the live value from code: docs/ARCHITECTURE.md's
+`install.sh` bullet ([61]); docs/MULTI_TENANCY.md's `auto_rotate` rule, live only
+in bin/sec's `bitwarden|bw)` arm ([62]); docs/SECURITY.md's master-password row +
+Disk Storage Leak census, gated by `SEC_ALLOW_PLAINTEXT_MASTER_PASS` ([63], highest
+blast radius in the class). Sentinel 60 -> 63 cases / 736 -> 792 assertions. Then a
+read-path honesty sweep (#162-#170) closing silent deaths: seven `sec set`
+fall-throughs; a PowerShell `bws` arm falling through to Vault with exit 0; a
+literal `ERR` into jq; three `sec-organizer` write holes; the sec-migrator
+`bws project list` twin; `fetch_source_items` masking a failing source as `[]`.
+Dispatch 92 -> 107 cases, write-honesty 16 -> 17, migrator census 29 -> 30. Then
+five guard-widening units (#171-#178), each also reading a doc restating a guarded
+claim ([62]/[18]/[64]/[31]/[51]/[54]). Assertions 736 -> 852. Full narrative:
+`history/2026-10-15.md`.
 
 **2026-10-16**: #181 closed the citation class and the Archive-index hole it
 exposed. CLAUDE.md's claim that Claude Code "does not yet auto-discover
@@ -79,6 +58,16 @@ retargeted `.agents` symlink, or a stale-section refresh bridge all passed. Sect
 closed two live drifts (a missing `agent: build`; two bridges not naming the `skill`
 tool). Sentinel 67 cases / 902 assertions. Narrative: `history/2026-10-17.md`.
 
+**2026-10-18**: reverted the 62nd run's unsanctioned, uncommitted RESUME.md
+compaction (it had dropped the Verified-baseline section, turning `sentinel.sh
+coverage` red), then closed the two items that exposed: #186 raised the pytest
+mirror's per-suite timeout default 300s -> 900s in `scripts/tests/test_install.py`
+(a loaded `test_sentinel.sh` run takes ~263s), and #185 rotated RESUME.md's
+narrative - the 63rd/61st/60th/59th-run session entries and the prior "Shipped this
+session" list - verbatim into `history/2026-10-18.md`, trimming RESUME.md to
+current state with no line lost (script-asserted). Narrative:
+`history/2026-10-18.md`.
+
 **2026-10-12**: the flag-misparse / operand-honesty sweep (#71-#80) rejected
 unknown flags and dropped operands with tagged `[ERROR]` + exit 2; completion
 parity and runtime fixed (#78-#83); census-drift class closed (#84-#91, sentinel
@@ -102,6 +91,7 @@ All five bash suites and the pytest mirror (58 tests) pass. Narrative:
 
 ## Archive
 
+- [2026-10-18](history/2026-10-18.md)
 - [2026-10-17](history/2026-10-17.md)
 - [2026-10-16](history/2026-10-16.md)
 - [2026-10-15](history/2026-10-15.md)

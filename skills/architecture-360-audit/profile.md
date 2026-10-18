@@ -12,7 +12,7 @@ moves.
 Ecosystems present: Bash (`bin/sec` and seven sibling dispatchers, `install.sh`,
 five suites under `tests/`), Python 3 (6 files: `bin/sec-sync-controller.py`,
 `bin/sec-classify.py`, and four under `scripts/tests/`), PowerShell (`bin/sec.ps1`),
-zsh completion (`completions/_sec`), Markdown (80 files), JSON/YAML/TOML
+zsh completion (`completions/_sec`), Markdown (81 files), JSON/YAML/TOML
 configuration (13 files).
 
 Measured against the tier definition:
@@ -437,7 +437,7 @@ instrument rather than the product but runs the same way:
 **Tracked file count** (the manifest denominator):
 
     $ git ls-files | wc -l
-    119
+    120
 
 **Dependency manifest census** (the persona 8 denominator). A project
 surface is what `git ls-files` tracks, so the count below is reproducible; a
@@ -810,7 +810,8 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **119 tracked files** (`git ls-files | wc -l`, re-measured
+Denominator: **120 tracked files** (`git ls-files | wc -l`, re-measured
+2026-10-18 after issue #185 added the `history/2026-10-18.md` narrative; previously re-measured
 2026-10-17 after issue #183 truth-upped the repo-root `SKILL.md` and added the
 `history/2026-10-17.md` narrative; previously re-measured
 2026-10-16 after the citation guard (#181) added the `history/2026-10-16.md`
