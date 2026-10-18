@@ -1042,6 +1042,23 @@ if grep -q "Successfully Applied" <<<"$OUT"; then fail "reported success for a f
 if grep -q "Creating folder" <<<"$OUT"; then fail "attempted a folder create from an unverified listing: $OUT"; else pass "did not act on an unverified folders listing"; fi
 if [[ -f "$H2P/.cache/bitwarden/housekeep_plan.json" ]]; then pass "plan kept after failing folders read"; else fail "plan DELETED after failing folders read"; fi
 
+echo "[14p] failure-honesty: 'sec get --scope' fails closed on a failing folders read, never masks it as a missing folder (issue #191)"
+H2Q="$(new_home "$WORK/h14p")"
+set +e
+OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2Q" \
+    "SEC_TEST_BW_LOG=$BWLOG" "SEC_TEST_BW_FOLDERS_RC=1" \
+    "$REPO_ROOT/bin/sec" bw get --scope work MY_API_KEY 2>&1 </dev/null)"
+RC=$?
+set -e
+if [[ $RC -eq 1 ]] && grep -q "^\[ERROR\] corrupt or unreadable folder listing from backend 'bw'" <<<"$OUT"; then pass "failing folders read -> exit 1 + tagged error"; else fail "failing folders read rc=$RC out=[$OUT]"; fi
+if grep -q "scope folder not found" <<<"$OUT"; then fail "failing folders read misreported as 'scope folder not found': $OUT"; else pass "a provider failure is not misreported as a missing folder"; fi
+if grep -q "vault is locked" <<<"$OUT"; then fail "failing folders read leaked the child's raw stderr: $OUT"; else pass "no raw child stderr on failing folders read"; fi
+if grep -q "pw-MY_API_KEY" <<<"$OUT"; then fail "failing folders read still printed a secret: $OUT"; else pass "no secret printed on failing folders read"; fi
+
+echo "[14q] class guard: no '|| echo []' listing mask survives in the credential-adjacent dispatchers (issue #191)"
+MASK_HITS="$(grep -nE "echo[[:space:]]*[\"']?\[\][\"']?" "$REPO_ROOT/bin/sec" "$REPO_ROOT/bin/sec-organizer" "$REPO_ROOT/bin/sec-migrator" 2>/dev/null || true)"
+if [[ -z "$MASK_HITS" ]]; then pass "no '|| echo []' empty-array mask in bin/sec, bin/sec-organizer, bin/sec-migrator"; else fail "an empty-array listing mask reappeared: $MASK_HITS"; fi
+
 echo "[15] migrate plan executes the migrator"
 set +e
 OUT="$(env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H2" \

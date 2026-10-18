@@ -1,6 +1,6 @@
 # Resume point - sec-cli
 
-## Session 2026-10-18 (63rd, 64th, 65th, 66th, 67th runs) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 closed after baseline re-verify. 65th: shipped #188 (parent-owned work root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65 collected tests), baseline re-verified green. 66th: shipped #189 (a sentinel section 44 deriving the `sec set` supported-tenant set from bin/sec's live store arms and requiring docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly it; OPERATOR_MANUAL's Complete CLI reference gained the missing restriction; sentinel cases 68 -> 69, assertions 916 -> 928); also cleared the stale #187 entry from this file's open-issue list. 67th: shipped #190 (sentinel section 45 deriving `sec housekeep` apply/revert's supported-backend set from bin/sec-organizer's two arms, requiring the two arms to agree with each other and with docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md; both surfaces gained the missing restriction; sentinel cases 69 -> 70, assertions 928 -> 940).
+## Session 2026-10-18 (63rd, 64th, 65th, 66th, 67th, 68th runs) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 closed after baseline re-verify. 65th: shipped #188 (parent-owned work root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65 collected tests), baseline re-verified green. 66th: shipped #189 (a sentinel section 44 deriving the `sec set` supported-tenant set from bin/sec's live store arms and requiring docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly it; OPERATOR_MANUAL's Complete CLI reference gained the missing restriction; sentinel cases 68 -> 69, assertions 916 -> 928); also cleared the stale #187 entry from this file's open-issue list. 67th: shipped #190 (sentinel section 45 deriving `sec housekeep` apply/revert's supported-backend set from bin/sec-organizer's two arms, requiring the two arms to agree with each other and with docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md; both surfaces gained the missing restriction; sentinel cases 69 -> 70, assertions 928 -> 940). 68th: shipped #191 (the `sec get --scope` bw path masked a failing `bw list folders` read as a valid empty array via `|| echo '[]'`, hollowing the adjacent corrupt-listing guard so a locked vault or expired session was misreported as `scope folder not found`; the read is now `|| true` with an explicit empty/non-array payload guard before the scope resolves, and a class guard covers bin/sec, bin/sec-organizer and bin/sec-migrator; dispatch sections [14p]/[14q], dispatch 107 -> 109; the last surviving mask of the #169/#170 class and the only `|| echo '[]'` left in bin/).
 
 This run did three things, in order.
 
@@ -30,19 +30,17 @@ Baseline re-verified green this run (run serially, no self-contention): the five
 `tests/test_*.sh` suites ALL TESTS PASSED; `.venv/bin/python -m pytest -q` 65
 passed; `sentinel.sh coverage` RC=0; `sentinel.sh citations` RC=0.
 
-NEXT MOVE (resume point): #190 shipped and closed this run (sentinel section 45
-derives `sec housekeep` apply/revert's supported-backend set from
-bin/sec-organizer's two live arms, requires the arms to agree with each other,
-and requires docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly
-that set; both surfaces gained the missing restriction).
+NEXT MOVE (resume point): #191 shipped and closed this run (the `sec get --scope`
+bw path no longer masks a failing `bw list folders` read as a valid empty array
+-- it fails closed with the tagged `[ERROR] corrupt or unreadable folder listing`
+error, dispatch sections [14p]/[14q] plus a class guard over bin/sec,
+bin/sec-organizer and bin/sec-migrator; dispatch 107 -> 109).
 Baseline re-verified green: all five bash suites ALL TESTS PASSED, pytest 65
 passed, sentinel coverage + citations exit 0. Open issues remaining are
 gated/hub-side: #67 (fresh 360 audit, needs human scope approval), #92
-(hub-owned unguarded counts), #51 (hub-side handoff). No autonomous actionable
-item remains; the next run should either re-verify the baseline or await
-explicit scope approval for #67. Do not start the 360 audit without that
-approval. Tracker is GitHub `atalby/sec-cli` (`gh`); the standing order names
-GitLab, but no `sec-cli` project exists under `at-tech-io` and the remote is
+(hub-owned unguarded counts), #51 (hub-side handoff). Tracker is GitHub
+`atalby/sec-cli` (`gh`); the standing order names GitLab, but no `sec-cli`
+project exists under `at-tech-io` and the remote is
 `git@github.com:atalby/sec-cli.git`.
 
 ## Next autonomous work
@@ -145,7 +143,8 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   for gitlab.com, which this repo is not on).
 - Open issues: **#67** (fresh 360 audit - human scope gate); **#92**
   (hub-side unguarded counts); **#51** (hub-side handoff, tracked upstream);
-  **#190** (`sec housekeep` apply/revert supported-backend contract unguarded
+  **#191** (the `sec get --scope` bw folder-listing mask -- shipped and closed
+  in the 68th run); **#190** (`sec housekeep` apply/revert supported-backend contract unguarded
   and missing from the OPERATOR_MANUAL's Complete CLI reference -- shipped and
   closed in the 67th run); **#189** (`sec set` supported-tenant contract
   guarded on one surface only -- shipped and closed in the 66th run).
@@ -178,7 +177,7 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 107, install 9, sentinel 70, sync_guard 16,
+mirrors in sync): dispatch 109, install 9, sentinel 70, sync_guard 16,
 write_honesty 17. Sentinel = 70 cases / 940 assertions. HISTORY.md is at
 6956/8192 bytes - headroom of 1236 bytes before its budget (the full narratives
 live in `history/2026-10-15.md` through `history/2026-10-18.md`).
@@ -191,7 +190,7 @@ Run both when a sentinel section changes.
 
 1. **Suite-count mirrors (dispatch):** three sites, bumped by hand whenever a
    dispatch section is added/removed - `profile.md:22`, `ADAPTERS.md:55`
-   (`current suites: dispatch N,`), `ADAPTERS.md:264` (`` `bash tests/test_dispatch.sh`
+   (`current suites: dispatch N,`), `ADAPTERS.md:265` (`` `bash tests/test_dispatch.sh`
    (N sections, ``). Sentinel `coverage` checks all three; `HISTORY.md` and
    `history/*.md` hits are historical narrative, leave them.
 2. **Bump mirrors BEFORE capturing RED** (gotcha from #90/#91): a new test case

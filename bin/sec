@@ -481,11 +481,12 @@ EOF
                 echo "[ERROR] scope folder name 'null' is reserved (bw uses it for folderless items); pick another folder or omit --scope." >&2
                 exit 1
             fi
-            folders_json="$(BW_SESSION="${BW_SESSION:-}" bw list folders 2>/dev/null || echo '[]')"
-            if ! SCOPE_FOLDER_ID="$(jq -r --arg t "$SCOPE_NAME" '.[] | select(.name == $t).id // empty' <<<"$folders_json" 2>/dev/null)"; then
+            folders_json="$(BW_SESSION="${BW_SESSION:-}" bw list folders 2>/dev/null || true)"
+            if [[ -z "${folders_json//[[:space:]]/}" ]] || ! printf '%s' "$folders_json" | jq -e 'type == "array"' >/dev/null 2>&1; then
                 echo "[ERROR] corrupt or unreadable folder listing from backend 'bw'; cannot resolve scope '$SCOPE_NAME'." >&2
                 exit 1
             fi
+            SCOPE_FOLDER_ID="$(jq -r --arg t "$SCOPE_NAME" '.[] | select(.name == $t).id // empty' <<<"$folders_json")"
             if [[ -z "$SCOPE_FOLDER_ID" ]]; then
                 echo "[ERROR] scope folder not found: '$SCOPE_NAME'" >&2
                 exit 1
