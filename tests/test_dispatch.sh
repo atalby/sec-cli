@@ -168,6 +168,7 @@ case "${1:-}" in
         case "${2:-}" in
             list) echo '[{"id":"op-1","title":"OP Item","tags":[]}]' ;;
             create)
+                if [ ! -t 0 ]; then cat >/dev/null; fi
                 if [ "${SEC_TEST_OP_ITEM_CREATE_RC:-0}" != "0" ]; then
                     echo "Error: could not create item." >&2
                     exit "${SEC_TEST_OP_ITEM_CREATE_RC}"
@@ -227,6 +228,7 @@ cat >"$FAKEBIN/vault" <<'EOF'
 echo "vault $*" >>"${SEC_TEST_VAULT_LOG:?SEC_TEST_VAULT_LOG unset}"
 case "${1:-} ${2:-}" in
     "kv get") echo "vault-val" ;;
+    "kv put") if [ ! -t 0 ]; then cat >/dev/null; fi ;;
 esac
 exit 0
 EOF
@@ -734,6 +736,21 @@ for LBL in bw op bws-noproj bws-create; do
     if grep -q "bws-stage-val\|op-stage-val" <<<"$D_OUT"; then fail "$LBL failure message leaked the secret value: $D_OUT"; else pass "$LBL failure message omits the secret value"; fi
     if grep -q "failed to store secret" <<<"$D_OUT"; then pass "$LBL failure still emits the tagged ERROR line"; else fail "$LBL failure lost the tagged ERROR line: $D_OUT"; fi
 done
+
+echo "[11e] harness: the op/vault fakes drain the payload a product stage pipes to them (#192)"
+BIGVAL="$(head -c 100000 /dev/zero | tr '\0' x)"
+set +e
+OUT="$(run_sec "$H" op set BIG_OP_KEY "$BIGVAL" 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]] && grep -q "saved to 1Password" <<<"$OUT"; then pass "op set with a >pipe-buffer value exits 0 (no EPIPE/SIGPIPE race)"; else fail "op set with a >pipe-buffer value rc=$RC out=[${OUT:0:200}]"; fi
+if grep -q "stage: op item create" <<<"$OUT"; then fail "a large op payload was misreported as a stage failure (EPIPE race): ${OUT:0:200}"; else pass "no fabricated 'op item create' stage failure on a large payload"; fi
+
+set +e
+OUT="$(printf '%s' "$BIGVAL" | env -i "PATH=$FAKEBIN:/usr/bin:/bin" "HOME=$H" "SEC_TEST_VAULT_LOG=$VAULTLOG" vault kv put secret/data/BIG value=- 2>&1)"
+RC=$?
+set -e
+if [[ $RC -eq 0 ]]; then pass "the vault fake drains a >pipe-buffer stdin payload"; else fail "vault fake rc=$RC on a >pipe-buffer payload (EPIPE race): ${OUT:0:200}"; fi
 
 echo "[11c] vault/infisical set refuse honestly (unsupported tenant)"
 set +e

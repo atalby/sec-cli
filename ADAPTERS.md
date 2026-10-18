@@ -52,7 +52,7 @@ own secrets tool, not just another repo.
   and does a defensive create-on-404 upsert (the GCP arm already created
   if absent); issue #62: the GCP create-if-absent branch itself is now
   pinned by sync_guard section [16] (the shim reads `SEC_TEST_GCLOUD_DESCRIBE_RC`);
-  current suites: dispatch 109, write-honesty 17,
+  current suites: dispatch 110, write-honesty 17,
   sentinel 70, sync-guard 16, install 9; earlier 2026-10-10, later
   same day: issues #30–#35 —
   sec.ps1 `set` honesty fix + dispatch assertions, pytest mirror executes
@@ -262,7 +262,7 @@ per AGENTS.md §5's replace-don't-append rule.
   `bash tests/test_write_honesty.sh` (17 sections, silent-no-op write
     paths, revert/undo honesty, keeper sync-failure + non-TTY honesty),   `bash tests/test_sentinel.sh` (70 cases,
   the 360 audit instrument's coverage/citations sentinel) and
-  `bash tests/test_dispatch.sh` (109 sections, every `sec` dispatch arm
+  `bash tests/test_dispatch.sh` (110 sections, every `sec` dispatch arm
   plus the seven sibling `bin/` helpers the suite references —
   `sec-sync-controller.py` statically, its functional coverage living in
   the sync-guard and install suites) — all zero-dependency

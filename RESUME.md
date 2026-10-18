@@ -1,6 +1,6 @@
 # Resume point - sec-cli
 
-## Session 2026-10-18 (63rd, 64th, 65th, 66th, 67th, 68th runs) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 closed after baseline re-verify. 65th: shipped #188 (parent-owned work root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65 collected tests), baseline re-verified green. 66th: shipped #189 (a sentinel section 44 deriving the `sec set` supported-tenant set from bin/sec's live store arms and requiring docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly it; OPERATOR_MANUAL's Complete CLI reference gained the missing restriction; sentinel cases 68 -> 69, assertions 916 -> 928); also cleared the stale #187 entry from this file's open-issue list. 67th: shipped #190 (sentinel section 45 deriving `sec housekeep` apply/revert's supported-backend set from bin/sec-organizer's two arms, requiring the two arms to agree with each other and with docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md; both surfaces gained the missing restriction; sentinel cases 69 -> 70, assertions 928 -> 940). 68th: shipped #191 (the `sec get --scope` bw path masked a failing `bw list folders` read as a valid empty array via `|| echo '[]'`, hollowing the adjacent corrupt-listing guard so a locked vault or expired session was misreported as `scope folder not found`; the read is now `|| true` with an explicit empty/non-array payload guard before the scope resolves, and a class guard covers bin/sec, bin/sec-organizer and bin/sec-migrator; dispatch sections [14p]/[14q], dispatch 107 -> 109; the last surviving mask of the #169/#170 class and the only `|| echo '[]'` left in bin/).
+## Session 2026-10-18 (63rd, 64th, 65th, 66th, 67th, 68th runs) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 closed after baseline re-verify. 65th: shipped #188 (parent-owned work root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65 collected tests), baseline re-verified green. 66th: shipped #189 (a sentinel section 44 deriving the `sec set` supported-tenant set from bin/sec's live store arms and requiring docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly it; OPERATOR_MANUAL's Complete CLI reference gained the missing restriction; sentinel cases 68 -> 69, assertions 916 -> 928); also cleared the stale #187 entry from this file's open-issue list. 67th: shipped #190 (sentinel section 45 deriving `sec housekeep` apply/revert's supported-backend set from bin/sec-organizer's two arms, requiring the two arms to agree with each other and with docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md; both surfaces gained the missing restriction; sentinel cases 69 -> 70, assertions 928 -> 940). 68th: shipped #191 (the `sec get --scope` bw path masked a failing `bw list folders` read as a valid empty array via `|| echo '[]'`, hollowing the adjacent corrupt-listing guard so a locked vault or expired session was misreported as `scope folder not found`; the read is now `|| true` with an explicit empty/non-array payload guard before the scope resolves, and a class guard covers bin/sec, bin/sec-organizer and bin/sec-migrator; dispatch sections [14p]/[14q], dispatch 107 -> 109; the last surviving mask of the #169/#170 class and the only `|| echo '[]'` left in bin/). 69th: shipped #192 (op/vault fakes now drain stdin, eliminating the EPIPE/SIGPIPE race; dispatch 109 -> 110; section [11e]).
 
 This run did three things, in order.
 
@@ -30,14 +30,13 @@ Baseline re-verified green this run (run serially, no self-contention): the five
 `tests/test_*.sh` suites ALL TESTS PASSED; `.venv/bin/python -m pytest -q` 65
 passed; `sentinel.sh coverage` RC=0; `sentinel.sh citations` RC=0.
 
-NEXT MOVE (resume point): #191 shipped and closed this run (the `sec get --scope`
-bw path no longer masks a failing `bw list folders` read as a valid empty array
--- it fails closed with the tagged `[ERROR] corrupt or unreadable folder listing`
-error, dispatch sections [14p]/[14q] plus a class guard over bin/sec,
-bin/sec-organizer and bin/sec-migrator; dispatch 107 -> 109).
-Baseline re-verified green: all five bash suites ALL TESTS PASSED, pytest 65
-passed, sentinel coverage + citations exit 0. Open issues remaining are
-gated/hub-side: #67 (fresh 360 audit, needs human scope approval), #92
+NEXT MOVE (resume point): #192 shipped and closed this run (the op/vault fakes in
+tests/test_dispatch.sh now drain stdin, mirroring the bw idiom, eliminating
+the EPIPE/SIGPIPE race that fabricated a 'stage: op item create' failure under
+load; new section [11e] locks the class with a >64 KiB payload; dispatch 109 ->
+110). Baseline re-verified green: all five bash suites ALL TESTS PASSED,
+pytest 65 passed, sentinel coverage + citations exit 0. Open issues remaining
+are gated/hub-side: #67 (fresh 360 audit, needs human scope approval), #92
 (hub-owned unguarded counts), #51 (hub-side handoff). Tracker is GitHub
 `atalby/sec-cli` (`gh`); the standing order names GitLab, but no `sec-cli`
 project exists under `at-tech-io` and the remote is
@@ -177,7 +176,7 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 109, install 9, sentinel 70, sync_guard 16,
+mirrors in sync): dispatch 110, install 9, sentinel 70, sync_guard 16,
 write_honesty 17. Sentinel = 70 cases / 940 assertions. HISTORY.md is at
 6956/8192 bytes - headroom of 1236 bytes before its budget (the full narratives
 live in `history/2026-10-15.md` through `history/2026-10-18.md`).
