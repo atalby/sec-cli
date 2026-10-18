@@ -47,7 +47,7 @@ Retrieves a secret value from the active or specified tenant vault.
   ```
 
 #### 2. `sec [<tenant>] set <key> [<value>]`
-Stores or creates a new secret entry in the active or specified tenant vault.
+Stores or creates a new secret entry in the active or specified tenant vault. Only `bitwarden`/`bw`, `1pass`/`op`, and `bws` can be stored; `vault`, `infisical`, and `keychain` are refused with a tagged `[ERROR]` naming the tenant and exit 1 instead of a silent success.
 
 - **Options**:
   - If `<value>` is omitted, `sec` prompts interactively on terminal `stdin` with echo disabled (`read -rsp` / `-AsSecureString`).

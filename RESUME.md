@@ -1,6 +1,6 @@
 # Resume point - sec-cli
 
-## Session 2026-10-18 (63rd, 64th, 65th runs) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 closed after baseline re-verify. 65th: shipped #188 (parent-owned work root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65 collected tests), baseline re-verified green.
+## Session 2026-10-18 (63rd, 64th, 65th, 66th runs) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 closed after baseline re-verify. 65th: shipped #188 (parent-owned work root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65 collected tests), baseline re-verified green. 66th: shipped #189 (a sentinel section 44 deriving the `sec set` supported-tenant set from bin/sec's live store arms and requiring docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly it; OPERATOR_MANUAL's Complete CLI reference gained the missing restriction; sentinel cases 68 -> 69, assertions 916 -> 928); also cleared the stale #187 entry from this file's open-issue list.
 
 This run did three things, in order.
 
@@ -27,17 +27,19 @@ suite-counts "mirrors in sync" line, a Sentinel cases/assertions line, an
 all matching the live tree.
 
 Baseline re-verified green this run (run serially, no self-contention): the five
-`tests/test_*.sh` suites ALL TESTS PASSED; `.venv/bin/python -m pytest -q` 58
+`tests/test_*.sh` suites ALL TESTS PASSED; `.venv/bin/python -m pytest -q` 65
 passed; `sentinel.sh coverage` RC=0; `sentinel.sh citations` RC=0.
 
-NEXT MOVE (resume point): #188 shipped and closed this run (parent-owned work
-root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65
-collected tests). Baseline re-verified green: all five bash suites ALL TESTS
-PASSED, pytest 65 passed, sentinel coverage + citations exit 0. Open issues
-remaining are gated/hub-side: #67 (fresh 360 audit, needs human scope approval),
-#92 (hub-owned unguarded counts), #51 (hub-side handoff). No autonomous
-actionable item remains; the next run should either re-verify the baseline or
-await explicit scope approval for #67. Do not start the 360 audit without that
+NEXT MOVE (resume point): #189 shipped and closed this run (sentinel section 44
+derives the `sec set` supported-tenant set from bin/sec's live store arms and
+requires docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly it;
+OPERATOR_MANUAL's Complete CLI reference gained the missing restriction).
+Baseline re-verified green: all five bash suites ALL TESTS PASSED, pytest 65
+passed, sentinel coverage + citations exit 0. Open issues remaining are
+gated/hub-side: #67 (fresh 360 audit, needs human scope approval), #92
+(hub-owned unguarded counts), #51 (hub-side handoff). No autonomous actionable
+item remains; the next run should either re-verify the baseline or await
+explicit scope approval for #67. Do not start the 360 audit without that
 approval. Tracker is GitHub `atalby/sec-cli` (`gh`); the standing order names
 GitLab, but no `sec-cli` project exists under `at-tech-io` and the remote is
 `git@github.com:atalby/sec-cli.git`.
@@ -142,9 +144,11 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   for gitlab.com, which this repo is not on).
 - Open issues: **#67** (fresh 360 audit - human scope gate); **#92**
   (hub-side unguarded counts); **#51** (hub-side handoff, tracked upstream);
-  **#187** (pyproject.toml's manifest version unguarded vs the live
-  `bin/sec version`; its README half was disproved this run and the issue
-  narrowed). **#185** closed in the 64th run (RESUME.md rotation);
+  **#189** (`sec set` supported-tenant contract guarded on one surface only
+  and missing from the OPERATOR_MANUAL's Complete CLI reference -- shipped and
+  closed in the 66th run). **#188** closed in the 65th run (parent-owned pytest
+  work root); **#187** closed in the 64th run (version-surface guards);
+  **#185** closed in the 64th run (RESUME.md rotation);
   **#126** closed in the 18th run (warn design call, dispatch [18d]); #120
   closed earlier (repo-side observability half shipped, hook fix stayed
   hub-side). Re-verified live via `gh issue list` this run.
@@ -171,8 +175,8 @@ for s in install sync_guard write_honesty sentinel dispatch; do bash tests/test_
 ```
 
 Live suite section counts (sentinel `coverage` re-derives these; keep the three
-mirrors in sync): dispatch 107, install 9, sentinel 68, sync_guard 16,
-write_honesty 17. Sentinel = 68 cases / 916 assertions. HISTORY.md is at
+mirrors in sync): dispatch 107, install 9, sentinel 69, sync_guard 16,
+write_honesty 17. Sentinel = 69 cases / 928 assertions. HISTORY.md is at
 6956/8192 bytes - headroom of 1236 bytes before its budget (the full narratives
 live in `history/2026-10-15.md` through `history/2026-10-18.md`).
 120 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).

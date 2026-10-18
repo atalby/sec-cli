@@ -673,7 +673,7 @@ _NUM_WORDS = {
     "sixty-five": 65,
     "sixty-six": 66,
     "sixty-seven": 67,
-    "sixty-eight": 68,
+    "sixty-eight": 68, "sixty-nine": 69,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -3432,6 +3432,46 @@ if _bridge_files:
             f"{_AGENTS_LINK} -> {os.readlink(_link_path)} does not resolve to skills/architecture-360-audit"
         )
 
+# --- 44. `sec set`'s supported-tenant contract: the tenant set the live store
+#         arms accept must be exactly the set docs/ARCHITECTURE.md and
+#         docs/OPERATOR_MANUAL.md name (issue #189) ------------------------
+# The live set is derived from bin/sec's single 'case "$TARGET_TENANT" in'
+# block whose body carries the 'set not supported for tenant' refusal; the
+# other TARGET_TENANT cases (auth/run) do not carry it.
+set_tenant_mismatches = []
+
+_set_arm_blocks = [
+    _c
+    for _c in re.finditer(r'case "\$TARGET_TENANT" in\n([\s\S]*?)\n\s*esac', _sec_text)
+    if "set not supported for tenant" in _c.group(1)
+]
+_set_arm_m = _set_arm_blocks[0] if _set_arm_blocks else None
+if len(_set_arm_blocks) > 1:
+    set_tenant_mismatches.append(
+        f"bin/sec carries {len(_set_arm_blocks)} 'sec set' store-arm blocks, expected exactly 1"
+    )
+if _set_arm_m is None:
+    set_tenant_mismatches.append("bin/sec carries no 'sec set' store-arm block")
+else:
+    _set_supported = set()
+    for _ln in _set_arm_m.group(1).splitlines():
+        _sa_m = re.match(r"\s{8,}([a-z0-9]+(?:\|[a-z0-9]+)*)\)\s*$", _ln)
+        if _sa_m:
+            _set_supported |= _mig_canon(_sa_m.group(1))
+    if not _set_supported:
+        set_tenant_mismatches.append("bin/sec's 'sec set' store arms name no recognisable tenant")
+    for _surface in ("docs/ARCHITECTURE.md", "docs/OPERATOR_MANUAL.md"):
+        _claim_m = re.search(r"[Oo]nly ([^\u2014\n]*) can be stored", _nl_read(_surface))
+        if _claim_m is None:
+            set_tenant_mismatches.append(
+                f"{_surface} does not state which tenants `sec set` can store"
+            )
+        elif _mig_canon(_claim_m.group(1)) != _set_supported:
+            set_tenant_mismatches.append(
+                f"{_surface}'s `sec set` supported tenant(s) {sorted(_mig_canon(_claim_m.group(1)))} "
+                f"differ from the live store arms {sorted(_set_supported)}"
+            )
+
 if want_list:
     print(f"{OK} manifest rows: {len(cov_rows)} tracked rows, {len(git_rows)} gitignored rows")
     print(f"{OK} tracked files: {len(tracked)}")
@@ -3685,6 +3725,12 @@ if bridge_mismatches:
     )
     for _m in bridge_mismatches:
         print(f"{ERROR} harness bridge: {_m}")
+if set_tenant_mismatches:
+    failures.append(
+        f"{len(set_tenant_mismatches)} `sec set` supported-tenant drift(s) vs the live bin/sec store arms"
+    )
+    for _m in set_tenant_mismatches:
+        print(f"{ERROR} set tenants: {_m}")
 
 if failures:
     for f in failures:
@@ -3732,6 +3778,8 @@ if not cite_mismatches:
     print(f"{OK} doc path citations: all {_cite_checked} slash-qualified citation(s) across {len(_cite_docs)} project-owned doc(s) resolve on disk")
 if not bridge_mismatches:
     print(f"{OK} harness bridges: {len(_bridge_files)} bridge(s) in {len(_harness_names)} harness dir(s) ({', '.join(sorted(_harness_names))}) each name {_CANON_SKILL} + the {_AGENTS_LINK} symlink, refuse to paraphrase, and name only live SKILL.md sections")
+if not set_tenant_mismatches:
+    print(f"{OK} set tenants: docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md name exactly the live `sec set` store tenants ({', '.join(sorted(_set_supported))})")
 if not hyer_mcp_mismatches:
     print(f"{OK} hyer-mcp claims: docs/ARCHITECTURE.md's bin/hyer-mcp.sh bullet names the live HYER_HOME default (`{_hm_home}`), secret (`{_hm_secret}`), token env var (`{_hm_env}`), direct-node exec with no `sh -c`, and the gitignored `.mcp.json` / tracked `.mcp.json.example` pair")
 if not auto_rotate_mismatches:

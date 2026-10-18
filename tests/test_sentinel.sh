@@ -5783,6 +5783,73 @@ else
     no "the control copy's OK line did not name the harness-bridge check"
     printf '%s\n' "$OUT"
 fi
+echo "[68] \`sec set\`'s supported-tenant contract must match the live bin/sec store arms (issue #189)"
+WORK_T44A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T44B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_T44CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for _w in "$WORK_T44A" "$WORK_T44B" "$WORK_T44CTRL"; do
+    seed "$_w"
+done
+python3 - "$WORK_T44A/docs/ARCHITECTURE.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "and bws can be stored"
+if s.count(old) != 1:
+    sys.exit("docs/ARCHITECTURE.md no longer states the sec set supported-tenant list in the guarded form")
+open(p, "w", encoding="utf-8").write(s.replace(old, "and vault can be stored", 1))
+PY
+OUT="$(cd "$WORK_T44A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when docs/ARCHITECTURE.md's sec set tenants drift from the store arms"
+else
+    no "coverage accepted a docs/ARCHITECTURE.md sec set tenant list that drifts from the store arms"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/ARCHITECTURE.md's \`sec set\` supported tenant" <<<"$OUT"; then
+    ok "coverage names the drifted docs/ARCHITECTURE.md sec set tenant list"
+else
+    no "coverage did not name the drifted docs/ARCHITECTURE.md sec set tenant list"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_T44B/docs/OPERATOR_MANUAL.md" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+old = "and `bws` can be stored"
+if s.count(old) != 1:
+    sys.exit("docs/OPERATOR_MANUAL.md no longer states the sec set supported-tenant list in the guarded form")
+open(p, "w", encoding="utf-8").write(s.replace(old, "and `infisical` can be stored", 1))
+PY
+OUT="$(cd "$WORK_T44B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero when docs/OPERATOR_MANUAL.md's sec set tenants drift from the store arms"
+else
+    no "coverage accepted a docs/OPERATOR_MANUAL.md sec set tenant list that drifts from the store arms"
+    printf '%s\n' "$OUT"
+fi
+if grep -qF "docs/OPERATOR_MANUAL.md's \`sec set\` supported tenant" <<<"$OUT"; then
+    ok "coverage names the drifted docs/OPERATOR_MANUAL.md sec set tenant list"
+else
+    no "coverage did not name the drifted docs/OPERATOR_MANUAL.md sec set tenant list"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_T44CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (set tenants agree with the store arms) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+if grep -qE "\[ OK \] set tenants:" <<<"$OUT"; then
+    ok "the control copy's OK line names the sec set supported-tenant check"
+else
+    no "the control copy's OK line did not name the sec set supported-tenant check"
+    printf '%s\n' "$OUT"
+fi
 echo
 if [[ $fail -eq 0 ]]; then
     echo "ALL TESTS PASSED"
