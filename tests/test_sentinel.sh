@@ -1699,6 +1699,92 @@ else
     printf '%s\n' "$OUT"
 fi
 
+echo "[26b] README.md transcript + pyproject.toml + profile.md manifest version must match live sec version (issue #187)"
+WORK_V2A="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_V2B="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_V2C="$(mktemp -d "$WORK_ROOT/XXXX")"
+WORK_V2CTRL="$(mktemp -d "$WORK_ROOT/XXXX")"
+for W in "$WORK_V2A" "$WORK_V2B" "$WORK_V2C" "$WORK_V2CTRL"; do
+    seed "$W"
+done
+python3 - "$WORK_V2A/README.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r"sec-cli v[0-9.]+ —", "sec-cli v9.9.9 —", s, count=1)
+if n != 1:
+    sys.exit("README.md transcript banner not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_V2A" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted README.md transcript banner"
+else
+    no "coverage accepted a drifted README.md transcript banner"
+fi
+if grep -q "version: README.md transcript banner declares" <<<"$OUT"; then
+    ok "coverage names the drifted README.md transcript banner"
+else
+    no "coverage did not name the drifted README.md transcript banner"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_V2B/pyproject.toml" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r'^version\s*=\s*"[^"]+"', 'version = "9.9.9"', s, count=1, flags=re.M)
+if n != 1:
+    sys.exit("pyproject.toml version not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_V2B" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted pyproject.toml version"
+else
+    no "coverage accepted a drifted pyproject.toml version"
+fi
+if grep -q "version: pyproject.toml declares version" <<<"$OUT"; then
+    ok "coverage names the drifted pyproject.toml version"
+else
+    no "coverage did not name the drifted pyproject.toml version"
+    printf '%s\n' "$OUT"
+fi
+python3 - "$WORK_V2C/skills/architecture-360-audit/profile.md" <<'PY'
+import re
+import sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+s2, n = re.subn(r'`version = "[^"]+"`', '`version = "9.9.9"`', s, count=1)
+if n != 1:
+    sys.exit("profile.md quoted manifest version not found to corrupt")
+open(p, "w", encoding="utf-8").write(s2)
+PY
+OUT="$(cd "$WORK_V2C" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -ne 0 ]]; then
+    ok "coverage exits nonzero on a drifted profile.md quoted manifest version"
+else
+    no "coverage accepted a drifted profile.md quoted manifest version"
+fi
+if grep -q "version: profile.md quotes manifest version" <<<"$OUT"; then
+    ok "coverage names the drifted profile.md quoted manifest version"
+else
+    no "coverage did not name the drifted profile.md quoted manifest version"
+    printf '%s\n' "$OUT"
+fi
+OUT="$(cd "$WORK_V2CTRL" && git init -q . && git add -A && "skills/architecture-360-audit/sentinel.sh" coverage 2>&1)"
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    ok "control copy (correct version surfaces) exits 0"
+else
+    no "control copy exited $RC, expected 0"
+    printf '%s\n' "$OUT"
+fi
+
 echo "[27] HISTORY.md's current-state pytest-mirror count must match the live suite (issue #116)"
 WORK_H1="$(mktemp -d "$WORK_ROOT/XXXX")"
 WORK_HCTRL="$(mktemp -d "$WORK_ROOT/XXXX")"

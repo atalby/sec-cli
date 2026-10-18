@@ -673,6 +673,7 @@ _NUM_WORDS = {
     "sixty-five": 65,
     "sixty-six": 66,
     "sixty-seven": 67,
+    "sixty-eight": 68,
 }
 try:
     with open(os.path.join(repo, "packs", "solo-founder-governance", "PACK.md"), encoding="utf-8") as _fh:
@@ -1707,8 +1708,10 @@ for _tc_doc, _tc_text in _sync_target_claims:
                     f"{_tc_doc}'s sync-target claim omits live sync target: {_tgt}"
                 )
 
-# --- 20. OPERATOR_MANUAL.md's documented `-v/--version` output must match the
-#         live `sec version` (issue #114) --------------------------------
+# --- 20. OPERATOR_MANUAL.md's documented `-v/--version` output, pyproject.toml's
+#         manifest version, profile.md's quoted manifest version, and README.md's
+#         transcript banner must all match the live `sec version` (issue #114,
+#         widened by #187) ----------------------------------------------------
 version_mismatches = []
 try:
     _live_version = subprocess.run(
@@ -1734,6 +1737,62 @@ elif _live_version is not None and _op_version_m.group(1) != _live_version:
         f"OPERATOR_MANUAL.md documents `--version` as '{_op_version_m.group(1)}', "
         f"live 'bin/sec version' prints '{_live_version}'"
     )
+
+_bare_version_m = re.fullmatch(r"sec-cli version (\S+)", _live_version or "")
+if _bare_version_m is None:
+    version_mismatches.append(
+        f"live 'bin/sec version' prints '{_live_version}', which is not a "
+        "parseable 'sec-cli version <v>' banner"
+    )
+else:
+    _bare_version = _bare_version_m.group(1)
+
+    try:
+        with open(os.path.join(repo, "pyproject.toml"), encoding="utf-8") as _fh:
+            _pyproject_text = _fh.read()
+    except OSError:
+        _pyproject_text = ""
+
+    _pyproject_versions = re.findall(r'^version\s*=\s*"([^"]+)"', _pyproject_text, re.M)
+    if not _pyproject_versions:
+        version_mismatches.append(
+            "pyproject.toml carries no top-level `version = \"...\"` to compare"
+        )
+    else:
+        for _pv in _pyproject_versions:
+            if _pv != _bare_version:
+                version_mismatches.append(
+                    f"pyproject.toml declares version '{_pv}', live 'bin/sec version' is '{_bare_version}'"
+                )
+
+    _profile_versions = re.findall(r'`version = "([^"]+)"`', profile_text)
+    if not _profile_versions:
+        version_mismatches.append(
+            "profile.md quotes no `version = \"...\"` manifest value to compare"
+        )
+    for _pv in _profile_versions:
+        if _pv != _bare_version:
+            version_mismatches.append(
+                f"profile.md quotes manifest version '{_pv}', live 'bin/sec version' is '{_bare_version}'"
+            )
+
+    # README.md transcript line: `sec-cli vX.Y.Z — ...`
+    try:
+        with open(os.path.join(repo, "README.md"), encoding="utf-8") as _fh:
+            _readme_text = _fh.read()
+    except OSError:
+        _readme_text = ""
+
+    _readme_version_m = re.search(r"sec-cli v(\S+)\s+—", _readme_text)
+    if _readme_version_m is None:
+        version_mismatches.append(
+            "README.md carries no `sec-cli vX.Y.Z —` transcript banner to compare"
+        )
+    elif _readme_version_m.group(1) != _bare_version:
+        version_mismatches.append(
+            f"README.md transcript banner declares version '{_readme_version_m.group(1)}', "
+            f"live 'bin/sec version' is '{_bare_version}'"
+        )
 
 # --- 21. bin/sec's hardcoded `Configured Tenants:` help line must match the
 #         live dispatcher alias regex (issue #127) --------------------------
@@ -3495,7 +3554,10 @@ if phantom_mismatches:
     for _m in phantom_mismatches:
         print(f"{ERROR} phantom: {_m}")
 if version_mismatches:
-    failures.append(f"{len(version_mismatches)} OPERATOR_MANUAL.md --version drift(s) vs the live CLI")
+    failures.append(
+        f"{len(version_mismatches)} version drift(s) vs the live CLI "
+        "(OPERATOR_MANUAL.md --version, pyproject.toml, profile.md)"
+    )
     for _m in version_mismatches:
         print(f"{ERROR} version: {_m}")
 if tenant_line_mismatches:
