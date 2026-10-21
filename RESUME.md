@@ -2,6 +2,8 @@
 
 ## Session 2026-10-18 (63rd, 64th, 65th, 66th, 67th, 68th, 69th runs) -- 63rd: reverted the 62nd run's unsanctioned compaction; shipped #186; rotated this file's narrative history to history/ (issue #185). 64th (commit da794d8): shipped the #187 version-surface guards, count mirrors 67 -> 68; #187 closed after baseline re-verify. 65th: shipped #188 (parent-owned work root for the pytest mirror; fixes the mktemp leak under SIGKILL; 58 -> 65 collected tests), baseline re-verified green. 66th: shipped #189 (a sentinel section 44 deriving the `sec set` supported-tenant set from bin/sec's live store arms and requiring docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md to name exactly it; OPERATOR_MANUAL's Complete CLI reference gained the missing restriction; sentinel cases 68 -> 69, assertions 916 -> 928); also cleared the stale #187 entry from this file's open-issue list. 67th: shipped #190 (sentinel section 45 deriving `sec housekeep` apply/revert's supported-backend set from bin/sec-organizer's two arms, requiring the two arms to agree with each other and with docs/ARCHITECTURE.md + docs/OPERATOR_MANUAL.md; both surfaces gained the missing restriction; sentinel cases 69 -> 70, assertions 928 -> 940). 68th: shipped #191 (the `sec get --scope` bw path masked a failing `bw list folders` read as a valid empty array via `|| echo '[]'`, hollowing the adjacent corrupt-listing guard so a locked vault or expired session was misreported as `scope folder not found`; the read is now `|| true` with an explicit empty/non-array payload guard before the scope resolves, and a class guard covers bin/sec, bin/sec-organizer and bin/sec-migrator; dispatch sections [14p]/[14q], dispatch 107 -> 109; the last surviving mask of the #169/#170 class and the only `|| echo '[]'` left in bin/). 69th: shipped #192 (op/vault fakes now drain stdin, eliminating the EPIPE/SIGPIPE race; dispatch 109 -> 110; section [11e]).
 
+## Session 2026-10-21 (70th run) -- verified Hyer adoption current at stable@2b962f8c (v5.45.0); baseline re-verified green (sentinel coverage + citations exit 0); pushed staged tracked-file count update 120->129 (commit 6ec7c53). All open issues gated/hub-side: #67 (fresh 360 audit, needs human scope approval), #92 (hub-owned unguarded counts), #51 (hub-side handoff).
+
 This run did three things, in order.
 
 1. Reverted the 62nd run's unsanctioned, uncommitted RESUME.md compaction: it had
@@ -161,6 +163,10 @@ verified baseline below to confirm no drift, and the sentinel suite is now ~40s
   live gitlab.com login. This repo is GitHub-tracked, so `gh` is used.
 
 ## Shipped this session (all committed, pushed, CI green, issue closed)
+
+70th run: verified Hyer adoption current at stable@2b962f8c (v5.45.0);
+baseline re-verified green (sentinel coverage + citations exit 0); pushed
+staged tracked-file count update 120->129 (commit 6ec7c53).
 
 Narrative rotated 2026-10-18 (63rd run, #185): the full per-issue shipped list
 and the prior-session entries now live verbatim in `history/2026-10-18.md`. This
