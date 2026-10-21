@@ -13,7 +13,7 @@ is a targeted lookup. Files boot touches each session without reading in
 full are declared the same way and counted against the same budget.
 
 ```boot-read-budget
-budget_bytes: 30000
+budget_bytes: 32000
 full_reads:
   - AGENTS.md
   - methodology/boot-sequence.md

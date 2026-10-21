@@ -1,6 +1,6 @@
 # Architecture Specification — `sec-cli`
 
-**HIAE Protocol Version**: v5.41.0
+**HIAE Protocol Version**: v5.45.0
 
 ## 1. Overview
 `sec-cli` is a high-leverage CLI control plane that unifies secret management across Bitwarden (`bw`), Bitwarden Secrets Manager (`bws`), 1Password (`op`), Infisical, and HashiCorp Vault; `sec sync` pushes shell-exported keys to GCP Secret Manager and GitLab group variables. Runtime dependencies beyond coreutils: `jq` (auth, get, set, housekeep, migrate) and `python3` (sync, classify).

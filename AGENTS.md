@@ -15,10 +15,10 @@ that needs one points here, never at a file path of its own.
 | Your task involves… | Load |
 |---|---|
 | Onboarding a repo, a version bump, the `stable` tag, or what belongs in this file vs. a project's own docs | `methodology/adoption.md` (§0) |
-| Repo tier, cost/risk circuit-breakers, RBAC/zero-trust, zero-file communication, cross-repo ownership, worktree lifecycle | `methodology/tiers.md` (§1.0) |
+| Repo tier, cost/risk circuit-breakers, RBAC/zero-trust, zero-file communication, cross-repo ownership, worktree lifecycle, or the fleet orchestration model (fleet/lane masters, one-owner scopes, the bus abstraction, the profile split) | `methodology/tiers.md` (§1.0), `methodology/fleet.md` (§1.4) |
 | The 4 core execution traits (laser focus, 100%-done, empirical verification, clean hand-off) | `methodology/execution-traits.md` (§1.2) |
 | Starting a new session — **read this before anything else, every session** | `methodology/boot-sequence.md` (§2) |
-| Full step-by-step reasoning for Ground/Research/Plan/Implement/Verify/Document/Commit, the Auto-Moderation Protocol, proactive next-action / bounded-autonomy timeout behavior, or the agent context lifecycle (proactive handoff+restart, the context-budget circuit-breaker, orchestrator worker restarts) | `methodology/core-loop-detail.md` (§3), `methodology/proactive-next-action.md` (§3), `methodology/context-lifecycle.md` (§3) |
+| Full step-by-step reasoning for Ground/Research/Plan/Implement/Verify/Document/Commit, or the Auto-Moderation Protocol | `methodology/core-loop-detail.md` (§3) |
 | Narrative-history mechanics, the declared doc set rule, or an external documentation-mirror hub | `methodology/documentation-structure.md` (§5) |
 | Secrets, deployments, cloud IAM, TLS, or any credential-touching work | `methodology/credentials.md` (§6) |
 | Subagent delegation, prompt caching, token efficiency, or shell-vs-real-language tool choice | `methodology/tooling.md` (§8, §1.3) |
@@ -35,7 +35,7 @@ project that adopts it, and that works only because this repo owns
 
 This project defines **Hyer**, the working name for the Human-Driven,
 Intra-Agent Software Engineering Methodology
-(HIAE Protocol v5.41.0) — a general-purpose process contract for how an
+(HIAE Protocol v5.45.0) — a general-purpose process contract for how an
 agent, or a human following the same discipline, works on any project
 that adopts it.
 
@@ -81,8 +81,13 @@ commit in small units, and clean up the residue the work created).
 
 Choosing a language/tool is a deliberate decision, not a default: thin
 orchestration only in shell, a real language once a script needs tests
-(can't unit-test it, can't satisfy §7 — that's the rewrite signal). Not
-a mandate to mass-rewrite existing scripts today.
+(can't unit-test it, can't satisfy §7 — that's the rewrite signal). A tool
+a project builds to operate its own agents is a contract plus an adapter,
+even with one adapter: the contract names what it needs in verbs and data,
+the adapter is the only place harness vocabulary appears, and the core never
+imports one. Where the boundary costs more than the unit is worth, ship the
+working version and file the abstraction in the same commit, naming the
+interface it would have had — not a mandate to rewrite scripts today.
 
 ## 2. Boot Sequence For A New Session
 
@@ -92,7 +97,9 @@ opted-in policy packs; **(2)** check `skills/REGISTRY.md` for a skill
 matching the task; **(3)** query the durable-knowledge doc for what the
 task touches; **(4)** check the issue tracker — not prose — for what's
 open; **(5)** read only the narrative-history doc's current-state
-summary; **(6)** run the test suite and confirm a known-good baseline.
+summary; **(6)** run the test suite and confirm a known-good baseline;
+**(7)** open `methodology/rules.yml`, the index of gated rules, and treat
+every row marked `universal` as in force whatever the task.
 `AGENTS.md` already in your context is not read again.
 
 ## 3. The Core Development Loop
@@ -184,11 +191,20 @@ A task is not done until:
 
 ## 8. Automated Tooling & Token Efficiency Directives
 
-To keep sessions fast and cheap: subagent-delegate any multi-file
-investigation spanning >3 files or >2 web pages; prefer targeted
-edits over full rewrites; keep static contract text at the top of
-context for prompt-cache hits; prefer a structured query over a raw
-dump; sync the issue tracker at Boot (§2) and Document (§3 step 6).
+To keep sessions fast and cheap: delegate >3-file investigations to a
+subagent, edit target ranges rather than rewriting, keep static contract
+text at the top of context for cache hits, query structurally rather than
+dumping raw, and sync the issue tracker at Boot (§2) and Document (§3).
+**Reply brevity.** Every reply obeys the level declared in `ADAPTERS.md`
+("Output verbosity"); the levels and their floor are in
+`methodology/tooling.md` §8.
+**Always in force, whatever the task.** `methodology/proactive-next-action.md`
+(tripwire boundary, git-flagging) and `methodology/context-lifecycle.md`
+(proactive restart, budget circuit-breaker) bind every session.
+**Context management and token optimisation.** Three triggers
+(proactive management, milestone summarization, redundant state
+elimination) and three guardrails are mandatory in every session;
+the full policy is in `methodology/tooling.md` (§8).
 
 **Plain text in every agent-facing file.** No emoji, no status glyphs,
 no box-drawing diagrams, no decorative rules in anything an agent is
@@ -201,20 +217,9 @@ choice, not your call. So is a live reply on someone's terminal.
 as a parse target by another, the producer MUST emit one `[ TAG ]`
 line per event (`[ OK ]`, `[WARN]`, `[INFO]`, `[ERROR]`), never
 reworded or re-spaced when checked; prose is never a parse target.
-**Never comment code, docstrings included.** The why lives in commits and specs.
+**Never comment code, docstrings included.** The why lives in commits and specs. Configuration is not code: a comment there may explain a value.
 
 ## 9. The MCP / Skills / Plugins Triad Architecture
-
-Three distinct layers, kept separate on purpose: **MCP** — the typed,
-sandboxed API bus to external systems. **Skills (`SKILL.md`)** —
-on-demand procedural playbooks, kept out of always-loaded context.
-**Plugins** — namespaced bundles of the above.
-
+See methodology/mcp-skills-plugins.md (§9) for details.
 ## 10. Agent Self-Learning & Continuous Skill Synthesis
-
-After resolving a non-trivial bug, receiving an explicit correction, or
-overcoming an undocumented API/build hurdle, synthesize a reusable
-procedure and persist it to the project's configured memory/skill store
-— see the `self-learning-skill-synthesis` skill (hub-internal — §2
-step 2 for how to fetch its content from outside this repo) for the
-4-phase loop and the empirical-triggering rule (no hypothetical skills).
+See the `self-learning-skill-synthesis` skill (adopter/hub-internal as configured) for the 4-phase loop and empirical-triggering rule.

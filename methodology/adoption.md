@@ -191,6 +191,26 @@ survives the history rewrite described in `CHANGELOG.md`. Name the
 immutable tag in any announcement: the tag is the provenance, and the
 SHA beside it is the value to check that tag against.
 
+**Install the gate before reporting the adoption done.** Placing files is
+not adoption. Until the project runs the pre-commit gate, every rule above
+is a document nothing enforces, and a green report says only that the
+document is present. Install the wrapper with
+`scripts/install-hooks.sh <repo>`: it writes a thin hook that execs the hub
+script rather than a copy of it, backs up whatever hook was there to
+`<hook>.hyer-backup-<UTC timestamp>`, and refuses to overwrite a hook it
+does not recognise -- folding the gate into a framework's own hook config
+is that project's separate decision.
+
+Then verify the wiring instead of assuming it, because the hook lives
+outside version control and a project can otherwise adopt completely and
+still run no gate at all. The hub's sync check reports the wiring for every
+discovered project as `hook wiring=hyer-live`, `hyer-broken`, `hyer-fork` or
+`none`, and the project's own `scripts/adopter_drift_check.py` reports its
+hook and fails its build for a broken or a frozen one. A hook that is
+simply absent is deliberately informational in that check -- a missing hook
+is not the drift check's to judge -- which is exactly why this step, and
+not that check, is what catches it.
+
 ## Where a fact belongs
 
 - **A project's own facts** — its tier (§1.0), its persona-to-repo
@@ -224,6 +244,31 @@ line the checks fall back to probing the tree** (the pre-#265 behaviour),
 so an adopting repo that has not yet declared a stack behaves as before.
 A repo may declare stacks beyond these three; only the three above are
 read by the hub's own gate.
+
+## The gates binding (`ADAPTERS.md`)
+
+A repo names the Hyer hub its gates come from with one
+`hyer-gates-source:` line in the required `## Hyer gates binding`
+section of its `ADAPTERS.md` (the template ships the section;
+`check_adapters_completeness` blocks a hub whose file omits it). Give
+the clone URL of the hub the runner would fetch `stable` from. The gates
+runner resolves the binding on every run in this order: the
+`HYER_GATES_SOURCE_URL` environment override, then this line, then the
+`source_url` already recorded in the machine cache
+(`~/.hyer/gates/state.json`), then a hard error that names both ways to
+set one and writes nothing.
+
+**A repo's own `origin` remote is never a candidate** (issue #261): for
+an adopter that remote is the adopter's repository, not the hub, so
+reading it binds the one-per-machine cache to the wrong repository and
+then reports that binding as the binding. The layer that answered is
+persisted as `source_binding` and printed on the first line of every run
+as `binding=<env|adapters|state|working-tree>`, so a declaration that
+disagrees with what the cache is serving prints a WARNING naming both
+sides rather than running the wrong bundle silently. This hub declares
+its own clone URL in the same line, so the named declaration is the same
+in every repo; in hub mode the gates run against the working tree, so
+the line is inert for execution there and tracked anyway.
 
 ## Versioning and the `stable` tag
 

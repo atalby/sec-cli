@@ -38,6 +38,16 @@ The bus URL is not a secret and is the one bus value with a shared
 home: `sec get HYER/bus_url`, defaulting to `https://bus.at-tech.io`
 (measured 2026-09-29).
 
+The `<member>` in that item name is the bus identity this host already
+holds, not a free label: it is the host's short name (the first
+dot-label of `hostname`), and `GET {base}/v1/account` with the token
+reports it back. An item left behind by an earlier host name is a
+stale artifact, not a fallback. It is well-formed, it still reads, and
+it authenticates as nothing — the bus answers 401, which reads exactly
+like a provisioning gap. When two items look like yours, the working
+one is the one whose `/v1/account` answers 200; never substitute the
+other because it is the one you found first.
+
 The container deploy key is on its way out, not in its prime: the
 deploy path was changed to pull rather than push, because admitting
 the runner to port 22 would mean a network control with no owner,
@@ -80,6 +90,22 @@ identity without disclosing either: hash each in a subshell and
 compare only the first 12 hex characters. That is how the running
 server's token was confirmed to be the same bytes as the one in the
 vault.
+
+Field lookup is literal, and a miss reads as a plain "not found" with
+no hint that a near-miss exists. Four traps worth knowing before
+touching the vault (measured 2026-10-14):
+
+- **Unlock before any `bw` call.** `sec unlock` writes the unlocked
+  session to `~/.cache/bitwarden/session`; without that file `bw`
+  fails, and the error reads like a lookup miss rather than a lock.
+- **Enumerate, do not guess.** Read the item's real field names
+  first: `bw get item <item> --session "$(cat ~/.cache/bitwarden/session)"`.
+- **Match the field name exactly.** `sec get <item>/<field>` is
+  case-, space- and hyphen-significant: `account-admin-token` is not
+  `account_admin_token`.
+- **No `/field` returns the login password.** A bare `sec get <item>`
+  yields the item's login password, not a named secret — a
+  plausibly-shaped wrong value rather than an error.
 
 ## 3. The bus, for this fleet
 
@@ -131,7 +157,7 @@ need.
 2. `GET {base}/v1/health` unauthenticated. A 200 with
    `{"healthy":true}` means the service is reachable and answering.
    This check is free of auth and cannot trip rate limiting.
-3. One single `GET {base}/v1/accounts/me` with the bearer. **One
+3. One single `GET {base}/v1/account` with the bearer. **One
    request.** Not a loop, not a retry.
 
 **What the status codes mean, and why the distinction decides your

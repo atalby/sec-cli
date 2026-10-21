@@ -59,6 +59,14 @@ sections by heading. A rename is a breaking change to every bridge that
 names it. Consistency is not tidiness here, it is the property that makes
 the fleet maintainable.
 
+A document the audit reads is not the skill. A storyboard, a report
+template, or an audit brief with its own section list does not replace the
+headings below; where that structure has to be produced, it is a separate
+artifact written in `## Step 11`, and it does not rename or renumber a
+single heading here. Copying such a document's shape into the skill is the
+one change that makes every bridge pointing at the old headings dead while
+the file still looks finished.
+
 Because "the same shape" is a claim you are asked to enforce, here is the
 shape, verbatim. The generated SKILL.md has exactly these headings, in
 exactly this order, with the same meaning in every repository:
@@ -527,18 +535,10 @@ Write each run to `docs/360/runs/<repository>/<YYYY-MM-DD-HHMMSS>/` in the
 HUB, not in the audited repository. One directory per run, never a flat file
 per run: two runs on the same day must not collide.
 
-The report describes the repository, so putting it inside the repository
-changes the thing being described. The next run then audits a repository
-whose file count, coverage, and core size include the previous run's own
-output, and a comparison between two runs has to hold that difference
-constant to mean anything. It also means an audit verdict about one
-repository's security posture sits inside that repository, where a
-commit gate may surface it to someone who did not ask for it.
-
-Hub-side is also the only placement that makes a finding comparable across
-repositories, which is the entire reason the twelve lenses are fixed rather
-than chosen per run. Reports stranded one-per-repository cannot be diffed
-against each other at all.
+Hub-side placement keeps the report from describing a repository that
+contains it, and it is the only placement that makes a finding comparable
+across repositories, which is the reason the twelve lenses are fixed rather
+than chosen per run.
 
 State the run's path in the reply so the reader can find it. Do not add the
 run directory to .gitignore in the hub unless asked.
@@ -688,17 +688,19 @@ Write the instrument as exactly three files in `skills/<skill-name>/`:
   sweep; a repository may keep it as a separate subcommand or fold it into
   `anchors`, and either way both surfaces stay covered.
 
+  The three subcommands named above are a floor, not a menu: a generated
+  sentinel that lacks one is stale, not a variant, and the refresh mode
+  regenerates it rather than a divergence being merged by hand. An
+  instrument whose declared checks it does not run is worse than one that
+  declares fewer, because the report reads as though the sweep happened.
+
   Invoked with no subcommand it runs `coverage`, so the common case needs
   no flag and the default is the strict one.
 
-THE SENTINEL MUST ALSO SEE WHAT GIT IGNORES. This is the blind spot that
-a `git ls-files` implementation cannot cover, and it is the one that
-produced a real miss: a live dependency surface -- an installed
-`node_modules` tree, a vendored directory, a package manifest with a
-lockfile -- that is entirely gitignored, therefore invisible to a
-tracked-file enumeration, therefore reported as clean. `sentinel.sh
-coverage` runs these two sweeps itself and fails on any hit that no
-manifest row claims:
+THE SENTINEL MUST ALSO SEE WHAT GIT IGNORES. A gitignored dependency
+surface is invisible to a tracked-file enumeration and would be reported as
+clean. `sentinel.sh coverage` runs these two sweeps itself and fails on any
+hit that no manifest row claims:
 
     find . -name .gitignore -not -path '*/node_modules/*'
     find . \( -name package.json -o -name package-lock.json \
@@ -739,15 +741,15 @@ SKILL.md, profile.md, sentinel.sh, and its bridges. The skill is the
 instrument, and the instrument re-tunes itself; the subject under audit
 does not.
 
-There is no one-file variant and no two-file variant. The split is not
-sized to the repository; it is what makes Step 8's "re-run the builder"
-refresh path work at all. Refreshing a generated profile is bounded and
-routine, whereas changing a procedure is rare and needs review.
-Collapsing them means every re-derivation is a rewrite of the method,
-which is precisely the expensive case the refresh mode exists to avoid. A
-small repository therefore still gets three files; what makes them small
-is the content, not their count. Every file in this section is emitted
-unconditionally -- there is no "if the repository is large enough".
+There is no one-file variant and no two-file variant: the split is what
+makes Step 8's "re-run the builder" refresh path bounded, and every file in
+this section is emitted unconditionally -- there is no "if the repository is
+large enough".
+
+If a compliant instrument already exists at `skills/<skill-name>/` with the
+fixed three-file shape, refresh `profile.md` and re-run the sentinels; emit
+only the deltas (the bridges, the registry row, the .gitignore line); do not
+rebuild `SKILL.md`.
 
 Then emit the harness bridges, so every supported surface can reach the one
 canonical file. Do not duplicate the procedure into any bridge; each bridge
@@ -775,8 +777,10 @@ in a text editor with no tool behind it. Reachability that depends on
 which harness the reader happens to be running in is not reachability.
 
 The command name is a lookup, not a decision. Read the grounding step
-above and adopt the name an existing implementation already uses. If you
-must invent one, derive it from the skill's subject and mode
+above and adopt the name an existing implementation already uses; a
+sibling's established name is adopted even when it is product-derived, and
+the rule below applies only when no sibling name exists or when siblings
+conflict. If you must invent one, derive it from the skill's subject and mode
 (`<subject>[-update]`), never from the repository, product, or
 organisation name: a bridge named per-project is worthless as a shared
 convention, because the same skill then cannot be invoked the same way in
@@ -831,22 +835,15 @@ actionable -- then that section must exist, with that exact heading. Verify
 it by name after you write both files. A bridge pointing at a section that
 is not there is a broken entry point that looks finished.
 
-Bridge body, identical in intent across every format:
-
-- Tell the reader to load the skill through the harness's skill tool and
-  follow it end to end. A bridge that only names a file path leaves the
-  harness to guess whether to read it or invoke it.
-- Name the canonical path, and state that the .agents copy is a symlink to
-  it, so either path resolves and the reader does not need to care which.
-- Say "Do not paraphrase, summarise, or re-derive the audit procedure. The
-  skill is the procedure. Load it, then execute its steps in order."
-- Note the confirmation gate, so the bridge does not look like an
-  instruction to begin immediately.
-- List the plain-language trigger phrases, so a surface with no slash menu
-  is not blocked.
-- End with an optional-extra-focus line that passes the harness's argument
-  token through ($ARGUMENTS, or {{args}} in Gemini TOML), so a scoped run is
-  reachable from the same bridge.
+Bridge body: read the skill file at the canonical path and execute it end to
+end -- the .agents copy is a symlink to it, so either path resolves. Never
+paraphrase, summarise, or re-derive the procedure, and do not imply the run
+may begin before its confirmation gate. Name the file, not a loader: a
+surface with no such loader would have nothing to follow, and every surface
+can read a file. List the plain-language trigger phrases, and pass the
+harness's argument token through ($ARGUMENTS, or {{args}} in Gemini TOML) so
+a scoped run is reachable. Follow an existing sibling bridge for the same
+skill family when one is reachable.
 
 The bridge is a pointer, not a summary. Its length is evidence of a bug.
 
@@ -908,9 +905,9 @@ available, the verdict is a reading, not a scan.
 Do not deliver until all of these hold:
 
 - Every cited file:line resolves to the symbol the skill names. Verify
-  each one by reading it and by running `sentinel.sh citations`; where
-  anchors live outside the skill's own files, `sentinel.sh anchors`
-  covers them.
+  each one by running `sentinel.sh citations`; where anchors live outside
+  the skill's own files, `sentinel.sh anchors` covers them, so the per-line
+  re-read is delegated to those subcommands rather than done by hand.
 - Every dimension in Step 3 is either bound to a real hotspot or
   explicitly N/A with a reason. There are twelve of them, numbered 1
   through 12, in order.
@@ -974,17 +971,10 @@ Already researched. Do not re-search.
 
 IMPORT, and say in the generated skill that it was imported:
 
-A. Adversarial validation. Fresh agents try to DISPROVE each finding
-   rather than reviewing it. "Adversarial review kills false positives."
-   This strictly replaces the older pattern of simulating a panel of
-   senior reviewers, which is weaker: a simulated panel shares the
-   author's context and tends to agree.
+A. Adversarial validation -- fresh agents try to DISPROVE each finding;
+   the mechanism is Step 6 above.
 
-B. The finder-to-judgment trust boundary. The validation layer receives
-   only the finding's file path and the evidence, never the finder's
-   reasoning. This is what stops a persuasive-but-wrong finding from
-   surviving review. Derive the mechanism from Step 6 above; it is the
-   same principle.
+B. The finder-to-judgment trust boundary -- the mechanism is Step 6 above.
 
 C. Deterministic scanners for mechanical dimensions. Secrets, known
    CVEs, and license compatibility must be checked by a real scanner
@@ -1012,10 +1002,9 @@ H. Do not let mechanical dimensions be judged by inspection. A model's
    opinion about whether a dependency has a CVE is worse than no answer,
    because it is confidently wrong.
 
-I. No per-repository reshaping of the procedure. Reshaping sounds like
-   adaptation and is actually drift: it makes two skills incomparable,
-   breaks every bridge that names a section, and means a fix to one
-   cannot be copied to another. Bind deeper, never reshape.
+I. No per-repository reshaping of the procedure. Bind deeper, never
+   reshape; a reshaped skill is incomparable and breaks every bridge that
+   names a section.
 
 ## OUTPUT
 
@@ -1024,12 +1013,14 @@ Produce, unconditionally:
 - the canonical skill at `skills/<skill-name>/SKILL.md`, plus
   `profile.md` and `sentinel.sh` beside it;
 - YAML frontmatter on that SKILL.md, carrying `name` and `description`, with
-  `name` matching the directory name it sits in. A skill file without
-  frontmatter will not load by name in any harness that discovers skills from
-  a directory, and it fails silently: the file is on disk, the bridges point
-  at it, and nothing says the one thing that would make it work is missing.
-  This is the difference between a skill that is reachable and a skill that
-  is merely present;
+  `name` matching the directory name it sits in. A harness that discovers
+  skills by scanning a directory reads that block to decide what the skill is
+  and when to use it, so a file without it will not load by name: it is
+  present and unreachable, and nothing says which one thing is missing. The
+  reference table records which harnesses scan and which reach the skill only
+  through a bridge, since the block does not replace the bridge.
+  `scripts/check_skill_registry.py` fails a skill file that lacks the block,
+  declares a name other than its directory's, or carries no description;
 - one bridge per discovered harness, in that harness's own format, plus the
   `.agents/skills` symlink;
 - a `<command-name>-update` bridge for each of those harnesses, delegating to

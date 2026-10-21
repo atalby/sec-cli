@@ -25,6 +25,16 @@ as suspect.
 | Windsurf | `.windsurf/workflows/<command-name>.md` | invoked as `/<command-name>` |
 | Kiro | `.kiro/steering/<command-name>.md` | frontmatter inclusion `manual`, which surfaces as a slash command |
 
+## Which harnesses read the skill's own frontmatter
+
+As far as this table knows, opencode (`.opencode/skills/<name>/SKILL.md`) and
+Claude Code (`.claude/skills/<name>/SKILL.md`) scan a skills directory and take
+`name` and `description` from the file's frontmatter; for those two the block
+is what makes the skill reachable by name, and the bridge is the explicit entry
+point beside it. Every other row above reaches the skill only through the
+bridge file, where a missing block costs nothing and carrying it costs nothing
+either. Correct this section the way you would correct the table.
+
 ## What every bridge must contain, whatever the harness
 
 These four are the contract. The table above only decides where the file
@@ -33,9 +43,10 @@ goes and what wrapper syntax it needs.
 1. Name the canonical path, and state that the shared-directory copy is a
    symlink to it, so either path resolves and the reader need not care
    which.
-2. Say to load the skill through the harness's skill tool and follow it end
-   to end. A bridge that only names a path leaves the harness to guess
-   whether to read it or invoke it.
+2. Say to read the skill file at that path, end to end. A bridge that names a
+   loader instead of a file leaves every surface without that loader with
+   nothing to follow; a bridge that names only a directory leaves the harness
+   to guess which file is the procedure.
 3. Say "Do not paraphrase, summarise, or re-derive the audit procedure. The
    skill is the procedure. Load it, then execute its steps in order."
 4. Note the confirmation gate, and list plain-language trigger phrases, so

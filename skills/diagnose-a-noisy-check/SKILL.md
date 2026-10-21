@@ -81,3 +81,17 @@ of kind, and no average would have shown it.
 Grounding the same defect also surfaced that the check had no business
 running in 30 of 33 consuming repositories, where it asked for files
 that are never distributed to them.
+
+## The mirror image
+
+Noise is one half of a pair. The other half is a check that can never
+pass, or never fire at all — red because its own input surface is
+missing or misread rather than because the condition occurred. That
+case is `proving-a-check-discriminates`'s to settle, and it is the more
+dangerous of the two, because a never-firing check reads as a pass and
+a never-passing one can trigger a retry or a re-send.
+
+Both skills reduce to one question worth asking before either: has this
+predicate been observed in both states on real subjects? If it fires on
+nearly every event, replay it here. If it has never fired, or has never
+passed, go there first.

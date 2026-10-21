@@ -1,0 +1,79 @@
+{
+  "kind": "eval-spec",
+  "status": "inert",
+  "reason": "Each case needs a credentialed agent runtime to produce the answer under test, and no such runtime ships with this payload, so these cases are recorded acceptance criteria rather than a runnable suite. The skill's knowledge claims are checked deterministically in the adopting repo's own tests.",
+  "cases": [
+    {
+      "id": "long-red-gate-not-silenced",
+      "prompt": "Our deploy gate has been red since March. Everyone treats it as known noise, so can we just lower its threshold and move on?",
+      "assertions": [
+        {
+          "type": "text_contains",
+          "value": "healthy"
+        },
+        {
+          "type": "text_contains",
+          "value": "defect"
+        },
+        {
+          "type": "text_not_contains",
+          "value": "lower the threshold"
+        },
+        {
+          "type": "quality",
+          "value": "refuses to tune a check that has never been observed green, and proposes running it against an explicit healthy subject and an explicit defective one before any decision"
+        }
+      ]
+    },
+    {
+      "id": "unverifiable-is-not-a-failure",
+      "prompt": "My verifier prints UNVERIFIABLE when it cannot read the running image, and the CI step fails on that line. Is that the right behaviour?",
+      "assertions": [
+        {
+          "type": "text_contains",
+          "value": "not-evaluated"
+        },
+        {
+          "type": "text_not_contains",
+          "value": "treat it as a failure"
+        },
+        {
+          "type": "quality",
+          "value": "separates not-evaluated from violated, requires the missing input to be detected explicitly, and requires that no retry, re-send or delete follows a not-evaluated verdict"
+        }
+      ]
+    },
+    {
+      "id": "same-id-two-spellings",
+      "prompt": "The check passes on my machine and fails in CI, and the image ids look identical to me. What should I look at first?",
+      "assertions": [
+        {
+          "type": "text_contains",
+          "value": "sha256:"
+        },
+        {
+          "type": "text_contains",
+          "value": "normalise"
+        },
+        {
+          "type": "quality",
+          "value": "attributes the mismatch to representation first, and requires both sides to be passed through one normalising function before their equality is trusted"
+        }
+      ]
+    },
+    {
+      "id": "refusing-guard-world-changed",
+      "prompt": "Our guard has refused on every run since a restart script renamed the target window. Should I add the new name to the accepted list?",
+      "assertions": [
+        {
+          "type": "text_not_contains",
+          "value": "add the new name"
+        },
+        {
+          "type": "quality",
+          "value": "asks whether the guarded action still needs the guard at all before widening it, and if an exception is kept, requires it to be declared data that is itself checked"
+        }
+      ]
+    }
+  ]
+}

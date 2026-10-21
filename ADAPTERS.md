@@ -189,38 +189,48 @@ cloning Hyer directly.
   contract's sanctioned clone byte path (`git show <peeled-sha>:<path>`
   in a clone that already exists), never to an unauthenticated request
   or a guessed project id.
-- **Current payload state**: adopted HIAE Protocol **v5.41.0** on
-  2026-10-16 (fleet-wide adoption, no-limit#20). Provenance: immutable
-  tag `stable` peeled to commit
-  `0ee8f94d7e7460cff78a45e7107bf6804d4ed263` (verify with `git ls-remote
-  git@gitlab.com:at-tech-io/infrastructure/hyer.git 'refs/tags/stable^{}'`
+- **Current payload state**: adopted HIAE Protocol **v5.45.0** on
+  2026-10-20 (session adoption at run start, per /adopt-hyer).
+  Provenance: immutable tag `stable` peeled once to commit
+  `2b962f8c34fc5ea10ae17355b88bcb8467375331` (verify with `git ls-remote
+  https://gitlab.com/at-tech-io/infrastructure/hyer.git 'refs/tags/stable^{}'`
   — the SHA beside the tag is a check value, not the provenance claim;
-  the tag is). All 43 payload files (AGENTS.md, methodology/**,
-  skills/**) placed via the already-present-clone byte path (`git show
-  <sha>:<path>` in `~/sandbox/hyer`, which predates the adoption) and
-  proven byte-for-byte against that SHA with `cmp`: 42 of 43 are
-  byte-identical, and `skills/REGISTRY.md` is the deliberate superset
-  (every hub row plus this repo's own project-specific row, per the
-  hub's merge rule). The `hyer` MCP server was not used; the contract's
-  sanctioned already-present-clone path was, with no hub-address
-  reconstruction and no token fallback. Per the hub's own
-  `moving-stable-tag` skill: a manual copy is a point-in-time snapshot
-  regardless of which ref fetched it, not an expectation of staying
-  perpetually current without a future re-sync.
+  the tag is). All 53 payload files (AGENTS.md, methodology/**,
+  skills/**) placed via the contract's raw-file byte path (one HTTP GET
+  of `repository/files/<url-encoded-path>/raw?ref=<sha>` per file,
+  response body to disk with nothing in between, credential resolved at
+  the moment of use with `sec get hyer-gitlab-pat`), each placement
+  proven by a second independent GET of the same `SHA:<path>` whose
+  sha256 matched the placed file: 52 of 53 byte-identical to the hub,
+  and `skills/REGISTRY.md` the deliberate superset (every hub row plus
+  this repo's own project-specific row `architecture-360-audit`, per the
+  hub's merge rule; the incoming registry's `skills/self-learning-skill-synthesis`
+  adopter row superseded a stale local `.hyer/skills/` hub-internal row
+  for a path this repo has never held). The `hyer` MCP server was used
+  for `sync_status` (discovering the v5.41.0 → v5.45.0 lag),
+  `locate_hub` (hub address + peeled SHA, cross-checked against
+  `git ls-remote` and the API commit record) and `list_payload`
+  (enumeration); placement itself used only the byte path. Per the hub's
+  own `moving-stable-tag` skill: a manual copy is a point-in-time
+  snapshot regardless of which ref fetched it, not an expectation of
+  staying perpetually current without a future re-sync.
 
 ## Skills registry
 
 - **Registry file**: `skills/REGISTRY.md`
-- **Contents**: 26 skill dirs under `skills/` — 25 adopter-distributable
-  from the 2026-10-16 v5.41.0 adoption plus 1 project-specific
-  (`architecture-360-audit`, built in-repo on 2026-10-08) — plus 12
-  `.hyer/skills/` hub-internal rows: 38 skill rows, one per skill dir.
-  History: first populated in the
+- **Contents**: 33 skill dirs under `skills/` — 32 adopter-distributable
+  from the 2026-10-20 v5.45.0 adoption plus 1 project-specific
+  (`architecture-360-audit`, built in-repo on 2026-10-08) — plus 11
+  `.hyer/skills/` hub-internal rows: 44 skill rows, one per skill dir
+  plus the hub-internal rows. History: first populated in the
   2026-08-27 fleet sync (10 skills, no `skills/` before that);
   hub-internal rows repointed `.claude/skills/` → `.hyer/skills/` on
   2026-10-08 (commit 06f129a); full merge to the v5.41.0 incoming
   registry on 2026-10-16 (one project-specific row preserved —
-  `architecture-360-audit`; the other 25 `skills/` rows are hub payload).
+  `architecture-360-audit`); merged again to the v5.45.0 incoming
+  registry on 2026-10-20 (project-specific row preserved, stale local
+  `.hyer/skills/self-learning-skill-synthesis` hub row superseded by the
+  hub's own adopter row).
 
 ## Local pre-commit hook
 

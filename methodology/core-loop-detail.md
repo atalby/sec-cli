@@ -23,6 +23,11 @@ For any non-trivial change, in order:
    this repo) for why a filename/pattern grep finding nothing doesn't
    prove absence, and what a real check looks like, before writing the
    claim into a durable doc or filed issue.
+   - **A restore can rewind your checkout.** After a session restore,
+     read `git diff --cached` before committing: the index and the
+     worktree can agree on an older tree while disagreeing with HEAD, so
+     a clean `git status` is not evidence that the staged set is what
+     you intend.
 2. **Research third-party tools before configuring them.** Before wiring
    an external CLI tool, library, or service into the project, read its
    actual source, CLI reference, or config schema for the exact surface

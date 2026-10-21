@@ -15,10 +15,11 @@
 # artifact everyone trusted.
 #
 # COVERAGE: partial, and deliberately so.
-# Registered here: only rules with a BLOCKING gate, because those are the
-# only ones whose entry can be checked against reality today. A wrong entry
-# for a gated rule is caught by running the gate. A wrong entry for a
-# judgment rule is caught by nobody.
+# Registered here: rules with a BLOCKING gate, because a wrong entry for one is
+# caught by running that gate; plus universal rules whose entry step 17 can
+# check against reality, because a universal rule's locator must live in a file
+# the boot path names, and a wrong entry there is caught by running step 17. A
+# judgment rule whose entry nothing can check stays unregistered.
 #
 # HOW IT GROWS: on touch. A rule gets an entry in the same commit that edits
 # the rule or writes its gate. There is no big-bang extraction pass, because
@@ -32,7 +33,7 @@
 
 schema: 1
 coverage: partial
-covers: rules with a blocking pre-commit gate only
+covers: rules with a blocking pre-commit gate, plus universal rules whose boot-path reachability step 17 can check
 
 rules:
   - slug: done.no-plaintext-secrets
@@ -92,4 +93,52 @@ rules:
         It does not cover citation PRESENCE. A prose pointer carrying no
         quotation is out of scope by the checker's own design, and one such
         pointer broke undetected during the 2026-09-11 roster rotation.
+
+  - slug: autonomy.tripwire-boundary
+    anchor: "methodology/proactive-next-action.md section 3"
+    locator: "The tripwire boundary (load-bearing)"
+    modality: absolute
+    applicability: universal
+    scope: any session that decides to proceed without the operator present
+    enforcement:
+      kind: reachability
+      script: null
+      runner: "scripts/check_rules_index.py, pre-commit step 17, which fails when a universal rule's module is not named on the boot path"
+      caveat: >-
+        The gate proves the rule is reachable, not that it was obeyed. What it
+        prevents is the #428 defect: a standing rule about unsupervised
+        behaviour that only binds a session which happened to load its module.
+
+  - slug: autonomy.git-flagging
+    anchor: "methodology/proactive-next-action.md section 5"
+    locator: "Git-flagging"
+    modality: absolute
+    applicability: universal
+    scope: any commit made from a timeout-driven auto-proceed
+    enforcement:
+      kind: reachability
+      script: null
+      runner: "scripts/check_rules_index.py, pre-commit step 17"
+
+  - slug: lifecycle.proactive-restart
+    anchor: "methodology/context-lifecycle.md section 3"
+    locator: "The trigger is proactive, not reactive"
+    modality: absolute
+    applicability: universal
+    scope: any session approaching its context limit
+    enforcement:
+      kind: reachability
+      script: null
+      runner: "scripts/check_rules_index.py, pre-commit step 17"
+
+  - slug: lifecycle.budget-circuit-breaker
+    anchor: "methodology/context-lifecycle.md section 5"
+    locator: "Context budget is a resource with a circuit-breaker"
+    modality: absolute
+    applicability: universal
+    scope: any session whose context budget is finite
+    enforcement:
+      kind: reachability
+      script: null
+      runner: "scripts/check_rules_index.py, pre-commit step 17"
 
