@@ -30,17 +30,16 @@ Baseline re-verified green this run (run serially, no self-contention): the five
 `tests/test_*.sh` suites ALL TESTS PASSED; `.venv/bin/python -m pytest -q` 65
 passed; `sentinel.sh coverage` RC=0; `sentinel.sh citations` RC=0.
 
-NEXT MOVE (resume point): #192 shipped and closed this run (the op/vault fakes in
-tests/test_dispatch.sh now drain stdin, mirroring the bw idiom, eliminating
-the EPIPE/SIGPIPE race that fabricated a 'stage: op item create' failure under
-load; new section [11e] locks the class with a >64 KiB payload; dispatch 109 ->
-110). Baseline re-verified green: all five bash suites ALL TESTS PASSED,
-pytest 65 passed, sentinel coverage + citations exit 0. Open issues remaining
-are gated/hub-side: #67 (fresh 360 audit, needs human scope approval), #92
-(hub-owned unguarded counts), #51 (hub-side handoff). Tracker is GitHub
-`atalby/sec-cli` (`gh`); the standing order names GitLab, but no `sec-cli`
-project exists under `at-tech-io` and the remote is
-`git@github.com:atalby/sec-cli.git`.
+NEXT MOVE (resume point): adopt-hyer verified current at stable
+2b962f8c34fc5ea10ae17355b88bcb8467375331 (v5.45.0); adoption commit
+a4904e9 already on local main, pushed this run. Tracked-file count rose
+120 -> 129 and the census lines were truthed up; baseline re-verified green
+(all five bash suites ALL TESTS PASSED, pytest 65 passed, sentinel coverage
++ citations exit 0). Open issues remaining are gated/hub-side: #67 (fresh
+360 audit, needs human scope approval), #92 (hub-owned unguarded counts),
+#51 (hub-side handoff). Tracker is GitHub `atalby/sec-cli` (`gh`); the
+standing order names GitLab, but no `sec-cli` project exists under
+`at-tech-io` and the remote is `git@github.com:atalby/sec-cli.git`.
 
 ## Next autonomous work
 
@@ -182,7 +181,7 @@ mirrors in sync): dispatch 110, install 9, sentinel 70, sync_guard 16,
 write_honesty 17. Sentinel = 70 cases / 940 assertions. HISTORY.md is at
 6956/8192 bytes - headroom of 1236 bytes before its budget (the full narratives
 live in `history/2026-10-15.md` through `history/2026-10-18.md`).
-120 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
+129 tracked files, 12 personas, 5 bash suites. No unmerged branches (only main).
 No real TODO/FIXME debt in tracked files. Sentinel suite wall time ~150s (each
 guard case re-runs full coverage a few times); the pytest mirror adds ~3.5 min.
 Run both when a sentinel section changes.

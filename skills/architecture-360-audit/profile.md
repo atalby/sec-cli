@@ -12,8 +12,8 @@ moves.
 Ecosystems present: Bash (`bin/sec` and seven sibling dispatchers, `install.sh`,
 five suites under `tests/`), Python 3 (6 files: `bin/sec-sync-controller.py`,
 `bin/sec-classify.py`, and four under `scripts/tests/`), PowerShell (`bin/sec.ps1`),
-zsh completion (`completions/_sec`), Markdown (81 files), JSON/YAML/TOML
-configuration (13 files).
+zsh completion (`completions/_sec`), Markdown (89 files), JSON/YAML/TOML
+configuration (14 files).
 
 Measured against the tier definition:
 
@@ -54,7 +54,7 @@ The two partials are themselves findings, not tier annotations:
    PATH.** The hook's test step recognizes `scripts/tests/`+uv,
    `pytest.ini`/`pyproject`, and `package.json` — not `tests/*.sh`
    directly — so this repo's mirror at `scripts/tests/` is what runs all
-   five bash suites at commit time (`ADAPTERS.md:308`; issue #2 closed).
+   five bash suites at commit time (`ADAPTERS.md:318`; issue #2 closed).
    With `uv` absent, Step 5 warns that no suite applies and enforces
    nothing (issue #64). Since 2026-10-09 GitHub Actions runs the five
    bash suites and the pytest mirror on push and PR to main
@@ -72,7 +72,7 @@ CI configuration, and contributor documentation before recording an absence.
 `testpaths = ["scripts/tests"]` scopes the pytest mirror (2026-10-16, issue
 #179); `Makefile` — absent; CI — `.github/workflows/test.yml` since 2026-10-09 (issue #8), runs
 the five bash suites below and nothing else; contributor documentation —
-`ADAPTERS.md:258` "Running this project's test suite", which also names the
+`ADAPTERS.md:268` "Running this project's test suite", which also names the
 pytest mirror at `scripts/tests/`). All quotes below current as of the
 2026-10-11 profile pass. `tests/test_sentinel.sh` belongs to the audit
 instrument rather than the product but runs the same way:
@@ -437,7 +437,7 @@ instrument rather than the product but runs the same way:
 **Tracked file count** (the manifest denominator):
 
     $ git ls-files | wc -l
-    120
+    129
 
 **Dependency manifest census** (the persona 8 denominator). A project
 surface is what `git ls-files` tracks, so the count below is reproducible; a
@@ -810,7 +810,7 @@ art C: read the code at the line; do not judge by impression.)
 
 ## Coverage manifest
 
-Denominator: **120 tracked files** (`git ls-files | wc -l`, re-measured
+Denominator: **129 tracked files** (`git ls-files | wc -l`, re-measured
 2026-10-18 after issue #185 added the `history/2026-10-18.md` narrative; previously re-measured
 2026-10-17 after issue #183 truth-upped the repo-root `SKILL.md` and added the
 `history/2026-10-17.md` narrative; previously re-measured
